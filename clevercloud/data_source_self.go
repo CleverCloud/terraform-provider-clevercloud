@@ -3,7 +3,6 @@ package clevercloud
 import (
 	"context"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/gaelreyrol/clevercloud-go/clevercloud"
@@ -26,12 +25,10 @@ func dataSourceSelfRead(ctx context.Context, d *schema.ResourceData, m interface
 		return diag.FromErr(err)
 	}
 
-	if err := d.Set("self", self); err != nil {
-		return diag.FromErr(err)
-	}
+	d.SetId(self.ID)
 
-	// always run
-	d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
+	d.Set("name", self.Name)
+	d.Set("email", self.Email)
 
 	return diags
 }
@@ -40,86 +37,73 @@ func dataSourceSelf() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceSelfRead,
 		Schema: map[string]*schema.Schema{
-			"self": &schema.Schema{
-				Type:     schema.TypeSet,
+			"email": {
+				Type:     schema.TypeString,
 				Computed: true,
-				Elem: &schema.Resource{
-					Schema: map[string]*schema.Schema{
-						"id": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"email": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"name": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"phone": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"address": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"city": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"zip_code": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"country": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"avatar": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"creation_date": &schema.Schema{
-							Type:     schema.TypeInt,
-							Computed: true,
-						},
-						"langugage": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"email_validated": &schema.Schema{
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-						// "oauth_apps": &schema.Schema{
-						// 	Type:     schema.TypeList,
-						// 	Computed: true,
-						// 	Elem: &schema.Schema{
-						// 		Type:     schema.TypeString,
-						// 		Computed: true,
-						// 	},
-						// },
-						"admin": &schema.Schema{
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-						"can_pay": &schema.Schema{
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-						"preferred_mfa": &schema.Schema{
-							Type:     schema.TypeString,
-							Computed: true,
-						},
-						"has_password": &schema.Schema{
-							Type:     schema.TypeBool,
-							Computed: true,
-						},
-					},
-				},
 			},
+			"name": {
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			// "phone": {
+			// 	Type:     schema.TypeString,
+			// 	Computed: true,
+			// },
+			// "address": {
+			// 	Type:     schema.TypeString,
+			// 	Computed: true,
+			// },
+			// "city": {
+			// 	Type:     schema.TypeString,
+			// 	Computed: true,
+			// },
+			// "zip_code": {
+			// 	Type:     schema.TypeString,
+			// 	Computed: true,
+			// },
+			// "country": {
+			// 	Type:     schema.TypeString,
+			// 	Computed: true,
+			// },
+			// "avatar": {
+			// 	Type:     schema.TypeString,
+			// 	Computed: true,
+			// },
+			// "creation_date": {
+			// 	Type:     schema.TypeInt,
+			// 	Computed: true,
+			// },
+			// "langugage": {
+			// 	Type:     schema.TypeString,
+			// 	Computed: true,
+			// },
+			// "email_validated": {
+			// 	Type:     schema.TypeBool,
+			// 	Computed: true,
+			// },
+			// "oauth_apps": {
+			// 	Type:     schema.TypeList,
+			// 	Computed: true,
+			// 	Elem: &schema.Schema{
+			// 		Type: schema.TypeString,
+			// 	},
+			// },
+			// "admin": {
+			// 	Type:     schema.TypeBool,
+			// 	Computed: true,
+			// },
+			// "can_pay": {
+			// 	Type:     schema.TypeBool,
+			// 	Computed: true,
+			// },
+			// "preferred_mfa": {
+			// 	Type:     schema.TypeString,
+			// 	Computed: true,
+			// },
+			// "has_password": {
+			// 	Type:     schema.TypeBool,
+			// 	Computed: true,
+			// },
 		},
 	}
 }
