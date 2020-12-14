@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dansmaculotte/clevercloud-go/clevercloud"
+	"github.com/gaelreyrol/clevercloud-go/clevercloud"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
