@@ -2,18 +2,13 @@ package clevercloud
 
 import (
 	"context"
-	"net/http"
-	"time"
-
 	"github.com/gaelreyrol/clevercloud-go/clevercloud"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
 func dataSourceSelfAddonRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	client := &http.Client{Timeout: 10 * time.Second}
-
-	cc := clevercloud.NewClient(clevercloud.GetConfigFromUser(), client)
+	cc := m.(*clevercloud.Client)
 
 	// Warning or errors can be collected in a slice type
 	var diags diag.Diagnostics
