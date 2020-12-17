@@ -2,11 +2,12 @@ package clevercloud
 
 import (
 	"context"
+	"net/http"
+	"time"
+
 	"github.com/gaelreyrol/clevercloud-go/clevercloud"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"net/http"
-	"time"
 )
 
 // Provider -
@@ -36,7 +37,6 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 	token := d.Get("token").(string)
 	secret := d.Get("secret").(string)
 
-	// Warning or errors can be collected in a slice type
 	var diags diag.Diagnostics
 
 	client := &http.Client{Timeout: 10 * time.Second}
