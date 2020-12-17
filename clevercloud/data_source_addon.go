@@ -44,6 +44,8 @@ func dataSourceAddonRead(ctx context.Context, d *schema.ResourceData, m interfac
 			return diag.FromErr(err)
 		}
 
+		_ = d.Set("organization_id", self.ID)
+
 		if addon, err = selfAPI.GetAddon(self.ID, d.Get("id").(string)); err != nil {
 			return diag.FromErr(err)
 		}
