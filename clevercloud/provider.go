@@ -57,7 +57,11 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 		return cc, diags
 	}
 
-	userConfig := clevercloud.GetConfigFromUser()
+	userConfig, err := clevercloud.GetConfigFromUser()
+	if err != nil {
+		return nil, diag.FromErr(err)
+	}
+
 	if (userConfig.Token != "") && (userConfig.Secret != "") {
 		cc := clevercloud.NewClient(userConfig, client)
 
