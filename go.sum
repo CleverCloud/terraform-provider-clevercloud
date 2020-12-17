@@ -71,6 +71,7 @@ github.com/fatih/color v1.7.0/go.mod h1:Zm6kSWBoL9eyXnKyktHP6abPY2pDugNf5Kwzbycv
 github.com/flynn/go-shlex v0.0.0-20150515145356-3f9db97f8568/go.mod h1:xEzjJPgXI435gkrCt3MPfRiAkVrwSbHsst4LCFVfpJc=
 github.com/gaelreyrol/clevercloud-go v0.0.0-20201213203121-52b5929cddb2 h1:HO+H+Xdzm2Ra/uTdwUWIUMbgIU4kObWcbP1ll9ohlt0=
 github.com/gaelreyrol/clevercloud-go v0.0.0-20201213203121-52b5929cddb2/go.mod h1:1ep/YkbSsxT0zVYiWFV5D/HLZJcGvKq567EzYDUI1Cs=
+github.com/gaelreyrol/clevercloud-go v0.0.0-20201214170032-737284b99e92 h1:tBIMsPvmaRR6Qv81YpP/CLhnaSq3nUM7mq7ZWEgswOU=
 github.com/gliderlabs/ssh v0.2.2/go.mod h1:U7qILu1NlMHj9FlMhZLlkCdDnU1DBEAqr0aevW3Awn0=
 github.com/go-git/gcfg v1.5.0/go.mod h1:5m20vg6GwYabIxaOonVkTdrILxQMpEShl1xiMF4ua+E=
 github.com/go-git/go-billy/v5 v5.0.0/go.mod h1:pmpqyWchKfYfrkb/UVH4otLvyi/5gJlGI4Hb3ZqZ3W0=
