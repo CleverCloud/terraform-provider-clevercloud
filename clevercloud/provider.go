@@ -28,6 +28,7 @@ func Provider() *schema.Provider {
 			"clevercloud_application": dataSourceApplication(),
 			"clevercloud_addon":       dataSourceAddon(),
 			"clevercloud_zones":       dataSourceZones(),
+			"clevercloud_flavors":     dataSourceFlavors(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}
