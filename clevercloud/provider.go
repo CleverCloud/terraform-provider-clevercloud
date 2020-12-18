@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
 
-// Provider -
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
@@ -28,6 +27,7 @@ func Provider() *schema.Provider {
 			"clevercloud_self":        dataSourceSelf(),
 			"clevercloud_application": dataSourceApplication(),
 			"clevercloud_addon":       dataSourceAddon(),
+			"clevercloud_zones":       dataSourceZones(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}
