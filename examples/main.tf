@@ -9,10 +9,18 @@ terraform {
 
 provider "clevercloud" {}
 
-module "self" {
-  source = "./self"
+data "clevercloud_self" "current" {}
+data "clevercloud_zones" "available" {}
+data "clevercloud_flavors" "available" {}
+
+output "self_current" {
+  value = data.clevercloud_self.current
 }
 
-output "current_self" {
-  value = module.self.current
+output "available_zones" {
+  value = data.clevercloud_zones.available
+}
+
+output "available_flavors" {
+  value = data.clevercloud_flavors.available
 }
