@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     clevercloud = {
-      source = "hashicorp.com/gaelreyrol/clevercloud"
+      source = "hashicorp.com/clevercloud/clevercloud"
       version = "0.1.0"
     }
   }

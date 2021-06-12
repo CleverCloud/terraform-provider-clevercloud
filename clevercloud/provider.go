@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gaelreyrol/clevercloud-go/clevercloud"
+	"github.com/clevercloud/clevercloud-go/clevercloud"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
