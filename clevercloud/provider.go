@@ -2,12 +2,15 @@ package clevercloud
 
 import (
 	"context"
-	"net/http"
-	"time"
 
 	"github.com/clevercloud/clevercloud-go/clevercloud"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+const (
+	consumerKey    = "Q0BrzJQ44MBbWN8cMEkSA6zTBtu2jR"
+	consumerSecret = "Fc18B5dIrWsdUEh881WGvo1DxjKC6p"
 )
 
 func Provider() *schema.Provider {
@@ -40,33 +43,14 @@ func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}
 
 	var diags diag.Diagnostics
 
-	client := &http.Client{Timeout: 10 * time.Second}
-
 	if (token != "") && (secret != "") {
-		cc := clevercloud.NewClient(&clevercloud.Config{
-			Token:  token,
-			Secret: secret,
-		}, client)
+		oauth := clevercloud.NewOAuthClient(consumerKey, consumerSecret)
+		oauth.SetTokens(token, secret)
 
-		return cc, diags
-	}
+		config := clevercloud.NewConfiguration()
+		api := clevercloud.NewOAuthAPIClient(oauth, config)
 
-	envConfig := clevercloud.GetConfigFromEnv()
-	if (envConfig.Token != "") && (envConfig.Secret != "") {
-		cc := clevercloud.NewClient(envConfig, client)
-
-		return cc, diags
-	}
-
-	userConfig, err := clevercloud.GetConfigFromUser()
-	if err != nil {
-		return nil, diag.FromErr(err)
-	}
-
-	if (userConfig.Token != "") && (userConfig.Secret != "") {
-		cc := clevercloud.NewClient(userConfig, client)
-
-		return cc, diags
+		return api, diags
 	}
 
 	diags = append(diags, diag.Diagnostic{

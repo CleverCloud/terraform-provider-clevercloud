@@ -29,40 +29,33 @@ func dataSourceAddon() *schema.Resource {
 }
 
 func dataSourceAddonRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cc := m.(*clevercloud.Client)
+	cc := m.(*clevercloud.APIClient)
 
 	var diags diag.Diagnostics
 
-	var addon *clevercloud.Addon
+	var addon clevercloud.AddonView
 
 	organizationID, ok := d.GetOk("organization_id")
 	if !ok {
-		selfAPI := clevercloud.NewSelfAPI(cc)
-
-		self, err := selfAPI.GetSelf()
+		self, _, err := cc.SelfApi.GetUser(context.Background())
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
-		_ = d.Set("organization_id", self.ID)
+		_ = d.Set("organization_id", self.Id)
 
-		if addon, err = selfAPI.GetAddon(self.ID, d.Get("id").(string)); err != nil {
+		if addon, _, err = cc.SelfApi.GetSelfAddonById(context.Background(), d.Get("id").(string)); err != nil {
 			return diag.FromErr(err)
 		}
 	} else {
-		orgAPI := clevercloud.NewOrganizationAPI(cc)
-
-		org, err := orgAPI.GetOrganization(organizationID.(string))
+		var err error
+		addon, _, err = cc.OrganisationApi.GetAddonByOrgaAndAddonId(context.Background(), organizationID.(string), d.Get("id").(string))
 		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		if addon, err = orgAPI.GetAddon(org.ID, d.Get("id").(string)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
-	d.SetId(addon.ID)
+	d.SetId(addon.Id)
 
 	_ = d.Set("name", addon.Name)
 

@@ -2,11 +2,12 @@ package clevercloud
 
 import (
 	"context"
+	"strconv"
+	"time"
+
 	"github.com/clevercloud/clevercloud-go/clevercloud"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
-	"strconv"
-	"time"
 )
 
 func dataSourceFlavors() *schema.Resource {
@@ -25,13 +26,11 @@ func dataSourceFlavors() *schema.Resource {
 }
 
 func dataSourceFlavorsRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cc := m.(*clevercloud.Client)
+	cc := m.(*clevercloud.APIClient)
 
 	var diags diag.Diagnostics
 
-	productAPI := clevercloud.NewProductAPI(cc)
-
-	flavors, err := productAPI.GetFlavors()
+	flavors, _, err := cc.ProductsApi.GetFlavors(context.Background(), nil)
 	if err != nil {
 		return diag.FromErr(err)
 	}

@@ -29,40 +29,32 @@ func dataSourceApplication() *schema.Resource {
 }
 
 func dataSourceApplicationRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cc := m.(*clevercloud.Client)
+	cc := m.(*clevercloud.APIClient)
 
 	var diags diag.Diagnostics
 
-	var application *clevercloud.Application
+	var application clevercloud.ApplicationView
 
 	organizationID, ok := d.GetOk("organization_id")
 	if !ok {
-		selfAPI := clevercloud.NewSelfAPI(cc)
-
-		self, err := selfAPI.GetSelf()
+		self, _, err := cc.SelfApi.GetUser(context.Background())
 		if err != nil {
 			return diag.FromErr(err)
 		}
 
-		_ = d.Set("organization_id", self.ID)
+		_ = d.Set("organization_id", self.Id)
 
-		if application, err = selfAPI.GetApplication(self.ID, d.Get("id").(string)); err != nil {
+		if application, _, err = cc.SelfApi.GetSelfApplicationByAppId(context.Background(), d.Get("id").(string)); err != nil {
 			return diag.FromErr(err)
 		}
 	} else {
-		orgAPI := clevercloud.NewOrganizationAPI(cc)
-
-		org, err := orgAPI.GetOrganization(organizationID.(string))
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		if application, err = orgAPI.GetApplication(org.ID, d.Get("id").(string)); err != nil {
+		var err error
+		if application, _, err = cc.OrganisationApi.GetApplicationByOrgaAndAppId(context.Background(), organizationID.(string), d.Get("id").(string)); err != nil {
 			return diag.FromErr(err)
 		}
 	}
 
-	d.SetId(application.ID)
+	d.SetId(application.Id)
 
 	_ = d.Set("name", application.Name)
 

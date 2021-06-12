@@ -84,31 +84,29 @@ func dataSourceSelf() *schema.Resource {
 }
 
 func dataSourceSelfRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cc := m.(*clevercloud.Client)
+	cc := m.(*clevercloud.APIClient)
 
 	var diags diag.Diagnostics
 
-	selfAPI := clevercloud.NewSelfAPI(cc)
-
-	self, err := selfAPI.GetSelf()
+	self, _, err := cc.SelfApi.GetUser(context.Background())
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	d.SetId(self.ID)
+	d.SetId(self.Id)
 
 	_ = d.Set("email", self.Email)
 	_ = d.Set("name", self.Name)
 	_ = d.Set("phone", self.Phone)
 	_ = d.Set("address", self.Address)
 	_ = d.Set("city", self.City)
-	_ = d.Set("zip_code", self.ZipCode)
+	_ = d.Set("zip_code", self.Zipcode)
 	_ = d.Set("country", self.Country)
 	_ = d.Set("avatar", self.Avatar)
 	_ = d.Set("creation_date", self.CreationDate)
-	_ = d.Set("language", self.Language)
+	_ = d.Set("language", self.Lang)
 	_ = d.Set("email_validated", self.EmailValidated)
-	_ = d.Set("oauth_apps", self.OAuthApps)
+	_ = d.Set("oauth_apps", self.OauthApps)
 	_ = d.Set("admin", self.Admin)
 	_ = d.Set("can_pay", self.CanPay)
 	_ = d.Set("preferred_mfa", self.PreferredMFA)
