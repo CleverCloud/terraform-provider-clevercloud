@@ -4,7 +4,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/plugin"
 
-	"terraform-provider-clevercloud/clevercloud"
+	"github.com/clevercloud/terraform-provider-clevercloud/clevercloud"
 )
 
 func main() {
