@@ -7,7 +7,6 @@
   - [ ] Addon
   - [ ] User / Organization (self)
   - [ ] Addon providers
-  - [ ] 
   - [ ] Flavors
   - [ ] Zones
 - [ ] Resources
