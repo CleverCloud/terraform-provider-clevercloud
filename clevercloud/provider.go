@@ -35,11 +35,12 @@ func Provider() *schema.Provider {
 		},
 		ResourcesMap: map[string]*schema.Resource{},
 		DataSourcesMap: map[string]*schema.Resource{
-			"clevercloud_self":        dataSourceSelf(),
-			"clevercloud_application": dataSourceApplication(),
-			"clevercloud_addon":       dataSourceAddon(),
-			"clevercloud_zones":       dataSourceZones(),
-			"clevercloud_flavors":     dataSourceFlavors(),
+			"clevercloud_self":            dataSourceSelf(),
+			"clevercloud_application":     dataSourceApplication(),
+			"clevercloud_addon":           dataSourceAddon(),
+			"clevercloud_addon_providers": dataSourceAddonProviders(),
+			"clevercloud_zones":           dataSourceZones(),
+			"clevercloud_flavors":         dataSourceFlavors(),
 		},
 		ConfigureContextFunc: providerConfigure,
 	}

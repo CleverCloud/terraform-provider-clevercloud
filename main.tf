@@ -33,6 +33,8 @@ provider "clevercloud" {
 data "clevercloud_self" "current" {}
 data "clevercloud_zones" "available" {}
 data "clevercloud_flavors" "available" {}
+data "clevercloud_addon_providers" "available" {}
+
 
 data "clevercloud_application" "cc_deploy_button" {
   id = "app_ab73990b-79b0-49f4-aeb6-76aa72b780a0"
@@ -48,6 +50,10 @@ output "available_zones" {
 
 output "available_flavors" {
   value = data.clevercloud_flavors.available
+}
+
+output "available_addons" {
+  value = data.clevercloud_addon_providers.available
 }
 
 output "deploy_button" {
