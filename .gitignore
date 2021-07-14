@@ -1,6 +1,8 @@
 .DS_Store
 terraform-provider-clevercloud
 bin
+.env
+*.log
 
 # Local .terraform directories
 **/.terraform/*

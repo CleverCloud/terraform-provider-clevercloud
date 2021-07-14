@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	consumerKey    = "Q0BrzJQ44MBbWN8cMEkSA6zTBtu2jR"
-	consumerSecret = "Fc18B5dIrWsdUEh881WGvo1DxjKC6p"
+	CONSUMER_KEY    = "CHANGEME"
+	CONSUMER_SECRET = "CHANGEME"
 )
 
 func Provider() *schema.Provider {
@@ -18,9 +18,17 @@ func Provider() *schema.Provider {
 		Schema: map[string]*schema.Schema{
 			"token": &schema.Schema{
 				Type:     schema.TypeString,
-				Optional: true,
+				Required: true,
 			},
 			"secret": &schema.Schema{
+				Type:     schema.TypeString,
+				Required: true,
+			},
+			"consumer_key": &schema.Schema{
+				Type:     schema.TypeString,
+				Optional: true,
+			},
+			"consumer_secret": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
 			},
@@ -40,6 +48,14 @@ func Provider() *schema.Provider {
 func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
 	token := d.Get("token").(string)
 	secret := d.Get("secret").(string)
+
+	consumerKey := CONSUMER_KEY
+	consumerSecret := CONSUMER_SECRET
+
+	if d.Get("consumer_key").(string) != "" && d.Get("consumer_secret").(string) != "" {
+		consumerKey = d.Get("consumer_key").(string)
+		consumerSecret = d.Get("consumer_secret").(string)
+	}
 
 	var diags diag.Diagnostics
 

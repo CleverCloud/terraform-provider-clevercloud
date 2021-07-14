@@ -20,6 +20,14 @@ func dataSourceApplication() *schema.Resource {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
+			"state": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
+			"zone": &schema.Schema{
+				Type:     schema.TypeString,
+				Computed: true,
+			},
 			"organization_id": &schema.Schema{
 				Type:     schema.TypeString,
 				Optional: true,
@@ -57,6 +65,8 @@ func dataSourceApplicationRead(ctx context.Context, d *schema.ResourceData, m in
 	d.SetId(application.Id)
 
 	_ = d.Set("name", application.Name)
+	_ = d.Set("state", application.State)
+	_ = d.Set("zone", application.Zone)
 
 	return diags
 }
