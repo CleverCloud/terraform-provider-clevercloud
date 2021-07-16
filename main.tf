@@ -34,28 +34,56 @@ data "clevercloud_self" "current" {}
 data "clevercloud_zones" "available" {}
 data "clevercloud_flavors" "available" {}
 data "clevercloud_addon_providers" "available" {}
+data "clevercloud_instances" "available" {}
 
-
-data "clevercloud_application" "cc_deploy_button" {
-  id = "app_ab73990b-79b0-49f4-aeb6-76aa72b780a0"
+data "clevercloud_application" "test" {
+  id = "app_6a43221f-f0a9-4e10-98d6-5fbe6c7cb296"
 }
 
-output "self_current" {
-  value = data.clevercloud_self.current
+data "clevercloud_addon" "config_test" {
+  id = "addon_b2c1423b-05b7-417e-af20-ef2a2c77cc77"
 }
 
-output "available_zones" {
-  value = data.clevercloud_zones.available
+data "clevercloud_addon" "cellar_test" {
+  id = "addon_aea9c52e-4d5b-49a9-90ab-0b510fdd7b86"
 }
 
-output "available_flavors" {
-  value = data.clevercloud_flavors.available
+data "clevercloud_addon" "postgresql_test" {
+  id = "addon_a3c22ce4-6ce1-4586-bbe3-2b76ea015352"
 }
 
-output "available_addons" {
-  value = data.clevercloud_addon_providers.available
+# output "self_current" {
+#   value = data.clevercloud_self.current
+# }
+
+# output "available_zones" {
+#   value = data.clevercloud_zones.available
+# }
+
+# output "available_flavors" {
+#   value = data.clevercloud_flavors.available
+# }
+
+# output "available_addons" {
+#   value = data.clevercloud_addon_providers.available
+# }
+
+# output "available_instances" {
+#   value = data.clevercloud_instances.available
+# }
+
+output "test_application" {
+  value = data.clevercloud_application.test
 }
 
-output "deploy_button" {
-  value = data.clevercloud_application.cc_deploy_button
+output "test_config_addon" {
+  value = data.clevercloud_addon.config_test
+}
+
+output "test_cellar_addon" {
+  value = data.clevercloud_addon.cellar_test
+}
+
+output "test_postgresql_addon" {
+  value = data.clevercloud_addon.postgresql_test
 }
