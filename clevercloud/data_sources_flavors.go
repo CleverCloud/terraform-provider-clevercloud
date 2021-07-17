@@ -14,11 +14,12 @@ func dataSourceFlavors() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceFlavorsRead,
 		Schema: map[string]*schema.Schema{
-			"names": {
+			"flavors": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Schema{
-					Type: schema.TypeString,
+					Type: schema.TypeSet,
+					Elem: applicationFlavorResource,
 				},
 			},
 		},
@@ -30,18 +31,18 @@ func dataSourceFlavorsRead(ctx context.Context, d *schema.ResourceData, m interf
 
 	var diags diag.Diagnostics
 
-	flavors, _, err := cc.ProductsApi.GetFlavors(context.Background(), nil)
+	flavorsList, _, err := cc.ProductsApi.GetFlavors(context.Background(), &clevercloud.GetFlavorsOpts{})
 	if err != nil {
 		return diag.FromErr(err)
 	}
 
-	flavorNames := make([]string, 0)
-	for _, flavor := range flavors {
-		flavorNames = append(flavorNames, flavor.Name)
+	flavors := make([]interface{}, 0)
+	for _, flavor := range flavorsList {
+		flavors = append(flavors, makeFlavorResourceSchemaSet(&flavor))
 	}
 
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
-	_ = d.Set("names", flavorNames)
+	_ = d.Set("flavors", flavors)
 
 	return diags
 }

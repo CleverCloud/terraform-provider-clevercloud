@@ -49,7 +49,7 @@ var addonProviderInfoResource = &schema.Resource{
 	},
 }
 
-var addonFeatureResource = &schema.Resource{
+var addonFeatureInstanceResource = &schema.Resource{
 	Schema: map[string]*schema.Schema{
 		"name": {
 			Type:     schema.TypeString,
@@ -93,7 +93,7 @@ var addonPlanResource = &schema.Resource{
 			Computed: true,
 			Elem: &schema.Schema{
 				Type: schema.TypeSet,
-				Elem: addonFeatureResource,
+				Elem: addonFeatureInstanceResource,
 			},
 		},
 		"price": {
@@ -166,7 +166,7 @@ func dataSourceAddonRead(ctx context.Context, d *schema.ResourceData, m interfac
 
 	var addon clevercloud.AddonView
 
-	organizationID, ok := d.GetOk("organization_id")
+	organizationId, ok := d.GetOk("organization_id")
 	if !ok {
 		self, _, err := cc.SelfApi.GetUser(context.Background())
 		if err != nil {
@@ -180,7 +180,7 @@ func dataSourceAddonRead(ctx context.Context, d *schema.ResourceData, m interfac
 		}
 	} else {
 		var err error
-		addon, _, err = cc.OrganisationApi.GetAddonByOrgaAndAddonId(context.Background(), organizationID.(string), d.Get("id").(string))
+		addon, _, err = cc.OrganisationApi.GetAddonByOrgaAndAddonId(context.Background(), organizationId.(string), d.Get("id").(string))
 		if err != nil {
 			return diag.FromErr(err)
 		}
@@ -193,58 +193,73 @@ func dataSourceAddonRead(ctx context.Context, d *schema.ResourceData, m interfac
 	_ = d.Set("region", addon.Region)
 	_ = d.Set("config_keys", addon.ConfigKeys)
 
-	providerInfoRegions := make([]interface{}, len(addon.Provider.Regions))
-	for i, region := range addon.Provider.Regions {
-		providerInfoRegions[i] = region
-	}
-
-	providerInfoBindings := &schema.Set{F: schema.HashResource(addonProviderInfoResource)}
-	providerInfoBindings.Add(map[string]interface{}{
-		"id":          addon.Provider.Id,
-		"name":        addon.Provider.Name,
-		"website":     addon.Provider.Website,
-		"short_desc":  addon.Provider.ShortDesc,
-		"long_desc":   addon.Provider.LongDesc,
-		"status":      addon.Provider.Status,
-		"can_upgrade": addon.Provider.CanUpgrade,
-		"regions":     providerInfoRegions,
-	})
-
-	if err := d.Set("provider_info", providerInfoBindings); err != nil {
+	if err := d.Set("provider_info", makeAddonProviderInfoResourceSchemaSet(&addon.Provider)); err != nil {
 		return diag.FromErr(fmt.Errorf("cannot set addon provider info bindings (%s): %v", d.Id(), err))
 	}
 
-	planZones := make([]interface{}, len(addon.Plan.Zones))
-	for i, zone := range addon.Plan.Zones {
+	if err := d.Set("plan", makeAddonPlanResourceSchemaSet(&addon.Plan)); err != nil {
+		return diag.FromErr(fmt.Errorf("cannot set addon plan bindings (%s): %v", d.Id(), err))
+	}
+
+	return diags
+}
+
+func makeAddonPlanResourceSchemaSet(plan *clevercloud.AddonPlanView) *schema.Set {
+	set := &schema.Set{F: schema.HashResource(addonPlanResource)}
+
+	planZones := make([]interface{}, len(plan.Zones))
+	for i, zone := range plan.Zones {
 		planZones[i] = zone
 	}
 
-	planFeatures := make([]interface{}, len(addon.Plan.Features))
-	for i, feature := range addon.Plan.Features {
-		planFeature := &schema.Set{F: schema.HashResource(addonFeatureResource)}
-		planFeature.Add(map[string]interface{}{
+	set.Add(map[string]interface{}{
+		"id":       plan.Id,
+		"name":     plan.Name,
+		"slug":     plan.Slug,
+		"price":    float64(plan.Price),
+		"zones":    planZones,
+		"features": makeAddonFeatureInstancesResourceSchemaList(plan.Features),
+	})
+
+	return set
+}
+
+func makeAddonFeatureInstancesResourceSchemaList(features []clevercloud.AddonFeatureInstanceView) []interface{} {
+	list := make([]interface{}, 0)
+
+	for _, feature := range features {
+		set := &schema.Set{F: schema.HashResource(addonFeatureInstanceResource)}
+		set.Add(map[string]interface{}{
 			"name":             feature.Name,
 			"type":             feature.Type,
 			"value":            feature.Value,
 			"computable_value": feature.ComputableValue,
 			"name_code":        feature.NameCode,
 		})
-		planFeatures[i] = planFeature
+		list = append(list, set)
 	}
 
-	planBindings := &schema.Set{F: schema.HashResource(addonPlanResource)}
-	planBindings.Add(map[string]interface{}{
-		"id":       addon.Plan.Id,
-		"name":     addon.Plan.Name,
-		"slug":     addon.Plan.Slug,
-		"price":    float64(addon.Plan.Price),
-		"zones":    planZones,
-		"features": planFeatures,
+	return list
+}
+
+func makeAddonProviderInfoResourceSchemaSet(providerInfo *clevercloud.AddonProviderInfoView) *schema.Set {
+	set := &schema.Set{F: schema.HashResource(addonProviderInfoResource)}
+
+	regions := make([]interface{}, 0)
+	for _, region := range providerInfo.Regions {
+		regions = append(regions, region)
+	}
+
+	set.Add(map[string]interface{}{
+		"id":          providerInfo.Id,
+		"name":        providerInfo.Name,
+		"website":     providerInfo.Website,
+		"short_desc":  providerInfo.ShortDesc,
+		"long_desc":   providerInfo.LongDesc,
+		"status":      providerInfo.Status,
+		"can_upgrade": providerInfo.CanUpgrade,
+		"regions":     regions,
 	})
 
-	if err := d.Set("plan", planBindings); err != nil {
-		return diag.FromErr(fmt.Errorf("cannot set addon plan bindings (%s): %v", d.Id(), err))
-	}
-
-	return diags
+	return set
 }

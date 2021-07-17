@@ -349,20 +349,6 @@ func dataSourceApplicationRead(ctx context.Context, d *schema.ResourceData, m in
 	_ = d.Set("description", application.Description)
 	_ = d.Set("zone", application.Zone)
 
-	instanceVariantBindings := &schema.Set{F: schema.HashResource(applicationInstanceVariantResource)}
-	instanceVariantBindings.Add(map[string]interface{}{
-		"id":          application.Instance.Variant.Id,
-		"slug":        application.Instance.Variant.Slug,
-		"name":        application.Instance.Variant.Name,
-		"deploy_type": application.Instance.Variant.DeployType,
-		"logo":        application.Instance.Variant.Logo,
-	})
-
-	flavors := make([]interface{}, len(application.Instance.Flavors))
-	for i, flavor := range application.Instance.Flavors {
-		flavors[i] = makeFlavorResourceSchemaSet(&flavor)
-	}
-
 	defaultEnv := make(map[string]interface{}, len(application.Instance.DefaultEnv))
 	for key, value := range application.Instance.DefaultEnv {
 		defaultEnv[key] = value
@@ -372,13 +358,13 @@ func dataSourceApplicationRead(ctx context.Context, d *schema.ResourceData, m in
 	instanceBindings.Add(map[string]interface{}{
 		"type":                  application.Instance.Type,
 		"version":               application.Instance.Version,
-		"variant":               instanceVariantBindings,
+		"variant":               makeInstanceVariantResourceSchemaSet(&application.Instance.Variant),
 		"min_instances":         int(application.Instance.MinInstances),
 		"max_instances":         int(application.Instance.MaxInstances),
 		"max_allowed_instances": int(application.Instance.MaxAllowedInstances),
 		"min_flavor":            makeFlavorResourceSchemaSet(&application.Instance.MinFlavor),
 		"max_flavor":            makeFlavorResourceSchemaSet(&application.Instance.MaxFlavor),
-		"flavors":               flavors,
+		"flavors":               makeFlavorsResourceSchemaList(application.Instance.Flavors),
 		"default_env":           defaultEnv,
 		"lifetime":              application.Instance.Lifetime,
 		"instance_version":      application.Instance.InstanceAndVersion,
@@ -436,6 +422,30 @@ func dataSourceApplicationRead(ctx context.Context, d *schema.ResourceData, m in
 	_ = d.Set("owner_id", application.OwnerId)
 
 	return diags
+}
+
+func makeInstanceVariantResourceSchemaSet(instanceVariant *clevercloud.InstanceVariantView) *schema.Set {
+	set := &schema.Set{F: schema.HashResource(applicationInstanceVariantResource)}
+
+	set.Add(map[string]interface{}{
+		"id":          instanceVariant.Id,
+		"slug":        instanceVariant.Slug,
+		"name":        instanceVariant.Name,
+		"deploy_type": instanceVariant.DeployType,
+		"logo":        instanceVariant.Logo,
+	})
+
+	return set
+}
+
+func makeFlavorsResourceSchemaList(flavors []clevercloud.FlavorView) []interface{} {
+	list := make([]interface{}, 0)
+
+	for _, flavor := range flavors {
+		list = append(list, makeFlavorResourceSchemaSet(&flavor))
+	}
+
+	return list
 }
 
 func makeFlavorResourceSchemaSet(flavor *clevercloud.FlavorView) *schema.Set {

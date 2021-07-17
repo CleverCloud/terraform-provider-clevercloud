@@ -33,12 +33,12 @@ provider "clevercloud" {
 # data "clevercloud_self" "current" {}
 # data "clevercloud_zones" "available" {}
 # data "clevercloud_flavors" "available" {}
-# data "clevercloud_addon_providers" "available" {}
+data "clevercloud_addon_providers" "available" {}
 # data "clevercloud_instances" "available" {}
 
-data "clevercloud_application" "test" {
-  id = "app_6a43221f-f0a9-4e10-98d6-5fbe6c7cb296"
-}
+# data "clevercloud_application" "test" {
+#   id = "app_6a43221f-f0a9-4e10-98d6-5fbe6c7cb296"
+# }
 
 # data "clevercloud_addon" "config_test" {
 #   id = "addon_b2c1423b-05b7-417e-af20-ef2a2c77cc77"
@@ -64,17 +64,17 @@ data "clevercloud_application" "test" {
 #   value = data.clevercloud_flavors.available
 # }
 
-# output "available_addons" {
-#   value = data.clevercloud_addon_providers.available
-# }
+output "available_addons" {
+  value = data.clevercloud_addon_providers.available
+}
 
 # output "available_instances" {
 #   value = data.clevercloud_instances.available
 # }
 
-output "test_application" {
-  value = data.clevercloud_application.test
-}
+# output "test_application" {
+#   value = data.clevercloud_application.test
+# }
 
 # output "test_config_addon" {
 #   value = data.clevercloud_addon.config_test
