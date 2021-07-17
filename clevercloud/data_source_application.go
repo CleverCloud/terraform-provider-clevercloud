@@ -74,7 +74,10 @@ var applicationInstanceResource = &schema.Resource{
 		"flavors": {
 			Type:     schema.TypeList,
 			Computed: true,
-			Elem:     applicationFlavorResource,
+			Elem: &schema.Schema{
+				Type: schema.TypeSet,
+				Elem: applicationFlavorResource,
+			},
 		},
 		"default_env": {
 			Type:     schema.TypeMap,
@@ -375,10 +378,10 @@ func dataSourceApplicationRead(ctx context.Context, d *schema.ResourceData, m in
 		"max_allowed_instances": int(application.Instance.MaxAllowedInstances),
 		"min_flavor":            makeFlavorResourceSchemaSet(&application.Instance.MinFlavor),
 		"max_flavor":            makeFlavorResourceSchemaSet(&application.Instance.MaxFlavor),
-		// "flavors":               flavors,
-		"default_env":      defaultEnv,
-		"lifetime":         application.Instance.Lifetime,
-		"instance_version": application.Instance.InstanceAndVersion,
+		"flavors":               flavors,
+		"default_env":           defaultEnv,
+		"lifetime":              application.Instance.Lifetime,
+		"instance_version":      application.Instance.InstanceAndVersion,
 	})
 
 	if err := d.Set("instance", instanceBindings); err != nil {
