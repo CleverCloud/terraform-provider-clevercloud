@@ -11,7 +11,7 @@ import (
 
 var addonProviderInfoResource = &schema.Resource{
 	Schema: map[string]*schema.Schema{
-		"id": &schema.Schema{
+		"id": {
 			Type:     schema.TypeString,
 			Computed: true,
 		},
@@ -76,7 +76,7 @@ var addonFeatureResource = &schema.Resource{
 
 var addonPlanResource = &schema.Resource{
 	Schema: map[string]*schema.Schema{
-		"id": &schema.Schema{
+		"id": {
 			Type:     schema.TypeString,
 			Computed: true,
 		},
@@ -114,44 +114,44 @@ func dataSourceAddon() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceAddonRead,
 		Schema: map[string]*schema.Schema{
-			"id": &schema.Schema{
+			"id": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"name": &schema.Schema{
+			"name": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"real_id": &schema.Schema{
+			"real_id": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"region": &schema.Schema{
+			"region": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"config_keys": &schema.Schema{
+			"config_keys": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
 			},
-			"provider_info": &schema.Schema{
+			"provider_info": {
 				Type:     schema.TypeSet,
 				Computed: true,
 				Elem:     addonProviderInfoResource,
 			},
-			"plan": &schema.Schema{
+			"plan": {
 				Type:     schema.TypeSet,
 				Computed: true,
 				Elem:     addonPlanResource,
 			},
-			"creation_date": &schema.Schema{
+			"creation_date": {
 				Type:     schema.TypeInt,
 				Computed: true,
 			},
-			"organization_id": &schema.Schema{
+			"organization_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},

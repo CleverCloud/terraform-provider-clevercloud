@@ -14,7 +14,7 @@ func dataSourceZones() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceZonesRead,
 		Schema: map[string]*schema.Schema{
-			"names": &schema.Schema{
+			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Schema{

@@ -16,19 +16,19 @@ const (
 func Provider() *schema.Provider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"token": &schema.Schema{
+			"token": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"secret": &schema.Schema{
+			"secret": {
 				Type:     schema.TypeString,
 				Required: true,
 			},
-			"consumer_key": &schema.Schema{
+			"consumer_key": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
-			"consumer_secret": &schema.Schema{
+			"consumer_secret": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},

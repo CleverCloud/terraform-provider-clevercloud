@@ -15,14 +15,14 @@ func dataSourceAddonProviders() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceAddonProvidersRead,
 		Schema: map[string]*schema.Schema{
-			"names": &schema.Schema{
+			"names": {
 				Type:     schema.TypeList,
 				Computed: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
 				},
 			},
-			"organization_id": &schema.Schema{
+			"organization_id": {
 				Type:     schema.TypeString,
 				Optional: true,
 			},
