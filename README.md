@@ -1,18 +1,5 @@
 # Terraform Provider Clever Cloud
 
-## ToDo
-
-- [ ] Data Sources
-  - [x] Application
-  - [x] Addon
-  - [ ] User / Organization (self)
-  - [ ] Addon providers
-  - [ ] Flavors
-  - [ ] Zones
-- [ ] Resources
-  - [ ] Application
-  - [ ] Addon
-
 ## Build provider
 
 Run the following command to build the provider
