@@ -3,8 +3,8 @@
 ## ToDo
 
 - [ ] Data Sources
-  - [ ] Application
-  - [ ] Addon
+  - [x] Application
+  - [x] Addon
   - [ ] User / Organization (self)
   - [ ] Addon providers
   - [ ] Flavors
