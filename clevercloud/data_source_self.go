@@ -12,11 +12,11 @@ func dataSourceSelf() *schema.Resource {
 	return &schema.Resource{
 		ReadContext: dataSourceSelfRead,
 		Schema: map[string]*schema.Schema{
-			"email": {
+			"name": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
-			"name": {
+			"email": {
 				Type:     schema.TypeString,
 				Computed: true,
 			},
@@ -95,8 +95,8 @@ func dataSourceSelfRead(ctx context.Context, d *schema.ResourceData, m interface
 
 	d.SetId(self.Id)
 
-	_ = d.Set("email", self.Email)
 	_ = d.Set("name", self.Name)
+	_ = d.Set("email", self.Email)
 	_ = d.Set("phone", self.Phone)
 	_ = d.Set("address", self.Address)
 	_ = d.Set("city", self.City)
