@@ -55,12 +55,16 @@ func dataSourceInstances() *schema.Resource {
 						"tags": {
 							Type:     schema.TypeList,
 							Computed: true,
-							Elem:     schema.TypeString,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
 						},
 						"deployments": {
 							Type:     schema.TypeList,
 							Computed: true,
-							Elem:     schema.TypeString,
+							Elem: &schema.Schema{
+								Type: schema.TypeString,
+							},
 						},
 						"flavors": {
 							Type:     schema.TypeList,

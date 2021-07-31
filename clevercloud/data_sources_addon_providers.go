@@ -68,12 +68,18 @@ var addonProviderInfoFullResource = &schema.Resource{
 		"plans": {
 			Type:     schema.TypeList,
 			Computed: true,
-			Elem:     addonPlanResource,
+			Elem: &schema.Schema{
+				Type: schema.TypeSet,
+				Elem: addonPlanResource,
+			},
 		},
 		"features": {
 			Type:     schema.TypeList,
 			Computed: true,
-			Elem:     addonFeatureResource,
+			Elem: &schema.Schema{
+				Type: schema.TypeSet,
+				Elem: addonFeatureResource,
+			},
 		},
 	},
 }
@@ -89,7 +95,10 @@ func dataSourceAddonProviders() *schema.Resource {
 			"addon_providers": {
 				Type:     schema.TypeList,
 				Computed: true,
-				Elem:     addonProviderInfoFullResource,
+				Elem: &schema.Schema{
+					Type: schema.TypeSet,
+					Elem: addonProviderInfoFullResource,
+				},
 			},
 		},
 	}
