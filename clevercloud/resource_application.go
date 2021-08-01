@@ -186,19 +186,19 @@ func resourceApplicationCreate(ctx context.Context, d *schema.ResourceData, m in
 		wannabeApplication.Tags = tags.([]string)
 	}
 
-	if homogeneous, ok := d.GetOkExists("homogeneous"); ok {
+	if homogeneous, ok := d.GetOk("homogeneous"); ok {
 		wannabeApplication.Homogeneous = homogeneous.(bool)
 	}
 
-	if stickySessions, ok := d.GetOkExists("sticky_sessions"); ok {
+	if stickySessions, ok := d.GetOk("sticky_sessions"); ok {
 		wannabeApplication.StickySessions = stickySessions.(bool)
 	}
 
-	if cancelOnPush, ok := d.GetOkExists("cancel_on_push"); ok {
+	if cancelOnPush, ok := d.GetOk("cancel_on_push"); ok {
 		wannabeApplication.CancelOnPush = cancelOnPush.(bool)
 	}
 
-	if forceHTTPS, ok := d.GetOkExists("force_https"); ok {
+	if forceHTTPS, ok := d.GetOk("force_https"); ok {
 		if forceHTTPS.(bool) {
 			wannabeApplication.ForceHttps = "ENABLED"
 		} else {
@@ -206,15 +206,15 @@ func resourceApplicationCreate(ctx context.Context, d *schema.ResourceData, m in
 		}
 	}
 
-	if favorite, ok := d.GetOkExists("favorite"); ok {
+	if favorite, ok := d.GetOk("favorite"); ok {
 		wannabeApplication.Favourite = favorite.(bool)
 	}
 
-	if shutdownable, ok := d.GetOkExists("shutdownable"); ok {
+	if shutdownable, ok := d.GetOk("shutdownable"); ok {
 		wannabeApplication.Shutdownable = shutdownable.(bool)
 	}
 
-	if separateBuild, ok := d.GetOkExists("separate_build"); ok {
+	if separateBuild, ok := d.GetOk("separate_build"); ok {
 		wannabeApplication.SeparateBuild = separateBuild.(bool)
 	}
 
