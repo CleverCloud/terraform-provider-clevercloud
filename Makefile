@@ -39,3 +39,7 @@ testacc:
 terraform-init: install
 	rm -rf .terraform*
 	terraform init
+
+terraform-plan-apply: terraform-init
+	terraform plan
+	terraform apply -auto-approve
