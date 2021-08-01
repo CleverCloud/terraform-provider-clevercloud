@@ -130,7 +130,7 @@ func dataSourceAddonProvidersRead(ctx context.Context, d *schema.ResourceData, m
 	}
 
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
-	_ = d.Set("addon_providers", providers)
+	d.Set("addon_providers", providers)
 
 	return diags
 }

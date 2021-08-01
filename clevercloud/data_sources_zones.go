@@ -58,7 +58,7 @@ func dataSourceZonesRead(ctx context.Context, d *schema.ResourceData, m interfac
 	}
 
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
-	_ = d.Set("zones", zones)
+	d.Set("zones", zones)
 
 	return diags
 }

@@ -33,7 +33,9 @@ func Provider() *schema.Provider {
 				Optional: true,
 			},
 		},
-		ResourcesMap: map[string]*schema.Resource{},
+		ResourcesMap: map[string]*schema.Resource{
+			"clevercloud_application": resourceApplication(),
+		},
 		DataSourcesMap: map[string]*schema.Resource{
 			"clevercloud_self":            dataSourceSelf(),
 			"clevercloud_application":     dataSourceApplication(),

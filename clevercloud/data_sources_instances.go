@@ -121,7 +121,7 @@ func dataSourceInstancesRead(ctx context.Context, d *schema.ResourceData, m inte
 	}
 
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
-	_ = d.Set("instances", instances)
+	d.Set("instances", instances)
 
 	return diags
 }

@@ -345,9 +345,9 @@ func dataSourceApplicationRead(ctx context.Context, d *schema.ResourceData, m in
 
 	d.SetId(application.Id)
 
-	_ = d.Set("name", application.Name)
-	_ = d.Set("description", application.Description)
-	_ = d.Set("zone", application.Zone)
+	d.Set("name", application.Name)
+	d.Set("description", application.Description)
+	d.Set("zone", application.Zone)
 
 	defaultEnv := make(map[string]interface{}, len(application.Instance.DefaultEnv))
 	for key, value := range application.Instance.DefaultEnv {
@@ -400,26 +400,26 @@ func dataSourceApplicationRead(ctx context.Context, d *schema.ResourceData, m in
 		return diag.FromErr(fmt.Errorf("cannot set application vhosts bindings (%s): %v", d.Id(), err))
 	}
 
-	_ = d.Set("archived", application.Archived)
-	_ = d.Set("sticky_sessions", application.StickySessions)
-	_ = d.Set("homogeneous", application.Homogeneous)
-	_ = d.Set("favorite", application.Favourite)
-	_ = d.Set("cancel_on_push", application.CancelOnPush)
-	_ = d.Set("webhook_url", application.WebhookUrl)
-	_ = d.Set("webhook_secret", application.WebhookSecret)
-	_ = d.Set("separate_build", application.SeparateBuild)
+	d.Set("archived", application.Archived)
+	d.Set("sticky_sessions", application.StickySessions)
+	d.Set("homogeneous", application.Homogeneous)
+	d.Set("favorite", application.Favourite)
+	d.Set("cancel_on_push", application.CancelOnPush)
+	d.Set("webhook_url", application.WebhookUrl)
+	d.Set("webhook_secret", application.WebhookSecret)
+	d.Set("separate_build", application.SeparateBuild)
 
 	if err := d.Set("build_flavor", makeFlavorResourceSchemaSet(&application.BuildFlavor)); err != nil {
 		return diag.FromErr(fmt.Errorf("cannot set application build flavor bindings (%s): %v", d.Id(), err))
 	}
 
-	_ = d.Set("state", application.State)
-	_ = d.Set("commit_id", application.CommitId)
-	_ = d.Set("appliance", application.Appliance)
-	_ = d.Set("branch", application.Branch)
-	_ = d.Set("force_https", application.ForceHttps)
-	_ = d.Set("deploy_url", application.DeployUrl)
-	_ = d.Set("owner_id", application.OwnerId)
+	d.Set("state", application.State)
+	d.Set("commit_id", application.CommitId)
+	d.Set("appliance", application.Appliance)
+	d.Set("branch", application.Branch)
+	d.Set("force_https", application.ForceHttps)
+	d.Set("deploy_url", application.DeployUrl)
+	d.Set("owner_id", application.OwnerId)
 
 	return diags
 }

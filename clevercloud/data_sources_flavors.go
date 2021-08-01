@@ -42,7 +42,7 @@ func dataSourceFlavorsRead(ctx context.Context, d *schema.ResourceData, m interf
 	}
 
 	d.SetId(strconv.FormatInt(time.Now().Unix(), 10))
-	_ = d.Set("flavors", flavors)
+	d.Set("flavors", flavors)
 
 	return diags
 }
