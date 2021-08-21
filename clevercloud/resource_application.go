@@ -3,6 +3,7 @@ package clevercloud
 import (
 	"context"
 	"sort"
+	"time"
 
 	"github.com/clevercloud/clevercloud-go/clevercloud"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
@@ -100,6 +101,14 @@ func resourceApplication() *schema.Resource {
 				Optional:     true,
 				RequiredWith: []string{"separate_build"},
 			},
+			"last_updated": {
+				Type:     schema.TypeString,
+				Optional: true,
+				Computed: true,
+			},
+		},
+		Importer: &schema.ResourceImporter{
+			StateContext: schema.ImportStatePassthroughContext,
 		},
 	}
 }
@@ -189,7 +198,11 @@ func resourceApplicationCreate(ctx context.Context, d *schema.ResourceData, m in
 	}
 
 	if tags, ok := d.GetOk("tags"); ok {
-		wannabeApplication.Tags = tags.([]string)
+		stringTags := make([]string, 0)
+		for _, tag := range tags.([]interface{}) {
+			stringTags = append(stringTags, tag.(string))
+		}
+		wannabeApplication.Tags = stringTags
 	}
 
 	if homogeneous, ok := d.GetOk("homogeneous"); ok {
@@ -439,12 +452,36 @@ func resourceApplicationUpdate(ctx context.Context, d *schema.ResourceData, m in
 		}
 	}
 
+	d.Set("last_updated", time.Now().Format(time.RFC850))
+
 	return resourceApplicationRead(ctx, d, m)
 }
 
 func resourceApplicationDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	// Warning or errors can be collected in a slice type
 	var diags diag.Diagnostics
+
+	cc := m.(*clevercloud.APIClient)
+
+	organizationID, ok := d.GetOk("organization_id")
+	if !ok {
+		self, _, err := cc.SelfApi.GetUser(context.Background())
+		if err != nil {
+			return diag.FromErr(err)
+		}
+
+		d.Set("organization_id", self.Id)
+
+		if _, _, err = cc.SelfApi.DeleteSelfApplicationByAppId(context.Background(), d.Id()); err != nil {
+			return diag.FromErr(err)
+		}
+	} else {
+		var err error
+		if _, _, err = cc.OrganisationApi.DeleteApplicationByOrgaAndAppId(context.Background(), organizationID.(string), d.Id()); err != nil {
+			return diag.FromErr(err)
+		}
+	}
+
+	d.SetId("")
 
 	return diags
 }
