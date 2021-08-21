@@ -4,8 +4,11 @@ import (
 	"context"
 
 	"github.com/clevercloud/clevercloud-go/clevercloud"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+
+	"github.com/hashicorp/terraform-plugin-framework/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 const (
@@ -13,70 +16,94 @@ const (
 	CONSUMER_SECRET = "CHANGEME"
 )
 
-func Provider() *schema.Provider {
-	return &schema.Provider{
-		Schema: map[string]*schema.Schema{
+func New() tfsdk.Provider {
+	return &provider{}
+}
+
+type provider struct {
+	configured bool
+	client     *clevercloud.APIClient
+}
+
+func (p *provider) GetSchema(_ context.Context) (schema.Schema, []*tfprotov6.Diagnostic) {
+	return schema.Schema{
+		Attributes: map[string]schema.Attribute{
 			"token": {
-				Type:     schema.TypeString,
+				Type:     types.StringType,
 				Required: true,
 			},
 			"secret": {
-				Type:     schema.TypeString,
-				Required: true,
+				Type:      types.StringType,
+				Required:  true,
+				Sensitive: true,
 			},
 			"consumer_key": {
-				Type:     schema.TypeString,
+				Type:     types.StringType,
 				Optional: true,
 			},
 			"consumer_secret": {
-				Type:     schema.TypeString,
-				Optional: true,
+				Type:      types.StringType,
+				Optional:  true,
+				Sensitive: true,
 			},
 		},
-		ResourcesMap: map[string]*schema.Resource{
-			"clevercloud_application": resourceApplication(),
-		},
-		DataSourcesMap: map[string]*schema.Resource{
-			"clevercloud_self":            dataSourceSelf(),
-			"clevercloud_application":     dataSourceApplication(),
-			"clevercloud_addon":           dataSourceAddon(),
-			"clevercloud_addon_providers": dataSourceAddonProviders(),
-			"clevercloud_zones":           dataSourceZones(),
-			"clevercloud_flavors":         dataSourceFlavors(),
-			"clevercloud_instances":       dataSourceInstances(),
-		},
-		ConfigureContextFunc: providerConfigure,
-	}
+	}, nil
 }
 
-func providerConfigure(ctx context.Context, d *schema.ResourceData) (interface{}, diag.Diagnostics) {
-	token := d.Get("token").(string)
-	secret := d.Get("secret").(string)
+type providerData struct {
+	Token          types.String `tfsdk:"token"`
+	Secret         types.String `tfsdk:"secret"`
+	ConsumerKey    types.String `tfsdk:"consumer_key"`
+	ConsumerSecret types.String `tfsdk:"consumer_secret"`
+}
+
+func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest, resp *tfsdk.ConfigureProviderResponse) {
+	var config providerData
+
+	err := req.Config.Get(ctx, &config)
+	if err != nil {
+		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+			Severity: tfprotov6.DiagnosticSeverityError,
+			Summary:  "Error parsing Clever Cloud configuration",
+			Detail:   "Error parsing the configuration, this is an error in the provider:\n\n" + err.Error(),
+		})
+		return
+	}
 
 	consumerKey := CONSUMER_KEY
 	consumerSecret := CONSUMER_SECRET
 
-	if d.Get("consumer_key").(string) != "" && d.Get("consumer_secret").(string) != "" {
-		consumerKey = d.Get("consumer_key").(string)
-		consumerSecret = d.Get("consumer_secret").(string)
+	if !config.ConsumerKey.Unknown {
+		consumerKey = config.ConsumerKey.Value
 	}
 
-	var diags diag.Diagnostics
-
-	if (token != "") && (secret != "") {
-		oauth := clevercloud.NewOAuthClient(consumerKey, consumerSecret)
-		oauth.SetTokens(token, secret)
-
-		config := clevercloud.NewConfiguration()
-		api := clevercloud.NewOAuthAPIClient(oauth, config)
-
-		return api, diags
+	if !config.ConsumerSecret.Unknown {
+		consumerSecret = config.ConsumerSecret.Value
 	}
 
-	diags = append(diags, diag.Diagnostic{
-		Severity: diag.Error,
-		Summary:  "Could not configure Clever Cloud Client",
-	})
+	if config.Token.Unknown || config.Secret.Unknown {
+		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+			Severity: tfprotov6.DiagnosticSeverityError,
+			Summary:  "Unable to create Clever Cloud client",
+		})
+		return
+	}
 
-	return nil, diags
+	oauth := clevercloud.NewOAuthClient(consumerKey, consumerSecret)
+	oauth.SetTokens(config.Token.Value, config.Secret.Value)
+
+	api := clevercloud.NewOAuthAPIClient(oauth, clevercloud.NewConfiguration())
+
+	p.client = api
+	p.configured = true
+}
+
+func (p *provider) GetResources(_ context.Context) (map[string]tfsdk.ResourceType, []*tfprotov6.Diagnostic) {
+	return map[string]tfsdk.ResourceType{
+		"clevercloud_application": resourceApplicationType{},
+	}, nil
+}
+
+func (p *provider) GetDataSources(_ context.Context) (map[string]tfsdk.DataSourceType, []*tfprotov6.Diagnostic) {
+	return map[string]tfsdk.DataSourceType{}, nil
 }

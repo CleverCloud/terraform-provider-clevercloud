@@ -3,120 +3,182 @@ package clevercloud
 import (
 	"context"
 	"sort"
-	"time"
 
 	"github.com/clevercloud/clevercloud-go/clevercloud"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/diag"
-	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
-func resourceApplication() *schema.Resource {
-	return &schema.Resource{
-		CreateContext: resourceApplicationCreate,
-		ReadContext:   resourceApplicationRead,
-		UpdateContext: resourceApplicationUpdate,
-		DeleteContext: resourceApplicationDelete,
-		Schema: map[string]*schema.Schema{
+type resourceApplicationType struct{}
+
+func (r resourceApplicationType) GetSchema(_ context.Context) (schema.Schema, []*tfprotov6.Diagnostic) {
+	return schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"id": {
+				Type:     types.StringType,
+				Computed: true,
+			},
 			"name": {
-				Type:     schema.TypeString,
+				Type:     types.StringType,
 				Required: true,
 			},
-			"description": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
 			"type": {
-				Type:     schema.TypeString,
+				Type:     types.StringType,
 				Required: true,
 			},
 			"zone": {
-				Type:     schema.TypeString,
-				Default:  "par",
+				Type:     types.StringType,
 				Optional: true,
 			},
 			"deploy_type": {
-				Type:     schema.TypeString,
-				Default:  "git",
+				Type:     types.StringType,
 				Optional: true,
 			},
 			"organization_id": {
-				Type:     schema.TypeString,
+				Type:     types.StringType,
 				Optional: true,
 			},
-			"min_instances": {
-				Type:     schema.TypeInt,
-				Default:  1,
+			// "scalability": {
+			// 	Attributes: schema.SingleNestedAttributes(map[string]schema.Attribute{
+			// 		"min_instances": {
+			// 			Type:     types.NumberType,
+			// 			Optional: true,
+			// 		},
+			// 		"max_instances": {
+			// 			Type:     types.NumberType,
+			// 			Optional: true,
+			// 		},
+			// 		"min_flavor": {
+			// 			Type:     types.StringType,
+			// 			Optional: true,
+			// 		},
+			// 		"max_flavor": {
+			// 			Type:     types.StringType,
+			// 			Optional: true,
+			// 		},
+			// 		"max_allowed_instances": {
+			// 			Type:     types.NumberType,
+			// 			Computed: true,
+			// 		},
+			// 	}),
+			// 	Optional: true,
+			// },
+			// "properties": {
+			// 	Attributes: schema.SingleNestedAttributes(map[string]schema.Attribute{
+			// 		"homogeneous": {
+			// 			Type:     types.BoolType,
+			// 			Optional: true,
+			// 		},
+			// 		"sticky_sessions": {
+			// 			Type:     types.BoolType,
+			// 			Optional: true,
+			// 		},
+			// 		"cancel_on_push": {
+			// 			Type:     types.BoolType,
+			// 			Optional: true,
+			// 		},
+			// 		"force_https": {
+			// 			Type:     types.BoolType,
+			// 			Optional: true,
+			// 		},
+			// 	}),
+			// 	Optional: true,
+			// },
+			"build": {
+				Attributes: schema.SingleNestedAttributes(map[string]schema.Attribute{
+					"separate_build": {
+						Type:     types.BoolType,
+						Optional: true,
+					},
+					"build_flavor": {
+						Type:     types.StringType,
+						Optional: true,
+					},
+				}),
 				Optional: true,
 			},
-			"max_instances": {
-				Type:     schema.TypeInt,
-				Default:  1,
+			// "environment": {
+			// 	Type: types.MapType{
+			// 		ElemType: types.StringType,
+			// 	},
+			// 	Optional: true,
+			// },
+			// "exposed_environment": {
+			// 	Type: types.MapType{
+			// 		ElemType: types.StringType,
+			// 	},
+			// 	Optional: true,
+			// },
+			// "dependencies": {
+			// 	Type: types.MapType{
+			// 		ElemType: types.StringType,
+			// 	},
+			// 	Optional: true,
+			// },
+			// "vhosts": {
+			// 	Type: types.ListType{
+			// 		ElemType: types.StringType,
+			// 	},
+			// 	Optional: true,
+			// },
+			"favorite": {
+				Type:     types.BoolType,
 				Optional: true,
 			},
-			"min_flavor": {
-				Type:     schema.TypeString,
-				Optional: true,
-			},
-			"max_flavor": {
-				Type:     schema.TypeString,
+			"archived": {
+				Type:     types.BoolType,
 				Optional: true,
 			},
 			"tags": {
-				Type:     schema.TypeList,
-				Optional: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+				Type: types.ListType{
+					ElemType: types.StringType,
 				},
-			},
-			"archived": {
-				Type:     schema.TypeBool,
 				Optional: true,
-			},
-			"homogeneous": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"sticky_sessions": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"cancel_on_push": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"force_https": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"favorite": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"separate_build": {
-				Type:     schema.TypeBool,
-				Optional: true,
-			},
-			"build_flavor": {
-				Type:         schema.TypeString,
-				Optional:     true,
-				RequiredWith: []string{"separate_build"},
-			},
-			"last_updated": {
-				Type:     schema.TypeString,
-				Optional: true,
-				Computed: true,
 			},
 		},
-		Importer: &schema.ResourceImporter{
-			StateContext: schema.ImportStatePassthroughContext,
-		},
-	}
+	}, nil
 }
 
-func getInstanceByType(cc *clevercloud.APIClient, instanceType string) (*clevercloud.AvailableInstanceView, diag.Diagnostics) {
+func (r resourceApplicationType) NewResource(_ context.Context, p tfsdk.Provider) (tfsdk.Resource, []*tfprotov6.Diagnostic) {
+	return resourceApplication{
+		p: *(p.(*provider)),
+	}, nil
+}
+
+type resourceApplication struct {
+	p provider
+}
+
+func (app Application) attributeDescriptionOrDefault() string {
+	if app.Description.Null {
+		return app.Name.Value
+	}
+
+	return app.Description.Value
+}
+
+func (app Application) attributeZoneOrDefault() string {
+	if app.Zone.Null {
+		return "par"
+	}
+
+	return app.Description.Value
+}
+
+func (app Application) attributeDeployTypeOrDefault() string {
+	if app.DeployType.Null {
+		return "GIT"
+	}
+
+	return app.DeployType.Value
+}
+
+func getInstanceByType(cc *clevercloud.APIClient, instanceType string) (*clevercloud.AvailableInstanceView, error) {
 	instances, _, err := cc.ProductsApi.GetAvailableInstances(context.Background(), &clevercloud.GetAvailableInstancesOpts{})
 	if err != nil {
-		return nil, diag.FromErr(err)
+		return nil, err
 	}
 
 	enabledInstances := make([]clevercloud.AvailableInstanceView, 0)
@@ -152,336 +214,298 @@ func getInstanceByType(cc *clevercloud.APIClient, instanceType string) (*cleverc
 	return &latestInstance, nil
 }
 
-func resourceApplicationCreate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cc := m.(*clevercloud.APIClient)
+// func (app Application) attributeForceHttpsToString() string {
+// 	if app.Properties.ForceHTTPS.Value {
+// 		return "ENABLED"
+// 	} else {
+// 		return "DISABLED"
+// 	}
+// }
 
-	var diags diag.Diagnostics
-
-	description, ok := d.GetOk("description")
-	if !ok {
-		description = d.Get("name")
-	}
-
-	instance, errors := getInstanceByType(cc, d.Get("type").(string))
-	if errors != nil {
-		diags = append(diags, errors...)
-	}
-
-	defaultFlavorName := instance.DefaultFlavor.Name
-
-	wannabeApplication := clevercloud.WannabeApplication{
-		Name:            d.Get("name").(string),
-		Description:     description.(string),
-		Zone:            d.Get("zone").(string),
-		Deploy:          d.Get("deploy_type").(string),
-		InstanceType:    instance.Type,
-		InstanceVersion: instance.Version,
-		InstanceVariant: instance.Variant.Id,
-		MinInstances:    int32(d.Get("min_instances").(int)),
-		MaxInstances:    int32(d.Get("max_instances").(int)),
-		MinFlavor:       defaultFlavorName,
-		MaxFlavor:       defaultFlavorName,
-	}
-
-	for _, flavor := range instance.Flavors {
-		minFlavorName, ok := d.GetOk("min_flavor")
-		if ok && minFlavorName.(string) == flavor.Name {
-			wannabeApplication.MinFlavor = minFlavorName.(string)
-		}
-	}
-
-	for _, flavor := range instance.Flavors {
-		maxFlavorName, ok := d.GetOk("max_flavor")
-		if ok && maxFlavorName.(string) == flavor.Name {
-			wannabeApplication.MaxFlavor = maxFlavorName.(string)
-		}
-	}
-
-	if tags, ok := d.GetOk("tags"); ok {
-		stringTags := make([]string, 0)
-		for _, tag := range tags.([]interface{}) {
-			stringTags = append(stringTags, tag.(string))
-		}
-		wannabeApplication.Tags = stringTags
-	}
-
-	if homogeneous, ok := d.GetOk("homogeneous"); ok {
-		wannabeApplication.Homogeneous = homogeneous.(bool)
-	}
-
-	if stickySessions, ok := d.GetOk("sticky_sessions"); ok {
-		wannabeApplication.StickySessions = stickySessions.(bool)
-	}
-
-	if cancelOnPush, ok := d.GetOk("cancel_on_push"); ok {
-		wannabeApplication.CancelOnPush = cancelOnPush.(bool)
-	}
-
-	if forceHTTPS, ok := d.GetOk("force_https"); ok {
-		if forceHTTPS.(bool) {
-			wannabeApplication.ForceHttps = "ENABLED"
-		} else {
-			wannabeApplication.ForceHttps = "DISABLED"
-		}
-	}
-
-	if favorite, ok := d.GetOk("favorite"); ok {
-		wannabeApplication.Favourite = favorite.(bool)
-	}
-
-	if separateBuild, ok := d.GetOk("separate_build"); ok {
-		wannabeApplication.SeparateBuild = separateBuild.(bool)
-	}
-
-	if wannabeApplication.SeparateBuild {
-		buildFlavorName, ok := d.GetOk("build_flavor")
-		if ok {
-			for _, flavor := range instance.Flavors {
-				if buildFlavorName.(string) == flavor.Name {
-					wannabeApplication.BuildFlavor = buildFlavorName.(string)
-				}
-			}
-		} else {
-			wannabeApplication.BuildFlavor = defaultFlavorName
-		}
-	}
-
-	var application clevercloud.ApplicationView
-
-	organizationID, ok := d.GetOk("organization_id")
-	if !ok {
-		self, _, err := cc.SelfApi.GetUser(context.Background())
-		if err != nil {
-			return diag.Errorf("[Create]SelfApi.GetUser: %s\n", err.Error())
-		}
-
-		d.Set("organization_id", self.Id)
-		application, _, err = cc.SelfApi.AddSelfApplication(context.Background(), wannabeApplication)
-		if err != nil {
-			return diag.Errorf("[Create]SelfApi.AddSelfApplication: %s\n%s\n", err.Error(), string(err.(clevercloud.GenericOpenAPIError).Body()))
-		}
+func forceHttpsToBool(value string) bool {
+	if value == "ENABLED" {
+		return true
 	} else {
-		var err error
-		application, _, err = cc.OrganisationApi.AddApplicationByOrga(context.Background(), organizationID.(string), wannabeApplication)
-		if err != nil {
-			return diag.Errorf("[Create]OrganisationApi.AddApplicationByOrga: %s\n", err.Error())
-		}
+		return false
 	}
-
-	d.SetId(application.Id)
-
-	resourceApplicationRead(ctx, d, m)
-
-	return diags
 }
 
-func resourceApplicationRead(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cc := m.(*clevercloud.APIClient)
+func (r resourceApplication) applicationModelToWannabeApplication(ctx context.Context, plan *Application) (*clevercloud.WannabeApplication, *tfprotov6.Diagnostic) {
+	planApplicationInstance, err := getInstanceByType(r.p.client, plan.Type.Value)
+	if err != nil {
+		return nil, &tfprotov6.Diagnostic{
+			Severity: tfprotov6.DiagnosticSeverityError,
+			Summary:  "Error fetching instance type from plan",
+			Detail:   "An unexpected error was encountered while reading the plan: " + err.Error(),
+		}
+	}
 
-	var diags diag.Diagnostics
+	defaultFlavorName := planApplicationInstance.DefaultFlavor.Name
+	// planMinInstance, _ := plan.Scalability.MinInstances.Value.Int64()
+	// planMaxInstance, _ := plan.Scalability.MaxInstances.Value.Int64()
+
+	wannabeApplication := clevercloud.WannabeApplication{
+		Name:            plan.Name.Value,
+		Description:     plan.attributeDescriptionOrDefault(),
+		Zone:            plan.attributeZoneOrDefault(),
+		Deploy:          plan.attributeDeployTypeOrDefault(),
+		InstanceType:    plan.Type.Value,
+		InstanceVersion: planApplicationInstance.Version,
+		InstanceVariant: planApplicationInstance.Variant.Id,
+		// MinInstances:    int32(planMinInstance),
+		// MaxInstances:    int32(planMaxInstance),
+		// MinFlavor:       defaultFlavorName,
+		// MaxFlavor:       defaultFlavorName,
+		// Homogeneous:     plan.Properties.Homogeneous.Value,
+		// StickySessions:  plan.Properties.StickySessions.Value,
+		// CancelOnPush:    plan.Properties.CancelOnPush.Value,
+		// ForceHttps:      plan.attributeForceHttpsToString(),
+		SeparateBuild: plan.Build.SeparateBuild.Value,
+		BuildFlavor:   defaultFlavorName,
+		Favourite:     plan.Favorite.Value,
+		Archived:      plan.Archived.Value,
+	}
+
+	for _, flavor := range planApplicationInstance.Flavors {
+		// if plan.Scalability.MinFlavor.Value == flavor.Name {
+		// 	wannabeApplication.MinFlavor = flavor.Name
+		// }
+		// if plan.Scalability.MaxFlavor.Value == flavor.Name {
+		// 	wannabeApplication.MaxFlavor = flavor.Name
+		// }
+		if plan.Build.SeparateBuild.Value && plan.Build.BuildFlavor.Value == flavor.Name {
+			wannabeApplication.BuildFlavor = flavor.Name
+		}
+	}
+
+	if err := plan.Tags.ElementsAs(ctx, wannabeApplication.Tags, false); err != nil {
+		return nil, &tfprotov6.Diagnostic{
+			Severity: tfprotov6.DiagnosticSeverityError,
+			Summary:  "Error interfacing tags from plan",
+			Detail:   "An unexpected error was encountered while reading the plan: " + err.Error(),
+		}
+	}
+
+	return &wannabeApplication, nil
+}
+
+func applicationViewToApplicationModel(application *clevercloud.ApplicationView) *Application {
+	return &Application{
+		ID:             types.String{Value: application.Id},
+		Name:           types.String{Value: application.Name},
+		Description:    types.String{Value: application.Description},
+		Type:           types.String{Value: application.Instance.Type},
+		Zone:           types.String{Value: application.Zone},
+		DeployType:     types.String{Value: application.Deployment.Type},
+		OrganizationID: types.String{Value: application.OwnerId},
+		// Scalability: ApplicationScalability{
+		// 	MinInstances:        types.Number{Value: big.NewFloat(float64(application.Instance.MinInstances))},
+		// 	MaxInstances:        types.Number{Value: big.NewFloat(float64(application.Instance.MaxInstances))},
+		// 	MinFlavor:           types.String{Value: application.Instance.MinFlavor.Name},
+		// 	MaxFlavor:           types.String{Value: application.Instance.MaxFlavor.Name},
+		// 	MaxAllowedInstances: types.Number{Value: big.NewFloat(float64(application.Instance.MaxAllowedInstances))},
+		// },
+		// Properties: ApplicationProperties{
+		// 	Homogeneous:    types.Bool{Value: application.Homogeneous},
+		// 	StickySessions: types.Bool{Value: application.StickySessions},
+		// 	CancelOnPush:   types.Bool{Value: application.CancelOnPush},
+		// 	ForceHTTPS:     types.Bool{Value: forceHttpsToBool(application.ForceHttps)},
+		// },
+		Build: ApplicationBuild{
+			SeparateBuild: types.Bool{Value: application.SeparateBuild},
+			BuildFlavor:   types.String{Value: application.BuildFlavor.Name},
+		},
+		Favorite: types.Bool{Value: application.Favourite},
+		Archived: types.Bool{Value: application.Archived},
+		Tags:     types.List{ElemType: types.StringType},
+	}
+}
+
+func (r resourceApplication) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
+	if !r.p.configured {
+		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+			Severity: tfprotov6.DiagnosticSeverityError,
+			Summary:  "Provider not configured",
+			Detail:   "The provider hasn't been configured before apply.",
+		})
+		return
+	}
+
+	var plan Application
+	if err := req.Plan.Get(ctx, &plan); err != nil {
+		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+			Severity: tfprotov6.DiagnosticSeverityError,
+			Summary:  "Error reading plan",
+			Detail:   "An unexpected error was encountered while reading the plan: " + err.Error(),
+		})
+		return
+	}
+
+	wannabeApplication, err := r.applicationModelToWannabeApplication(ctx, &plan)
+	if err != nil {
+		resp.Diagnostics = append(resp.Diagnostics, err)
+		return
+	}
 
 	var application clevercloud.ApplicationView
 	var tags []string
 
-	organizationID, ok := d.GetOk("organization_id")
-	if !ok {
-		self, _, err := cc.SelfApi.GetUser(context.Background())
+	if !plan.OrganizationID.Null {
+		_, _, err := r.p.client.SelfApi.GetUser(context.Background())
 		if err != nil {
-			return diag.Errorf("[Read]SelfApi.GetUser: %s\n", err.Error())
+			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+				Severity: tfprotov6.DiagnosticSeverityError,
+				Summary:  "Request error while fetching self user",
+				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+			})
+			return
 		}
 
-		d.Set("organization_id", self.Id)
-
-		if application, _, err = cc.SelfApi.GetSelfApplicationByAppId(context.Background(), d.Id()); err != nil {
-			return diag.Errorf("[Create]SelfApi.GetSelfApplicationByAppId: %s\n", err.Error())
+		application, _, err = r.p.client.SelfApi.AddSelfApplication(context.Background(), *wannabeApplication)
+		if err != nil {
+			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+				Severity: tfprotov6.DiagnosticSeverityError,
+				Summary:  "Request error while creating application for self",
+				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+			})
+			return
 		}
 
-		tags, _, err = cc.SelfApi.GetSelfApplicationTagsByAppId(context.Background(), d.Id())
+		tags, _, err = r.p.client.SelfApi.GetSelfApplicationTagsByAppId(context.Background(), application.Id)
 		if err != nil {
-			return diag.Errorf("[Create]SelfApi.GetSelfApplicationTagsByAppId: %s\n", err.Error())
+			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+				Severity: tfprotov6.DiagnosticSeverityError,
+				Summary:  "Request error while fetching application tags for self",
+				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+			})
+			return
 		}
 	} else {
 		var err error
-		if application, _, err = cc.OrganisationApi.GetApplicationByOrgaAndAppId(context.Background(), organizationID.(string), d.Id()); err != nil {
-			return diag.Errorf("[Create]OrganisationApi.GetApplicationByOrgaAndAppId: %s\n", err.Error())
-		}
-
-		tags, _, err = cc.OrganisationApi.GetApplicationTagsByOrgaAndAppId(context.Background(), d.Get("organization_id").(string), d.Id())
+		application, _, err = r.p.client.OrganisationApi.AddApplicationByOrga(context.Background(), plan.OrganizationID.Value, *wannabeApplication)
 		if err != nil {
-			return diag.Errorf("[Create]OrganisationApi.GetApplicationTagsByOrgaAndAppId: %s\n", err.Error())
+			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+				Severity: tfprotov6.DiagnosticSeverityError,
+				Summary:  "Request error while creating application for organization: " + plan.OrganizationID.Value,
+				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+			})
+			return
+		}
+
+		tags, _, err = r.p.client.OrganisationApi.GetApplicationTagsByOrgaAndAppId(context.Background(), plan.OrganizationID.Value, application.Id)
+		if err != nil {
+			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+				Severity: tfprotov6.DiagnosticSeverityError,
+				Summary:  "Request error while fetching application tags for organization",
+				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+			})
+			return
 		}
 	}
 
-	d.Set("name", application.Name)
-	d.Set("description", application.Description)
-	d.Set("type", application.Instance.Type)
-	d.Set("zone", application.Zone)
-	d.Set("deploy_type", application.Deployment.Type)
-	d.Set("min_instances", application.Instance.MinInstances)
-	d.Set("max_instances", application.Instance.MaxInstances)
-	d.Set("min_flavor", application.Instance.MinFlavor.Name)
-	d.Set("max_flavor", application.Instance.MaxFlavor.Name)
-	d.Set("tags", tags)
-	d.Set("archived", application.Archived)
-	d.Set("homogeneous", application.Homogeneous)
-	d.Set("sticky_sessions", application.StickySessions)
-	d.Set("cancel_on_push", application.CancelOnPush)
+	var result = applicationViewToApplicationModel(&application)
 
-	d.Set("force_https", application.ForceHttps)
-	if application.ForceHttps == "ENABLED" {
-		d.Set("force_https", true)
-	} else {
-		d.Set("force_https", false)
+	for _, tag := range tags {
+		result.Tags.Elems = append(result.Tags.Elems, types.String{Value: tag})
 	}
 
-	d.Set("favorite", application.Favourite)
-	d.Set("separate_build", application.SeparateBuild)
-	d.Set("build_flavor", application.BuildFlavor.Name)
-
-	return diags
+	if err := resp.State.Set(ctx, result); err != nil {
+		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+			Severity: tfprotov6.DiagnosticSeverityError,
+			Summary:  "Error setting application state",
+			Detail:   "Could not set state, unexpected error: " + err.Error(),
+		})
+		return
+	}
 }
 
-func resourceApplicationUpdate(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	cc := m.(*clevercloud.APIClient)
-
-	description, ok := d.GetOk("description")
-	if !ok {
-		description = d.Get("name")
+func (r resourceApplication) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
+	var state Application
+	if err := req.State.Get(ctx, &state); err != nil {
+		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+			Severity: tfprotov6.DiagnosticSeverityError,
+			Summary:  "Error reading state",
+			Detail:   "An unexpected error was encountered while reading the state: " + err.Error(),
+		})
+		return
 	}
 
-	instance, errors := getInstanceByType(cc, d.Get("type").(string))
-	if errors != nil {
-		return errors
-	}
+	applicationID := state.ID.Value
 
-	defaultFlavorName := instance.DefaultFlavor.Name
+	var application clevercloud.ApplicationView
+	var tags []string
 
-	wannabeApplication := clevercloud.WannabeApplication{
-		Name:            d.Get("name").(string),
-		Description:     description.(string),
-		Zone:            d.Get("zone").(string),
-		Deploy:          d.Get("deploy_type").(string),
-		InstanceType:    instance.Type,
-		InstanceVersion: instance.Version,
-		InstanceVariant: instance.Variant.Id,
-		MinInstances:    int32(d.Get("min_instances").(int)),
-		MaxInstances:    int32(d.Get("max_instances").(int)),
-		MinFlavor:       defaultFlavorName,
-		MaxFlavor:       defaultFlavorName,
-	}
-
-	for _, flavor := range instance.Flavors {
-		minFlavorName, ok := d.GetOk("min_flavor")
-		if ok && minFlavorName.(string) == flavor.Name {
-			wannabeApplication.MinFlavor = minFlavorName.(string)
-		}
-	}
-
-	for _, flavor := range instance.Flavors {
-		maxFlavorName, ok := d.GetOk("max_flavor")
-		if ok && maxFlavorName.(string) == flavor.Name {
-			wannabeApplication.MaxFlavor = maxFlavorName.(string)
-		}
-	}
-
-	if tags, ok := d.GetOk("tags"); ok {
-		stringTags := make([]string, 0)
-		for _, tag := range tags.([]interface{}) {
-			stringTags = append(stringTags, tag.(string))
-		}
-		wannabeApplication.Tags = stringTags
-	}
-
-	if homogeneous, ok := d.GetOk("homogeneous"); ok {
-		wannabeApplication.Homogeneous = homogeneous.(bool)
-	}
-
-	if stickySessions, ok := d.GetOk("sticky_sessions"); ok {
-		wannabeApplication.StickySessions = stickySessions.(bool)
-	}
-
-	if cancelOnPush, ok := d.GetOk("cancel_on_push"); ok {
-		wannabeApplication.CancelOnPush = cancelOnPush.(bool)
-	}
-
-	if forceHTTPS, ok := d.GetOk("force_https"); ok {
-		if forceHTTPS.(bool) {
-			wannabeApplication.ForceHttps = "ENABLED"
-		} else {
-			wannabeApplication.ForceHttps = "DISABLED"
-		}
-	}
-
-	if favorite, ok := d.GetOk("favorite"); ok {
-		wannabeApplication.Favourite = favorite.(bool)
-	}
-
-	if separateBuild, ok := d.GetOk("separate_build"); ok {
-		wannabeApplication.SeparateBuild = separateBuild.(bool)
-	}
-
-	if wannabeApplication.SeparateBuild {
-		buildFlavorName, ok := d.GetOk("build_flavor")
-		if ok {
-			for _, flavor := range instance.Flavors {
-				if buildFlavorName.(string) == flavor.Name {
-					wannabeApplication.BuildFlavor = buildFlavorName.(string)
-				}
-			}
-		} else {
-			wannabeApplication.BuildFlavor = defaultFlavorName
-		}
-	}
-
-	organizationID, ok := d.GetOk("organization_id")
-	if !ok {
-		self, _, err := cc.SelfApi.GetUser(context.Background())
+	if !state.OrganizationID.Null {
+		_, _, err := r.p.client.SelfApi.GetUser(context.Background())
 		if err != nil {
-			return diag.FromErr(err)
+			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+				Severity: tfprotov6.DiagnosticSeverityError,
+				Summary:  "Request error while fetching self user",
+				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+			})
+			return
 		}
 
-		d.Set("organization_id", self.Id)
+		application, _, err = r.p.client.SelfApi.GetSelfApplicationByAppId(context.Background(), applicationID)
+		if err != nil {
+			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+				Severity: tfprotov6.DiagnosticSeverityError,
+				Summary:  "Request error while reading application for self",
+				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+			})
+			return
+		}
 
-		if _, _, err = cc.SelfApi.EditSelfApplicationByAppId(context.Background(), d.Id(), wannabeApplication); err != nil {
-			return diag.FromErr(err)
+		tags, _, err = r.p.client.SelfApi.GetSelfApplicationTagsByAppId(context.Background(), application.Id)
+		if err != nil {
+			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+				Severity: tfprotov6.DiagnosticSeverityError,
+				Summary:  "Request error while fetching application tags for self",
+				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+			})
+			return
 		}
 	} else {
 		var err error
-		if _, _, err = cc.OrganisationApi.EditApplicationByOrgaAndAppId(context.Background(), organizationID.(string), d.Id(), wannabeApplication); err != nil {
-			return diag.FromErr(err)
+		application, _, err = r.p.client.OrganisationApi.GetApplicationByOrgaAndAppId(context.Background(), state.OrganizationID.Value, applicationID)
+		if err != nil {
+			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+				Severity: tfprotov6.DiagnosticSeverityError,
+				Summary:  "Request error while reading application for organization: " + state.OrganizationID.Value,
+				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+			})
+			return
+		}
+
+		tags, _, err = r.p.client.OrganisationApi.GetApplicationTagsByOrgaAndAppId(context.Background(), state.OrganizationID.Value, application.Id)
+		if err != nil {
+			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+				Severity: tfprotov6.DiagnosticSeverityError,
+				Summary:  "Request error while fetching application tags for organization",
+				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+			})
+			return
 		}
 	}
 
-	d.Set("last_updated", time.Now().Format(time.RFC850))
+	var result = applicationViewToApplicationModel(&application)
 
-	return resourceApplicationRead(ctx, d, m)
+	for _, tag := range tags {
+		result.Tags.Elems = append(result.Tags.Elems, types.String{Value: tag})
+	}
+
+	if err := resp.State.Set(ctx, result); err != nil {
+		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
+			Severity: tfprotov6.DiagnosticSeverityError,
+			Summary:  "Error setting state",
+			Detail:   "Unexpected error encountered trying to set new state: " + err.Error(),
+		})
+		return
+	}
 }
 
-func resourceApplicationDelete(ctx context.Context, d *schema.ResourceData, m interface{}) diag.Diagnostics {
-	var diags diag.Diagnostics
+func (r resourceApplication) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
+}
 
-	cc := m.(*clevercloud.APIClient)
-
-	organizationID, ok := d.GetOk("organization_id")
-	if !ok {
-		self, _, err := cc.SelfApi.GetUser(context.Background())
-		if err != nil {
-			return diag.FromErr(err)
-		}
-
-		d.Set("organization_id", self.Id)
-
-		if _, _, err = cc.SelfApi.DeleteSelfApplicationByAppId(context.Background(), d.Id()); err != nil {
-			return diag.FromErr(err)
-		}
-	} else {
-		var err error
-		if _, _, err = cc.OrganisationApi.DeleteApplicationByOrgaAndAppId(context.Background(), organizationID.(string), d.Id()); err != nil {
-			return diag.FromErr(err)
-		}
-	}
-
-	d.SetId("")
-
-	return diags
+func (r resourceApplication) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
 }
