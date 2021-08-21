@@ -372,7 +372,11 @@ func resourceApplicationUpdate(ctx context.Context, d *schema.ResourceData, m in
 	}
 
 	if tags, ok := d.GetOk("tags"); ok {
-		wannabeApplication.Tags = tags.([]string)
+		stringTags := make([]string, 0)
+		for _, tag := range tags.([]interface{}) {
+			stringTags = append(stringTags, tag.(string))
+		}
+		wannabeApplication.Tags = stringTags
 	}
 
 	if homogeneous, ok := d.GetOk("homogeneous"); ok {
