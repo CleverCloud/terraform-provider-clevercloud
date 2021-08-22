@@ -2,6 +2,7 @@ package clevercloud
 
 import (
 	"context"
+	"math/big"
 	"sort"
 
 	"github.com/clevercloud/clevercloud-go/clevercloud"
@@ -24,6 +25,10 @@ func (r resourceApplicationType) GetSchema(_ context.Context) (schema.Schema, []
 				Type:     types.StringType,
 				Required: true,
 			},
+			"description": {
+				Type:     types.StringType,
+				Optional: true,
+			},
 			"type": {
 				Type:     types.StringType,
 				Required: true,
@@ -40,52 +45,52 @@ func (r resourceApplicationType) GetSchema(_ context.Context) (schema.Schema, []
 				Type:     types.StringType,
 				Optional: true,
 			},
-			// "scalability": {
-			// 	Attributes: schema.SingleNestedAttributes(map[string]schema.Attribute{
-			// 		"min_instances": {
-			// 			Type:     types.NumberType,
-			// 			Optional: true,
-			// 		},
-			// 		"max_instances": {
-			// 			Type:     types.NumberType,
-			// 			Optional: true,
-			// 		},
-			// 		"min_flavor": {
-			// 			Type:     types.StringType,
-			// 			Optional: true,
-			// 		},
-			// 		"max_flavor": {
-			// 			Type:     types.StringType,
-			// 			Optional: true,
-			// 		},
-			// 		"max_allowed_instances": {
-			// 			Type:     types.NumberType,
-			// 			Computed: true,
-			// 		},
-			// 	}),
-			// 	Optional: true,
-			// },
-			// "properties": {
-			// 	Attributes: schema.SingleNestedAttributes(map[string]schema.Attribute{
-			// 		"homogeneous": {
-			// 			Type:     types.BoolType,
-			// 			Optional: true,
-			// 		},
-			// 		"sticky_sessions": {
-			// 			Type:     types.BoolType,
-			// 			Optional: true,
-			// 		},
-			// 		"cancel_on_push": {
-			// 			Type:     types.BoolType,
-			// 			Optional: true,
-			// 		},
-			// 		"force_https": {
-			// 			Type:     types.BoolType,
-			// 			Optional: true,
-			// 		},
-			// 	}),
-			// 	Optional: true,
-			// },
+			"scalability": {
+				Attributes: schema.SingleNestedAttributes(map[string]schema.Attribute{
+					"min_instances": {
+						Type:     types.NumberType,
+						Optional: true,
+					},
+					"max_instances": {
+						Type:     types.NumberType,
+						Optional: true,
+					},
+					"min_flavor": {
+						Type:     types.StringType,
+						Optional: true,
+					},
+					"max_flavor": {
+						Type:     types.StringType,
+						Optional: true,
+					},
+					"max_allowed_instances": {
+						Type:     types.NumberType,
+						Computed: true,
+					},
+				}),
+				Optional: true,
+			},
+			"properties": {
+				Attributes: schema.SingleNestedAttributes(map[string]schema.Attribute{
+					"homogeneous": {
+						Type:     types.BoolType,
+						Optional: true,
+					},
+					"sticky_sessions": {
+						Type:     types.BoolType,
+						Optional: true,
+					},
+					"cancel_on_push": {
+						Type:     types.BoolType,
+						Optional: true,
+					},
+					"force_https": {
+						Type:     types.BoolType,
+						Optional: true,
+					},
+				}),
+				Optional: true,
+			},
 			"build": {
 				Attributes: schema.SingleNestedAttributes(map[string]schema.Attribute{
 					"separate_build": {
@@ -214,13 +219,13 @@ func getInstanceByType(cc *clevercloud.APIClient, instanceType string) (*cleverc
 	return &latestInstance, nil
 }
 
-// func (app Application) attributeForceHttpsToString() string {
-// 	if app.Properties.ForceHTTPS.Value {
-// 		return "ENABLED"
-// 	} else {
-// 		return "DISABLED"
-// 	}
-// }
+func (app Application) attributeForceHttpsToString() string {
+	if app.Properties.ForceHTTPS.Value {
+		return "ENABLED"
+	} else {
+		return "DISABLED"
+	}
+}
 
 func forceHttpsToBool(value string) bool {
 	if value == "ENABLED" {
@@ -241,8 +246,8 @@ func (r resourceApplication) applicationModelToWannabeApplication(ctx context.Co
 	}
 
 	defaultFlavorName := planApplicationInstance.DefaultFlavor.Name
-	// planMinInstance, _ := plan.Scalability.MinInstances.Value.Int64()
-	// planMaxInstance, _ := plan.Scalability.MaxInstances.Value.Int64()
+	planMinInstance, _ := plan.Scalability.MinInstances.Value.Int64()
+	planMaxInstance, _ := plan.Scalability.MaxInstances.Value.Int64()
 
 	wannabeApplication := clevercloud.WannabeApplication{
 		Name:            plan.Name.Value,
@@ -252,27 +257,27 @@ func (r resourceApplication) applicationModelToWannabeApplication(ctx context.Co
 		InstanceType:    plan.Type.Value,
 		InstanceVersion: planApplicationInstance.Version,
 		InstanceVariant: planApplicationInstance.Variant.Id,
-		// MinInstances:    int32(planMinInstance),
-		// MaxInstances:    int32(planMaxInstance),
-		// MinFlavor:       defaultFlavorName,
-		// MaxFlavor:       defaultFlavorName,
-		// Homogeneous:     plan.Properties.Homogeneous.Value,
-		// StickySessions:  plan.Properties.StickySessions.Value,
-		// CancelOnPush:    plan.Properties.CancelOnPush.Value,
-		// ForceHttps:      plan.attributeForceHttpsToString(),
-		SeparateBuild: plan.Build.SeparateBuild.Value,
-		BuildFlavor:   defaultFlavorName,
-		Favourite:     plan.Favorite.Value,
-		Archived:      plan.Archived.Value,
+		MinInstances:    int32(planMinInstance),
+		MaxInstances:    int32(planMaxInstance),
+		MinFlavor:       defaultFlavorName,
+		MaxFlavor:       defaultFlavorName,
+		Homogeneous:     plan.Properties.Homogeneous.Value,
+		StickySessions:  plan.Properties.StickySessions.Value,
+		CancelOnPush:    plan.Properties.CancelOnPush.Value,
+		ForceHttps:      plan.attributeForceHttpsToString(),
+		SeparateBuild:   plan.Build.SeparateBuild.Value,
+		BuildFlavor:     defaultFlavorName,
+		Favourite:       plan.Favorite.Value,
+		Archived:        plan.Archived.Value,
 	}
 
 	for _, flavor := range planApplicationInstance.Flavors {
-		// if plan.Scalability.MinFlavor.Value == flavor.Name {
-		// 	wannabeApplication.MinFlavor = flavor.Name
-		// }
-		// if plan.Scalability.MaxFlavor.Value == flavor.Name {
-		// 	wannabeApplication.MaxFlavor = flavor.Name
-		// }
+		if plan.Scalability.MinFlavor.Value == flavor.Name {
+			wannabeApplication.MinFlavor = flavor.Name
+		}
+		if plan.Scalability.MaxFlavor.Value == flavor.Name {
+			wannabeApplication.MaxFlavor = flavor.Name
+		}
 		if plan.Build.SeparateBuild.Value && plan.Build.BuildFlavor.Value == flavor.Name {
 			wannabeApplication.BuildFlavor = flavor.Name
 		}
@@ -298,19 +303,19 @@ func applicationViewToApplicationModel(application *clevercloud.ApplicationView)
 		Zone:           types.String{Value: application.Zone},
 		DeployType:     types.String{Value: application.Deployment.Type},
 		OrganizationID: types.String{Value: application.OwnerId},
-		// Scalability: ApplicationScalability{
-		// 	MinInstances:        types.Number{Value: big.NewFloat(float64(application.Instance.MinInstances))},
-		// 	MaxInstances:        types.Number{Value: big.NewFloat(float64(application.Instance.MaxInstances))},
-		// 	MinFlavor:           types.String{Value: application.Instance.MinFlavor.Name},
-		// 	MaxFlavor:           types.String{Value: application.Instance.MaxFlavor.Name},
-		// 	MaxAllowedInstances: types.Number{Value: big.NewFloat(float64(application.Instance.MaxAllowedInstances))},
-		// },
-		// Properties: ApplicationProperties{
-		// 	Homogeneous:    types.Bool{Value: application.Homogeneous},
-		// 	StickySessions: types.Bool{Value: application.StickySessions},
-		// 	CancelOnPush:   types.Bool{Value: application.CancelOnPush},
-		// 	ForceHTTPS:     types.Bool{Value: forceHttpsToBool(application.ForceHttps)},
-		// },
+		Scalability: ApplicationScalability{
+			MinInstances:        types.Number{Value: big.NewFloat(float64(application.Instance.MinInstances))},
+			MaxInstances:        types.Number{Value: big.NewFloat(float64(application.Instance.MaxInstances))},
+			MinFlavor:           types.String{Value: application.Instance.MinFlavor.Name},
+			MaxFlavor:           types.String{Value: application.Instance.MaxFlavor.Name},
+			MaxAllowedInstances: types.Number{Value: big.NewFloat(float64(application.Instance.MaxAllowedInstances))},
+		},
+		Properties: ApplicationProperties{
+			Homogeneous:    types.Bool{Value: application.Homogeneous},
+			StickySessions: types.Bool{Value: application.StickySessions},
+			CancelOnPush:   types.Bool{Value: application.CancelOnPush},
+			ForceHTTPS:     types.Bool{Value: forceHttpsToBool(application.ForceHttps)},
+		},
 		Build: ApplicationBuild{
 			SeparateBuild: types.Bool{Value: application.SeparateBuild},
 			BuildFlavor:   types.String{Value: application.BuildFlavor.Name},

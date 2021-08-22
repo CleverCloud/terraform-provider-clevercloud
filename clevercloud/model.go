@@ -3,16 +3,16 @@ package clevercloud
 import "github.com/hashicorp/terraform-plugin-framework/types"
 
 type Application struct {
-	ID             types.String `tfsdk:"id"`
-	Name           types.String `tfsdk:"name"`
-	Description    types.String `tfsdk:"description"`
-	Type           types.String `tfsdk:"type"`
-	Zone           types.String `tfsdk:"zone"`
-	DeployType     types.String `tfsdk:"deploy_type"`
-	OrganizationID types.String `tfsdk:"organization_id"`
-	// Scalability        ApplicationScalability `tfsdk:"scalability"`
-	// Properties         ApplicationProperties  `tfsdk:"properties"`
-	Build ApplicationBuild `tfsdk:"build"`
+	ID             types.String           `tfsdk:"id"`
+	Name           types.String           `tfsdk:"name"`
+	Description    types.String           `tfsdk:"description"`
+	Type           types.String           `tfsdk:"type"`
+	Zone           types.String           `tfsdk:"zone"`
+	DeployType     types.String           `tfsdk:"deploy_type"`
+	OrganizationID types.String           `tfsdk:"organization_id"`
+	Scalability    ApplicationScalability `tfsdk:"scalability"`
+	Properties     ApplicationProperties  `tfsdk:"properties"`
+	Build          ApplicationBuild       `tfsdk:"build"`
 	// Environment        types.List `tfsdk:"environment"`
 	// ExposedEnvironment types.List `tfsdk:"exposed_environment"`
 	// Dependencies       types.List `tfsdk:"dependencies"`
