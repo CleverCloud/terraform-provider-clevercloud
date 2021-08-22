@@ -2,6 +2,7 @@ package clevercloud
 
 import (
 	"context"
+	"fmt"
 	"math/big"
 	"sort"
 
@@ -28,6 +29,7 @@ func (r resourceApplicationType) GetSchema(_ context.Context) (schema.Schema, []
 			"description": {
 				Type:     types.StringType,
 				Optional: true,
+				Computed: true,
 			},
 			"type": {
 				Type:     types.StringType,
@@ -36,32 +38,43 @@ func (r resourceApplicationType) GetSchema(_ context.Context) (schema.Schema, []
 			"zone": {
 				Type:     types.StringType,
 				Optional: true,
+				Computed: true,
 			},
 			"deploy_type": {
 				Type:     types.StringType,
 				Optional: true,
+				Computed: true,
+			},
+			"deploy_url": {
+				Type:     types.StringType,
+				Computed: true,
 			},
 			"organization_id": {
 				Type:     types.StringType,
 				Optional: true,
+				Computed: true,
 			},
 			"scalability": {
 				Attributes: schema.SingleNestedAttributes(map[string]schema.Attribute{
 					"min_instances": {
 						Type:     types.NumberType,
 						Optional: true,
+						Computed: true,
 					},
 					"max_instances": {
 						Type:     types.NumberType,
 						Optional: true,
+						Computed: true,
 					},
 					"min_flavor": {
 						Type:     types.StringType,
 						Optional: true,
+						Computed: true,
 					},
 					"max_flavor": {
 						Type:     types.StringType,
 						Optional: true,
+						Computed: true,
 					},
 					"max_allowed_instances": {
 						Type:     types.NumberType,
@@ -75,18 +88,22 @@ func (r resourceApplicationType) GetSchema(_ context.Context) (schema.Schema, []
 					"homogeneous": {
 						Type:     types.BoolType,
 						Optional: true,
+						Computed: true,
 					},
 					"sticky_sessions": {
 						Type:     types.BoolType,
 						Optional: true,
+						Computed: true,
 					},
 					"cancel_on_push": {
 						Type:     types.BoolType,
 						Optional: true,
+						Computed: true,
 					},
 					"force_https": {
 						Type:     types.BoolType,
 						Optional: true,
+						Computed: true,
 					},
 				}),
 				Optional: true,
@@ -96,10 +113,12 @@ func (r resourceApplicationType) GetSchema(_ context.Context) (schema.Schema, []
 					"separate_build": {
 						Type:     types.BoolType,
 						Optional: true,
+						Computed: true,
 					},
 					"build_flavor": {
 						Type:     types.StringType,
 						Optional: true,
+						Computed: true,
 					},
 				}),
 				Optional: true,
@@ -131,16 +150,19 @@ func (r resourceApplicationType) GetSchema(_ context.Context) (schema.Schema, []
 			"favorite": {
 				Type:     types.BoolType,
 				Optional: true,
+				Computed: true,
 			},
 			"archived": {
 				Type:     types.BoolType,
 				Optional: true,
+				Computed: true,
 			},
 			"tags": {
 				Type: types.ListType{
 					ElemType: types.StringType,
 				},
 				Optional: true,
+				Computed: true,
 			},
 		},
 	}, nil
@@ -157,7 +179,7 @@ type resourceApplication struct {
 }
 
 func (app Application) attributeDescriptionOrDefault() string {
-	if app.Description.Null {
+	if app.Description.Unknown || app.Description.Null {
 		return app.Name.Value
 	}
 
@@ -165,15 +187,15 @@ func (app Application) attributeDescriptionOrDefault() string {
 }
 
 func (app Application) attributeZoneOrDefault() string {
-	if app.Zone.Null {
+	if app.Zone.Unknown || app.Zone.Null {
 		return "par"
 	}
 
-	return app.Description.Value
+	return app.Zone.Value
 }
 
 func (app Application) attributeDeployTypeOrDefault() string {
-	if app.DeployType.Null {
+	if app.DeployType.Unknown || app.DeployType.Null {
 		return "GIT"
 	}
 
@@ -246,8 +268,18 @@ func (r resourceApplication) applicationModelToWannabeApplication(ctx context.Co
 	}
 
 	defaultFlavorName := planApplicationInstance.DefaultFlavor.Name
-	planMinInstance, _ := plan.Scalability.MinInstances.Value.Int64()
-	planMaxInstance, _ := plan.Scalability.MaxInstances.Value.Int64()
+
+	var planMinInstances int32 = 1
+	if !plan.Scalability.MinInstances.Unknown && !plan.Scalability.MinInstances.Null {
+		value, _ := plan.Scalability.MinInstances.Value.Int64()
+		planMinInstances = int32(value)
+	}
+
+	var planMaxInstances int32 = 1
+	if !plan.Scalability.MaxInstances.Unknown && !plan.Scalability.MaxInstances.Null {
+		value, _ := plan.Scalability.MaxInstances.Value.Int64()
+		planMaxInstances = int32(value)
+	}
 
 	wannabeApplication := clevercloud.WannabeApplication{
 		Name:            plan.Name.Value,
@@ -257,33 +289,54 @@ func (r resourceApplication) applicationModelToWannabeApplication(ctx context.Co
 		InstanceType:    plan.Type.Value,
 		InstanceVersion: planApplicationInstance.Version,
 		InstanceVariant: planApplicationInstance.Variant.Id,
-		MinInstances:    int32(planMinInstance),
-		MaxInstances:    int32(planMaxInstance),
+		MinInstances:    planMinInstances,
+		MaxInstances:    planMaxInstances,
 		MinFlavor:       defaultFlavorName,
 		MaxFlavor:       defaultFlavorName,
-		Homogeneous:     plan.Properties.Homogeneous.Value,
-		StickySessions:  plan.Properties.StickySessions.Value,
-		CancelOnPush:    plan.Properties.CancelOnPush.Value,
-		ForceHttps:      plan.attributeForceHttpsToString(),
-		SeparateBuild:   plan.Build.SeparateBuild.Value,
-		BuildFlavor:     defaultFlavorName,
-		Favourite:       plan.Favorite.Value,
-		Archived:        plan.Archived.Value,
+	}
+
+	if !plan.Build.SeparateBuild.Unknown {
+		wannabeApplication.SeparateBuild = plan.Build.SeparateBuild.Value
+		wannabeApplication.BuildFlavor = planApplicationInstance.BuildFlavor.Name
 	}
 
 	for _, flavor := range planApplicationInstance.Flavors {
-		if plan.Scalability.MinFlavor.Value == flavor.Name {
+		if !plan.Scalability.MinFlavor.Unknown && plan.Scalability.MinFlavor.Value == flavor.Name {
 			wannabeApplication.MinFlavor = flavor.Name
 		}
-		if plan.Scalability.MaxFlavor.Value == flavor.Name {
+		if !plan.Scalability.MaxFlavor.Unknown && plan.Scalability.MaxFlavor.Value == flavor.Name {
 			wannabeApplication.MaxFlavor = flavor.Name
 		}
-		if plan.Build.SeparateBuild.Value && plan.Build.BuildFlavor.Value == flavor.Name {
+		if !plan.Build.BuildFlavor.Unknown && plan.Build.BuildFlavor.Value == flavor.Name {
 			wannabeApplication.BuildFlavor = flavor.Name
 		}
 	}
 
-	if err := plan.Tags.ElementsAs(ctx, wannabeApplication.Tags, false); err != nil {
+	if !plan.Properties.Homogeneous.Unknown {
+		wannabeApplication.Homogeneous = !plan.Properties.Homogeneous.Value
+	}
+
+	if !plan.Properties.StickySessions.Unknown {
+		wannabeApplication.StickySessions = plan.Properties.StickySessions.Value
+	}
+
+	if !plan.Properties.CancelOnPush.Unknown {
+		wannabeApplication.CancelOnPush = plan.Properties.CancelOnPush.Value
+	}
+
+	if !plan.Properties.ForceHTTPS.Unknown {
+		wannabeApplication.ForceHttps = plan.attributeForceHttpsToString()
+	}
+
+	if !plan.Favorite.Unknown {
+		wannabeApplication.Favourite = plan.Favorite.Value
+	}
+
+	if !plan.Archived.Unknown {
+		wannabeApplication.Archived = plan.Archived.Value
+	}
+
+	if err := plan.Tags.ElementsAs(ctx, &wannabeApplication.Tags, false); err != nil {
 		return nil, &tfprotov6.Diagnostic{
 			Severity: tfprotov6.DiagnosticSeverityError,
 			Summary:  "Error interfacing tags from plan",
@@ -294,14 +347,15 @@ func (r resourceApplication) applicationModelToWannabeApplication(ctx context.Co
 	return &wannabeApplication, nil
 }
 
-func applicationViewToApplicationModel(application *clevercloud.ApplicationView) *Application {
-	return &Application{
+func applicationViewToApplicationModel(application clevercloud.ApplicationView) Application {
+	return Application{
 		ID:             types.String{Value: application.Id},
 		Name:           types.String{Value: application.Name},
 		Description:    types.String{Value: application.Description},
 		Type:           types.String{Value: application.Instance.Type},
 		Zone:           types.String{Value: application.Zone},
 		DeployType:     types.String{Value: application.Deployment.Type},
+		DeployUrl:      types.String{Value: application.Deployment.Url},
 		OrganizationID: types.String{Value: application.OwnerId},
 		Scalability: ApplicationScalability{
 			MinInstances:        types.Number{Value: big.NewFloat(float64(application.Instance.MinInstances))},
@@ -311,7 +365,7 @@ func applicationViewToApplicationModel(application *clevercloud.ApplicationView)
 			MaxAllowedInstances: types.Number{Value: big.NewFloat(float64(application.Instance.MaxAllowedInstances))},
 		},
 		Properties: ApplicationProperties{
-			Homogeneous:    types.Bool{Value: application.Homogeneous},
+			Homogeneous:    types.Bool{Value: !application.Homogeneous},
 			StickySessions: types.Bool{Value: application.StickySessions},
 			CancelOnPush:   types.Bool{Value: application.CancelOnPush},
 			ForceHTTPS:     types.Bool{Value: forceHttpsToBool(application.ForceHttps)},
@@ -324,6 +378,14 @@ func applicationViewToApplicationModel(application *clevercloud.ApplicationView)
 		Archived: types.Bool{Value: application.Archived},
 		Tags:     types.List{ElemType: types.StringType},
 	}
+}
+
+func formatRequestClientError(err error) string {
+	return fmt.Sprintf(
+		"An unexpected error was encountered while requesting the API: %s\n\n%s\n",
+		err.Error(),
+		string(err.(clevercloud.GenericOpenAPIError).Body()),
+	)
 }
 
 func (r resourceApplication) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
@@ -355,60 +417,61 @@ func (r resourceApplication) Create(ctx context.Context, req tfsdk.CreateResourc
 	var application clevercloud.ApplicationView
 	var tags []string
 
-	if !plan.OrganizationID.Null {
-		_, _, err := r.p.client.SelfApi.GetUser(context.Background())
+	if plan.OrganizationID.Unknown || plan.OrganizationID.Null {
+		var err error
+		_, _, err = r.p.client.SelfApi.GetUser(ctx)
 		if err != nil {
 			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
 				Severity: tfprotov6.DiagnosticSeverityError,
 				Summary:  "Request error while fetching self user",
-				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+				Detail:   formatRequestClientError(err),
 			})
 			return
 		}
 
-		application, _, err = r.p.client.SelfApi.AddSelfApplication(context.Background(), *wannabeApplication)
+		application, _, err = r.p.client.SelfApi.AddSelfApplication(ctx, *wannabeApplication)
 		if err != nil {
 			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
 				Severity: tfprotov6.DiagnosticSeverityError,
 				Summary:  "Request error while creating application for self",
-				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+				Detail:   formatRequestClientError(err),
 			})
 			return
 		}
 
-		tags, _, err = r.p.client.SelfApi.GetSelfApplicationTagsByAppId(context.Background(), application.Id)
+		tags, _, err = r.p.client.SelfApi.GetSelfApplicationTagsByAppId(ctx, application.Id)
 		if err != nil {
 			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
 				Severity: tfprotov6.DiagnosticSeverityError,
 				Summary:  "Request error while fetching application tags for self",
-				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+				Detail:   formatRequestClientError(err),
 			})
 			return
 		}
 	} else {
 		var err error
-		application, _, err = r.p.client.OrganisationApi.AddApplicationByOrga(context.Background(), plan.OrganizationID.Value, *wannabeApplication)
+		application, _, err = r.p.client.OrganisationApi.AddApplicationByOrga(ctx, plan.OrganizationID.Value, *wannabeApplication)
 		if err != nil {
 			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
 				Severity: tfprotov6.DiagnosticSeverityError,
 				Summary:  "Request error while creating application for organization: " + plan.OrganizationID.Value,
-				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+				Detail:   formatRequestClientError(err),
 			})
 			return
 		}
 
-		tags, _, err = r.p.client.OrganisationApi.GetApplicationTagsByOrgaAndAppId(context.Background(), plan.OrganizationID.Value, application.Id)
+		tags, _, err = r.p.client.OrganisationApi.GetApplicationTagsByOrgaAndAppId(ctx, plan.OrganizationID.Value, application.Id)
 		if err != nil {
 			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
 				Severity: tfprotov6.DiagnosticSeverityError,
 				Summary:  "Request error while fetching application tags for organization",
-				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
+				Detail:   formatRequestClientError(err),
 			})
 			return
 		}
 	}
 
-	var result = applicationViewToApplicationModel(&application)
+	var result = applicationViewToApplicationModel(application)
 
 	for _, tag := range tags {
 		result.Tags.Elems = append(result.Tags.Elems, types.String{Value: tag})
@@ -441,7 +504,8 @@ func (r resourceApplication) Read(ctx context.Context, req tfsdk.ReadResourceReq
 	var tags []string
 
 	if !state.OrganizationID.Null {
-		_, _, err := r.p.client.SelfApi.GetUser(context.Background())
+		var err error
+		_, _, err = r.p.client.SelfApi.GetUser(context.Background())
 		if err != nil {
 			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
 				Severity: tfprotov6.DiagnosticSeverityError,
@@ -493,7 +557,7 @@ func (r resourceApplication) Read(ctx context.Context, req tfsdk.ReadResourceReq
 		}
 	}
 
-	var result = applicationViewToApplicationModel(&application)
+	var result = applicationViewToApplicationModel(application)
 
 	for _, tag := range tags {
 		result.Tags.Elems = append(result.Tags.Elems, types.String{Value: tag})

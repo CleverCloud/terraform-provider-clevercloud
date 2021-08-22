@@ -9,6 +9,7 @@ type Application struct {
 	Type           types.String           `tfsdk:"type"`
 	Zone           types.String           `tfsdk:"zone"`
 	DeployType     types.String           `tfsdk:"deploy_type"`
+	DeployUrl      types.String           `tfsdk:"deploy_url"`
 	OrganizationID types.String           `tfsdk:"organization_id"`
 	Scalability    ApplicationScalability `tfsdk:"scalability"`
 	Properties     ApplicationProperties  `tfsdk:"properties"`
@@ -25,7 +26,7 @@ type Application struct {
 type ApplicationScalability struct {
 	MinInstances        types.Number `tfsdk:"min_instances"`
 	MaxInstances        types.Number `tfsdk:"max_instances"`
-	MaxAllowedInstances types.Number `tfsdk:"max_instances"`
+	MaxAllowedInstances types.Number `tfsdk:"max_allowed_instances"`
 	MinFlavor           types.String `tfsdk:"min_flavor"`
 	MaxFlavor           types.String `tfsdk:"max_flavor"`
 }
