@@ -5,10 +5,9 @@ import (
 
 	"github.com/clevercloud/clevercloud-go/clevercloud"
 
-	"github.com/hashicorp/terraform-plugin-framework/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 const (
@@ -25,9 +24,9 @@ type provider struct {
 	client     *clevercloud.APIClient
 }
 
-func (p *provider) GetSchema(_ context.Context) (schema.Schema, []*tfprotov6.Diagnostic) {
-	return schema.Schema{
-		Attributes: map[string]schema.Attribute{
+func (p *provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+	return tfsdk.Schema{
+		Attributes: map[string]tfsdk.Attribute{
 			"token": {
 				Type:     types.StringType,
 				Required: true,
@@ -60,13 +59,8 @@ type providerData struct {
 func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderRequest, resp *tfsdk.ConfigureProviderResponse) {
 	var config providerData
 
-	err := req.Config.Get(ctx, &config)
-	if err != nil {
-		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-			Severity: tfprotov6.DiagnosticSeverityError,
-			Summary:  "Error parsing Clever Cloud configuration",
-			Detail:   "Error parsing the configuration, this is an error in the provider:\n\n" + err.Error(),
-		})
+	if diags := req.Config.Get(ctx, &config); diags != nil {
+		resp.Diagnostics.AddError("Error parsing Clever Cloud configuration", "Error parsing the configuration, this is an error in the provider.")
 		return
 	}
 
@@ -82,10 +76,7 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 	}
 
 	if config.Token.Unknown || config.Secret.Unknown {
-		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-			Severity: tfprotov6.DiagnosticSeverityError,
-			Summary:  "Unable to create Clever Cloud client",
-		})
+		resp.Diagnostics.AddError("Unable to create Clever Cloud client", "Config token or secret are missing.")
 		return
 	}
 
@@ -98,12 +89,12 @@ func (p *provider) Configure(ctx context.Context, req tfsdk.ConfigureProviderReq
 	p.configured = true
 }
 
-func (p *provider) GetResources(_ context.Context) (map[string]tfsdk.ResourceType, []*tfprotov6.Diagnostic) {
+func (p *provider) GetResources(_ context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
 	return map[string]tfsdk.ResourceType{
 		"clevercloud_application": resourceApplicationType{},
 	}, nil
 }
 
-func (p *provider) GetDataSources(_ context.Context) (map[string]tfsdk.DataSourceType, []*tfprotov6.Diagnostic) {
+func (p *provider) GetDataSources(_ context.Context) (map[string]tfsdk.DataSourceType, diag.Diagnostics) {
 	return map[string]tfsdk.DataSourceType{}, nil
 }

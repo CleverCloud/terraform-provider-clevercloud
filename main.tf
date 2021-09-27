@@ -58,9 +58,9 @@ resource "clevercloud_application" "test" {
   zone = "par"
   tags = ["terraform"]
 
-  properties = {}
-  scalability = {}
-  build = {}
+  # properties = {}
+  # scalability = {}
+  # build = {}
 }
 
 # output "self_current" {

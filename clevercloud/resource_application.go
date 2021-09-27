@@ -7,17 +7,16 @@ import (
 	"sort"
 
 	"github.com/clevercloud/clevercloud-go/clevercloud"
-	"github.com/hashicorp/terraform-plugin-framework/schema"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 )
 
 type resourceApplicationType struct{}
 
-func (r resourceApplicationType) GetSchema(_ context.Context) (schema.Schema, []*tfprotov6.Diagnostic) {
-	return schema.Schema{
-		Attributes: map[string]schema.Attribute{
+func (r resourceApplicationType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
+	return tfsdk.Schema{
+		Attributes: map[string]tfsdk.Attribute{
 			"id": {
 				Type:     types.StringType,
 				Computed: true,
@@ -55,7 +54,7 @@ func (r resourceApplicationType) GetSchema(_ context.Context) (schema.Schema, []
 				Computed: true,
 			},
 			"scalability": {
-				Attributes: schema.SingleNestedAttributes(map[string]schema.Attribute{
+				Attributes: tfsdk.SingleNestedAttributes(map[string]tfsdk.Attribute{
 					"min_instances": {
 						Type:     types.NumberType,
 						Optional: true,
@@ -84,7 +83,7 @@ func (r resourceApplicationType) GetSchema(_ context.Context) (schema.Schema, []
 				Optional: true,
 			},
 			"properties": {
-				Attributes: schema.SingleNestedAttributes(map[string]schema.Attribute{
+				Attributes: tfsdk.SingleNestedAttributes(map[string]tfsdk.Attribute{
 					"homogeneous": {
 						Type:     types.BoolType,
 						Optional: true,
@@ -109,7 +108,7 @@ func (r resourceApplicationType) GetSchema(_ context.Context) (schema.Schema, []
 				Optional: true,
 			},
 			"build": {
-				Attributes: schema.SingleNestedAttributes(map[string]schema.Attribute{
+				Attributes: tfsdk.SingleNestedAttributes(map[string]tfsdk.Attribute{
 					"separate_build": {
 						Type:     types.BoolType,
 						Optional: true,
@@ -168,7 +167,7 @@ func (r resourceApplicationType) GetSchema(_ context.Context) (schema.Schema, []
 	}, nil
 }
 
-func (r resourceApplicationType) NewResource(_ context.Context, p tfsdk.Provider) (tfsdk.Resource, []*tfprotov6.Diagnostic) {
+func (r resourceApplicationType) NewResource(_ context.Context, p tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
 	return resourceApplication{
 		p: *(p.(*provider)),
 	}, nil
@@ -257,14 +256,10 @@ func forceHttpsToBool(value string) bool {
 	}
 }
 
-func (r resourceApplication) applicationModelToWannabeApplication(ctx context.Context, plan *Application) (*clevercloud.WannabeApplication, *tfprotov6.Diagnostic) {
+func (r resourceApplication) applicationModelToWannabeApplication(ctx context.Context, plan *Application) (*clevercloud.WannabeApplication, diag.Diagnostic) {
 	planApplicationInstance, err := getInstanceByType(r.p.client, plan.Type.Value)
 	if err != nil {
-		return nil, &tfprotov6.Diagnostic{
-			Severity: tfprotov6.DiagnosticSeverityError,
-			Summary:  "Error fetching instance type from plan",
-			Detail:   "An unexpected error was encountered while reading the plan: " + err.Error(),
-		}
+		return nil, diag.NewErrorDiagnostic("Error fetching instance type from plan", "An unexpected error was encountered while reading the plan: "+err.Error())
 	}
 
 	defaultFlavorName := planApplicationInstance.DefaultFlavor.Name
@@ -336,12 +331,8 @@ func (r resourceApplication) applicationModelToWannabeApplication(ctx context.Co
 		wannabeApplication.Archived = plan.Archived.Value
 	}
 
-	if err := plan.Tags.ElementsAs(ctx, &wannabeApplication.Tags, false); err != nil {
-		return nil, &tfprotov6.Diagnostic{
-			Severity: tfprotov6.DiagnosticSeverityError,
-			Summary:  "Error interfacing tags from plan",
-			Detail:   "An unexpected error was encountered while reading the plan: " + err.Error(),
-		}
+	if diags := plan.Tags.ElementsAs(ctx, &wannabeApplication.Tags, false); diags != nil {
+		return nil, diag.NewErrorDiagnostic("Error interfacing tags from plan", "An unexpected error was encountered while reading the plan.")
 	}
 
 	return &wannabeApplication, nil
@@ -390,21 +381,13 @@ func formatRequestClientError(err error) string {
 
 func (r resourceApplication) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
 	if !r.p.configured {
-		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-			Severity: tfprotov6.DiagnosticSeverityError,
-			Summary:  "Provider not configured",
-			Detail:   "The provider hasn't been configured before apply.",
-		})
+		resp.Diagnostics.AddError("Provider not configured", "The provider hasn't been configured before apply.")
 		return
 	}
 
 	var plan Application
-	if err := req.Plan.Get(ctx, &plan); err != nil {
-		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-			Severity: tfprotov6.DiagnosticSeverityError,
-			Summary:  "Error reading plan",
-			Detail:   "An unexpected error was encountered while reading the plan: " + err.Error(),
-		})
+	if diags := req.Plan.Get(ctx, &plan); diags != nil {
+		resp.Diagnostics.AddError("Error reading plan", "An unexpected error was encountered while reading the plan.")
 		return
 	}
 
@@ -421,52 +404,32 @@ func (r resourceApplication) Create(ctx context.Context, req tfsdk.CreateResourc
 		var err error
 		_, _, err = r.p.client.SelfApi.GetUser(ctx)
 		if err != nil {
-			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-				Severity: tfprotov6.DiagnosticSeverityError,
-				Summary:  "Request error while fetching self user",
-				Detail:   formatRequestClientError(err),
-			})
+			resp.Diagnostics.AddError("Request error while fetching self user", formatRequestClientError(err))
 			return
 		}
 
 		application, _, err = r.p.client.SelfApi.AddSelfApplication(ctx, *wannabeApplication)
 		if err != nil {
-			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-				Severity: tfprotov6.DiagnosticSeverityError,
-				Summary:  "Request error while creating application for self",
-				Detail:   formatRequestClientError(err),
-			})
+			resp.Diagnostics.AddError("Request error while creating application for self", formatRequestClientError(err))
 			return
 		}
 
 		tags, _, err = r.p.client.SelfApi.GetSelfApplicationTagsByAppId(ctx, application.Id)
 		if err != nil {
-			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-				Severity: tfprotov6.DiagnosticSeverityError,
-				Summary:  "Request error while fetching application tags for self",
-				Detail:   formatRequestClientError(err),
-			})
+			resp.Diagnostics.AddError("Request error while fetching application tags for self", formatRequestClientError(err))
 			return
 		}
 	} else {
 		var err error
 		application, _, err = r.p.client.OrganisationApi.AddApplicationByOrga(ctx, plan.OrganizationID.Value, *wannabeApplication)
 		if err != nil {
-			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-				Severity: tfprotov6.DiagnosticSeverityError,
-				Summary:  "Request error while creating application for organization: " + plan.OrganizationID.Value,
-				Detail:   formatRequestClientError(err),
-			})
+			resp.Diagnostics.AddError("Request error while creating application for organization: "+plan.OrganizationID.Value, formatRequestClientError(err))
 			return
 		}
 
 		tags, _, err = r.p.client.OrganisationApi.GetApplicationTagsByOrgaAndAppId(ctx, plan.OrganizationID.Value, application.Id)
 		if err != nil {
-			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-				Severity: tfprotov6.DiagnosticSeverityError,
-				Summary:  "Request error while fetching application tags for organization",
-				Detail:   formatRequestClientError(err),
-			})
+			resp.Diagnostics.AddError("Request error while fetching application tags for organization", formatRequestClientError(err))
 			return
 		}
 	}
@@ -477,24 +440,16 @@ func (r resourceApplication) Create(ctx context.Context, req tfsdk.CreateResourc
 		result.Tags.Elems = append(result.Tags.Elems, types.String{Value: tag})
 	}
 
-	if err := resp.State.Set(ctx, result); err != nil {
-		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-			Severity: tfprotov6.DiagnosticSeverityError,
-			Summary:  "Error setting application state",
-			Detail:   "Could not set state, unexpected error: " + err.Error(),
-		})
+	if diags := resp.State.Set(ctx, result); diags != nil {
+		resp.Diagnostics.AddError("Error setting application state", "Could not set state, unexpected error.")
 		return
 	}
 }
 
 func (r resourceApplication) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
 	var state Application
-	if err := req.State.Get(ctx, &state); err != nil {
-		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-			Severity: tfprotov6.DiagnosticSeverityError,
-			Summary:  "Error reading state",
-			Detail:   "An unexpected error was encountered while reading the state: " + err.Error(),
-		})
+	if diags := req.State.Get(ctx, &state); diags != nil {
+		resp.Diagnostics.AddError("Error reading state", "An unexpected error was encountered while reading the state.")
 		return
 	}
 
@@ -507,52 +462,32 @@ func (r resourceApplication) Read(ctx context.Context, req tfsdk.ReadResourceReq
 		var err error
 		_, _, err = r.p.client.SelfApi.GetUser(context.Background())
 		if err != nil {
-			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-				Severity: tfprotov6.DiagnosticSeverityError,
-				Summary:  "Request error while fetching self user",
-				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
-			})
+			resp.Diagnostics.AddError("Request error while fetching self user", "An unexpected error was encountered while requesting the api: "+err.Error())
 			return
 		}
 
 		application, _, err = r.p.client.SelfApi.GetSelfApplicationByAppId(context.Background(), applicationID)
 		if err != nil {
-			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-				Severity: tfprotov6.DiagnosticSeverityError,
-				Summary:  "Request error while reading application for self",
-				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
-			})
+			resp.Diagnostics.AddError("Request error while reading application for self", "An unexpected error was encountered while requesting the api: "+err.Error())
 			return
 		}
 
 		tags, _, err = r.p.client.SelfApi.GetSelfApplicationTagsByAppId(context.Background(), application.Id)
 		if err != nil {
-			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-				Severity: tfprotov6.DiagnosticSeverityError,
-				Summary:  "Request error while fetching application tags for self",
-				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
-			})
+			resp.Diagnostics.AddError("Request error while fetching application tags for self", "An unexpected error was encountered while requesting the api: "+err.Error())
 			return
 		}
 	} else {
 		var err error
 		application, _, err = r.p.client.OrganisationApi.GetApplicationByOrgaAndAppId(context.Background(), state.OrganizationID.Value, applicationID)
 		if err != nil {
-			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-				Severity: tfprotov6.DiagnosticSeverityError,
-				Summary:  "Request error while reading application for organization: " + state.OrganizationID.Value,
-				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
-			})
+			resp.Diagnostics.AddError("Request error while reading application for organization: "+state.OrganizationID.Value, "An unexpected error was encountered while requesting the api: "+err.Error())
 			return
 		}
 
 		tags, _, err = r.p.client.OrganisationApi.GetApplicationTagsByOrgaAndAppId(context.Background(), state.OrganizationID.Value, application.Id)
 		if err != nil {
-			resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-				Severity: tfprotov6.DiagnosticSeverityError,
-				Summary:  "Request error while fetching application tags for organization",
-				Detail:   "An unexpected error was encountered while requesting the api: " + err.Error(),
-			})
+			resp.Diagnostics.AddError("Request error while fetching application tags for organization", "An unexpected error was encountered while requesting the api: "+err.Error())
 			return
 		}
 	}
@@ -563,12 +498,8 @@ func (r resourceApplication) Read(ctx context.Context, req tfsdk.ReadResourceReq
 		result.Tags.Elems = append(result.Tags.Elems, types.String{Value: tag})
 	}
 
-	if err := resp.State.Set(ctx, result); err != nil {
-		resp.Diagnostics = append(resp.Diagnostics, &tfprotov6.Diagnostic{
-			Severity: tfprotov6.DiagnosticSeverityError,
-			Summary:  "Error setting state",
-			Detail:   "Unexpected error encountered trying to set new state: " + err.Error(),
-		})
+	if diags := resp.State.Set(ctx, result); diags != nil {
+		resp.Diagnostics.AddError("Error setting state", "Unexpected error encountered trying to set new state.")
 		return
 	}
 }
@@ -577,4 +508,9 @@ func (r resourceApplication) Update(ctx context.Context, req tfsdk.UpdateResourc
 }
 
 func (r resourceApplication) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
+}
+
+func (r resourceApplication) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
+	tfsdk.ResourceImportStateNotImplemented(ctx, "Coming soon", resp)
+	return
 }
