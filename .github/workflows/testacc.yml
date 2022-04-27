@@ -1,0 +1,20 @@
+name: Acceptance Tests
+
+on:
+  push:
+    types: [ labeled ]
+
+jobs:
+  test:
+    if: ${{ github.event.label.name == 'testacc' }}
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: 1.18
+      
+    - name: Acceptance Tests
+      run: make testacc
