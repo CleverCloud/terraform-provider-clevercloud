@@ -18,7 +18,7 @@ func init() {
 
 func (r resourceNodejsType) NewResource(ctx context.Context, provider tfsdk.Provider) (tfsdk.Resource, diag.Diagnostics) {
 	p := (provider.(*Provider))
-	return ResourcePostgreSQL{
+	return ResourceNodeJS{
 		cc:  p.cc,
 		org: p.Organisation,
 	}, nil

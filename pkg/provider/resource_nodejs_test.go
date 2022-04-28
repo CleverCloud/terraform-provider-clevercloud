@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"regexp"
 	"testing"
 	"time"
 
@@ -15,14 +16,17 @@ import (
 
 const nodejsBlock = `resource "%s" "%s" { 
 	name = "%s"
-	plan = "dev" 
 	region = "par"
+	min_instance_count = 1
+	max_instance_count = 2
+	smallest_flavor = "XS"
+	biggest_flavor = "M"
 }
 `
 
 func TestAccNodejs_basic(t *testing.T) {
 	rName := fmt.Sprintf("tf-test-node-%d", time.Now().UnixMilli())
-	//fullName := fmt.Sprintf("%s.%s", NodejsTypeName, rName)
+	fullName := fmt.Sprintf("%s.%s", NodejsTypeName, rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 
@@ -35,18 +39,18 @@ func TestAccNodejs_basic(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6Provider,
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetPostgreSQL(context.Background(), cc, resource.Primary.ID)
+				res := tmp.GetApp(context.Background(), cc, org, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}
 				if res.HasError() {
 					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
 				}
-				if res.Payload().Status == "TO_DELETE" {
+				if res.Payload().State == "TO_DELETE" {
 					continue
 				}
 
-				return fmt.Errorf("expect resource '%s' to be deleted", resource.Primary.ID)
+				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
 			}
 			return nil
 		},
@@ -54,7 +58,11 @@ func TestAccNodejs_basic(t *testing.T) {
 			ResourceName: rName,
 			Config: fmt.Sprintf(providerBlock, org) +
 				fmt.Sprintf(nodejsBlock, NodejsTypeName, rName, rName),
-			Check: resource.ComposeTestCheckFunc(),
+			Check: resource.ComposeTestCheckFunc(
+				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
+				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
+				resource.TestCheckResourceAttr(fullName, "region", "par"),
+			),
 		}},
 	})
 }
