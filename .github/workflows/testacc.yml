@@ -1,7 +1,7 @@
 name: Acceptance Tests
 
 on:
-  push:
+  pull_request:
     types: [ labeled ]
 
 jobs:
@@ -18,3 +18,5 @@ jobs:
       
     - name: Acceptance Tests
       run: make testacc
+      env:
+        ORGANISATION: ${{ secrets.ORG }}

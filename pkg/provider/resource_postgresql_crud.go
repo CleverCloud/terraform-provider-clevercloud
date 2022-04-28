@@ -63,9 +63,9 @@ func (r ResourcePostgreSQL) Create(ctx context.Context, req tfsdk.CreateResource
 		return
 	}
 
-	pg.ID = types.String{Value: res.Payload().ID}
-	pg.CreationDate = types.Int64{Value: res.Payload().CreationDate}
-	pg.Plan = types.String{Value: res.Payload().Plan.Slug}
+	pg.ID = fromStr(res.Payload().ID)
+	pg.CreationDate = fromI(res.Payload().CreationDate)
+	pg.Plan = fromStr(res.Payload().Plan.Slug)
 	tflog.Info(ctx, "create response", map[string]interface{}{"plan": res.Payload()})
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
@@ -83,11 +83,11 @@ func (r ResourcePostgreSQL) Create(ctx context.Context, req tfsdk.CreateResource
 	tflog.Debug(ctx, "API response", map[string]interface{}{
 		"payload": fmt.Sprintf("%+v", addonPG),
 	})
-	pg.Host = types.String{Value: addonPG.Host}
-	pg.Port = types.Int64{Value: int64(addonPG.Port)}
-	pg.Database = types.String{Value: addonPG.Database}
-	pg.User = types.String{Value: addonPG.User}
-	pg.Password = types.String{Value: addonPG.Password}
+	pg.Host = fromStr(addonPG.Host)
+	pg.Port = fromI(int64(addonPG.Port))
+	pg.Database = fromStr(addonPG.Database)
+	pg.User = fromStr(addonPG.User)
+	pg.Password = fromStr(addonPG.Password)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 	if resp.Diagnostics.HasError() {
@@ -121,14 +121,14 @@ func (r ResourcePostgreSQL) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 	addonPG := addonPGRes.Payload()
 	tflog.Debug(ctx, "STATE", map[string]interface{}{"pg": pg})
 	tflog.Debug(ctx, "API", map[string]interface{}{"pg": addonPG})
-	pg.Plan = types.String{Value: addonPG.Plan}
-	pg.Region = types.String{Value: addonPG.Zone}
+	pg.Plan = fromStr(addonPG.Plan)
+	pg.Region = fromStr(addonPG.Zone)
 	//pg.Name = types.String{Value: addonPG.}
-	pg.Host = types.String{Value: addonPG.Host}
-	pg.Port = types.Int64{Value: int64(addonPG.Port)}
-	pg.Database = types.String{Value: addonPG.Database}
-	pg.User = types.String{Value: addonPG.User}
-	pg.Password = types.String{Value: addonPG.Password}
+	pg.Host = fromStr(addonPG.Host)
+	pg.Port = fromI(int64(addonPG.Port))
+	pg.Database = fromStr(addonPG.Database)
+	pg.User = fromStr(addonPG.User)
+	pg.Password = fromStr(addonPG.Password)
 
 	diags = resp.State.Set(ctx, pg)
 	resp.Diagnostics.Append(diags...)

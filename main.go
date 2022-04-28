@@ -1,3 +1,4 @@
+//go:generate tfplugindocs
 package main
 
 import (
@@ -20,5 +21,8 @@ func main() {
 		Debug: debug,
 	}
 
-	tfsdk.Serve(ctx, provider.New, opts)
+	err := tfsdk.Serve(ctx, provider.New, opts)
+	if err != nil {
+		panic(err.Error())
+	}
 }

@@ -22,6 +22,15 @@ resource "clevercloud_postgresql" "PG1" {
   region = "par"
 }
 
+resource "clevercloud_nodejs" "node1" {
+  name = "myNodeApp"
+	region = "par"
+	min_instance_count = 1
+	max_instance_count = 2
+	smallest_flavor = "XS"
+	biggest_flavor = "M"
+}
+
 output "host" {
   value = clevercloud_postgresql.PG1.host
 }
