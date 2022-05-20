@@ -64,7 +64,7 @@ func (r ResourcePostgreSQL) Create(ctx context.Context, req tfsdk.CreateResource
 	}
 
 	pg.ID = fromStr(res.Payload().ID)
-	pg.CreationDate = fromI(res.Payload().CreationDate)
+	pg.CreationDate = fromI64(res.Payload().CreationDate)
 	pg.Plan = fromStr(res.Payload().Plan.Slug)
 	tflog.Info(ctx, "create response", map[string]interface{}{"plan": res.Payload()})
 
@@ -84,7 +84,7 @@ func (r ResourcePostgreSQL) Create(ctx context.Context, req tfsdk.CreateResource
 		"payload": fmt.Sprintf("%+v", addonPG),
 	})
 	pg.Host = fromStr(addonPG.Host)
-	pg.Port = fromI(int64(addonPG.Port))
+	pg.Port = fromI(addonPG.Port)
 	pg.Database = fromStr(addonPG.Database)
 	pg.User = fromStr(addonPG.User)
 	pg.Password = fromStr(addonPG.Password)
@@ -125,7 +125,7 @@ func (r ResourcePostgreSQL) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 	pg.Region = fromStr(addonPG.Zone)
 	//pg.Name = types.String{Value: addonPG.}
 	pg.Host = fromStr(addonPG.Host)
-	pg.Port = fromI(int64(addonPG.Port))
+	pg.Port = fromI(addonPG.Port)
 	pg.Database = fromStr(addonPG.Database)
 	pg.User = fromStr(addonPG.User)
 	pg.Password = fromStr(addonPG.Password)

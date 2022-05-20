@@ -6,9 +6,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
 type NodeJS struct {
+	// Runtime common properties
 	ID               types.String `tfsdk:"id"`
 	Name             types.String `tfsdk:"name"`
 	Description      types.String `tfsdk:"description"`
@@ -25,11 +27,15 @@ type NodeJS struct {
 	AdditionalVHosts types.List   `tfsdk:"additional_vhosts"`
 	DeployURL        types.String `tfsdk:"deploy_url"`
 	AppFolder        types.String `tfsdk:"app_folder"`
-	DevDependencies  types.Bool   `tfsdk:"dev_dependencies"`
-	StartScript      types.String `tfsdk:"start_script"`
-	PackageManager   types.String `tfsdk:"package_manager"`
-	Registry         types.String `tfsdk:"registry"`
-	RegistryToken    types.String `tfsdk:"registry_token"`
+	Environment      types.Map    `tfsdk:"environment"`
+	Dependencies     types.List   `tfsdk:"dependencies"`
+
+	// NodeJS properties
+	DevDependencies types.Bool   `tfsdk:"dev_dependencies"`
+	StartScript     types.String `tfsdk:"start_script"`
+	PackageManager  types.String `tfsdk:"package_manager"`
+	Registry        types.String `tfsdk:"registry"`
+	RegistryToken   types.String `tfsdk:"registry_token"`
 }
 
 const nodejsDoc = `
@@ -41,77 +47,8 @@ See [NodeJS product](https://www.clever-cloud.com/nodejs-hosting/) specification
 func (r resourceNodejsType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
 	return tfsdk.Schema{
 		MarkdownDescription: nodejsDoc,
-		Attributes: map[string]tfsdk.Attribute{
+		Attributes: pkg.MergeMap(GetAppSchemaAttributes(), map[string]tfsdk.Attribute{
 			// customer provided
-
-			"name": {
-				Type:                types.StringType,
-				Required:            true,
-				MarkdownDescription: "Application name",
-			},
-			"description": {
-				Type:                types.StringType,
-				Optional:            true,
-				MarkdownDescription: "Application description",
-			},
-			"min_instance_count": {
-				Type:                types.Int64Type,
-				Required:            true,
-				MarkdownDescription: "Minimum instance count",
-			},
-			"max_instance_count": {
-				Type:                types.Int64Type,
-				Required:            true,
-				MarkdownDescription: "Maximum instance count, if different from min value, enable autoscaling",
-			},
-			"smallest_flavor": {
-				Type:                types.StringType,
-				Required:            true,
-				MarkdownDescription: "Smallest instance flavor",
-			},
-			"biggest_flavor": {
-				Type:                types.StringType,
-				Required:            true,
-				MarkdownDescription: "Biggest intance flavor, if different from smallest, enable autoscaling",
-			},
-			"build_flavor": {
-				Type:                types.StringType,
-				Optional:            true,
-				MarkdownDescription: "Use dedicated instance with given flavor for build step",
-			},
-			"region": {
-				Type:                types.StringType,
-				Required:            true,
-				MarkdownDescription: "Geographical region where the app will be deployed",
-			},
-			"sticky_sessions": {
-				Type:                types.BoolType,
-				Optional:            true,
-				MarkdownDescription: "Enable sticky sessions, use it when your client sessions are instances scoped",
-			},
-			"redirect_https": {
-				Type:                types.BoolType,
-				Optional:            true,
-				MarkdownDescription: "Redirect client from plain to TLS port",
-			},
-			"commit": {
-				Type:                types.StringType,
-				Optional:            true,
-				Description:         "Support either '<branch>:<SHA>' or '<tag>'",
-				MarkdownDescription: "Deploy application on the given commit/tag",
-			},
-			"additional_vhosts": {
-				Type:                types.ListType{ElemType: types.StringType},
-				Optional:            true,
-				MarkdownDescription: "Add custom hostname in addition to the default one, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)",
-			},
-			// APP_FOLDER
-			"app_folder": {
-				Type:                types.StringType,
-				Optional:            true,
-				MarkdownDescription: "Folder in which the application is located (inside the git repository)",
-			},
-
 			// Node specifique
 
 			// CC_NODE_DEV_DEPENDENCIES
@@ -145,25 +82,57 @@ func (r resourceNodejsType) GetSchema(_ context.Context) (tfsdk.Schema, diag.Dia
 				Sensitive:           true,
 				MarkdownDescription: "Private repository token",
 			},
-
-			// provider provided
-
-			"id": {
-				Type:                types.StringType,
-				Computed:            true,
-				MarkdownDescription: "Unique identifier generated during application creation",
-			},
-			"deploy_url": {
-				Type:                types.StringType,
-				Computed:            true,
-				MarkdownDescription: "Git URL used to push source code",
-			},
-			// cleverapps one
-			"vhost": {
-				Type:                types.StringType,
-				Computed:            true,
-				MarkdownDescription: "Default vhost to access your app",
-			},
-		},
+		}),
 	}, nil
+}
+
+func (plan NodeJS) App() App {
+	return App{
+		ID:               plan.ID,
+		Name:             plan.Name,
+		Description:      plan.Description,
+		MinInstanceCount: plan.MinInstanceCount,
+		MaxInstanceCount: plan.MaxInstanceCount,
+		SmallestFlavor:   plan.SmallestFlavor,
+		BiggestFlavor:    plan.BiggestFlavor,
+		Region:           plan.Region,
+		StickySessions:   plan.StickySessions,
+		RedirectHTTPS:    plan.RedirectHTTPS,
+		Commit:           plan.Commit,
+		VHost:            plan.VHost,
+		AdditionalVHosts: plan.AdditionalVHosts,
+		DeployURL:        plan.DeployURL,
+		AppFolder:        plan.AppFolder,
+		Environment:      plan.Environment,
+	}
+}
+
+// Use the plan to compute environment variables to set on the application
+// use underlying generic app envs then add app type specific ones
+// We should support all section described here
+// https://www.clever-cloud.com/doc/reference/reference-environment-variables/#nodejs
+func (plan NodeJS) GetEnv(ctx context.Context) (map[string]string, diag.Diagnostics) {
+	m, diags := plan.App().GetEnv(ctx)
+
+	if plan.DevDependencies.Value {
+		m["CC_NODE_DEV_DEPENDENCIES"] = "install"
+	}
+
+	if plan.PackageManager.Value != "" {
+		if pkg.NewSet("npm", "npm-ci", "yarn", "yarn2").Contains(plan.PackageManager.Value) {
+			m["CC_NODE_BUILD_TOOL"] = plan.PackageManager.Value
+		} else {
+			m["CC_CUSTOM_BUILD_TOOL"] = plan.PackageManager.Value
+		}
+	}
+
+	if plan.Registry.Value != "" {
+		m["CC_NPM_REGISTRY"] = plan.Region.Value
+	}
+
+	if plan.RegistryToken.Value != "" {
+		m["NPM_TOKEN"] = plan.RegistryToken.Value
+	}
+
+	return m, diags
 }

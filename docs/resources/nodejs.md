@@ -33,8 +33,10 @@ See [NodeJS product](https://www.clever-cloud.com/nodejs-hosting/) specification
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build step
 - `commit` (String) Deploy application on the given commit/tag
+- `dependencies` (List of String) List of service IDs required to run this app
 - `description` (String) Application description
 - `dev_dependencies` (Boolean) Install development dependencies specified in package.json
+- `environment` (Map of String, Sensitive) Environment variables to set on the application
 - `package_manager` (String) Either npm, npm-ci, yarn, yarn2 or custom
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `registry` (String) The host of your private repository, available values: github or the registry host

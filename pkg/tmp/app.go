@@ -157,9 +157,19 @@ func DeleteApp(ctx context.Context, cc *client.Client, organisationID, applicati
 	return client.Delete[interface{}](ctx, cc, path)
 }
 
-func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID, applicationID, envs map[string]string) client.Response[interface{}] {
+type Env struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+func ListAppEnv(ctx context.Context, cc *client.Client, organisationID string, applicationID string) client.Response[[]Env] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/env", organisationID, applicationID)
-	return client.Put[interface{}](ctx, cc, path, envs)
+	return client.Get[[]Env](ctx, cc, path)
+}
+
+func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID string, applicationID string, envs map[string]string) client.Response[CreatAppResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/env", organisationID, applicationID)
+	return client.Put[CreatAppResponse](ctx, cc, path, envs)
 }
 
 type ProductInstance struct {
@@ -196,4 +206,19 @@ type DefaultFlavor struct {
 func GetProductInstance(ctx context.Context, cc *client.Client) client.Response[[]ProductInstance] {
 	path := "/v2/products/instances"
 	return client.Get[[]ProductInstance](ctx, cc, path)
+}
+
+func ListDependencies(ctx context.Context, cc *client.Client, org, app string) client.Response[[]AddonResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/addons", org, app)
+	return client.Get[[]AddonResponse](ctx, cc, path)
+}
+
+func CreateDependency(ctx context.Context, cc *client.Client, org, app, service string) client.Response[client.Nothing] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/addons", org, app)
+	return client.Post[client.Nothing](ctx, cc, path, service)
+}
+
+func DeleteDependency(ctx context.Context, cc *client.Client, org, app, service string) client.Response[interface{}] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/addons/%s", org, app, service)
+	return client.Delete[interface{}](ctx, cc, path)
 }
