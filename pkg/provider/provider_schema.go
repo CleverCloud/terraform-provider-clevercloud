@@ -50,9 +50,9 @@ func (p *Provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics)
 				Type:                types.StringType,
 				Sensitive:           true,
 				Required:            true,
-				MarkdownDescription: "CleverCloud organisation, can be either org_xxx, or user_xxx for personal spaces",
+				MarkdownDescription: "CleverCloud organisation, can be either orga_xxx, or user_xxx for personal spaces",
 				Validators: []tfsdk.AttributeValidator{
-					pkg.NewValidatorRegex("valid owner name", regexp.MustCompile(`^(user|org)_.{36}`)),
+					pkg.NewValidatorRegex("valid owner name", regexp.MustCompile(`^(user|orga)_.{36}`)),
 				},
 			},
 		},

@@ -48,7 +48,7 @@ func NewValidatorRegex(description string, rg *regexp.Regexp) tfsdk.AttributeVal
 			res.Diagnostics.AddAttributeError(
 				req.AttributePath,
 				"invalid organisation ID",
-				fmt.Sprintf("organisation do not starts with 'user_' or 'org_' ('%s')", str.Value),
+				fmt.Sprintf("organisation do not starts with 'user_' or 'orga_' ('%s')", str.Value),
 			)
 		}
 	})
