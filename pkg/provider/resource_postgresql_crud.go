@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
@@ -17,8 +17,37 @@ type ResourcePostgreSQL struct {
 	org string
 }
 
+func init() {
+	AddResource(NewResourcePostgreSQL)
+}
+
+func NewResourcePostgreSQL() resource.Resource {
+	return &ResourcePostgreSQL{}
+}
+
+func (r *ResourcePostgreSQL) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
+	res.TypeName = req.ProviderTypeName + "_postgresql"
+}
+
+// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
+// So we need to handle the case there is no ProviderData
+func (r *ResourcePostgreSQL) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	tflog.Info(ctx, "ResourcePostgreSQL.Configure()")
+
+	// Prevent panic if the provider has not been configured.
+	if req.ProviderData == nil {
+		return
+	}
+
+	provider, ok := req.ProviderData.(*Provider)
+	if ok {
+		r.cc = provider.cc
+		r.org = provider.Organisation
+	}
+}
+
 // Create a new resource
-func (r ResourcePostgreSQL) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
+func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	pg := PostgreSQL{}
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &pg)...)
@@ -38,23 +67,23 @@ func (r ResourcePostgreSQL) Create(ctx context.Context, req tfsdk.CreateResource
 		addonsProvider := (*addonsProviders)[i]
 		if addonsProvider.ID == "postgresql-addon" {
 			for _, pl := range addonsProvider.Plans {
-				if pl.Slug == pg.Plan.Value {
-					tflog.Info(ctx, "Plan matched", map[string]interface{}{"name": pg.Plan.Value, "plan": pl.Slug})
+				if pl.Slug == pg.Plan.ValueString() {
+					tflog.Info(ctx, "Plan matched", map[string]interface{}{"name": pg.Plan.ValueString(), "plan": pl.Slug})
 					plan = pl
 				}
 			}
 		}
 	}
 	if plan.ID == "" {
-		resp.Diagnostics.AddError("failed to find plan", "expect:, got: "+pg.Plan.Value)
+		resp.Diagnostics.AddError("failed to find plan", "expect:, got: "+pg.Plan.String())
 		return
 	}
 
 	addonReq := tmp.AddonRequest{
-		Name:       pg.Name.Value,
+		Name:       pg.Name.String(),
 		Plan:       plan.ID,
 		ProviderID: "postgresql-addon",
-		Region:     pg.Region.Value,
+		Region:     pg.Region.ValueString(),
 	}
 
 	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
@@ -73,14 +102,14 @@ func (r ResourcePostgreSQL) Create(ctx context.Context, req tfsdk.CreateResource
 		return
 	}
 
-	pgInfoRes := tmp.GetPostgreSQL(ctx, r.cc, pg.ID.Value)
+	pgInfoRes := tmp.GetPostgreSQL(ctx, r.cc, pg.ID.ValueString())
 	if pgInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get postgres connection infos", pgInfoRes.Error().Error())
 		return
 	}
 
 	addonPG := pgInfoRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]interface{}{
+	tflog.Info(ctx, "API response", map[string]interface{}{
 		"payload": fmt.Sprintf("%+v", addonPG),
 	})
 	pg.Host = fromStr(addonPG.Host)
@@ -96,8 +125,8 @@ func (r ResourcePostgreSQL) Create(ctx context.Context, req tfsdk.CreateResource
 }
 
 // Read resource information
-func (r ResourcePostgreSQL) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
-	tflog.Debug(ctx, "PostgreSQL READ", map[string]interface{}{"request": req})
+func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	tflog.Info(ctx, "PostgreSQL READ", map[string]interface{}{"request": req})
 
 	var pg PostgreSQL
 	diags := req.State.Get(ctx, &pg)
@@ -106,9 +135,9 @@ func (r ResourcePostgreSQL) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 		return
 	}
 
-	addonPGRes := tmp.GetPostgreSQL(ctx, r.cc, pg.ID.Value)
+	addonPGRes := tmp.GetPostgreSQL(ctx, r.cc, pg.ID.ValueString())
 	if addonPGRes.IsNotFoundError() {
-		diags = resp.State.SetAttribute(ctx, tftypes.NewAttributePath().WithAttributeName("id"), types.String{Unknown: true})
+		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -119,8 +148,8 @@ func (r ResourcePostgreSQL) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 	}
 
 	addonPG := addonPGRes.Payload()
-	tflog.Debug(ctx, "STATE", map[string]interface{}{"pg": pg})
-	tflog.Debug(ctx, "API", map[string]interface{}{"pg": addonPG})
+	tflog.Info(ctx, "STATE", map[string]interface{}{"pg": pg})
+	tflog.Info(ctx, "API", map[string]interface{}{"pg": addonPG})
 	pg.Plan = fromStr(addonPG.Plan)
 	pg.Region = fromStr(addonPG.Zone)
 	//pg.Name = types.String{Value: addonPG.}
@@ -138,12 +167,12 @@ func (r ResourcePostgreSQL) Read(ctx context.Context, req tfsdk.ReadResourceRequ
 }
 
 // Update resource
-func (r ResourcePostgreSQL) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
+func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	// TODO
 }
 
 // Delete resource
-func (r ResourcePostgreSQL) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
+func (r *ResourcePostgreSQL) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var pg PostgreSQL
 
 	diags := req.State.Get(ctx, &pg)
@@ -151,9 +180,9 @@ func (r ResourcePostgreSQL) Delete(ctx context.Context, req tfsdk.DeleteResource
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "PostgreSQL DELETE", map[string]interface{}{"pg": pg})
+	tflog.Info(ctx, "PostgreSQL DELETE", map[string]interface{}{"pg": pg})
 
-	res := tmp.DeletePostgres(ctx, r.cc, r.org, pg.ID.Value)
+	res := tmp.DeletePostgres(ctx, r.cc, r.org, pg.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -167,8 +196,9 @@ func (r ResourcePostgreSQL) Delete(ctx context.Context, req tfsdk.DeleteResource
 }
 
 // Import resource
-func (r ResourcePostgreSQL) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
+func (r *ResourcePostgreSQL) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Save the import identifier in the id attribute
 	// and call Read() to fill fields
-	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
+	attr := path.Root("id")
+	resource.ImportStatePassthroughID(ctx, attr, req, resp)
 }

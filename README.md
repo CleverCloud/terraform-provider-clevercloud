@@ -1,6 +1,6 @@
 # Terraform Provider Hashicups
 
-This repo is a companion repo to the [Call APIs with Terraform Providers](https://learn.hashicorp.com/collections/terraform/providers) Learn collection. 
+This repo is a companion repo to the [Call APIs with Terraform Providers](https://learn.hashicorp.com/collections/terraform/providers) Learn collection.
 
 ## Build provider
 
@@ -18,7 +18,7 @@ First, build and install the provider.
 $ make install
 ```
 
-Then, navigate to the `examples` directory. 
+Then, navigate to the `examples` directory.
 
 ```shell
 $ cd examples

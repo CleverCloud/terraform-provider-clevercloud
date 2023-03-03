@@ -1,18 +1,18 @@
 package provider
 
 import (
-	"sync"
-
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"go.clever-cloud.dev/client"
 )
 
 type Provider struct {
+	version      string
 	cc           *client.Client
 	Organisation string
-	configured   sync.Once
 }
 
-func New() tfsdk.Provider {
-	return &Provider{}
+func New(version string) func() provider.Provider {
+	return func() provider.Provider {
+		return &Provider{version: version}
+	}
 }

@@ -3,17 +3,16 @@ package provider
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
 
-var resources = map[string]tfsdk.ResourceType{}
+var resources = []func() resource.Resource{}
 
-func AddResource(name string, rt tfsdk.ResourceType) {
-	resources[name] = rt
+func AddResource(fn func() resource.Resource) {
+	resources = append(resources, fn)
 }
 
 // GetResources - Defines provider resources
-func (p *Provider) GetResources(_ context.Context) (map[string]tfsdk.ResourceType, diag.Diagnostics) {
-	return resources, nil
+func (p *Provider) Resources(_ context.Context) []func() resource.Resource {
+	return resources
 }

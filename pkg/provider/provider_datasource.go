@@ -3,13 +3,12 @@ package provider
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/datasource"
 )
 
-var datasources = map[string]tfsdk.DataSourceType{}
+var datasources = []func() datasource.DataSource{}
 
 // GetDataSources - Defines provider data sources
-func (p *Provider) GetDataSources(_ context.Context) (map[string]tfsdk.DataSourceType, diag.Diagnostics) {
-	return datasources, nil
+func (p *Provider) DataSources(_ context.Context) []func() datasource.DataSource {
+	return datasources
 }

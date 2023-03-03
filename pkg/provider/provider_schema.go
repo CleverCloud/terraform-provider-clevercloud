@@ -4,8 +4,9 @@ import (
 	"context"
 	"regexp"
 
-	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/provider/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
@@ -23,38 +24,32 @@ CleverCloud provider allow you to interract with CleverCloud platform.
 `
 
 // GetSchema return provider schema
-func (p *Provider) GetSchema(_ context.Context) (tfsdk.Schema, diag.Diagnostics) {
-	return tfsdk.Schema{
+func (p *Provider) Schema(_ context.Context, req provider.SchemaRequest, res *provider.SchemaResponse) {
+	res.Schema = schema.Schema{
 		MarkdownDescription: providerDoc,
-		Attributes: map[string]tfsdk.Attribute{
-			"endpoint": {
-				Type:                types.StringType,
+		Attributes: map[string]schema.Attribute{
+			"endpoint": schema.StringAttribute{
 				Optional:            true,
-				Computed:            true,
 				MarkdownDescription: "CleverCloud API endpoint, default to https://api.clever-cloud.com",
 			},
-			"token": {
-				Type:                types.StringType,
-				Optional:            true,
-				Computed:            true,
+			"token": schema.StringAttribute{
+				Optional:            true, // can be read from ~/.config by client
+				Sensitive:           true,
 				MarkdownDescription: "CleverCloud OAuth1 token, can be took from clever-tools after login",
 			},
-			"secret": {
-				Type:                types.StringType,
-				Optional:            true,
-				Computed:            true,
+			"secret": schema.StringAttribute{
+				Optional:            true, // // can be read from ~/.config by client
 				Sensitive:           true,
 				MarkdownDescription: "CleverCloud OAuth1 secret, can be took from clever-tools after login",
 			},
-			"organisation": {
-				Type:                types.StringType,
+			"organisation": schema.StringAttribute{
 				Sensitive:           true,
 				Required:            true,
 				MarkdownDescription: "CleverCloud organisation, can be either orga_xxx, or user_xxx for personal spaces",
-				Validators: []tfsdk.AttributeValidator{
+				Validators: []validator.String{
 					pkg.NewValidatorRegex("valid owner name", regexp.MustCompile(`^(user|orga)_.{36}`)),
 				},
 			},
 		},
-	}, nil
+	}
 }
