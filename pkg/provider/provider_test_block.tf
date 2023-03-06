@@ -1,0 +1,3 @@
+provider "clevercloud" {
+	organisation = "%s"
+}

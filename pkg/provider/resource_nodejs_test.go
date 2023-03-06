@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	_ "embed"
 	"fmt"
 	"os"
 	"regexp"
@@ -14,15 +15,8 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-const nodejsBlock = `resource "%s" "%s" {
-	name = "%s"
-	region = "par"
-	min_instance_count = 1
-	max_instance_count = 2
-	smallest_flavor = "XS"
-	biggest_flavor = "M"
-}
-`
+//go:embed resource_nodejs_test_block.tf
+var nodejsBlock string
 
 func TestAccNodejs_basic(t *testing.T) {
 	rName := fmt.Sprintf("tf-test-node-%d", time.Now().UnixMilli())
@@ -56,8 +50,7 @@ func TestAccNodejs_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config: fmt.Sprintf(providerBlock, org) +
-				fmt.Sprintf(nodejsBlock, "clevercloud_nodejs", rName, rName),
+			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(nodejsBlock, rName, rName),
 			Check: resource.ComposeTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
