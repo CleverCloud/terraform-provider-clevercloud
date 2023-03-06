@@ -5,13 +5,12 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 type attributeValidator struct {
 	desc         string
-	validateFunc func(context.Context, tfsdk.ValidateAttributeRequest, *tfsdk.ValidateAttributeResponse)
+	validateFunc func(context.Context, validator.StringRequest, *validator.StringResponse)
 }
 
 func (av *attributeValidator) Description(context.Context) string {
@@ -22,33 +21,35 @@ func (av *attributeValidator) MarkdownDescription(context.Context) string {
 	return ""
 }
 
-func (av *attributeValidator) Validate(ctx context.Context, req tfsdk.ValidateAttributeRequest, res *tfsdk.ValidateAttributeResponse) {
+func (av *attributeValidator) ValidateString(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
 	av.validateFunc(ctx, req, res)
 }
 
-func NewValidator(description string, fn func(context.Context, tfsdk.ValidateAttributeRequest, *tfsdk.ValidateAttributeResponse)) tfsdk.AttributeValidator {
+func NewValidator(description string, fn func(context.Context, validator.StringRequest, *validator.StringResponse)) validator.String {
 	return &attributeValidator{desc: description, validateFunc: fn}
 }
 
-func NewValidatorRegex(description string, rg *regexp.Regexp) tfsdk.AttributeValidator {
-	return NewValidator(description, func(ctx context.Context, req tfsdk.ValidateAttributeRequest, res *tfsdk.ValidateAttributeResponse) {
+func NewValidatorRegex(description string, rg *regexp.Regexp) validator.String {
+	return NewValidator(description, func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
 
-		var str types.String
+		/*var str types.String
+
 		diags := tfsdk.ValueAs(ctx, req.AttributeConfig, &str)
 		res.Diagnostics.Append(diags...)
 		if res.Diagnostics.HasError() {
 			return
-		}
+		}*/
+		value := req.ConfigValue.ValueString()
 
-		if str.Null || str.Unknown {
+		if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 			return
 		}
 
-		if !rg.MatchString(str.Value) {
+		if !rg.MatchString(value) {
 			res.Diagnostics.AddAttributeError(
-				req.AttributePath,
+				req.Path,
 				"invalid organisation ID",
-				fmt.Sprintf("organisation do not starts with 'user_' or 'orga_' ('%s')", str.Value),
+				fmt.Sprintf("organisation do not starts with 'user_' or 'orga_' ('%s')", value),
 			)
 		}
 	})

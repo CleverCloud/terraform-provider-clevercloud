@@ -14,7 +14,7 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-const nodejsBlock = `resource "%s" "%s" { 
+const nodejsBlock = `resource "%s" "%s" {
 	name = "%s"
 	region = "par"
 	min_instance_count = 1
@@ -26,7 +26,7 @@ const nodejsBlock = `resource "%s" "%s" {
 
 func TestAccNodejs_basic(t *testing.T) {
 	rName := fmt.Sprintf("tf-test-node-%d", time.Now().UnixMilli())
-	fullName := fmt.Sprintf("%s.%s", NodejsTypeName, rName)
+	fullName := fmt.Sprintf("clevercloud_nodejs.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 
@@ -57,7 +57,7 @@ func TestAccNodejs_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config: fmt.Sprintf(providerBlock, org) +
-				fmt.Sprintf(nodejsBlock, NodejsTypeName, rName, rName),
+				fmt.Sprintf(nodejsBlock, "clevercloud_nodejs", rName, rName),
 			Check: resource.ComposeTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),

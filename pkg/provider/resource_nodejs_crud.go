@@ -3,9 +3,9 @@ package provider
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
@@ -16,8 +16,39 @@ type ResourceNodeJS struct {
 	org string
 }
 
+func init() {
+	AddResource(NewResourceNodeJS)
+}
+
+func NewResourceNodeJS() resource.Resource {
+	return &ResourceNodeJS{}
+}
+
+func (r *ResourceNodeJS) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
+	res.TypeName = req.ProviderTypeName + "_nodejs"
+}
+
+// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
+// So we need to handle the case there is no ProviderData
+func (r *ResourceNodeJS) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	tflog.Info(ctx, "ResourceNodeJS.Configure()")
+
+	// Prevent panic if the provider has not been configured.
+	if req.ProviderData == nil {
+		return
+	}
+
+	provider, ok := req.ProviderData.(*Provider)
+	if ok {
+		r.cc = provider.cc
+		r.org = provider.Organisation
+	}
+
+	tflog.Info(ctx, "AFTER CONFIGURED", map[string]interface{}{"cc": r.cc == nil, "org": r.org})
+}
+
 // Create a new resource
-func (r ResourceNodeJS) Create(ctx context.Context, req tfsdk.CreateResourceRequest, resp *tfsdk.CreateResourceResponse) {
+func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	app := NodeJS{}
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &app)...)
@@ -48,17 +79,17 @@ func (r ResourceNodeJS) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 	}
 
 	createAppReq := tmp.CreateAppRequest{
-		Name:            app.Name.Value,
+		Name:            app.Name.ValueString(),
 		Deploy:          "git",
-		Description:     app.Description.Value,
+		Description:     app.Description.ValueString(),
 		InstanceType:    "node",
 		InstanceVariant: variantID,
 		InstanceVersion: version,
-		MinFlavor:       app.SmallestFlavor.Value,
-		MaxFlavor:       app.BiggestFlavor.Value,
-		MinInstances:    app.MaxInstanceCount.Value,
-		MaxInstances:    app.MaxInstanceCount.Value,
-		Zone:            app.Region.Value,
+		MinFlavor:       app.SmallestFlavor.ValueString(),
+		MaxFlavor:       app.BiggestFlavor.ValueString(),
+		MinInstances:    app.MaxInstanceCount.ValueInt64(),
+		MaxInstances:    app.MaxInstanceCount.ValueInt64(),
+		Zone:            app.Region.ValueString(),
 	}
 
 	res := tmp.CreateApp(ctx, r.cc, r.org, createAppReq)
@@ -81,8 +112,8 @@ func (r ResourceNodeJS) Create(ctx context.Context, req tfsdk.CreateResourceRequ
 }
 
 // Read resource information
-func (r ResourceNodeJS) Read(ctx context.Context, req tfsdk.ReadResourceRequest, resp *tfsdk.ReadResourceResponse) {
-	tflog.Debug(ctx, "NodeJS READ", map[string]interface{}{"request": req})
+func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	tflog.Info(ctx, "NodeJS READ", map[string]interface{}{"request": req})
 
 	var app NodeJS
 	diags := req.State.Get(ctx, &app)
@@ -91,9 +122,9 @@ func (r ResourceNodeJS) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 		return
 	}
 
-	appRes := tmp.GetApp(ctx, r.cc, r.org, app.ID.Value)
+	appRes := tmp.GetApp(ctx, r.cc, r.org, app.ID.ValueString())
 	if appRes.IsNotFoundError() {
-		diags = resp.State.SetAttribute(ctx, tftypes.NewAttributePath().WithAttributeName("id"), types.String{Unknown: true})
+		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown)
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -115,12 +146,12 @@ func (r ResourceNodeJS) Read(ctx context.Context, req tfsdk.ReadResourceRequest,
 }
 
 // Update resource
-func (r ResourceNodeJS) Update(ctx context.Context, req tfsdk.UpdateResourceRequest, resp *tfsdk.UpdateResourceResponse) {
+func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
 	// TODO
 }
 
 // Delete resource
-func (r ResourceNodeJS) Delete(ctx context.Context, req tfsdk.DeleteResourceRequest, resp *tfsdk.DeleteResourceResponse) {
+func (r *ResourceNodeJS) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var app NodeJS
 
 	diags := req.State.Get(ctx, &app)
@@ -128,9 +159,9 @@ func (r ResourceNodeJS) Delete(ctx context.Context, req tfsdk.DeleteResourceRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "NodeJS DELETE", map[string]interface{}{"app": app})
+	tflog.Info(ctx, "NodeJS DELETE", map[string]interface{}{"app": app})
 
-	res := tmp.DeleteApp(ctx, r.cc, r.org, app.ID.Value)
+	res := tmp.DeleteApp(ctx, r.cc, r.org, app.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -144,8 +175,9 @@ func (r ResourceNodeJS) Delete(ctx context.Context, req tfsdk.DeleteResourceRequ
 }
 
 // Import resource
-func (r ResourceNodeJS) ImportState(ctx context.Context, req tfsdk.ImportResourceStateRequest, resp *tfsdk.ImportResourceStateResponse) {
+func (r *ResourceNodeJS) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Save the import identifier in the id attribute
 	// and call Read() to fill fields
-	tfsdk.ResourceImportStatePassthroughID(ctx, tftypes.NewAttributePath().WithAttributeName("id"), req, resp)
+	attr := path.Root("id")
+	resource.ImportStatePassthroughID(ctx, attr, req, resp)
 }

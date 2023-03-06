@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/terraform"
@@ -21,22 +21,20 @@ const providerBlock = `provider "clevercloud" {
 }
 `
 
-const postgresqlBlock = `resource "%s" "%s" { 
+const postgresqlBlock = `resource "%s" "%s" {
 	name = "%s"
-	plan = "dev" 
+	plan = "dev"
 	region = "par"
 }
 `
 
 var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
-	"clevercloud": func() (tfprotov6.ProviderServer, error) {
-		return tfsdk.NewProtocol6Server(New()), nil
-	},
+	"clevercloud": providerserver.NewProtocol6WithError(New("test")()),
 }
 
 func TestAccPostgreSQL_basic(t *testing.T) {
 	rName := fmt.Sprintf("tf-test-pg-%d", time.Now().UnixMilli())
-	fullName := fmt.Sprintf("%s.%s", PostgreSQLTypeName, rName)
+	fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 
@@ -67,7 +65,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config: fmt.Sprintf(providerBlock, org) +
-				fmt.Sprintf(postgresqlBlock, PostgreSQLTypeName, rName, rName),
+				fmt.Sprintf(postgresqlBlock, "clevercloud_postgresql", rName, rName),
 			Check: resource.ComposeTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^addon_.*`)),
 				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`)),
