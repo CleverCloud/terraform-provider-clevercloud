@@ -70,7 +70,28 @@ func GetPostgreSQL(ctx context.Context, cc *client.Client, postgresqlID string) 
 	return client.Get[PostgreSQL](ctx, cc, path)
 }
 
-func DeletePostgres(ctx context.Context, cc *client.Client, organisationID string, postgresID string) client.Response[interface{}] {
-	path := fmt.Sprintf("/v2/organisations/%s/addons/%s", organisationID, postgresID)
-	return client.Delete[interface{}](ctx, cc, path)
+type DeleteAddonResponse struct {
+	ID      int64  `json:"id"`
+	Message string `json:"message"`
+	Type    string `json:"type"`
+}
+
+func DeleteAddon(ctx context.Context, cc *client.Client, organisationID string, addonID string) client.Response[DeleteAddonResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/addons/%s", organisationID, addonID)
+	return client.Delete[DeleteAddonResponse](ctx, cc, path)
+}
+
+type EnvVar struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+func GetAddon(ctx context.Context, cc *client.Client, organisation string, addon string) client.Response[AddonResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/addons/%s", organisation, addon)
+	return client.Get[AddonResponse](ctx, cc, path)
+}
+
+func GetAddonEnv(ctx context.Context, cc *client.Client, organisation string, addon string) client.Response[[]EnvVar] {
+	path := fmt.Sprintf("/v2/organisations/%s/addons/%s/env", organisation, addon)
+	return client.Get[[]EnvVar](ctx, cc, path)
 }

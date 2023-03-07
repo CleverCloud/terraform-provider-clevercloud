@@ -8,25 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
-	"go.clever-cloud.dev/client"
 )
-
-type ResourceNodeJS struct {
-	cc  *client.Client
-	org string
-}
-
-func init() {
-	AddResource(NewResourceNodeJS)
-}
-
-func NewResourceNodeJS() resource.Resource {
-	return &ResourceNodeJS{}
-}
-
-func (r *ResourceNodeJS) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
-	res.TypeName = req.ProviderTypeName + "_nodejs"
-}
 
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
 // So we need to handle the case there is no ProviderData

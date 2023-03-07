@@ -9,25 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
-	"go.clever-cloud.dev/client"
 )
-
-type ResourcePostgreSQL struct {
-	cc  *client.Client
-	org string
-}
-
-func init() {
-	AddResource(NewResourcePostgreSQL)
-}
-
-func NewResourcePostgreSQL() resource.Resource {
-	return &ResourcePostgreSQL{}
-}
-
-func (r *ResourcePostgreSQL) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
-	res.TypeName = req.ProviderTypeName + "_postgresql"
-}
 
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
 // So we need to handle the case there is no ProviderData
@@ -182,7 +164,7 @@ func (r *ResourcePostgreSQL) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 	tflog.Info(ctx, "PostgreSQL DELETE", map[string]interface{}{"pg": pg})
 
-	res := tmp.DeletePostgres(ctx, r.cc, r.org, pg.ID.ValueString())
+	res := tmp.DeleteAddon(ctx, r.cc, r.org, pg.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

@@ -31,6 +31,16 @@ resource "clevercloud_nodejs" "node1" {
 	biggest_flavor = "M"
 }
 
+resource "clevercloud_cellar" "cellar1" {
+  name = "cellar1"
+  region = "par"
+}
+
+resource "clevercloud_cellar_bucket" "bucket1" {
+  id = "bucket1"
+  cellar_id = cellar1.id
+}
+
 output "host" {
   value = clevercloud_postgresql.PG1.host
 }
