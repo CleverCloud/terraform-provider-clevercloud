@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -16,12 +17,8 @@ type CellarBucket struct {
 	CellarID types.String `tfsdk:"cellar_id"`
 }
 
-const resourceCellarBucketDoc = `
-Manage [Cellar Bucket](https://www.clever-cloud.com/doc/deploy/addon/cellar/) product.
-
-See [product specification](https://www.clever-cloud.com/doc/deploy/addon/cellar/).
-
-`
+//go:embed resource_cellar_bucket.md
+var resourceCellarBucketDoc string
 
 func (r ResourceCellarBucket) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{

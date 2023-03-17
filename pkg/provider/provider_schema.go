@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	_ "embed"
 	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework/provider"
@@ -19,9 +20,8 @@ type ProviderData struct {
 	Organisation types.String `tfsdk:"organisation"`
 }
 
-const providerDoc = `
-CleverCloud provider allow you to interract with CleverCloud platform.
-`
+//go:embed provider.md
+var providerDoc string
 
 // GetSchema return provider schema
 func (p *Provider) Schema(_ context.Context, req provider.SchemaRequest, res *provider.SchemaResponse) {
