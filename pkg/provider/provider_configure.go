@@ -20,7 +20,19 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 	}
 
 	p.Organisation = config.Organisation.ValueString()
-	p.cc = client.New(client.WithAutoOauthConfig())
+
+	// Allow to get creds from CLI config directory or by injected variables
+	if config.Secret.IsUnknown() ||
+		config.Token.IsUnknown() ||
+		config.Secret.IsNull() ||
+		config.Token.IsNull() {
+		p.cc = client.New(client.WithAutoOauthConfig())
+	} else {
+		p.cc = client.New(client.WithUserOauthConfig(
+			config.Token.ValueString(),
+			config.Secret.ValueString(),
+		))
+	}
 
 	selfRes := client.Get[map[string]interface{}](ctx, p.cc, "/v2/self")
 	if selfRes.HasError() {

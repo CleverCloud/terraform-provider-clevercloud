@@ -82,7 +82,6 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 
 	appRes := res.Payload()
 	// TODO set fields
-	tflog.Info(ctx, "create response", map[string]interface{}{"plan": appRes})
 	app.ID = fromStr(appRes.ID)
 	app.DeployURL = fromStr(appRes.DeployURL)
 	app.VHost = fromStr(appRes.Vhosts[0].Fqdn)
