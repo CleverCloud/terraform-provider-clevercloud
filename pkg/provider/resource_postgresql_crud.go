@@ -77,7 +77,6 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	pg.ID = fromStr(res.Payload().ID)
 	pg.CreationDate = fromI(res.Payload().CreationDate)
 	pg.Plan = fromStr(res.Payload().Plan.Slug)
-	tflog.Info(ctx, "create response", map[string]interface{}{"plan": res.Payload()})
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 	if resp.Diagnostics.HasError() {

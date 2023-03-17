@@ -16,9 +16,11 @@ type CreateAppRequest struct {
 	InstanceVersion string `json:"instanceVersion" example:"20220330"`
 	MinFlavor       string `json:"minFlavor" example:"pico"`
 	MaxFlavor       string `json:"maxFlavor" example:"M"`
+	BuildFlavor     string `json:"buildFlavor" example:"XL"`
 	MinInstances    int64  `json:"minInstances" example:"1"`
 	MaxInstances    int64  `json:"maxInstances" example:"4"`
 	Zone            string `json:"zone" example:"par"`
+	CancelOnPush    bool   `json:"cancelOnPush"`
 }
 
 type CreatAppResponse struct {
@@ -28,7 +30,7 @@ type CreatAppResponse struct {
 	Zone           string      `json:"zone"`
 	Instance       Instance    `json:"instance"`
 	Deployment     Deployment  `json:"deployment"`
-	Vhosts         []Vhosts    `json:"vhosts"`
+	Vhosts         []Vhost     `json:"vhosts"`
 	CreationDate   int64       `json:"creationDate"`
 	LastDeploy     int         `json:"last_deploy"`
 	Archived       bool        `json:"archived"`
@@ -124,7 +126,7 @@ type Deployment struct {
 	URL          string `json:"url"`
 	HTTPURL      string `json:"httpUrl"`
 }
-type Vhosts struct {
+type Vhost struct {
 	Fqdn string `json:"fqdn"`
 }
 type BuildFlavor struct {
@@ -157,7 +159,7 @@ func DeleteApp(ctx context.Context, cc *client.Client, organisationID, applicati
 	return client.Delete[interface{}](ctx, cc, path)
 }
 
-func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID, applicationID, envs map[string]string) client.Response[interface{}] {
+func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID string, applicationID string, envs map[string]string) client.Response[interface{}] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/env", organisationID, applicationID)
 	return client.Put[interface{}](ctx, cc, path, envs)
 }
@@ -196,4 +198,26 @@ type DefaultFlavor struct {
 func GetProductInstance(ctx context.Context, cc *client.Client) client.Response[[]ProductInstance] {
 	path := "/v2/products/instances"
 	return client.Get[[]ProductInstance](ctx, cc, path)
+}
+
+type UpdateAppReq struct {
+	CancelOnPush   bool   `json:"cancelOnPush"`
+	Description    string `json:"description"`
+	ForceHTTPS     string `json:"forceHttps"`
+	Homogeneous    bool   `json:"homogeneous"`
+	AppID          string `json:"id"`
+	Name           string `json:"name"`
+	SeparateBuild  bool   `json:"separateBuild"`
+	StickySessions bool   `json:"stickySessions"`
+	Zone           string `json:"zone"`
+}
+
+func UpdateApp(ctx context.Context, cc *client.Client, organisationID, applicationID string, req UpdateAppReq) client.Response[CreatAppResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s", organisationID, applicationID)
+	return client.Put[CreatAppResponse](ctx, cc, path, req)
+}
+
+func AddAppVHost(ctx context.Context, cc *client.Client, organisationID, applicationID, vhost string) client.Response[interface{}] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/vhosts/%s", organisationID, applicationID, vhost)
+	return client.Put[interface{}](ctx, cc, path, map[string]string{})
 }
