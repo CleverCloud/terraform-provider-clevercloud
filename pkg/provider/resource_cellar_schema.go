@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -19,12 +20,8 @@ type Cellar struct {
 	KeySecret types.String `tfsdk:"key_secret"`
 }
 
-const resourceCellarDoc = `
-Manage [Cellar](https://www.clever-cloud.com/doc/deploy/addon/cellar/) product.
-
-See [product specification](https://www.clever-cloud.com/doc/deploy/addon/cellar/).
-
-`
+//go:embed resource_cellar.md
+var resourceCellarDoc string
 
 func (r ResourceCellar) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{

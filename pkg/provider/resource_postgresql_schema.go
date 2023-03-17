@@ -2,6 +2,7 @@ package provider
 
 import (
 	"context"
+	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -21,12 +22,8 @@ type PostgreSQL struct {
 	Password     types.String `tfsdk:"password"`
 }
 
-const resourcePostgresqlDoc = `
-Manage [PostgreSQL](https://www.postgresql.org/) product.
-
-See [product specification](https://www.clever-cloud.com/postgresql-hosting/).
-
-`
+//go:embed resource_postgresql.md
+var resourcePostgresqlDoc string
 
 func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
