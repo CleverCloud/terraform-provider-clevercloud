@@ -1,10 +1,11 @@
-name: Tests
+---
+name: Lint
 
 on:
   push:
 
 jobs:
-  test:
+  lint:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
@@ -12,5 +13,8 @@ jobs:
       uses: actions/setup-go@v4
       with:
         go-version: '1.20'
-    - name: Tests
-      run: make test
+    - name: golangci-lint
+      uses: golangci/golangci-lint-action@v3
+      with:
+        version: v1.52
+...
