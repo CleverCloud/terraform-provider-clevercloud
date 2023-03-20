@@ -12,7 +12,6 @@ import (
 // these will be set by the goreleaser configuration
 // to appropriate values for the compiled binary.
 var version string = "dev"
-var commit string = ""
 
 func main() {
 	var debug bool
