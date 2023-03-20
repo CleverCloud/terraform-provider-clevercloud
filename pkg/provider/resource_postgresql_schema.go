@@ -27,6 +27,7 @@ var resourcePostgresqlDoc string
 
 func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             0,
 		MarkdownDescription: resourcePostgresqlDoc,
 		Attributes: map[string]schema.Attribute{
 			// customer provided
@@ -44,4 +45,9 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 			"password":      schema.StringAttribute{Computed: true, MarkdownDescription: "Login password"},
 		},
 	}
+}
+
+// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
+func (r ResourcePostgreSQL) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{}
 }
