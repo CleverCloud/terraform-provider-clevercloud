@@ -25,6 +25,7 @@ var resourceCellarDoc string
 
 func (r ResourceCellar) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
+		Version:             0,
 		MarkdownDescription: resourceCellarDoc,
 		Attributes: map[string]schema.Attribute{
 			// customer provided
@@ -38,4 +39,9 @@ func (r ResourceCellar) Schema(_ context.Context, req resource.SchemaRequest, re
 			"key_secret": schema.StringAttribute{Computed: true, Sensitive: true, MarkdownDescription: "Key secret used to authenticate"},
 		},
 	}
+}
+
+// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
+func (r ResourceCellar) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{}
 }

@@ -40,6 +40,7 @@ var nodejsDoc string
 func (r ResourceNodeJS) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 
 	res.Schema = schema.Schema{
+		Version:             0,
 		MarkdownDescription: nodejsDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
 			// Node specifique
@@ -72,4 +73,9 @@ func (r ResourceNodeJS) Schema(ctx context.Context, req resource.SchemaRequest, 
 			},
 		}),
 	}
+}
+
+// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
+func (r ResourceNodeJS) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{}
 }

@@ -10,7 +10,7 @@ description: |-
 # clevercloud_postgresql (Resource)
 
 Manage [PostgreSQL](https://www.postgresql.org/) product.
-			
+
 See [product specification](https://www.clever-cloud.com/postgresql-hosting/).
 
 
@@ -30,7 +30,7 @@ See [product specification](https://www.clever-cloud.com/postgresql-hosting/).
 - `database` (String) Database name on the PostgreSQL server
 - `host` (String) Database host, used to connect to
 - `id` (String) Generated unique identifier
-- `password` (String, Sensitive) Login password
+- `password` (String) Login password
 - `port` (Number) Database port
 - `user` (String) Login username
 

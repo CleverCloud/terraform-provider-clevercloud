@@ -35,3 +35,7 @@ test:
 
 testacc:
 	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 120m
+
+docs:
+	tfplugindocs generate
+	tfplugindocs validate

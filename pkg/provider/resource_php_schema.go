@@ -40,6 +40,7 @@ var phpDoc string
 
 func (r ResourcePHP) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 	res.Schema = schema.Schema{
+		Version:             0,
 		MarkdownDescription: phpDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
 			// PHP specifique
@@ -64,6 +65,11 @@ func (r ResourcePHP) Schema(ctx context.Context, req resource.SchemaRequest, res
 			},
 		}),
 	}
+}
+
+// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
+func (php *PHP) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{}
 }
 
 func (php *PHP) toEnv() map[string]string {

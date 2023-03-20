@@ -23,4 +23,4 @@ CleverCloud provider allow you to interract with CleverCloud platform.
 
 - `endpoint` (String) CleverCloud API endpoint, default to https://api.clever-cloud.com
 - `secret` (String, Sensitive) CleverCloud OAuth1 secret, can be took from clever-tools after login
-- `token` (String) CleverCloud OAuth1 token, can be took from clever-tools after login
+- `token` (String, Sensitive) CleverCloud OAuth1 token, can be took from clever-tools after login
