@@ -49,61 +49,47 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	tflog.Info(ctx, "BUILD FLAVOR "+plan.BuildFlavor.String())
-	createAppReq := tmp.CreateAppRequest{
-		Name:            plan.Name.ValueString(),
-		Deploy:          "git",
-		Description:     plan.Description.ValueString(),
-		InstanceType:    "php",
-		InstanceVariant: instance.Variant.ID,
-		InstanceVersion: instance.Version,
-		BuildFlavor:     plan.BuildFlavor.ValueString(),
-		MinFlavor:       plan.SmallestFlavor.ValueString(),
-		MaxFlavor:       plan.BiggestFlavor.ValueString(),
-		MinInstances:    plan.MinInstanceCount.ValueInt64(),
-		MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
-		Zone:            plan.Region.ValueString(),
-		CancelOnPush:    false,
-	}
-
-	res := tmp.CreateApp(ctx, r.cc, r.org, createAppReq)
-	if res.HasError() {
-		resp.Diagnostics.AddError("failed to create app", res.Error().Error())
-		return
-	}
-
-	appRes := res.Payload()
-	tflog.Info(ctx, "BUILD FLAVOR RES"+appRes.BuildFlavor.Name, map[string]interface{}{})
-	plan.ID = pkg.FromStr(appRes.ID)
-	plan.DeployURL = pkg.FromStr(appRes.DeployURL)
-	plan.VHost = pkg.FromStr(appRes.Vhosts[0].Fqdn)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	envRes := tmp.UpdateAppEnv(ctx, r.cc, r.org, appRes.ID, plan.toEnv())
-	if envRes.HasError() {
-		resp.Diagnostics.AddError("failed to configure application", envRes.Error().Error())
-	}
-
 	vhosts := []string{}
 	resp.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	vhostsWithoutDefault := pkg.Filter(vhosts, func(vhost string) bool {
-		ok := vhostCleverAppsReg.MatchString(vhost)
-		return !ok
-	})
+	createAppReq := application.CreateReq{
+		Client:       r.cc,
+		Organization: r.org,
+		Application: tmp.CreateAppRequest{
+			Name:            plan.Name.ValueString(),
+			Deploy:          "git",
+			Description:     plan.Description.ValueString(),
+			InstanceType:    "php",
+			InstanceVariant: instance.Variant.ID,
+			InstanceVersion: instance.Version,
+			BuildFlavor:     plan.BuildFlavor.ValueString(),
+			MinFlavor:       plan.SmallestFlavor.ValueString(),
+			MaxFlavor:       plan.BiggestFlavor.ValueString(),
+			MinInstances:    plan.MinInstanceCount.ValueInt64(),
+			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
+			Zone:            plan.Region.ValueString(),
+			CancelOnPush:    false,
+		},
+		Environment: plan.toEnv(),
+		VHosts:      vhosts,
+	}
 
-	for _, vhost := range vhostsWithoutDefault {
-		addVhostRes := tmp.AddAppVHost(ctx, r.cc, r.org, appRes.ID, vhost)
-		if addVhostRes.HasError() {
-			resp.Diagnostics.AddError("failed to add additional vhost", addVhostRes.Error().Error())
-		}
+	createAppRes := application.CreateApp(ctx, createAppReq, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	tflog.Info(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]interface{}{})
+	plan.ID = pkg.FromStr(createAppRes.Application.ID)
+	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
+	plan.VHost = pkg.FromStr(createAppRes.Application.Vhosts[0].Fqdn)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 }
 

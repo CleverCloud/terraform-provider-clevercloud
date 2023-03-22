@@ -34,9 +34,15 @@ func (r *ResourceNodeJS) Configure(ctx context.Context, req resource.ConfigureRe
 
 // Create a new resource
 func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	app := NodeJS{}
+	plan := NodeJS{}
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &app)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	vhosts := []string{}
+	resp.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -46,33 +52,34 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	createAppReq := tmp.CreateAppRequest{
-		Name:            app.Name.ValueString(),
-		Deploy:          "git",
-		Description:     app.Description.ValueString(),
-		InstanceType:    "node",
-		InstanceVariant: instance.Variant.ID,
-		InstanceVersion: instance.Version,
-		MinFlavor:       app.SmallestFlavor.ValueString(),
-		MaxFlavor:       app.BiggestFlavor.ValueString(),
-		MinInstances:    app.MaxInstanceCount.ValueInt64(),
-		MaxInstances:    app.MaxInstanceCount.ValueInt64(),
-		Zone:            app.Region.ValueString(),
+	createReq := application.CreateReq{
+		Client:       r.cc,
+		Organization: r.org,
+		Application: tmp.CreateAppRequest{
+			Name:            plan.Name.ValueString(),
+			Deploy:          "git",
+			Description:     plan.Description.ValueString(),
+			InstanceType:    "node",
+			InstanceVariant: instance.Variant.ID,
+			InstanceVersion: instance.Version,
+			MinFlavor:       plan.SmallestFlavor.ValueString(),
+			MaxFlavor:       plan.BiggestFlavor.ValueString(),
+			MinInstances:    plan.MaxInstanceCount.ValueInt64(),
+			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
+			Zone:            plan.Region.ValueString(),
+		},
+		Environment: plan.toEnv(),
+		VHosts:      vhosts,
 	}
 
-	res := tmp.CreateApp(ctx, r.cc, r.org, createAppReq)
-	if res.HasError() {
-		resp.Diagnostics.AddError("failed to create app", res.Error().Error())
-		return
-	}
+	createRes := application.CreateApp(ctx, createReq, resp.Diagnostics)
 
-	appRes := res.Payload()
 	// TODO set fields
-	app.ID = pkg.FromStr(appRes.ID)
-	app.DeployURL = pkg.FromStr(appRes.DeployURL)
-	app.VHost = pkg.FromStr(appRes.Vhosts[0].Fqdn)
+	plan.ID = pkg.FromStr(createRes.Application.ID)
+	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
+	plan.VHost = pkg.FromStr(createRes.Application.Vhosts[0].Fqdn)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, app)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
