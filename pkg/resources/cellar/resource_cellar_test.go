@@ -22,7 +22,7 @@ import (
 var cellarBlock string
 
 //go:embed provider_test_block.tf
-var TestProviderBlock string
+var providerBlock string
 
 var TestProtoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
@@ -44,7 +44,7 @@ func TestAccCellar_basic(t *testing.T) {
 		ProtoV6ProviderFactories: TestProtoV6Provider,
 		Steps: []resource.TestStep{{
 			ResourceName: "cellar_" + cName,
-			Config:       fmt.Sprintf(TestProviderBlock, org) + fmt.Sprintf(cellarBlock, cName, cName),
+			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(cellarBlock, cName, cName),
 			Check: resource.ComposeTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^cellar_.*`)),
 				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*\.services.clever-cloud.com$`)),

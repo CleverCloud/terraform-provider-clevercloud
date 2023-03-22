@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/application"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -40,25 +41,8 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	// GET variants
-	var version string
-	var variantID string
-	productRes := tmp.GetProductInstance(ctx, r.cc)
-	if productRes.HasError() {
-		resp.Diagnostics.AddError("failed to get variant", productRes.Error().Error())
-		return
-	}
-	for _, product := range *productRes.Payload() {
-		if product.Type != "node" || product.Name != "Node" {
-			continue
-		}
-
-		version = product.Version
-		variantID = product.Variant.ID
-		break
-	}
-	if version == "" || variantID == "" {
-		resp.Diagnostics.AddError("failed to get variant", "there id no product matching 'node'")
+	instance := application.LookupInstance(ctx, r.cc, "node", "Node", resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -67,8 +51,8 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 		Deploy:          "git",
 		Description:     app.Description.ValueString(),
 		InstanceType:    "node",
-		InstanceVariant: variantID,
-		InstanceVersion: version,
+		InstanceVariant: instance.Variant.ID,
+		InstanceVersion: instance.Version,
 		MinFlavor:       app.SmallestFlavor.ValueString(),
 		MaxFlavor:       app.BiggestFlavor.ValueString(),
 		MinInstances:    app.MaxInstanceCount.ValueInt64(),

@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/application"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -43,25 +44,8 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	// GET variants
-	var version string
-	var variantID string
-	productRes := tmp.GetProductInstance(ctx, r.cc)
-	if productRes.HasError() {
-		resp.Diagnostics.AddError("failed to get variant", productRes.Error().Error())
-		return
-	}
-	for _, product := range *productRes.Payload() {
-		if product.Type != "php" || product.Name != "PHP" {
-			continue
-		}
-
-		version = product.Version
-		variantID = product.Variant.ID
-		break
-	}
-	if version == "" || variantID == "" {
-		resp.Diagnostics.AddError("failed to get variant", "there id no product matching 'node'")
+	instance := application.LookupInstance(ctx, r.cc, "php", "PHP", resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -71,8 +55,8 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		Deploy:          "git",
 		Description:     plan.Description.ValueString(),
 		InstanceType:    "php",
-		InstanceVariant: variantID,
-		InstanceVersion: version,
+		InstanceVariant: instance.Variant.ID,
+		InstanceVersion: instance.Version,
 		BuildFlavor:     plan.BuildFlavor.ValueString(),
 		MinFlavor:       plan.SmallestFlavor.ValueString(),
 		MaxFlavor:       plan.BiggestFlavor.ValueString(),
