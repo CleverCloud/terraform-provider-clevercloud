@@ -27,7 +27,9 @@ type PHP struct {
 	VHost            types.String `tfsdk:"vhost"`
 	AdditionalVHosts types.List   `tfsdk:"additional_vhosts"`
 	DeployURL        types.String `tfsdk:"deploy_url"`
-	AppFolder        types.String `tfsdk:"app_folder"`
+
+	// Env
+	AppFolder types.String `tfsdk:"app_folder"`
 
 	// PHP related
 	PHPVersion      types.String `tfsdk:"php_version"`
@@ -44,8 +46,6 @@ func (r ResourcePHP) Schema(ctx context.Context, req resource.SchemaRequest, res
 		Version:             0,
 		MarkdownDescription: phpDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
-			// PHP specifique
-
 			// CC_WEBROOT
 			"php_version": schema.StringAttribute{
 				Optional:            true,
@@ -76,6 +76,9 @@ func (php *PHP) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrad
 func (php *PHP) toEnv() map[string]string {
 	m := map[string]string{}
 
+	pkg.IfIsSet(php.AppFolder, func(s string) {
+		m["APP_FOLDER"] = s
+	})
 	pkg.IfIsSet(php.WebRoot, func(webroot string) {
 		m["CC_WEBROOT"] = webroot
 	})

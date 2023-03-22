@@ -7,10 +7,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 )
 
 type NodeJS struct {
+	// Common
 	ID               types.String `tfsdk:"id"`
 	Name             types.String `tfsdk:"name"`
 	Description      types.String `tfsdk:"description"`
@@ -26,12 +28,16 @@ type NodeJS struct {
 	VHost            types.String `tfsdk:"vhost"`
 	AdditionalVHosts types.List   `tfsdk:"additional_vhosts"`
 	DeployURL        types.String `tfsdk:"deploy_url"`
-	AppFolder        types.String `tfsdk:"app_folder"`
-	DevDependencies  types.Bool   `tfsdk:"dev_dependencies"`
-	StartScript      types.String `tfsdk:"start_script"`
-	PackageManager   types.String `tfsdk:"package_manager"`
-	Registry         types.String `tfsdk:"registry"`
-	RegistryToken    types.String `tfsdk:"registry_token"`
+
+	// Env
+	AppFolder types.String `tfsdk:"app_folder"`
+
+	// Node
+	DevDependencies types.Bool   `tfsdk:"dev_dependencies"`
+	StartScript     types.String `tfsdk:"start_script"`
+	PackageManager  types.String `tfsdk:"package_manager"`
+	Registry        types.String `tfsdk:"registry"`
+	RegistryToken   types.String `tfsdk:"registry_token"`
 }
 
 //go:embed resource_nodejs.md
@@ -43,8 +49,6 @@ func (r ResourceNodeJS) Schema(ctx context.Context, req resource.SchemaRequest, 
 		Version:             0,
 		MarkdownDescription: nodejsDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
-			// Node specifique
-
 			// CC_NODE_DEV_DEPENDENCIES
 			"dev_dependencies": schema.BoolAttribute{
 				Optional:            true,
@@ -78,4 +82,30 @@ func (r ResourceNodeJS) Schema(ctx context.Context, req resource.SchemaRequest, 
 // https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
 func (r ResourceNodeJS) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{}
+}
+
+func (node NodeJS) toEnv() map[string]string {
+	m := map[string]string{}
+
+	pkg.IfIsSet(node.AppFolder, func(s string) {
+		m["APP_FOLDER"] = s
+	})
+
+	pkg.IfIsSetB(node.DevDependencies, func(s bool) {
+		m["CC_NODE_DEV_DEPENDENCIES"] = "install"
+	})
+	pkg.IfIsSet(node.StartScript, func(s string) {
+		m["CC_RUN_COMMAND"] = s
+	})
+	pkg.IfIsSet(node.PackageManager, func(s string) {
+		m["CC_NODE_BUILD_TOOL"] = s
+	})
+	pkg.IfIsSet(node.Registry, func(s string) {
+		m["CC_NPM_REGISTRY"] = s
+	})
+	pkg.IfIsSet(node.RegistryToken, func(s string) {
+		m["NPM_TOKEN"] = s
+	})
+
+	return m
 }
