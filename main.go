@@ -6,7 +6,7 @@ import (
 	"flag"
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
+	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 )
 
 // these will be set by the goreleaser configuration
@@ -26,7 +26,7 @@ func main() {
 		ProtocolVersion: 6,
 	}
 
-	err := providerserver.Serve(ctx, provider.New(version), opts)
+	err := providerserver.Serve(ctx, impl.New(version), opts)
 	if err != nil {
 		panic(err.Error())
 	}

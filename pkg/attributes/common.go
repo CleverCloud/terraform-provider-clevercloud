@@ -6,7 +6,6 @@ import (
 )
 
 // This attributes are used on several runtimes
-
 var runtimeCommon = map[string]schema.Attribute{
 	// client provided
 
