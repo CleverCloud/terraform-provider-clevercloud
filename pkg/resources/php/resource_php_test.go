@@ -29,6 +29,7 @@ var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 }
 
 func TestAccPHP_basic(t *testing.T) {
+	ctx := context.Background()
 	rName := fmt.Sprintf("tf-test-php-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_php.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
@@ -45,7 +46,7 @@ func TestAccPHP_basic(t *testing.T) {
 			Destroy:      false,
 			ResourceName: rName,
 			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(phpBlock, rName, rName),
-			Check: resource.ComposeTestCheckFunc(
+			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
 				resource.TestCheckResourceAttr(fullName, "region", "par"),
@@ -53,7 +54,7 @@ func TestAccPHP_basic(t *testing.T) {
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(context.Background(), cc, org, resource.Primary.ID)
+				res := tmp.GetApp(ctx, cc, org, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}

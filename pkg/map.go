@@ -45,3 +45,11 @@ func First[T any](items []T, fn func(item T) bool) *T {
 
 	return nil
 }
+
+func Reduce[T, U any](items []T, acc U, fn func(U, T) U) U {
+	for _, item := range items {
+		acc = fn(acc, item)
+	}
+
+	return acc
+}

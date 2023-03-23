@@ -5,4 +5,8 @@ resource "clevercloud_nodejs" "%s" {
 	max_instance_count = 2
 	smallest_flavor = "XS"
 	biggest_flavor = "M"
+	app_folder = "./app"
+	environment = {
+		MY_KEY = "myval"
+	}
 }

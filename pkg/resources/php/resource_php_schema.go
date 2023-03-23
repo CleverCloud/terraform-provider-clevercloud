@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -29,7 +30,8 @@ type PHP struct {
 	DeployURL        types.String `tfsdk:"deploy_url"`
 
 	// Env
-	AppFolder types.String `tfsdk:"app_folder"`
+	AppFolder   types.String `tfsdk:"app_folder"`
+	Environment types.Map    `tfsdk:"environment"`
 
 	// PHP related
 	PHPVersion      types.String `tfsdk:"php_version"`
@@ -73,28 +75,33 @@ func (php *PHP) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrad
 	return map[int64]resource.StateUpgrader{}
 }
 
-func (php *PHP) toEnv() map[string]string {
-	m := map[string]string{}
+func (php *PHP) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+	env := map[string]string{}
 
-	pkg.IfIsSet(php.AppFolder, func(s string) {
-		m["APP_FOLDER"] = s
-	})
-	pkg.IfIsSet(php.WebRoot, func(webroot string) {
-		m["CC_WEBROOT"] = webroot
-	})
-	pkg.IfIsSet(php.PHPVersion, func(version string) {
-		m["CC_PHP_VERSION"] = version
-	})
+	// do not use the real map since ElementAs can nullish it
+	// https://github.com/hashicorp/terraform-plugin-framework/issues/698
+	customEnv := map[string]string{}
+	diags.Append(php.Environment.ElementsAs(ctx, &customEnv, false)...)
+	if diags.HasError() {
+		return env
+	}
+	for k, v := range customEnv {
+		env[k] = v
+	}
+
+	pkg.IfIsSet(php.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSet(php.WebRoot, func(webroot string) { env["CC_WEBROOT"] = webroot })
+	pkg.IfIsSet(php.PHPVersion, func(version string) { env["CC_PHP_VERSION"] = version })
 	pkg.IfIsSetB(php.DevDependencies, func(devDeps bool) {
 		if devDeps {
-			m["CC_PHP_DEV_DEPENDENCIES"] = "install"
+			env["CC_PHP_DEV_DEPENDENCIES"] = "install"
 		}
 	})
 	pkg.IfIsSetB(php.RedisSessions, func(redis bool) {
 		if redis {
-			m["SESSION_TYPE"] = "redis"
+			env["SESSION_TYPE"] = "redis"
 		}
 	})
 
-	return m
+	return env
 }

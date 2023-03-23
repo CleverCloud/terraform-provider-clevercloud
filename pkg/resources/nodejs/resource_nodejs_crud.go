@@ -52,6 +52,11 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	environment := plan.toEnv(ctx, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	createReq := application.CreateReq{
 		Client:       r.cc,
 		Organization: r.org,
@@ -68,7 +73,7 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			Zone:            plan.Region.ValueString(),
 		},
-		Environment: plan.toEnv(),
+		Environment: environment,
 		VHosts:      vhosts,
 	}
 
