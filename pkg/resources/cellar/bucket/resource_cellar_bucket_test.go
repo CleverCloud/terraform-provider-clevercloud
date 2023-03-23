@@ -70,7 +70,7 @@ func TestAccCellarBucket_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			ResourceName: "cellar_bucket_" + bName,
 			Config:       fmt.Sprintf(TestProviderBlock, org) + fmt.Sprintf(cellarBucketBlock, bName, bName, cellar.RealID),
-			Check: resource.ComposeTestCheckFunc(
+			Check: resource.ComposeAggregateTestCheckFunc(
 				func(*terraform.State) error {
 					return nil
 				},

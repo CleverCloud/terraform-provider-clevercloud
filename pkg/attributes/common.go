@@ -79,6 +79,13 @@ var runtimeCommon = map[string]schema.Attribute{
 		Computed:            true,
 		MarkdownDescription: "Default vhost to access your app",
 	},
+
+	"environment": schema.MapAttribute{
+		Optional:    true,
+		Sensitive:   true,
+		Description: "Environment variables injected into the application",
+		ElementType: types.StringType,
+	},
 }
 
 func WithRuntimeCommons(runtimeSpecifics map[string]schema.Attribute) map[string]schema.Attribute {

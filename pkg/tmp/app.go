@@ -144,6 +144,11 @@ type BuildFlavor struct {
 	Memory          Memory      `json:"memory"`
 }
 
+type Env struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
 func CreateApp(ctx context.Context, cc *client.Client, organisationID string, app CreateAppRequest) client.Response[CreatAppResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications", organisationID)
 	return client.Post[CreatAppResponse](ctx, cc, path, app)
@@ -157,6 +162,11 @@ func GetApp(ctx context.Context, cc *client.Client, organisationID, applicationI
 func DeleteApp(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[interface{}] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s", organisationID, applicationID)
 	return client.Delete[interface{}](ctx, cc, path)
+}
+
+func GetAppEnv(ctx context.Context, cc *client.Client, organisationID string, applicationID string) client.Response[[]Env] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/env", organisationID, applicationID)
+	return client.Get[[]Env](ctx, cc, path)
 }
 
 func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID string, applicationID string, envs map[string]string) client.Response[interface{}] {

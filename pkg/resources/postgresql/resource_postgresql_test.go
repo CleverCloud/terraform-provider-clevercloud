@@ -61,7 +61,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(postgresqlBlock, rName, rName),
-			Check: resource.ComposeTestCheckFunc(
+			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^addon_.*`)),
 				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`)),
 				resource.TestCheckResourceAttrSet(fullName, "port"),

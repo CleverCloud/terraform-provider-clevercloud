@@ -55,6 +55,11 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
+	environment := plan.toEnv(ctx, resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	createAppReq := application.CreateReq{
 		Client:       r.cc,
 		Organization: r.org,
@@ -73,7 +78,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
-		Environment: plan.toEnv(),
+		Environment: environment,
 		VHosts:      vhosts,
 	}
 

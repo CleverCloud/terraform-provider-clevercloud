@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -30,7 +31,8 @@ type NodeJS struct {
 	DeployURL        types.String `tfsdk:"deploy_url"`
 
 	// Env
-	AppFolder types.String `tfsdk:"app_folder"`
+	AppFolder   types.String `tfsdk:"app_folder"`
+	Environment types.Map    `tfsdk:"environment"`
 
 	// Node
 	DevDependencies types.Bool   `tfsdk:"dev_dependencies"`
@@ -84,28 +86,26 @@ func (r ResourceNodeJS) UpgradeState(ctx context.Context) map[int64]resource.Sta
 	return map[int64]resource.StateUpgrader{}
 }
 
-func (node NodeJS) toEnv() map[string]string {
-	m := map[string]string{}
+func (node NodeJS) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+	env := map[string]string{}
 
-	pkg.IfIsSet(node.AppFolder, func(s string) {
-		m["APP_FOLDER"] = s
-	})
+	// do not use the real map since ElementAs can nullish it
+	// https://github.com/hashicorp/terraform-plugin-framework/issues/698
+	customEnv := map[string]string{}
+	diags.Append(node.Environment.ElementsAs(ctx, &customEnv, false)...)
+	if diags.HasError() {
+		return env
+	}
+	for k, v := range customEnv {
+		env[k] = v
+	}
 
-	pkg.IfIsSetB(node.DevDependencies, func(s bool) {
-		m["CC_NODE_DEV_DEPENDENCIES"] = "install"
-	})
-	pkg.IfIsSet(node.StartScript, func(s string) {
-		m["CC_RUN_COMMAND"] = s
-	})
-	pkg.IfIsSet(node.PackageManager, func(s string) {
-		m["CC_NODE_BUILD_TOOL"] = s
-	})
-	pkg.IfIsSet(node.Registry, func(s string) {
-		m["CC_NPM_REGISTRY"] = s
-	})
-	pkg.IfIsSet(node.RegistryToken, func(s string) {
-		m["NPM_TOKEN"] = s
-	})
+	pkg.IfIsSet(node.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetB(node.DevDependencies, func(s bool) { env["CC_NODE_DEV_DEPENDENCIES"] = "install" })
+	pkg.IfIsSet(node.StartScript, func(s string) { env["CC_RUN_COMMAND"] = s })
+	pkg.IfIsSet(node.PackageManager, func(s string) { env["CC_NODE_BUILD_TOOL"] = s })
+	pkg.IfIsSet(node.Registry, func(s string) { env["CC_NPM_REGISTRY"] = s })
+	pkg.IfIsSet(node.RegistryToken, func(s string) { env["NPM_TOKEN"] = s })
 
-	return m
+	return env
 }

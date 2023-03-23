@@ -45,7 +45,7 @@ func TestAccCellar_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			ResourceName: "cellar_" + cName,
 			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(cellarBlock, cName, cName),
-			Check: resource.ComposeTestCheckFunc(
+			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^cellar_.*`)),
 				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*\.services.clever-cloud.com$`)),
 				resource.TestMatchResourceAttr(fullName, "key_id", regexp.MustCompile(`^[A-Z0-9]{20}$`)),

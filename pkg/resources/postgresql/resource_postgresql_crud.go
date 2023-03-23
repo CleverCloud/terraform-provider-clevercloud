@@ -64,7 +64,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	addonReq := tmp.AddonRequest{
-		Name:       pg.Name.String(),
+		Name:       pg.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: "postgresql-addon",
 		Region:     pg.Region.ValueString(),
