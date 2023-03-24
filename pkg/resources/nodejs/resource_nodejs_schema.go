@@ -1,4 +1,4 @@
-package provider
+package nodejs
 
 import (
 	"context"

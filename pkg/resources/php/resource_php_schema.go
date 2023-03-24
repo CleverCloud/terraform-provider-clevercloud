@@ -1,4 +1,4 @@
-package provider
+package php
 
 import (
 	"context"
@@ -71,17 +71,17 @@ func (r ResourcePHP) Schema(ctx context.Context, req resource.SchemaRequest, res
 }
 
 // https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (php *PHP) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+func (p *PHP) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{}
 }
 
-func (php *PHP) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (p *PHP) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
 	// https://github.com/hashicorp/terraform-plugin-framework/issues/698
 	customEnv := map[string]string{}
-	diags.Append(php.Environment.ElementsAs(ctx, &customEnv, false)...)
+	diags.Append(p.Environment.ElementsAs(ctx, &customEnv, false)...)
 	if diags.HasError() {
 		return env
 	}
@@ -89,15 +89,15 @@ func (php *PHP) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]st
 		env[k] = v
 	}
 
-	pkg.IfIsSet(php.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-	pkg.IfIsSet(php.WebRoot, func(webroot string) { env["CC_WEBROOT"] = webroot })
-	pkg.IfIsSet(php.PHPVersion, func(version string) { env["CC_PHP_VERSION"] = version })
-	pkg.IfIsSetB(php.DevDependencies, func(devDeps bool) {
+	pkg.IfIsSet(p.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSet(p.WebRoot, func(webroot string) { env["CC_WEBROOT"] = webroot })
+	pkg.IfIsSet(p.PHPVersion, func(version string) { env["CC_PHP_VERSION"] = version })
+	pkg.IfIsSetB(p.DevDependencies, func(devDeps bool) {
 		if devDeps {
 			env["CC_PHP_DEV_DEPENDENCIES"] = "install"
 		}
 	})
-	pkg.IfIsSetB(php.RedisSessions, func(redis bool) {
+	pkg.IfIsSetB(p.RedisSessions, func(redis bool) {
 		if redis {
 			env["SESSION_TYPE"] = "redis"
 		}

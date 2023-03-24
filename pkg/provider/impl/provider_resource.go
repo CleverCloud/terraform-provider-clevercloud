@@ -4,15 +4,10 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"go.clever-cloud.com/terraform-provider/pkg/registry"
 )
 
-var resources = []func() resource.Resource{}
-
-func AddResource(fn func() resource.Resource) {
-	resources = append(resources, fn)
-}
-
-// GetResources - Defines provider resources
+// Resources - Defines provider resources
 func (p *Provider) Resources(_ context.Context) []func() resource.Resource {
-	return resources
+	return registry.Resources
 }

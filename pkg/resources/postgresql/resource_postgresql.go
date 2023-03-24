@@ -1,20 +1,15 @@
-package provider
+package postgresql
 
 import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 	"go.clever-cloud.dev/client"
 )
 
 type ResourcePostgreSQL struct {
 	cc  *client.Client
 	org string
-}
-
-func init() {
-	impl.AddResource(NewResourcePostgreSQL)
 }
 
 func NewResourcePostgreSQL() resource.Resource {
