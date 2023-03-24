@@ -1,4 +1,4 @@
-package provider
+package php_test
 
 import (
 	"context"

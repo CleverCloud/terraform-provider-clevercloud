@@ -4,11 +4,10 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	"go.clever-cloud.com/terraform-provider/pkg/registry"
 )
 
-var datasources = []func() datasource.DataSource{}
-
-// GetDataSources - Defines provider data sources
+// DataSources - Defines provider data sources
 func (p *Provider) DataSources(_ context.Context) []func() datasource.DataSource {
-	return datasources
+	return registry.Datasources
 }

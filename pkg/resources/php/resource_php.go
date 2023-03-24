@@ -1,20 +1,15 @@
-package provider
+package php
 
 import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 	"go.clever-cloud.dev/client"
 )
 
 type ResourcePHP struct {
 	cc  *client.Client
 	org string
-}
-
-func init() {
-	impl.AddResource(NewResourcePHP)
 }
 
 func NewResourcePHP() resource.Resource {

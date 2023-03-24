@@ -1,20 +1,15 @@
-package provider
+package nodejs
 
 import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 	"go.clever-cloud.dev/client"
 )
 
 type ResourceNodeJS struct {
 	cc  *client.Client
 	org string
-}
-
-func init() {
-	impl.AddResource(NewResourceNodeJS)
 }
 
 func NewResourceNodeJS() resource.Resource {

@@ -1,4 +1,4 @@
-package cellar
+package cellar_test
 
 import (
 	"context"

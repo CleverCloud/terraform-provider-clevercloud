@@ -1,4 +1,4 @@
-package provider
+package nodejs_test
 
 import (
 	"context"

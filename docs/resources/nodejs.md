@@ -35,6 +35,7 @@ See [NodeJS product](https://www.clever-cloud.com/nodejs-hosting/) specification
 - `commit` (String) Deploy application on the given commit/tag
 - `description` (String) Application description
 - `dev_dependencies` (Boolean) Install development dependencies specified in package.json
+- `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `package_manager` (String) Either npm, npm-ci, yarn, yarn2 or custom
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `registry` (String) The host of your private repository, available values: github or the registry host
