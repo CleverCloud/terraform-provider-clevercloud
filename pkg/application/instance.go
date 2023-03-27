@@ -23,7 +23,7 @@ func LookupInstance(ctx context.Context, cc *client.Client, kind, name string, d
 	instances := *productRes.Payload()
 
 	instanceKind := pkg.Filter(instances, func(instance tmp.ProductInstance) bool {
-		return instance.Type == kind
+		return instance.Type == kind && instance.Enabled
 	})
 
 	if len(instanceKind) == 0 {
@@ -38,13 +38,10 @@ func LookupInstance(ctx context.Context, cc *client.Client, kind, name string, d
 	if len(variants) == 0 {
 		diags.AddError("failed to get variant", fmt.Sprintf("there id no product matching this name '%s'", name))
 		return nil
+	} else if len(variants) > 1 {
+		diags.AddWarning("failed to get the right variant", "more than one variant match this criteria, take last one")
 	}
 
-	if len(variants) > 1 {
-		diags.AddWarning("failed to get the right variant", "more than one variant match this criteria")
-		return nil
-	}
-
-	variant := variants[0]
+	variant := variants[len(variants)-1]
 	return &variant
 }
