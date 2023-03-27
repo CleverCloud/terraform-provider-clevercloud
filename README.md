@@ -29,3 +29,7 @@ Run the following command to initialize the workspace and apply the sample confi
 ```shell
 $ terraform init && terraform apply
 ```
+
+> By using [Terraform Cloud](https://app.terraform.io/) features, you have to share your [ClerverCloud](https://www.clever-cloud.com/) credential with a third party company with non European data hosting.
+>
+> If you store your credentials outside of the European union, you will lose your data sovereignty
