@@ -29,6 +29,7 @@ resource "clevercloud_nodejs" "node1" {
 	max_instance_count = 2
 	smallest_flavor = "XS"
 	biggest_flavor = "M"
+	node_version = "14.0"
 }
 
 resource "clevercloud_cellar" "cellar1" {

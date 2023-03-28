@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
@@ -27,6 +28,7 @@ func CreateApp(ctx context.Context, req CreateReq, diags diag.Diagnostics) *Crea
 	appRes := tmp.CreateApp(ctx, req.Client, req.Organization, req.Application)
 	if appRes.HasError() {
 		diags.AddError("failed to create application", appRes.Error().Error())
+		tflog.Error(ctx, "failed to create app", map[string]interface{}{"error": appRes.Error().Error()})
 		return nil
 	}
 
