@@ -20,6 +20,7 @@ var runtimeCommon = map[string]schema.Attribute{
 	"min_instance_count": schema.Int64Attribute{
 		Required:            true,
 		MarkdownDescription: "Minimum instance count",
+		//Default:             int64default.StaticInt64(1), // TODO: setup all defaults
 	},
 	"max_instance_count": schema.Int64Attribute{
 		Required:            true,
@@ -53,11 +54,6 @@ var runtimeCommon = map[string]schema.Attribute{
 		ElementType:         types.StringType,
 		Optional:            true,
 		MarkdownDescription: "Add custom hostname in addition to the default one, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)",
-	},
-	"commit": schema.StringAttribute{
-		Optional:            true,
-		Description:         "Support either '<branch>:<SHA>' or '<tag>'",
-		MarkdownDescription: "Deploy application on the given commit/tag",
 	},
 	// APP_FOLDER
 	"app_folder": schema.StringAttribute{

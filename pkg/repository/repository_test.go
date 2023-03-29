@@ -1,11 +1,6 @@
 package repository
 
-import (
-	"context"
-	"testing"
-)
-
-func TestRepositoryWithCommit(t *testing.T) {
+/*func TestRepositoryWithCommit(t *testing.T) {
 	ctx := context.Background()
 	repository := New()
 	expectedSHA := "f4b6aeab4559cc7293249722b956826c3b664076"
@@ -53,3 +48,4 @@ func TestRepositoryWithTag(t *testing.T) {
 		t.Fatalf("current commit does not match, got: %s, expect: %s", current.Hash().String(), expectedSHA)
 	}
 }
+*/

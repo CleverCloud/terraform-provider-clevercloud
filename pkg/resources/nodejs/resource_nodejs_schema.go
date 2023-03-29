@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/application"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 )
 
@@ -25,10 +26,10 @@ type NodeJS struct {
 	Region           types.String `tfsdk:"region"`
 	StickySessions   types.Bool   `tfsdk:"sticky_sessions"`
 	RedirectHTTPS    types.Bool   `tfsdk:"redirect_https"`
-	Commit           types.String `tfsdk:"commit"`
 	VHost            types.String `tfsdk:"vhost"`
 	AdditionalVHosts types.List   `tfsdk:"additional_vhosts"`
 	DeployURL        types.String `tfsdk:"deploy_url"`
+	Deployment       *Deployment  `tfsdk:"deployment"`
 
 	// Env
 	AppFolder   types.String `tfsdk:"app_folder"`
@@ -40,6 +41,11 @@ type NodeJS struct {
 	PackageManager  types.String `tfsdk:"package_manager"`
 	Registry        types.String `tfsdk:"registry"`
 	RegistryToken   types.String `tfsdk:"registry_token"`
+}
+
+type Deployment struct {
+	Repository types.String `tfsdk:"repository"`
+	Commit     types.String `tfsdk:"commit"`
 }
 
 //go:embed resource_nodejs.md
@@ -78,6 +84,22 @@ func (r ResourceNodeJS) Schema(ctx context.Context, req resource.SchemaRequest, 
 				MarkdownDescription: "Private repository token",
 			},
 		}),
+		Blocks: map[string]schema.Block{
+			"deployment": schema.SingleNestedBlock{
+				Attributes: map[string]schema.Attribute{
+					"repository": schema.StringAttribute{
+						Optional:            true, // If "deployment" attribute is defined, then repository is required
+						Description:         "",
+						MarkdownDescription: "",
+					},
+					"commit": schema.StringAttribute{
+						Optional:            true,
+						Description:         "Support either '<branch>:<SHA>' or '<tag>'",
+						MarkdownDescription: "Deploy application on the given commit/tag",
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -108,4 +130,15 @@ func (node NodeJS) toEnv(ctx context.Context, diags diag.Diagnostics) map[string
 	pkg.IfIsSet(node.RegistryToken, func(s string) { env["NPM_TOKEN"] = s })
 
 	return env
+}
+
+func (node NodeJS) toDeployment() *application.Deployment {
+	if node.Deployment == nil || node.Deployment.Repository.IsNull() {
+		return nil
+	}
+
+	return &application.Deployment{
+		Repository: node.Deployment.Repository.ValueString(),
+		Commit:     node.Deployment.Commit.ValueStringPointer(),
+	}
 }
