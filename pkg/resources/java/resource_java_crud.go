@@ -1,4 +1,4 @@
-package php
+package java
 
 import (
 	"context"
@@ -18,8 +18,8 @@ var vhostCleverAppsReg = regexp.MustCompile(`^app-.*\.cleverapps\.io$`)
 
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
 // So we need to handle the case there is no ProviderData
-func (r *ResourcePHP) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Info(ctx, "ResourcePHP.Configure()")
+func (r *ResourceJava) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	tflog.Info(ctx, "ResourceJava.Configure()")
 
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -36,15 +36,15 @@ func (r *ResourcePHP) Configure(ctx context.Context, req resource.ConfigureReque
 }
 
 // Create a new resource
-func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	plan := PHP{}
+func (r *ResourceJava) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	plan := Java{}
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	instance := application.LookupInstance(ctx, r.cc, "php", "PHP", resp.Diagnostics)
+	instance := application.LookupInstance(ctx, r.cc, "java", r.toProductName(), resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -100,8 +100,8 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 }
 
 // Read resource information
-func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state PHP
+func (r *ResourceJava) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	var state Java
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
@@ -119,23 +119,23 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 		resp.Diagnostics.AddError("failed to get app", appRes.Error().Error())
 	}
 
-	appPHP := appRes.Payload()
-	state.Name = pkg.FromStr(appPHP.Name)
-	state.Description = pkg.FromStr(appPHP.Description)
-	state.MinInstanceCount = pkg.FromI(int64(appPHP.Instance.MinInstances))
-	state.MaxInstanceCount = pkg.FromI(int64(appPHP.Instance.MaxInstances))
-	state.SmallestFlavor = pkg.FromStr(appPHP.Instance.MinFlavor.Name)
-	state.BiggestFlavor = pkg.FromStr(appPHP.Instance.MaxFlavor.Name)
-	state.Region = pkg.FromStr(appPHP.Zone)
-	state.DeployURL = pkg.FromStr(appPHP.DeployURL)
+	appJava := appRes.Payload()
+	state.Name = pkg.FromStr(appJava.Name)
+	state.Description = pkg.FromStr(appJava.Description)
+	state.MinInstanceCount = pkg.FromI(int64(appJava.Instance.MinInstances))
+	state.MaxInstanceCount = pkg.FromI(int64(appJava.Instance.MaxInstances))
+	state.SmallestFlavor = pkg.FromStr(appJava.Instance.MinFlavor.Name)
+	state.BiggestFlavor = pkg.FromStr(appJava.Instance.MaxFlavor.Name)
+	state.Region = pkg.FromStr(appJava.Zone)
+	state.DeployURL = pkg.FromStr(appJava.DeployURL)
 
-	if appPHP.SeparateBuild {
-		state.BuildFlavor = pkg.FromStr(appPHP.BuildFlavor.Name)
+	if appJava.SeparateBuild {
+		state.BuildFlavor = pkg.FromStr(appJava.BuildFlavor.Name)
 	} else {
 		state.BuildFlavor = types.StringNull()
 	}
 
-	vhosts := pkg.Map(appPHP.Vhosts, func(vhost tmp.Vhost) string {
+	vhosts := pkg.Map(appJava.Vhosts, func(vhost tmp.Vhost) string {
 		return vhost.Fqdn
 	})
 	hasDefaultVHost := pkg.HasSome(vhosts, func(vhost string) bool {
@@ -160,23 +160,25 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 		state.AdditionalVHosts = types.ListNull(types.StringType)
 	}
 
+	// TODO: read ENV
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Update resource
-func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
+func (r *ResourceJava) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
 	// TODO
 }
 
 // Delete resource
-func (r *ResourcePHP) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state PHP
+func (r *ResourceJava) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	var state Java
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Info(ctx, "PHP DELETE", map[string]interface{}{"state": state})
+	tflog.Info(ctx, "JAVA DELETE", map[string]interface{}{"state": state})
 
 	res := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
 	if res.IsNotFoundError() {
@@ -192,7 +194,7 @@ func (r *ResourcePHP) Delete(ctx context.Context, req resource.DeleteRequest, re
 }
 
 // Import resource
-func (r *ResourcePHP) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *ResourceJava) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Save the import identifier in the id attribute
 	// and call Read() to fill fields
 	attr := path.Root("id")

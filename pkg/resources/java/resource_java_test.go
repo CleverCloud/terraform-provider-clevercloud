@@ -1,0 +1,73 @@
+package java_test
+
+import (
+	"context"
+	_ "embed"
+	"fmt"
+	"os"
+	"regexp"
+	"testing"
+	"time"
+
+	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/client"
+)
+
+//go:embed provider_test_block.tf
+var providerBlock string
+
+//go:embed resource_java_test_block.tf
+var javaBlock string
+
+var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
+	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
+}
+
+func TestAccJava_basic(t *testing.T) {
+	ctx := context.Background()
+	rName := fmt.Sprintf("tf-java-php-%d", time.Now().UnixMilli())
+	fullName := fmt.Sprintf("clevercloud_java_war.%s", rName)
+	cc := client.New(client.WithAutoOauthConfig())
+	org := os.Getenv("ORGANISATION")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			if org == "" {
+				t.Fatalf("missing ORGANISATION env var")
+			}
+		},
+		ProtoV6ProviderFactories: protoV6Provider,
+		Steps: []resource.TestStep{{
+			Destroy:      false,
+			ResourceName: rName,
+			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(javaBlock, rName, rName),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
+				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
+				resource.TestCheckResourceAttr(fullName, "region", "par"),
+			),
+		}},
+		CheckDestroy: func(state *terraform.State) error {
+			for _, resource := range state.RootModule().Resources {
+				res := tmp.GetApp(ctx, cc, org, resource.Primary.ID)
+				if res.IsNotFoundError() {
+					continue
+				}
+				if res.HasError() {
+					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+				}
+				if res.Payload().State == "TO_DELETE" {
+					continue
+				}
+
+				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
+			}
+			return nil
+		},
+	})
+}
