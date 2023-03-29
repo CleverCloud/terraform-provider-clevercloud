@@ -32,7 +32,7 @@ See [NodeJS product](https://www.clever-cloud.com/nodejs-hosting/) specification
 - `additional_vhosts` (List of String) Add custom hostname in addition to the default one, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build step
-- `commit` (String) Deploy application on the given commit/tag
+- `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
 - `dev_dependencies` (Boolean) Install development dependencies specified in package.json
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
@@ -48,5 +48,13 @@ See [NodeJS product](https://www.clever-cloud.com/nodejs-hosting/) specification
 - `deploy_url` (String) Git URL used to push source code
 - `id` (String) Unique identifier generated during application creation
 - `vhost` (String) Default vhost to access your app
+
+<a id="nestedblock--deployment"></a>
+### Nested Schema for `deployment`
+
+Optional:
+
+- `commit` (String) Deploy application on the given commit/tag
+- `repository` (String)
 
 

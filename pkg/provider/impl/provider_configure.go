@@ -2,6 +2,7 @@ package impl
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -36,7 +37,16 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 
 	selfRes := client.Get[map[string]interface{}](ctx, p.cc, "/v2/self")
 	if selfRes.HasError() {
-		resp.Diagnostics.AddError("invalid CleverCloud Client configuration", selfRes.Error().Error())
+		if selfRes.StatusCode() == 401 || selfRes.StatusCode() == 403 {
+			resp.Diagnostics.AddError("invalid CleverCloud Client configuration", selfRes.Error().Error())
+		} else {
+			resp.Diagnostics.AddError(
+				"Clever Cloud is not available :/",
+				fmt.Sprintf(
+					"you can contact the Clever Cloud support with the next Request ID: '%s'",
+					selfRes.SozuID(),
+				))
+		}
 		return
 	}
 

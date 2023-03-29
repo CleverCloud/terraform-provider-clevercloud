@@ -15,6 +15,14 @@ type CreateReq struct {
 	Application  tmp.CreateAppRequest
 	Environment  map[string]string
 	VHosts       []string
+	Deployment   *Deployment
+}
+
+type Deployment struct {
+	Repository     string
+	Commit         *string
+	User, Password *string
+	PrivateSSHKey  *string
 }
 
 type CreateRes struct {
@@ -45,6 +53,15 @@ func CreateApp(ctx context.Context, req CreateReq, diags diag.Diagnostics) *Crea
 		addVhostRes := tmp.AddAppVHost(ctx, req.Client, req.Organization, res.Application.ID, vhost)
 		if addVhostRes.HasError() {
 			diags.AddError("failed to add additional vhost", addVhostRes.Error().Error())
+		}
+	}
+
+	// Git Deployment
+	if req.Deployment != nil {
+		tflog.Error(ctx, "DEPLOY !", map[string]interface{}{})
+		gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL, diags)
+		if diags.HasError() {
+			return nil
 		}
 	}
 

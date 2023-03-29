@@ -75,6 +75,7 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 		},
 		Environment: environment,
 		VHosts:      vhosts,
+		Deployment:  plan.toDeployment(),
 	}
 
 	createRes := application.CreateApp(ctx, createReq, resp.Diagnostics)

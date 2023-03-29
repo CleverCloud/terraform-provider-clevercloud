@@ -80,6 +80,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		},
 		Environment: environment,
 		VHosts:      vhosts,
+		Deployment:  plan.toDeployment(),
 	}
 
 	createAppRes := application.CreateApp(ctx, createAppReq, resp.Diagnostics)

@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"net/http"
 	"os"
 	"regexp"
 	"testing"
@@ -22,6 +23,9 @@ import (
 //go:embed resource_nodejs_test_block.tf
 var nodejsBlock string
 
+//go:embed resource_nodejs_test_block2.tf
+var nodejsBlock2 string
+
 //go:embed provider_test_block.tf
 var providerBlock string
 
@@ -32,7 +36,9 @@ var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 func TestAccNodejs_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := fmt.Sprintf("tf-test-node-%d", time.Now().UnixMilli())
+	rName2 := fmt.Sprintf("tf-test-node-%d-2", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_nodejs.%s", rName)
+	fullName2 := fmt.Sprintf("clevercloud_nodejs.%s", rName2)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 
@@ -90,7 +96,6 @@ func TestAccNodejs_basic(t *testing.T) {
 
 					env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
 						acc[e.Name] = e.Value
-						fmt.Printf("%+v\n", acc)
 						return acc
 					})
 
@@ -107,6 +112,52 @@ func TestAccNodejs_basic(t *testing.T) {
 					return nil
 				},
 			),
+		}, {
+			ResourceName: rName2,
+			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(nodejsBlock2, rName2, rName2),
+			Check: func(state *terraform.State) error {
+				id := state.RootModule().Resources[fullName2].Primary.ID
+
+				appRes := tmp.GetApp(ctx, cc, org, id)
+				if appRes.HasError() {
+					return fmt.Errorf("failed to get application: %w", appRes.Error())
+				}
+				app := appRes.Payload()
+
+				// Test deployed app
+				t := time.NewTimer(1 * time.Minute)
+				select {
+				case <-healthCheck(app.Vhosts[0].Fqdn):
+					return nil
+				case <-t.C:
+					return fmt.Errorf("application did not respond in the allowed time")
+				}
+			},
 		}},
 	})
+}
+
+func healthCheck(vhost string) chan struct{} {
+	c := make(chan struct{})
+
+	fmt.Printf("Test on %s\n", vhost)
+
+	go func() {
+		for {
+			res, err := http.Get(fmt.Sprintf("https://%s", vhost))
+			if err != nil {
+				fmt.Printf("%s\n", err.Error())
+				continue
+			}
+
+			fmt.Printf("RESPONSE %d\n", res.StatusCode)
+			if res.StatusCode != 200 {
+				time.Sleep(1 * time.Second)
+				continue
+			}
+			c <- struct{}{}
+		}
+	}()
+
+	return c
 }
