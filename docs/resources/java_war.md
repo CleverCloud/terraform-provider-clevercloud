@@ -61,9 +61,12 @@ resource "clevercloud_java_war" "myapp" {
 - `additional_vhosts` (List of String) Add custom hostname in addition to the default one, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build step
+- `dependencies` (Set of String) A list of application or addons requires to run this application.
+Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
+- `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `java_version` (String) Choose the JVM version between 7 to 17 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
@@ -81,5 +84,17 @@ Optional:
 
 - `commit` (String) Deploy application on the given commit/tag
 - `repository` (String)
+
+
+<a id="nestedblock--hooks"></a>
+### Nested Schema for `hooks`
+
+Optional:
+
+- `post_build` (String) [CC_POST_BUILD_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#post-build-cc_post_build_hook)
+- `pre_build` (String) [CC_PRE_BUILD_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#pre-build-cc_pre_build_hook)
+- `pre_run` (String) [CC_PRE_RUN_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#pre-run-cc_pre_run_hook)
+- `run_failed` (String) [CC_RUN_FAILED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)
+- `run_succeed` (String) [CC_RUN_SUCCEEDED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)
 
 

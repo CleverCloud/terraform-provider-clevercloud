@@ -2,7 +2,6 @@ package java
 
 import (
 	"context"
-	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -13,8 +12,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
-
-var vhostCleverAppsReg = regexp.MustCompile(`^app-.*\.cleverapps\.io$`)
 
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
 // So we need to handle the case there is no ProviderData
@@ -83,7 +80,8 @@ func (r *ResourceJava) Create(ctx context.Context, req resource.CreateRequest, r
 		Deployment:  plan.toDeployment(),
 	}
 
-	createAppRes := application.CreateApp(ctx, createAppReq, resp.Diagnostics)
+	createAppRes, diags := application.CreateApp(ctx, createAppReq)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -139,11 +137,11 @@ func (r *ResourceJava) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return vhost.Fqdn
 	})
 	hasDefaultVHost := pkg.HasSome(vhosts, func(vhost string) bool {
-		return vhostCleverAppsReg.MatchString(vhost)
+		return pkg.VhostCleverAppsRegExp.MatchString(vhost)
 	})
 	if hasDefaultVHost {
 		cleverapps := *pkg.First(vhosts, func(vhost string) bool {
-			return vhostCleverAppsReg.MatchString(vhost)
+			return pkg.VhostCleverAppsRegExp.MatchString(vhost)
 		})
 		state.VHost = pkg.FromStr(cleverapps)
 	} else {
@@ -151,7 +149,7 @@ func (r *ResourceJava) Read(ctx context.Context, req resource.ReadRequest, resp 
 	}
 
 	vhostsWithoutDefault := pkg.Filter(vhosts, func(vhost string) bool {
-		ok := vhostCleverAppsReg.MatchString(vhost)
+		ok := pkg.VhostCleverAppsRegExp.MatchString(vhost)
 		return !ok
 	})
 	if len(vhostsWithoutDefault) > 0 {

@@ -231,3 +231,13 @@ func AddAppVHost(ctx context.Context, cc *client.Client, organisationID, applica
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/vhosts/%s", organisationID, applicationID, vhost)
 	return client.Put[interface{}](ctx, cc, path, map[string]string{})
 }
+
+func AddAppLinkedAddons(ctx context.Context, cc *client.Client, organisationID, applicationID, addonID string) client.Response[client.Nothing] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/addons", organisationID, applicationID)
+	return client.Post[client.Nothing](ctx, cc, path, addonID)
+}
+
+func GetAppLinkedAddons(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[[]AddonResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/addons", organisationID, applicationID)
+	return client.Get[[]AddonResponse](ctx, cc, path)
+}

@@ -14,21 +14,23 @@ import (
 )
 
 type Java struct {
-	ID               types.String `tfsdk:"id"`
-	Name             types.String `tfsdk:"name"`
-	Description      types.String `tfsdk:"description"`
-	MinInstanceCount types.Int64  `tfsdk:"min_instance_count"`
-	MaxInstanceCount types.Int64  `tfsdk:"max_instance_count"`
-	SmallestFlavor   types.String `tfsdk:"smallest_flavor"`
-	BiggestFlavor    types.String `tfsdk:"biggest_flavor"`
-	BuildFlavor      types.String `tfsdk:"build_flavor"`
-	Region           types.String `tfsdk:"region"`
-	StickySessions   types.Bool   `tfsdk:"sticky_sessions"`
-	RedirectHTTPS    types.Bool   `tfsdk:"redirect_https"`
-	VHost            types.String `tfsdk:"vhost"`
-	AdditionalVHosts types.List   `tfsdk:"additional_vhosts"`
-	DeployURL        types.String `tfsdk:"deploy_url"`
-	Deployment       *Deployment  `tfsdk:"deployment"`
+	ID               types.String           `tfsdk:"id"`
+	Name             types.String           `tfsdk:"name"`
+	Description      types.String           `tfsdk:"description"`
+	MinInstanceCount types.Int64            `tfsdk:"min_instance_count"`
+	MaxInstanceCount types.Int64            `tfsdk:"max_instance_count"`
+	SmallestFlavor   types.String           `tfsdk:"smallest_flavor"`
+	BiggestFlavor    types.String           `tfsdk:"biggest_flavor"`
+	BuildFlavor      types.String           `tfsdk:"build_flavor"`
+	Region           types.String           `tfsdk:"region"`
+	StickySessions   types.Bool             `tfsdk:"sticky_sessions"`
+	RedirectHTTPS    types.Bool             `tfsdk:"redirect_https"`
+	VHost            types.String           `tfsdk:"vhost"`
+	AdditionalVHosts types.List             `tfsdk:"additional_vhosts"`
+	DeployURL        types.String           `tfsdk:"deploy_url"`
+	Deployment       *attributes.Deployment `tfsdk:"deployment"`
+	Hooks            *attributes.Hooks      `tfsdk:"hooks"`
+	Dependencies     types.Set              `tfsdk:"dependencies"`
 
 	// Env
 	AppFolder   types.String `tfsdk:"app_folder"`
@@ -36,11 +38,6 @@ type Java struct {
 
 	// Java related
 	JavaVersion types.String `tfsdk:"java_version"`
-}
-
-type Deployment struct {
-	Repository types.String `tfsdk:"repository"`
-	Commit     types.String `tfsdk:"commit"`
 }
 
 //go:embed resource_java.md
@@ -56,22 +53,7 @@ func (r ResourceJava) Schema(ctx context.Context, req resource.SchemaRequest, re
 				Description: "Choose the JVM version between 7 to 17 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).",
 			},
 		}),
-		Blocks: map[string]schema.Block{
-			"deployment": schema.SingleNestedBlock{ // TODO: factorize it
-				Attributes: map[string]schema.Attribute{
-					"repository": schema.StringAttribute{
-						Optional:            true, // If "deployment" attribute is defined, then repository is required
-						Description:         "",
-						MarkdownDescription: "",
-					},
-					"commit": schema.StringAttribute{
-						Optional:            true,
-						Description:         "Support either '<branch>:<SHA>' or '<tag>'",
-						MarkdownDescription: "Deploy application on the given commit/tag",
-					},
-				},
-			},
-		},
+		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 	}
 }
 

@@ -12,4 +12,5 @@ resource "clevercloud_nodejs" "%s" {
 	hooks {
 		post_build = "echo \"build is OK!\""
 	}
+	dependencies = []
 }

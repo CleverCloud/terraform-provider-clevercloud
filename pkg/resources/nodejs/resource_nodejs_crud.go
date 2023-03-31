@@ -57,6 +57,12 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	dependencies := []string{}
+	resp.Diagnostics.Append(plan.Dependencies.ElementsAs(ctx, &dependencies, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	createReq := application.CreateReq{
 		Client:       r.cc,
 		Organization: r.org,
@@ -73,12 +79,18 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			Zone:            plan.Region.ValueString(),
 		},
-		Environment: environment,
-		VHosts:      vhosts,
-		Deployment:  plan.toDeployment(),
+		Environment:  environment,
+		VHosts:       vhosts,
+		Deployment:   plan.toDeployment(),
+		Dependencies: dependencies,
 	}
 
-	createRes := application.CreateApp(ctx, createReq, resp.Diagnostics)
+	createRes, diags := application.CreateApp(ctx, createReq)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		tflog.Error(ctx, "ERROR IS WELL HERE", map[string]interface{}{})
+		return
+	}
 
 	// TODO set fields
 	plan.ID = pkg.FromStr(createRes.Application.ID)

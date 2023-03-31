@@ -30,6 +30,7 @@ type PHP struct {
 	DeployURL        types.String           `tfsdk:"deploy_url"`
 	Deployment       *attributes.Deployment `tfsdk:"deployment"`
 	Hooks            *attributes.Hooks      `tfsdk:"hooks"`
+	Dependencies     types.Set              `tfsdk:"dependencies"`
 
 	// Env
 	AppFolder   types.String `tfsdk:"app_folder"`

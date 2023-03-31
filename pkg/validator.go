@@ -54,3 +54,24 @@ func NewValidatorRegex(description string, rg *regexp.Regexp) validator.String {
 		}
 	})
 }
+
+type SetValidator struct {
+	description string
+	fn          func(context.Context, validator.SetRequest, *validator.SetResponse)
+}
+
+func NewSetValidator(description string, fn func(context.Context, validator.SetRequest, *validator.SetResponse)) validator.Set {
+	return &SetValidator{description, fn}
+}
+
+func (sv *SetValidator) Description(context.Context) string {
+	return sv.description
+}
+
+func (sv *SetValidator) MarkdownDescription(ctx context.Context) string {
+	return sv.Description(ctx)
+}
+
+func (sv *SetValidator) ValidateSet(ctx context.Context, req validator.SetRequest, res *validator.SetResponse) {
+	sv.fn(ctx, req, res)
+}
