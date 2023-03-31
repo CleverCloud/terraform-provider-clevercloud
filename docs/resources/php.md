@@ -36,6 +36,7 @@ See [PHP product](https://www.clever-cloud.com/doc/getting-started/by-language/p
 - `description` (String) Application description
 - `dev_dependencies` (Boolean) Install development dependencies
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
+- `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `php_version` (String) PHP version (Default: 7)
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redis_sessions` (Boolean) Use a linked Redis instance to store sessions (Default: false)
@@ -55,5 +56,17 @@ Optional:
 
 - `commit` (String) Deploy application on the given commit/tag
 - `repository` (String)
+
+
+<a id="nestedblock--hooks"></a>
+### Nested Schema for `hooks`
+
+Optional:
+
+- `post_build` (String) [CC_POST_BUILD_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#post-build-cc_post_build_hook)
+- `pre_build` (String) [CC_PRE_BUILD_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#pre-build-cc_pre_build_hook)
+- `pre_run` (String) [CC_PRE_RUN_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#pre-run-cc_pre_run_hook)
+- `run_failed` (String) [CC_RUN_FAILED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)
+- `run_succeed` (String) [CC_RUN_SUCCEEDED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)
 
 

@@ -1,0 +1,98 @@
+package attributes
+
+import (
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
+)
+
+// Deployment block
+type Deployment struct {
+	Repository types.String `tfsdk:"repository"`
+	Commit     types.String `tfsdk:"commit"`
+}
+
+// Hooks block
+type Hooks struct {
+	PreBuild   types.String `tfsdk:"pre_build"`
+	PostBuild  types.String `tfsdk:"post_build"`
+	PreRun     types.String `tfsdk:"pre_run"`
+	RunSucceed types.String `tfsdk:"run_succeed"`
+	RunFailed  types.String `tfsdk:"run_failed"`
+}
+
+var blocks = map[string]schema.Block{
+	"deployment": schema.SingleNestedBlock{
+		Attributes: map[string]schema.Attribute{
+			"repository": schema.StringAttribute{
+				Optional:            true, // If "deployment" attribute is defined, then repository is required
+				Description:         "",
+				MarkdownDescription: "",
+			},
+			"commit": schema.StringAttribute{
+				Optional:            true,
+				Description:         "Support either '<branch>:<SHA>' or '<tag>'",
+				MarkdownDescription: "Deploy application on the given commit/tag",
+			},
+		},
+	},
+	"hooks": schema.SingleNestedBlock{
+		Attributes: map[string]schema.Attribute{
+			"pre_build": schema.StringAttribute{
+				Optional:            true,
+				Description:         "This hook is ran before the dependencies are fetched. If it fails, the deployment fails",
+				MarkdownDescription: "[CC_PRE_BUILD_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#pre-build-cc_pre_build_hook)",
+			},
+			"post_build": schema.StringAttribute{
+				Optional:            true,
+				Description:         "This hook is ran after the project is built, and before the cache archive is generated. If it fails, the deployment fails",
+				MarkdownDescription: "[CC_POST_BUILD_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#post-build-cc_post_build_hook)",
+			},
+			"pre_run": schema.StringAttribute{
+				Optional:            true,
+				Description:         "This hook is ran before the application is started, but after the cache archive has been generated. If it fails, the deployment fails.",
+				MarkdownDescription: "[CC_PRE_RUN_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#pre-run-cc_pre_run_hook)",
+			},
+			"run_succeed": schema.StringAttribute{
+				Optional:            true,
+				Description:         "This hook are ran once the application has started. Their failure doesn't cause the deployment to fail.",
+				MarkdownDescription: "[CC_RUN_SUCCEEDED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)",
+			},
+			"run_failed": schema.StringAttribute{
+				Optional:            true,
+				Description:         "This hook are ran once the application has failed starting.",
+				MarkdownDescription: "[CC_RUN_FAILED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)",
+			},
+		},
+	},
+}
+
+func WithBlockRuntimeCommons(runtimeSpecifics map[string]schema.Block) map[string]schema.Block {
+	m := map[string]schema.Block{}
+
+	for blockName, block := range blocks {
+		m[blockName] = block
+	}
+
+	for blockName, block := range runtimeSpecifics {
+		m[blockName] = block
+	}
+
+	return m
+}
+
+func (hooks *Hooks) ToEnv() map[string]string {
+	m := map[string]string{}
+
+	if hooks == nil {
+		return m
+	}
+
+	pkg.IfIsSet(hooks.PreBuild, func(script string) { m["CC_PRE_BUILD_HOOK"] = script })
+	pkg.IfIsSet(hooks.PostBuild, func(script string) { m["CC_POST_BUILD_HOOK"] = script })
+	pkg.IfIsSet(hooks.PreRun, func(script string) { m["CC_PRE_RUN_HOOK"] = script })
+	pkg.IfIsSet(hooks.RunFailed, func(script string) { m["CC_RUN_FAILED_HOOK"] = script })
+	pkg.IfIsSet(hooks.RunSucceed, func(script string) { m["CC_RUN_SUCCEEDED_HOOK"] = script })
+
+	return m
+}

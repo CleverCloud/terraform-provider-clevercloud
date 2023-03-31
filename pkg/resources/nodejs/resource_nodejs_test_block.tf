@@ -9,4 +9,7 @@ resource "clevercloud_nodejs" "%s" {
 	environment = {
 		MY_KEY = "myval"
 	}
+	hooks {
+		post_build = "echo \"build is OK!\""
+	}
 }
