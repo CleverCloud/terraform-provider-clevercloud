@@ -109,6 +109,11 @@ func TestAccNodejs_basic(t *testing.T) {
 						return fmt.Errorf("expect env var '%s' set to '%s', but got: '%s'", "APP_FOLER", "./app", v2)
 					}
 
+					v3 := env["CC_POST_BUILD_HOOK"]
+					if v3 != "echo \"build is OK!\"" {
+						return fmt.Errorf("expect env var '%s' set to '%s', but got: '%s'", "CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
+					}
+
 					return nil
 				},
 			),

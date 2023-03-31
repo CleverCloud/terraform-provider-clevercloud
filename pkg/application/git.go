@@ -2,7 +2,6 @@ package application
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.dev/client"
 )
 
@@ -40,10 +38,6 @@ func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemot
 	if err != nil {
 		diags.AddError("failed to add clever remote", err.Error())
 		return
-	}
-	remotes, _ := r.Remotes()
-	for _, rem := range remotes {
-		tflog.Error(ctx, "remote", map[string]interface{}{"REM": fmt.Sprintf("%+v", rem)})
 	}
 
 	token, secret := cc.Oauth1UserCredentials()

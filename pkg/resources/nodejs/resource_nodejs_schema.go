@@ -15,21 +15,22 @@ import (
 
 type NodeJS struct {
 	// Common
-	ID               types.String `tfsdk:"id"`
-	Name             types.String `tfsdk:"name"`
-	Description      types.String `tfsdk:"description"`
-	MinInstanceCount types.Int64  `tfsdk:"min_instance_count"`
-	MaxInstanceCount types.Int64  `tfsdk:"max_instance_count"`
-	SmallestFlavor   types.String `tfsdk:"smallest_flavor"`
-	BiggestFlavor    types.String `tfsdk:"biggest_flavor"`
-	BuildFlavor      types.String `tfsdk:"build_flavor"`
-	Region           types.String `tfsdk:"region"`
-	StickySessions   types.Bool   `tfsdk:"sticky_sessions"`
-	RedirectHTTPS    types.Bool   `tfsdk:"redirect_https"`
-	VHost            types.String `tfsdk:"vhost"`
-	AdditionalVHosts types.List   `tfsdk:"additional_vhosts"`
-	DeployURL        types.String `tfsdk:"deploy_url"`
-	Deployment       *Deployment  `tfsdk:"deployment"`
+	ID               types.String           `tfsdk:"id"`
+	Name             types.String           `tfsdk:"name"`
+	Description      types.String           `tfsdk:"description"`
+	MinInstanceCount types.Int64            `tfsdk:"min_instance_count"`
+	MaxInstanceCount types.Int64            `tfsdk:"max_instance_count"`
+	SmallestFlavor   types.String           `tfsdk:"smallest_flavor"`
+	BiggestFlavor    types.String           `tfsdk:"biggest_flavor"`
+	BuildFlavor      types.String           `tfsdk:"build_flavor"`
+	Region           types.String           `tfsdk:"region"`
+	StickySessions   types.Bool             `tfsdk:"sticky_sessions"`
+	RedirectHTTPS    types.Bool             `tfsdk:"redirect_https"`
+	VHost            types.String           `tfsdk:"vhost"`
+	AdditionalVHosts types.List             `tfsdk:"additional_vhosts"`
+	DeployURL        types.String           `tfsdk:"deploy_url"`
+	Deployment       *attributes.Deployment `tfsdk:"deployment"`
+	Hooks            *attributes.Hooks      `tfsdk:"hooks"`
 
 	// Env
 	AppFolder   types.String `tfsdk:"app_folder"`
@@ -41,11 +42,6 @@ type NodeJS struct {
 	PackageManager  types.String `tfsdk:"package_manager"`
 	Registry        types.String `tfsdk:"registry"`
 	RegistryToken   types.String `tfsdk:"registry_token"`
-}
-
-type Deployment struct {
-	Repository types.String `tfsdk:"repository"`
-	Commit     types.String `tfsdk:"commit"`
 }
 
 //go:embed resource_nodejs.md
@@ -84,22 +80,7 @@ func (r ResourceNodeJS) Schema(ctx context.Context, req resource.SchemaRequest, 
 				MarkdownDescription: "Private repository token",
 			},
 		}),
-		Blocks: map[string]schema.Block{
-			"deployment": schema.SingleNestedBlock{
-				Attributes: map[string]schema.Attribute{
-					"repository": schema.StringAttribute{
-						Optional:            true, // If "deployment" attribute is defined, then repository is required
-						Description:         "",
-						MarkdownDescription: "",
-					},
-					"commit": schema.StringAttribute{
-						Optional:            true,
-						Description:         "Support either '<branch>:<SHA>' or '<tag>'",
-						MarkdownDescription: "Deploy application on the given commit/tag",
-					},
-				},
-			},
-		},
+		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 	}
 }
 
@@ -118,9 +99,7 @@ func (node NodeJS) toEnv(ctx context.Context, diags diag.Diagnostics) map[string
 	if diags.HasError() {
 		return env
 	}
-	for k, v := range customEnv {
-		env[k] = v
-	}
+	env = pkg.Merge(env, customEnv)
 
 	pkg.IfIsSet(node.AppFolder, func(s string) { env["APP_FOLDER"] = s })
 	pkg.IfIsSetB(node.DevDependencies, func(s bool) { env["CC_NODE_DEV_DEPENDENCIES"] = "install" })
@@ -128,6 +107,7 @@ func (node NodeJS) toEnv(ctx context.Context, diags diag.Diagnostics) map[string
 	pkg.IfIsSet(node.PackageManager, func(s string) { env["CC_NODE_BUILD_TOOL"] = s })
 	pkg.IfIsSet(node.Registry, func(s string) { env["CC_NPM_REGISTRY"] = s })
 	pkg.IfIsSet(node.RegistryToken, func(s string) { env["NPM_TOKEN"] = s })
+	env = pkg.Merge(env, node.Hooks.ToEnv())
 
 	return env
 }

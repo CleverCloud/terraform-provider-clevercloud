@@ -53,3 +53,17 @@ func Reduce[T, U any](items []T, acc U, fn func(U, T) U) U {
 
 	return acc
 }
+
+// Compute a new aggregated map
+func Merge[T comparable, U any](m1, m2 map[T]U) map[T]U {
+	m := map[T]U{}
+
+	for k, v := range m1 {
+		m[k] = v
+	}
+	for k, v := range m2 {
+		m[k] = v
+	}
+
+	return m
+}

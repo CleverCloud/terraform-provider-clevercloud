@@ -58,7 +58,6 @@ func CreateApp(ctx context.Context, req CreateReq, diags diag.Diagnostics) *Crea
 
 	// Git Deployment
 	if req.Deployment != nil {
-		tflog.Error(ctx, "DEPLOY !", map[string]interface{}{})
 		gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL, diags)
 		if diags.HasError() {
 			return nil
