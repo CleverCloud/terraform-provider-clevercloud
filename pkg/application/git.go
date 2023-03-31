@@ -13,7 +13,9 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemote string, diags diag.Diagnostics) {
+func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemote string) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+
 	cleverRemote = strings.Replace(cleverRemote, "git+ssh", "https", 1) // switch protocol
 
 	cloneOpts := &git.CloneOptions{
@@ -26,7 +28,7 @@ func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemot
 	r, err := git.CloneContext(ctx, memory.NewStorage(), nil, cloneOpts)
 	if err != nil {
 		diags.AddError("failed to clone repository", err.Error())
-		return
+		return diags
 	}
 
 	remoteOpts := &config.RemoteConfig{
@@ -37,7 +39,7 @@ func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemot
 	remote, err := r.CreateRemote(remoteOpts)
 	if err != nil {
 		diags.AddError("failed to add clever remote", err.Error())
-		return
+		return diags
 	}
 
 	token, secret := cc.Oauth1UserCredentials()
@@ -58,6 +60,8 @@ func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemot
 	err = remote.Push(pushOptions)
 	if err != nil {
 		diags.AddError("failed to push to clever remote", err.Error())
-		return
+		return diags
 	}
+
+	return diags
 }

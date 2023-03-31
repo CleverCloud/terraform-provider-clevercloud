@@ -1,8 +1,13 @@
 package attributes
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
 // This attributes are used on several runtimes
@@ -81,6 +86,33 @@ var runtimeCommon = map[string]schema.Attribute{
 		Sensitive:   true,
 		Description: "Environment variables injected into the application",
 		ElementType: types.StringType,
+	},
+
+	"dependencies": schema.SetAttribute{
+		Optional:            true,
+		MarkdownDescription: "A list of application or addons requires to run this application.\nCan be either app_xxx or postgres_yyy ID format",
+		ElementType:         types.StringType,
+		Validators: []validator.Set{
+			pkg.NewSetValidator("Check ID format", func(ctx context.Context, req validator.SetRequest, res *validator.SetResponse) {
+				if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() || len(req.ConfigValue.Elements()) == 0 {
+					return
+				}
+
+				items := []string{}
+				res.Diagnostics.Append(req.ConfigValue.ElementsAs(ctx, &items, false)...)
+				if res.Diagnostics.HasError() {
+					return
+				}
+
+				for _, item := range items {
+					if !pkg.AddonRegExp.MatchString(item) &&
+						!pkg.AppRegExp.MatchString(item) &&
+						!pkg.ServiceRegExp.MatchString(item) {
+						res.Diagnostics.AddError("This dependecy don't have a valid format", fmt.Sprintf("'%s' is neither an App ID or an addon ID", item))
+					}
+				}
+			}),
+		},
 	},
 }
 

@@ -16,6 +16,7 @@ type CreateReq struct {
 	Environment  map[string]string
 	VHosts       []string
 	Deployment   *Deployment
+	Dependencies []string
 }
 
 type Deployment struct {
@@ -29,7 +30,9 @@ type CreateRes struct {
 	Application tmp.CreatAppResponse
 }
 
-func CreateApp(ctx context.Context, req CreateReq, diags diag.Diagnostics) *CreateRes {
+func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
+
 	// Application
 	res := &CreateRes{}
 
@@ -37,7 +40,7 @@ func CreateApp(ctx context.Context, req CreateReq, diags diag.Diagnostics) *Crea
 	if appRes.HasError() {
 		diags.AddError("failed to create application", appRes.Error().Error())
 		tflog.Error(ctx, "failed to create app", map[string]interface{}{"error": appRes.Error().Error()})
-		return nil
+		return nil, diags
 	}
 
 	res.Application = *appRes.Payload()
@@ -58,11 +61,19 @@ func CreateApp(ctx context.Context, req CreateReq, diags diag.Diagnostics) *Crea
 
 	// Git Deployment
 	if req.Deployment != nil {
-		gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL, diags)
-		if diags.HasError() {
-			return nil
+		diags.Append(gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
+	}
+
+	// Dependencies
+	for _, dependency := range req.Dependencies {
+		// TODO: support another apps as dependency
+
+		depRes := tmp.AddAppLinkedAddons(ctx, req.Client, req.Organization, res.Application.ID, dependency)
+		if depRes.HasError() {
+			tflog.Error(ctx, "ERROR: "+dependency, map[string]interface{}{"err": depRes.Error().Error()})
+			diags.AddError("failed to add dependency", depRes.Error().Error())
 		}
 	}
 
-	return res
+	return res, diags
 }

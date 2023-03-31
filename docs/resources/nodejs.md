@@ -32,6 +32,8 @@ See [NodeJS product](https://www.clever-cloud.com/nodejs-hosting/) specification
 - `additional_vhosts` (List of String) Add custom hostname in addition to the default one, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build step
+- `dependencies` (Set of String) A list of application or addons requires to run this application.
+Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
 - `dev_dependencies` (Boolean) Install development dependencies specified in package.json
