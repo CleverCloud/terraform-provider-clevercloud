@@ -94,17 +94,20 @@ var runtimeCommon = map[string]schema.Attribute{
 		ElementType:         types.StringType,
 		Validators: []validator.Set{
 			pkg.NewSetValidator("Check ID format", func(ctx context.Context, req validator.SetRequest, res *validator.SetResponse) {
-				if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() || len(req.ConfigValue.Elements()) == 0 {
+				if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 					return
 				}
 
-				items := []string{}
+				items := []types.String{}
 				res.Diagnostics.Append(req.ConfigValue.ElementsAs(ctx, &items, false)...)
 				if res.Diagnostics.HasError() {
 					return
 				}
 
-				for _, item := range items {
+				knownItems := pkg.Filter(items, func(item types.String) bool { return !item.IsUnknown() })
+				stringItems := pkg.Map(knownItems, func(item types.String) string { return item.ValueString() })
+
+				for _, item := range stringItems {
 					if !pkg.AddonRegExp.MatchString(item) &&
 						!pkg.AppRegExp.MatchString(item) &&
 						!pkg.ServiceRegExp.MatchString(item) {

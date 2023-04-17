@@ -106,34 +106,33 @@ func (r *ResourceJava) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	appRes := tmp.GetApp(ctx, r.cc, r.org, state.ID.ValueString())
-	if appRes.IsNotFoundError() {
+	readRes, diags := application.ReadApp(ctx, r.cc, r.org, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if readRes.AppIsDeleted {
 		resp.State.RemoveResource(ctx)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-	if appRes.HasError() {
-		resp.Diagnostics.AddError("failed to get app", appRes.Error().Error())
+		return
 	}
 
-	appJava := appRes.Payload()
-	state.Name = pkg.FromStr(appJava.Name)
-	state.Description = pkg.FromStr(appJava.Description)
-	state.MinInstanceCount = pkg.FromI(int64(appJava.Instance.MinInstances))
-	state.MaxInstanceCount = pkg.FromI(int64(appJava.Instance.MaxInstances))
-	state.SmallestFlavor = pkg.FromStr(appJava.Instance.MinFlavor.Name)
-	state.BiggestFlavor = pkg.FromStr(appJava.Instance.MaxFlavor.Name)
-	state.Region = pkg.FromStr(appJava.Zone)
-	state.DeployURL = pkg.FromStr(appJava.DeployURL)
+	state.Name = pkg.FromStr(readRes.App.Name)
+	state.Description = pkg.FromStr(readRes.App.Description)
+	state.MinInstanceCount = pkg.FromI(int64(readRes.App.Instance.MinInstances))
+	state.MaxInstanceCount = pkg.FromI(int64(readRes.App.Instance.MaxInstances))
+	state.SmallestFlavor = pkg.FromStr(readRes.App.Instance.MinFlavor.Name)
+	state.BiggestFlavor = pkg.FromStr(readRes.App.Instance.MaxFlavor.Name)
+	state.Region = pkg.FromStr(readRes.App.Zone)
+	state.DeployURL = pkg.FromStr(readRes.App.DeployURL)
 
-	if appJava.SeparateBuild {
-		state.BuildFlavor = pkg.FromStr(appJava.BuildFlavor.Name)
+	if readRes.App.SeparateBuild {
+		state.BuildFlavor = pkg.FromStr(readRes.App.BuildFlavor.Name)
 	} else {
 		state.BuildFlavor = types.StringNull()
 	}
 
-	vhosts := pkg.Map(appJava.Vhosts, func(vhost tmp.Vhost) string {
+	vhosts := pkg.Map(readRes.App.Vhosts, func(vhost tmp.Vhost) string {
 		return vhost.Fqdn
 	})
 	hasDefaultVHost := pkg.HasSome(vhosts, func(vhost string) bool {
@@ -158,7 +157,16 @@ func (r *ResourceJava) Read(ctx context.Context, req resource.ReadRequest, resp 
 		state.AdditionalVHosts = types.ListNull(types.StringType)
 	}
 
-	// TODO: read ENV
+	for envName, envValue := range readRes.EnvAsMap() {
+		switch envName {
+		case "APP_FOLDER":
+			state.AppFolder = pkg.FromStr(envValue)
+		case "CC_JAVA_VERSION":
+			state.AppFolder = pkg.FromStr(envValue)
+		default:
+			//state.Environment.
+		}
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
