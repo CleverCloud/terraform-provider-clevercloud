@@ -86,7 +86,23 @@ func TestAccNodejs_basic(t *testing.T) {
 					app := appRes.Payload()
 
 					if app.Name != rName {
-						return fmt.Errorf("invalid name, got: '%s', expect: '%s'", app.Name, rName)
+						return assertError("invalid name", app.Name, rName)
+					}
+
+					if app.Instance.MinInstances != 1 {
+						return assertError("invalid min instance count", app.Instance.MinInstances, "1")
+					}
+
+					if app.Instance.MaxInstances != 2 {
+						return assertError("invalid name", app.Name, rName)
+					}
+
+					if app.Instance.MinFlavor.Name != "XS" {
+						return assertError("invalid name", app.Name, rName)
+					}
+
+					if app.Instance.MaxFlavor.Name != "M" {
+						return assertError("invalid name", app.Name, rName)
 					}
 
 					appEnvRes := tmp.GetAppEnv(ctx, cc, org, id)
@@ -101,17 +117,17 @@ func TestAccNodejs_basic(t *testing.T) {
 
 					v := env["MY_KEY"]
 					if v != "myval" {
-						return fmt.Errorf("expect env var '%s' set to '%s', but got: '%s'", "MY_KEY", "myval3", v)
+						return assertError("bad env var value MY_KEY", "myval3", v)
 					}
 
 					v2 := env["APP_FOLDER"]
 					if v2 != "./app" {
-						return fmt.Errorf("expect env var '%s' set to '%s', but got: '%s'", "APP_FOLER", "./app", v2)
+						return assertError("bad env var value APP_FOLER", "./app", v2)
 					}
 
 					v3 := env["CC_POST_BUILD_HOOK"]
 					if v3 != "echo \"build is OK!\"" {
-						return fmt.Errorf("expect env var '%s' set to '%s', but got: '%s'", "CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
+						return assertError("bad env var value CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
 					}
 
 					return nil
@@ -140,6 +156,10 @@ func TestAccNodejs_basic(t *testing.T) {
 			},
 		}},
 	})
+}
+
+func assertError(msg string, a, b interface{}) error {
+	return fmt.Errorf("%s, got: '%v', expect: '%v'", msg, a, b)
 }
 
 func healthCheck(vhost string) chan struct{} {
