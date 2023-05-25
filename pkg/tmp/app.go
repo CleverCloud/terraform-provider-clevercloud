@@ -21,6 +21,8 @@ type CreateAppRequest struct {
 	MaxInstances    int64  `json:"maxInstances" example:"4"`
 	Zone            string `json:"zone" example:"par"`
 	CancelOnPush    bool   `json:"cancelOnPush"`
+	StickySessions  bool   `json:"stickySessions"`
+	ForceHttps      string `json:"forceHttps"`
 }
 
 type CreatAppResponse struct {
