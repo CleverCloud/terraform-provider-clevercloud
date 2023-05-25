@@ -105,6 +105,14 @@ func TestAccNodejs_basic(t *testing.T) {
 						return assertError("invalid name", app.Name, rName)
 					}
 
+					if app.ForceHTTPS != "ENABLED" {
+						return assertError("expect option to be set", "redirect_https", app.ForceHTTPS)
+					}
+
+					if !app.StickySessions {
+						return assertError("expect option to be set", "sticky_sessions", app.StickySessions)
+					}
+
 					appEnvRes := tmp.GetAppEnv(ctx, cc, org, id)
 					if appEnvRes.HasError() {
 						return fmt.Errorf("failed to get application: %w", appEnvRes.Error())

@@ -77,3 +77,12 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 
 	return res, diags
 }
+
+// on clever side, it's an enum
+func FromForceHTTPS(force bool) string {
+	if force {
+		return "ENABLED"
+	} else {
+		return "DISABLED"
+	}
+}

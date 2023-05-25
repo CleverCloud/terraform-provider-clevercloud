@@ -72,6 +72,8 @@ func (r *ResourceJava) Create(ctx context.Context, req resource.CreateRequest, r
 			MaxFlavor:       plan.BiggestFlavor.ValueString(),
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
+			StickySessions:  plan.StickySessions.ValueBool(),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},

@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 	"fmt"
+	"sort"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -42,6 +43,16 @@ func LookupInstance(ctx context.Context, cc *client.Client, kind, name string, d
 		diags.AddWarning("failed to get the right variant", "more than one variant match this criteria, take last one")
 	}
 
-	variant := variants[len(variants)-1]
+	variant := lastVariant(variants)
+
 	return &variant
+}
+
+func lastVariant(variants []tmp.ProductInstance) tmp.ProductInstance {
+
+	sort.SliceStable(variants, func(i, j int) bool {
+		return variants[i].Version > variants[j].Version
+	})
+
+	return variants[0]
 }
