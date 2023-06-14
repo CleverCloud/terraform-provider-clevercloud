@@ -9,6 +9,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/nodejs"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/php"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/postgresql"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/scala"
 )
 
 var Datasources = []func() datasource.DataSource{}
@@ -20,4 +21,5 @@ var Resources = []func() resource.Resource{
 	php.NewResourcePHP,
 	postgresql.NewResourcePostgreSQL,
 	java.NewResourceJava("war"),
+	scala.NewResourceScala(),
 }
