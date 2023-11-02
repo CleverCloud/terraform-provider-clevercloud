@@ -1,6 +1,6 @@
 module go.clever-cloud.com/terraform-provider
 
-go 1.21
+go 1.20
 
 require (
 	github.com/go-git/go-billy/v5 v5.4.1
