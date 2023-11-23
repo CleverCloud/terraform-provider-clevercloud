@@ -3,12 +3,12 @@
 page_title: "clevercloud Provider"
 subcategory: ""
 description: |-
-  CleverCloud provider allow you to interract with CleverCloud platform.
+  CleverCloud provider allow you to interact with CleverCloud platform.
 ---
 
 # clevercloud Provider
 
-CleverCloud provider allow you to interract with CleverCloud platform.
+CleverCloud provider allow you to interact with CleverCloud platform.
 
 
 
@@ -22,5 +22,5 @@ CleverCloud provider allow you to interract with CleverCloud platform.
 ### Optional
 
 - `endpoint` (String) CleverCloud API endpoint, default to https://api.clever-cloud.com
-- `secret` (String, Sensitive) CleverCloud OAuth1 secret, can be took from clever-tools after login
-- `token` (String, Sensitive) CleverCloud OAuth1 token, can be took from clever-tools after login
+- `secret` (String, Sensitive) CleverCloud OAuth1 secret, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_SECRET environment variable.
+- `token` (String, Sensitive) CleverCloud OAuth1 token, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_TOKEN environment variable.
