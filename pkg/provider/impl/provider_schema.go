@@ -35,12 +35,12 @@ func (p *Provider) Schema(_ context.Context, req provider.SchemaRequest, res *pr
 			"token": schema.StringAttribute{
 				Optional:            true, // can be read from ~/.config by client
 				Sensitive:           true,
-				MarkdownDescription: "CleverCloud OAuth1 token, can be took from clever-tools after login",
+				MarkdownDescription: "CleverCloud OAuth1 token, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_TOKEN environment variable.",
 			},
 			"secret": schema.StringAttribute{
 				Optional:            true, // // can be read from ~/.config by client
 				Sensitive:           true,
-				MarkdownDescription: "CleverCloud OAuth1 secret, can be took from clever-tools after login",
+				MarkdownDescription: "CleverCloud OAuth1 secret, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_SECRET environment variable.",
 			},
 			"organisation": schema.StringAttribute{
 				Sensitive:           true,
