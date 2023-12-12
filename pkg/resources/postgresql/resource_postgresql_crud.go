@@ -45,19 +45,9 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	var plan tmp.AddonPlan
 	addonsProviders := addonsProvidersRes.Payload()
-	for i := range *addonsProviders {
-		addonsProvider := (*addonsProviders)[i]
-		if addonsProvider.ID == "postgresql-addon" {
-			for _, pl := range addonsProvider.Plans {
-				if pl.Slug == pg.Plan.ValueString() {
-					tflog.Info(ctx, "Plan matched", map[string]interface{}{"name": pg.Plan.ValueString(), "plan": pl.Slug})
-					plan = pl
-				}
-			}
-		}
-	}
+	prov := pkg.LookupAddonProvider(*addonsProviders, "postgresql-addon")
+	plan := pkg.LookupProviderPlan(prov, pg.Plan.ValueString())
 	if plan.ID == "" {
 		resp.Diagnostics.AddError("failed to find plan", "expect:, got: "+pg.Plan.String())
 		return

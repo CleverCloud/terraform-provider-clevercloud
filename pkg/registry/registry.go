@@ -3,6 +3,7 @@ package registry
 import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar/bucket"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/java"
@@ -18,9 +19,10 @@ var Datasources = []func() datasource.DataSource{}
 var Resources = []func() resource.Resource{
 	cellar.NewResourceCellar,
 	bucket.NewResourceCellarBucket,
+	addon.NewResourceAddon,
+	postgresql.NewResourcePostgreSQL,
 	nodejs.NewResourceNodeJS,
 	php.NewResourcePHP,
-	postgresql.NewResourcePostgreSQL,
 	java.NewResourceJava("war"),
 	scala.NewResourceScala(),
 	static.NewResourceStatic(),

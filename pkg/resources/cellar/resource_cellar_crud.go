@@ -45,20 +45,12 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	addonsProviders := addonsProvidersRes.Payload()
 
-	var plan tmp.AddonPlan
-	for i := range *addonsProviders {
-		addonsProvider := (*addonsProviders)[i]
-		if addonsProvider.ID == "cellar-addon" {
-			// Special case because there is only 1 plan for now
-			for _, pl := range addonsProvider.Plans {
-				plan = pl
-			}
-		}
-	}
-	if plan.ID == "" {
-		resp.Diagnostics.AddError("no plans found", "plan list is empty")
+	prov := pkg.LookupAddonProvider(*addonsProviders, "cellar-addon")
+	if prov == nil {
+		resp.Diagnostics.AddError("failed to fin provider", "")
 		return
 	}
+	plan := prov.Plans[0]
 
 	addonReq := tmp.AddonRequest{
 		Name:       cellar.Name.ValueString(),

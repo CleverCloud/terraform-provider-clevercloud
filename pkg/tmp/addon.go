@@ -17,13 +17,18 @@ type AddonRequest struct {
 }
 
 type AddonResponse struct {
-	ID           string    `json:"id"`
-	Name         string    `json:"name"`
-	RealID       string    `json:"realId"`
-	Region       string    `json:"region"`
-	Plan         AddonPlan `json:"plan"`
-	CreationDate int64     `json:"creationDate"`
-	ConfigKeys   []string  `json:"configKeys"`
+	ID           string                `json:"id"`
+	Name         string                `json:"name"`
+	RealID       string                `json:"realId"`
+	Region       string                `json:"region"`
+	Plan         AddonPlan             `json:"plan"`
+	Provider     AddonResponseProvider `json:"provider"`
+	CreationDate int64                 `json:"creationDate"`
+	ConfigKeys   []string              `json:"configKeys"`
+}
+
+type AddonResponseProvider struct {
+	ID string `json:"id"`
 }
 
 type AddonPlan struct {
