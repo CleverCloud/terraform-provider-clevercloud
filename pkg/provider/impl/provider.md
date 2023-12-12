@@ -1,1 +1,1 @@
-CleverCloud provider allow you to interract with CleverCloud platform.
+CleverCloud provider allow you to interact with CleverCloud platform.
