@@ -3,6 +3,7 @@ package impl
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -20,7 +21,11 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 		return
 	}
 
-	p.organization = config.Organisation.ValueString()
+	if config.Organisation.IsUnknown() || config.Organisation.IsNull() {
+		p.organization = os.Getenv("CC_ORGANISATION")
+	} else {
+		p.organization = config.Organisation.ValueString()
+	}
 
 	// Allow to get creds from CLI config directory or by injected variables
 	if config.Secret.IsUnknown() ||

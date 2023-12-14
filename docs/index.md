@@ -17,7 +17,7 @@ CleverCloud provider allow you to interact with CleverCloud platform.
 
 ### Required
 
-- `organisation` (String, Sensitive) CleverCloud organisation, can be either orga_xxx, or user_xxx for personal spaces
+- `organisation` (String, Sensitive) CleverCloud organisation, can be either orga_xxx, or user_xxx for personal spaces. This parameter can also be provided via CC_ORGANISATION environment variable.
 
 ### Optional
 
