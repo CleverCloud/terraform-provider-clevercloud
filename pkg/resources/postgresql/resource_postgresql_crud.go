@@ -121,6 +121,12 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	addonPG := addonPGRes.Payload()
+
+	if addonPG.Status == "TO_DELETE" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	tflog.Info(ctx, "STATE", map[string]interface{}{"pg": pg})
 	tflog.Info(ctx, "API", map[string]interface{}{"pg": addonPG})
 	pg.Plan = pkg.FromStr(addonPG.Plan)
