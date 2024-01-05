@@ -72,3 +72,54 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 		}},
 	})
 }
+
+func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
+	rName := fmt.Sprintf("tf-test-pg-%d", time.Now().UnixMilli())
+	//fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
+	cc := client.New(client.WithAutoOauthConfig())
+	org := os.Getenv("ORGANISATION")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			if org == "" {
+				t.Fatalf("missing ORGANISATION env var")
+			}
+		},
+		ProtoV6ProviderFactories: protoV6Provider,
+		CheckDestroy: func(state *terraform.State) error {
+			for _, resource := range state.RootModule().Resources {
+				res := tmp.GetPostgreSQL(context.Background(), cc, resource.Primary.ID)
+				if res.IsNotFoundError() {
+					continue
+				}
+				if res.HasError() {
+					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+				}
+				if res.Payload().Status == "TO_DELETE" {
+					continue
+				}
+
+				return fmt.Errorf("expect resource '%s' to be deleted", resource.Primary.ID)
+			}
+			return nil
+		},
+		Steps: []resource.TestStep{
+			// create a database instance on first step
+			{
+				ResourceName: rName,
+				Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(postgresqlBlock, rName, rName),
+			},
+			{
+				ResourceName: rName,
+				PreConfig: func() {
+					// delete the database using an api call
+					tmp.DeleteAddon(context.Background(), cc, org, rName)
+				},
+				// refreshing state
+				RefreshState: true,
+				// plan should contain database re-creation
+				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
