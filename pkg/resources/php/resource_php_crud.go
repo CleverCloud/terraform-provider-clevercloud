@@ -108,34 +108,32 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 		return
 	}
 
-	appRes := tmp.GetApp(ctx, r.cc, r.org, state.ID.ValueString())
-	if appRes.IsNotFoundError() {
+	appPHP, diags := application.ReadApp(ctx, r.cc, r.org, state.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if appPHP.AppIsDeleted {
 		resp.State.RemoveResource(ctx)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-	if appRes.HasError() {
-		resp.Diagnostics.AddError("failed to get app", appRes.Error().Error())
+		return
 	}
 
-	appPHP := appRes.Payload()
-	state.Name = pkg.FromStr(appPHP.Name)
-	state.Description = pkg.FromStr(appPHP.Description)
-	state.MinInstanceCount = pkg.FromI(int64(appPHP.Instance.MinInstances))
-	state.MaxInstanceCount = pkg.FromI(int64(appPHP.Instance.MaxInstances))
-	state.SmallestFlavor = pkg.FromStr(appPHP.Instance.MinFlavor.Name)
-	state.BiggestFlavor = pkg.FromStr(appPHP.Instance.MaxFlavor.Name)
-	state.Region = pkg.FromStr(appPHP.Zone)
-	state.DeployURL = pkg.FromStr(appPHP.DeployURL)
+	state.Name = pkg.FromStr(appPHP.App.Name)
+	state.Description = pkg.FromStr(appPHP.App.Description)
+	state.MinInstanceCount = pkg.FromI(int64(appPHP.App.Instance.MinInstances))
+	state.MaxInstanceCount = pkg.FromI(int64(appPHP.App.Instance.MaxInstances))
+	state.SmallestFlavor = pkg.FromStr(appPHP.App.Instance.MinFlavor.Name)
+	state.BiggestFlavor = pkg.FromStr(appPHP.App.Instance.MaxFlavor.Name)
+	state.Region = pkg.FromStr(appPHP.App.Zone)
+	state.DeployURL = pkg.FromStr(appPHP.App.DeployURL)
 
-	if appPHP.SeparateBuild {
-		state.BuildFlavor = pkg.FromStr(appPHP.BuildFlavor.Name)
+	if appPHP.App.SeparateBuild {
+		state.BuildFlavor = pkg.FromStr(appPHP.App.BuildFlavor.Name)
 	} else {
 		state.BuildFlavor = types.StringNull()
 	}
 
-	vhosts := pkg.Map(appPHP.Vhosts, func(vhost tmp.Vhost) string {
+	vhosts := pkg.Map(appPHP.App.Vhosts, func(vhost tmp.Vhost) string {
 		return vhost.Fqdn
 	})
 	hasDefaultVHost := pkg.HasSome(vhosts, func(vhost string) bool {

@@ -107,6 +107,10 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 
 	addonRes := tmp.GetAddon(ctx, r.cc, r.org, ad.ID.ValueString())
+	if addonRes.IsNotFoundError() {
+		req.State.RemoveResource(ctx)
+		return
+	}
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon", addonRes.Error().Error())
 		return
