@@ -116,6 +116,10 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 			return
 		}
 	}
+	if addonPGRes.IsNotFoundError() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 	if addonPGRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Postgres resource", addonPGRes.Error().Error())
 	}

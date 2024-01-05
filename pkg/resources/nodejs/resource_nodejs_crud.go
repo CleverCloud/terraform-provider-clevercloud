@@ -5,7 +5,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
@@ -116,7 +115,7 @@ func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	appRes := tmp.GetApp(ctx, r.cc, r.org, app.ID.ValueString())
+	/*appRes := tmp.GetApp(ctx, r.cc, r.org, app.ID.ValueString())
 	if appRes.IsNotFoundError() {
 		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown)
 		resp.Diagnostics.Append(diags...)
@@ -129,8 +128,19 @@ func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	appNode := appRes.Payload()
-	app.DeployURL = pkg.FromStr(appNode.DeployURL)
-	app.VHost = pkg.FromStr(appNode.Vhosts[0].Fqdn)
+	*/
+	appRes, diags := application.ReadApp(ctx, r.cc, r.org, app.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if appRes.AppIsDeleted {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	app.DeployURL = pkg.FromStr(appRes.App.DeployURL)
+	app.VHost = pkg.FromStr(appRes.App.Vhosts[0].Fqdn)
 
 	diags = resp.State.Set(ctx, app)
 	resp.Diagnostics.Append(diags...)
