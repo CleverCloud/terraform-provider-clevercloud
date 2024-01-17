@@ -54,7 +54,7 @@ func (r ResourcePHP) Schema(ctx context.Context, req resource.SchemaRequest, res
 			// CC_WEBROOT
 			"php_version": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "PHP version (Default: 7)",
+				MarkdownDescription: "PHP version (Default: 8)",
 			},
 			"webroot": schema.StringAttribute{
 				Optional:            true,
