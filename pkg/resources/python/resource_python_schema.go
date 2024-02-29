@@ -38,7 +38,8 @@ type Python struct {
 	Environment types.Map    `tfsdk:"environment"`
 
 	// Python
-	// PythonVersion types.String `tfsdk:"python_version"`
+	PythonVersion   types.String `tfsdk:"python_version"`
+	PipRequirements types.String `tfsdk:"pip_requirements"`
 }
 
 //go:embed resource_python.md
@@ -49,8 +50,19 @@ func (r ResourcePython) Schema(ctx context.Context, req resource.SchemaRequest, 
 	res.Schema = schema.Schema{
 		Version:             0,
 		MarkdownDescription: pythonDoc,
-		Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
-		Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
+			// CC_PYTHON_VERSION
+			"python_version": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Python version >= 2.7",
+			},
+			// CC_PIP_REQUIREMENTS_FILE
+			"pip_requirements": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Define a custom requirements.txt file (default: requirements.txt)",
+			},
+		}),
+		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 	}
 }
 
@@ -72,7 +84,8 @@ func (py Python) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]s
 	env = pkg.Merge(env, customEnv)
 
 	pkg.IfIsSet(py.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-	//pkg.IfIsSet(py.PythonVersion, func(s string) { env["CC_PYTHON_VERSION"] = s })
+	pkg.IfIsSet(py.PythonVersion, func(version string) { env["CC_PYTHON_VERSION"] = version })
+	pkg.IfIsSet(py.PipRequirements, func(pipReqFile string) { env["CC_PIP_REQUIREMENTS_FILE"] = pipReqFile })
 
 	env = pkg.Merge(env, py.Hooks.ToEnv())
 	return env
