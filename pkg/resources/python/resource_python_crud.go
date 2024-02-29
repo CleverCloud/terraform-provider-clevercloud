@@ -89,11 +89,9 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 	createRes, diags := application.CreateApp(ctx, createReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, "ERROR IS WELL HERE", map[string]interface{}{})
 		return
 	}
 
-	// TODO set fields
 	plan.ID = pkg.FromStr(createRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
 	plan.VHost = pkg.FromStr(createRes.Application.Vhosts[0].Fqdn)
@@ -115,20 +113,6 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	/*appRes := tmp.GetApp(ctx, r.cc, r.org, app.ID.ValueString())
-	if appRes.IsNotFoundError() {
-		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-	if appRes.HasError() {
-		resp.Diagnostics.AddError("failed to get app", appRes.Error().Error())
-	}
-
-	appPython := appRes.Payload()
-	*/
 	appRes, diags := application.ReadApp(ctx, r.cc, r.org, app.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {

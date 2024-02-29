@@ -8,6 +8,8 @@ resource "clevercloud_python" "%s" {
 	redirect_https = true
 	sticky_sessions = true
 	app_folder = "./app"
+	python_version = "2.7"
+	pip_requirements = "requirements.txt"
 	environment = {
 		MY_KEY = "myval"
 	}

@@ -125,7 +125,7 @@ func TestAccPython_basic(t *testing.T) {
 
 					v := env["MY_KEY"]
 					if v != "myval" {
-						return assertError("bad env var value MY_KEY", "myval3", v)
+						return assertError("bad env var value MY_KEY", "myval", v)
 					}
 
 					v2 := env["APP_FOLDER"]
@@ -136,6 +136,11 @@ func TestAccPython_basic(t *testing.T) {
 					v3 := env["CC_POST_BUILD_HOOK"]
 					if v3 != "echo \"build is OK!\"" {
 						return assertError("bad env var value CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
+					}
+
+					v4 := env["CC_PIP_REQUIREMENTS_FILE"]
+					if v4 != "requirements.txt" {
+						return assertError("bad env var value CC_PIP_REQUIREMENTS_FILE", "requirements.txt", v4)
 					}
 
 					return nil
@@ -154,7 +159,7 @@ func TestAccPython_basic(t *testing.T) {
 				app := appRes.Payload()
 
 				// Test deployed app
-				t := time.NewTimer(1 * time.Minute)
+				t := time.NewTimer(2 * time.Minute)
 				select {
 				case <-healthCheck(app.Vhosts[0].Fqdn):
 					return nil
