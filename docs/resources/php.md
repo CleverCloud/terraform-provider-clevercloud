@@ -39,7 +39,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `dev_dependencies` (Boolean) Install development dependencies
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
-- `php_version` (String) PHP version (Default: 7)
+- `php_version` (String) PHP version (Default: 8)
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redis_sessions` (Boolean) Use a linked Redis instance to store sessions (Default: false)
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped

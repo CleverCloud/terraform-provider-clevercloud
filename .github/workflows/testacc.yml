@@ -1,5 +1,5 @@
 ---
-name: Acceptance Tests
+name: acceptance tests
 
 on:
   pull_request:
