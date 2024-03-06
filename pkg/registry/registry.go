@@ -10,6 +10,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/nodejs"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/php"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/postgresql"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/python"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/scala"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/static"
 )
@@ -23,6 +24,7 @@ var Resources = []func() resource.Resource{
 	postgresql.NewResourcePostgreSQL,
 	nodejs.NewResourceNodeJS,
 	php.NewResourcePHP,
+	python.NewResourcePython,
 	java.NewResourceJava("war"),
 	scala.NewResourceScala(),
 	static.NewResourceStatic(),
