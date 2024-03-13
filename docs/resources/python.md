@@ -100,6 +100,8 @@ Can be either app_xxx or postgres_yyy ID format
 - `description` (String) Application description
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
+- `pip_requirements` (String) Define a custom requirements.txt file (default: requirements.txt)
+- `python_version` (String) Python version >= 2.7
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 
