@@ -15,6 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
@@ -68,7 +69,7 @@ func TestAccPython_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(pythonBlock, rName, rName),
+			Config:       helper.NewProvider("clevercloud").OrganisationName(org).String() + fmt.Sprintf(pythonBlock, rName, rName),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				// Test the state for provider's populated values
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
@@ -148,7 +149,7 @@ func TestAccPython_basic(t *testing.T) {
 			),
 		}, {
 			ResourceName: rName2,
-			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(pythonBlock2, rName2, rName2),
+			Config:       helper.NewProvider("clevercloud").OrganisationName(org).String() + fmt.Sprintf(pythonBlock2, rName2, rName2),
 			Check: func(state *terraform.State) error {
 				id := state.RootModule().Resources[fullName2].Primary.ID
 
