@@ -1,123 +1,9 @@
 package helper
 
-import "strconv"
-
-// Ressource structure
-
-// addon
-// resource "clevercloud_addon" "%s" {
-// 	name = "%s"
-// 	third_party_provider = "mailpace"
-// 	plan = "clever_solo"
-// 	region = "par"
-// }
-
-// cellar
-// resource "clevercloud_cellar" "%s" {
-// 	name = "%s"
-// 	region = "par"
-// }
-
-// cellar bucket
-// resource "clevercloud_cellar_bucket" "%s" {
-//  id = "%s"
-//  cellar_id = "%s"
-// }
-
-// postgresql
-// resource "clevercloud_postgresql" "%s" {
-// 	name = "%s"
-// 	plan = "dev"
-// 	region = "par"
-// }
-
-// nodejs
-// resource "clevercloud_nodejs" "%s" {
-// 	name = "%s"
-// 	region = "par"
-// 	min_instance_count = 1
-// 	max_instance_count = 2
-// 	smallest_flavor = "XS"
-// 	biggest_flavor = "M"
-// 	redirect_https = true
-// 	sticky_sessions = true
-// 	app_folder = "./app"
-// 	environment = {
-// 		MY_KEY = "myval"
-// 	}
-// 	hooks {
-// 		post_build = "echo \"build is OK!\""
-// 	}
-// 	dependencies = []
-// }
-
-// resource "clevercloud_nodejs" "%s" {
-// 	name = "%s"
-// 	region = "par"
-// 	min_instance_count = 1
-// 	max_instance_count = 2
-// 	smallest_flavor = "XS"
-// 	biggest_flavor = "M"
-// 	deployment {
-// 		repository = "https://github.com/CleverCloud/nodejs-example.git"
-// 	}
-// }
-
-// php
-// resource "clevercloud_php" "%s" {
-// 	name = "%s"
-// 	region = "par"
-// 	min_instance_count = 1
-// 	max_instance_count = 2
-// 	smallest_flavor = "XS"
-// 	biggest_flavor = "M"
-//  php_version = "8"
-// 	additional_vhosts = [ "toto-tf5283457829345.com" ]
-// }
-
-// python
-// resource "clevercloud_python" "%s" {
-// 	name = "%s"
-// 	region = "par"
-// 	min_instance_count = 1
-// 	max_instance_count = 2
-// 	smallest_flavor = "XS"
-// 	biggest_flavor = "M"
-// 	redirect_https = true
-// 	sticky_sessions = true
-// 	app_folder = "./app"
-// 	python_version = "2.7"
-// 	pip_requirements = "requirements.txt"
-// 	environment = {
-// 		MY_KEY = "myval"
-// 	}
-// 	hooks {
-// 		post_build = "echo \"build is OK!\""
-// 	}
-// 	dependencies = []
-// }
-
-// resource "clevercloud_python" "%s" {
-// 	name = "%s"
-// 	region = "par"
-// 	min_instance_count = 1
-// 	max_instance_count = 2
-// 	smallest_flavor = "XS"
-// 	biggest_flavor = "M"
-// 	deployment {
-// 		repository = "https://github.com/CleverCloud/flask-example.git"
-// 	}
-// }
-
-// scala
-// resource "clevercloud_scala" "%s" {
-// 	name = "%s"
-// 	region = "par"
-// 	min_instance_count = 1
-// 	max_instance_count = 2
-// 	smallest_flavor = "XS"
-// 	biggest_flavor = "M"
-// }
+import (
+	"sort"
+	"strconv"
+)
 
 type Ressource struct {
 	Ressource    string
@@ -203,18 +89,34 @@ func (p *Ressource) String() string {
 `
 	// check StringValues not empty
 	if len(p.StringValues) != 0 {
+		// sort StringValues keys
+		tmp := make([]string, 0, len(p.StringValues))
+		for k := range p.StringValues {
+			tmp = append(tmp, k)
+		}
+		sort.Strings(tmp)
+
+		// create StringValues block
 		sstring := ``
-		for key, value := range p.StringValues {
-			sstring += `	` + key + ` = "` + value + `"
+		for _, k := range tmp {
+			sstring += `	` + k + ` = "` + p.StringValues[k] + `"
 `
 		}
 		s += sstring
 	}
 	// check IntValues not empty
 	if len(p.IntValues) != 0 {
+		// sort IntValues keys
+		tmp := make([]string, 0, len(p.IntValues))
+		for k := range p.IntValues {
+			tmp = append(tmp, k)
+		}
+		sort.Strings(tmp)
+
+		// create IntValues block
 		sint := ``
-		for key, value := range p.IntValues {
-			sint += `	` + key + ` = ` + strconv.Itoa(value) + `
+		for _, k := range tmp {
+			sint += `	` + k + ` = ` + strconv.Itoa(p.IntValues[k]) + `
 `
 		}
 		s += sint
