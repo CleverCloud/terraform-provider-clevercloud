@@ -12,7 +12,7 @@ type ProviderOption func(*Provider)
 
 // Provider constructor:
 //   - desc: Build a new Provider and apply specifics ProviderOption functions
-//   - args: ProviderOption function
+//   - args: provider name, ProviderOption function
 //   - return: pointer to Provider
 func NewProvider(provider string, opts ...ProviderOption) *Provider {
 	// default values
@@ -34,16 +34,16 @@ func NewProvider(provider string, opts ...ProviderOption) *Provider {
 }
 
 // Organisation name:
-//   - desc: concatenate function that set Provider.Organisation then return Provider
+//   - desc: chained function that set Provider.Organisation then return Provider
 //   - args: new organisation name
 //   - return: pointer to Provider
-func (p *Provider) OrganisationName(orgName string) *Provider {
+func (p *Provider) SetOrganisation(orgName string) *Provider {
 	p.Organisation = orgName
 	return p
 }
 
 // Provider block
-//   - desc: concatenate function that stringify Provider into a terraform block
+//   - desc: chained function that stringify Provider into a terraform block
 //   - args: none
 //   - return: string
 func (p *Provider) String() string {

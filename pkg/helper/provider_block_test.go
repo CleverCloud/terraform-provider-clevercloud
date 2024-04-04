@@ -10,7 +10,7 @@ func TestProvider_String(t *testing.T) {
 	}{
 		// TODO: Add test cases.
 
-		{name: "test1", fields: NewProvider("clevercloud").OrganisationName("clevercloud"), want: `provider "clevercloud" {
+		{name: "test1", fields: NewProvider("clevercloud").SetOrganisation("clevercloud"), want: `provider "clevercloud" {
 	organisation = "clevercloud"
 }`},
 	}

@@ -27,9 +27,6 @@ var pythonBlock string
 //go:embed resource_python_test_block2.tf
 var pythonBlock2 string
 
-//go:embed provider_test_block.tf
-var providerBlock string
-
 var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
 }
@@ -69,7 +66,7 @@ func TestAccPython_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       helper.NewProvider("clevercloud").OrganisationName(org).String() + fmt.Sprintf(pythonBlock, rName, rName),
+			Config:       helper.NewProvider("clevercloud").SetOrganisation(org).String() + fmt.Sprintf(pythonBlock, rName, rName),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				// Test the state for provider's populated values
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
@@ -149,7 +146,7 @@ func TestAccPython_basic(t *testing.T) {
 			),
 		}, {
 			ResourceName: rName2,
-			Config:       helper.NewProvider("clevercloud").OrganisationName(org).String() + fmt.Sprintf(pythonBlock2, rName2, rName2),
+			Config:       helper.NewProvider("clevercloud").SetOrganisation(org).String() + fmt.Sprintf(pythonBlock2, rName2, rName2),
 			Check: func(state *terraform.State) error {
 				id := state.RootModule().Resources[fullName2].Primary.ID
 
