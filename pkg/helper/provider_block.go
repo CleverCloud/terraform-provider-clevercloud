@@ -2,8 +2,8 @@ package helper
 
 // Provider structur
 type Provider struct {
-	Provider     string
-	Organisation string
+	provider     string
+	organisation string
 }
 
 // New function type that accepts pointer to Provider
@@ -14,20 +14,15 @@ type ProviderOption func(*Provider)
 //   - desc: Build a new Provider and apply specifics ProviderOption functions
 //   - args: provider name, ProviderOption function
 //   - return: pointer to Provider
-func NewProvider(provider string, opts ...ProviderOption) *Provider {
+func NewProvider(providerName string) *Provider {
 	// default values
 	const (
 		defaultOrganisation = ""
 	)
 
 	p := &Provider{
-		Provider:     provider,
-		Organisation: defaultOrganisation,
-	}
-
-	// ProviderOption functions
-	for _, opt := range opts {
-		opt(p)
+		provider:     providerName,
+		organisation: defaultOrganisation,
 	}
 
 	return p
@@ -38,7 +33,7 @@ func NewProvider(provider string, opts ...ProviderOption) *Provider {
 //   - args: new organisation name
 //   - return: pointer to Provider
 func (p *Provider) SetOrganisation(orgName string) *Provider {
-	p.Organisation = orgName
+	p.organisation = orgName
 	return p
 }
 
@@ -47,8 +42,9 @@ func (p *Provider) SetOrganisation(orgName string) *Provider {
 //   - args: none
 //   - return: string
 func (p *Provider) String() string {
-	s := `provider "` + p.Provider + `" {
-	organisation = "` + p.Organisation + `"
-}`
+	s := `provider "` + p.provider + `" {
+	organisation = "` + p.organisation + `"
+}
+`
 	return s
 }

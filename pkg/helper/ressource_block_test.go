@@ -8,24 +8,47 @@ func TestRessource_String(t *testing.T) {
 		fields *Ressource
 		want   string
 	}{
-		// TODO: Add test cases.
-
-		{name: "test1", fields: NewRessource("clevercloud").SetName("test1"), want: `ressource "clevercloud" "test1" {
-	name = "test1"
-	biggest_flavor = "M"
-	region = "par"
-	smallest_flavor = "XS"
-	max_instance_count = 2
-	min_instance_count = 1
-}`},
-		{name: "test2", fields: NewRessource("clevercloud_python").SetName("test2").SetIntValues("min_instance_count", 3), want: `ressource "clevercloud_python" "test2" {
-	name = "test2"
-	biggest_flavor = "M"
-	region = "par"
-	smallest_flavor = "XS"
-	max_instance_count = 2
-	min_instance_count = 3
-}`},
+		{name: "test1",
+			fields: NewRessource("clevercloud", "test1"),
+			want: `resource "clevercloud" "test1" {
+}
+`},
+		{
+			name: "test2",
+			fields: NewRessource("clevercloud_python", "test2").
+				SetOneValue("biggest_flavor", "XXL").
+				SetOneValue("test", 3),
+			want: `resource "clevercloud_python" "test2" {
+	biggest_flavor = "XXL"
+	test = 3
+}
+`},
+		{name: "test3",
+			fields: NewRessource(
+				"clevercloud_python",
+				"test3",
+				SetKeyValues(map[string]any{
+					"region":             "ici",
+					"teststring":         "smt",
+					"min_instance_count": 0,
+					"testint":            12,
+					"map":                map[string]any{"test_string": "string", "test_int": 42}}),
+				SetBlockValues("testblock", map[string]any{"test_string": "string", "test_int": 42})),
+			want: `resource "clevercloud_python" "test3" {
+	map = {
+		test_int = 42
+		test_string = "string"
+	}
+	min_instance_count = 0
+	region = "ici"
+	testint = 12
+	teststring = "smt"
+	testblock {
+		test_int = 42
+		test_string = "string"
+	}
+}
+`},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
