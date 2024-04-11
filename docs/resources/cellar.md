@@ -29,3 +29,5 @@ See [product specification](https://www.clever-cloud.com/doc/deploy/addon/cellar
 - `id` (String) Generated unique identifier
 - `key_id` (String) Key ID used to authenticate
 - `key_secret` (String, Sensitive) Key secret used to authenticate
+
+

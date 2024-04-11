@@ -22,3 +22,5 @@ See [product specification](https://www.clever-cloud.com/doc/deploy/addon/cellar
 
 - `cellar_id` (String) Cellar's reference
 - `id` (String) Name of the bucket
+
+
