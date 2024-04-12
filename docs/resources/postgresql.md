@@ -41,3 +41,5 @@ resource "clevercloud_postgresql" "postgresql_database" {
 - `password` (String) Login password
 - `port` (Number) Database port
 - `user` (String) Login username
+
+

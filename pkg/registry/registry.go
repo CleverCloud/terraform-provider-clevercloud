@@ -7,6 +7,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar/bucket"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/java"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/materiakv"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/nodejs"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/php"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/postgresql"
@@ -28,4 +29,5 @@ var Resources = []func() resource.Resource{
 	java.NewResourceJava("war"),
 	scala.NewResourceScala(),
 	static.NewResourceStatic(),
+	materiakv.NewResourceMateriaKV,
 }

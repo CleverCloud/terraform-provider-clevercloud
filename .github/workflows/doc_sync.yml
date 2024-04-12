@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-  pull_request :
+  pull_request:
     branches:
       - master
   workflow_dispatch:
@@ -22,7 +22,7 @@ jobs:
       - name: sets up go environnement
         uses: actions/setup-go@v4
         with:
-            go-version: '1.22'
+            go-version: '1.21'
       - name: Get dependencies
         run: go mod download
       - name: Install tfplugindocs
@@ -35,7 +35,7 @@ jobs:
           if [[ $(git status --porcelain=v1 docs/ | wc -l) -ne 0 ]]; then
           echo "Please ensure tfplugindocs changes are committed to docs/"
           echo "Changed files:"
-          git diff --name-only docs/
+          git diff docs/
           git status docs/
           exit 1
           fi

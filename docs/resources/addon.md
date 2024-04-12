@@ -34,3 +34,5 @@ List of available providers:
 - `configurations` (Map of String, Sensitive) Any configuration exposed by the addon
 - `creation_date` (Number) Date of database creation
 - `id` (String) Generated unique identifier
+
+
