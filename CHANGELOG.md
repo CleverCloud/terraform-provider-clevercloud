@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.1.0...v0.1.1) (2024-04-15)
+
+
+### 🐛 Bug Fixes
+
+* **materia:** rename resource to match product ([#66](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/66)) ([075a5a1](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/075a5a122567efa4a19da4f6aae57261fb7480c7))
+
 ## [0.1.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.0.16...v0.1.0) (2024-04-12)
 
 
