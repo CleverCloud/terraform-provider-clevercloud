@@ -70,5 +70,3 @@ Optional:
 - `pre_run` (String) [CC_PRE_RUN_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#pre-run-cc_pre_run_hook)
 - `run_failed` (String) [CC_RUN_FAILED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)
 - `run_succeed` (String) [CC_RUN_SUCCEEDED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)
-
-

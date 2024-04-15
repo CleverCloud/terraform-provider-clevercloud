@@ -31,7 +31,7 @@ var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 func TestAccMateriaKV_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := fmt.Sprintf("tf-test-kv-%d", time.Now().UnixMilli())
-	fullName := fmt.Sprintf("clevercloud_materiakv.%s", rName)
+	fullName := fmt.Sprintf("clevercloud_materiadb_kv.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 
