@@ -15,19 +15,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
-
-//go:embed resource_python_test_block.tf
-var pythonBlock string
-
-//go:embed resource_python_test_block2.tf
-var pythonBlock2 string
-
-//go:embed provider_test_block.tf
-var providerBlock string
 
 var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
@@ -68,7 +60,28 @@ func TestAccPython_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(pythonBlock, rName, rName),
+			Config: helper.NewProvider("clevercloud").
+				SetOrganisation(org).String() + helper.NewRessource(
+				"clevercloud_python",
+				rName,
+				helper.SetKeyValues(map[string]any{
+					"name":               rName,
+					"region":             "par",
+					"min_instance_count": 1,
+					"max_instance_count": 2,
+					"smallest_flavor":    "XS",
+					"biggest_flavor":     "M",
+					"redirect_https":     true,
+					"sticky_sessions":    true,
+					"app_folder":         "./app",
+					"python_version":     "2.7",
+					"pip_requirements":   "requirements.txt",
+					"environment": map[string]any{
+						"MY_KEY": "myval",
+					},
+				}),
+				helper.SetBlockValues("hooks", map[string]any{"post_build": "echo \"build is OK!\""}),
+			).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				// Test the state for provider's populated values
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
@@ -148,7 +161,17 @@ func TestAccPython_basic(t *testing.T) {
 			),
 		}, {
 			ResourceName: rName2,
-			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(pythonBlock2, rName2, rName2),
+			Config: helper.NewProvider("clevercloud").SetOrganisation(org).String() + helper.NewRessource("clevercloud_python",
+				rName2,
+				helper.SetKeyValues(map[string]any{
+					"name":               "%s",
+					"region":             "par",
+					"min_instance_count": 1,
+					"max_instance_count": 2,
+					"smallest_flavor":    "XS",
+					"biggest_flavor":     "M",
+				}),
+				helper.SetBlockValues("deployment", map[string]any{"repository": "https://github.com/CleverCloud/flask-example.git"})).String(),
 			Check: func(state *terraform.State) error {
 				id := state.RootModule().Resources[fullName2].Primary.ID
 
