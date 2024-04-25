@@ -16,7 +16,8 @@ type MongoDB struct {
 	CreationDate types.Int64  `tfsdk:"creation_date"`
 	Host         types.String `tfsdk:"host"`
 	Port         types.Int64  `tfsdk:"port"`
-	Token        types.String `tfsdk:"token"`
+	User         types.String `tfsdk:"user"`
+	Password     types.String `tfsdk:"password"`
 }
 
 //go:embed resource_mongodb.md
@@ -36,7 +37,8 @@ func (r ResourceMongoDB) Schema(_ context.Context, req resource.SchemaRequest, r
 			"creation_date": schema.Int64Attribute{Computed: true, MarkdownDescription: "Date of database creation"},
 			"host":          schema.StringAttribute{Computed: true, MarkdownDescription: "Database host, used to connect to"},
 			"port":          schema.Int64Attribute{Computed: true, MarkdownDescription: "Database port"},
-			"token":         schema.StringAttribute{Computed: true, MarkdownDescription: "Token to authenticate"},
+			"user":          schema.StringAttribute{Computed: true, MarkdownDescription: "Login username"},
+			"password":      schema.StringAttribute{Computed: true, MarkdownDescription: "Login password"},
 		},
 	}
 }

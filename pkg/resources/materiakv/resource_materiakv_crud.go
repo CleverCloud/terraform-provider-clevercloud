@@ -17,7 +17,7 @@ import (
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
 // So we need to handle the case there is no ProviderData
 func (r *ResourceMateriaKV) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Info(ctx, "ResourceMateriaKV.Configure()")
+	tflog.Debug(ctx, "ResourceMateriaKV.Configure()")
 
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -83,7 +83,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	kvInfo := kvInfoRes.Payload()
-	tflog.Info(ctx, "API response", map[string]interface{}{
+	tflog.Debug(ctx, "API response", map[string]interface{}{
 		"payload": fmt.Sprintf("%+v", kvInfo),
 	})
 	kv.Host = pkg.FromStr(kvInfo.Host)
@@ -98,7 +98,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 
 // Read resource information
 func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Info(ctx, "MateriaKV READ", map[string]interface{}{"request": req})
+	tflog.Debug(ctx, "MateriaKV READ", map[string]interface{}{"request": req})
 
 	var kv MateriaKV
 	diags := req.State.Get(ctx, &kv)
@@ -130,8 +130,8 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	tflog.Info(ctx, "STATE", map[string]interface{}{"kv": kv})
-	tflog.Info(ctx, "API", map[string]interface{}{"kv": addonKV})
+	tflog.Debug(ctx, "STATE", map[string]interface{}{"kv": kv})
+	tflog.Debug(ctx, "API", map[string]interface{}{"kv": addonKV})
 	kv.Host = pkg.FromStr(addonKV.Host)
 	kv.Port = pkg.FromI(int64(addonKV.Port))
 	kv.Token = pkg.FromStr(addonKV.Token)
@@ -157,7 +157,7 @@ func (r *ResourceMateriaKV) Delete(ctx context.Context, req resource.DeleteReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Info(ctx, "MateriaKV DELETE", map[string]interface{}{"kv": kv})
+	tflog.Debug(ctx, "MateriaKV DELETE", map[string]interface{}{"kv": kv})
 
 	res := tmp.DeleteAddon(ctx, r.cc, r.org, kv.ID.ValueString())
 	if res.IsNotFoundError() {

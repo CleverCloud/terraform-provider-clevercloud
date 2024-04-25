@@ -44,7 +44,6 @@ func TestAccCellarBucket_basic(t *testing.T) {
 		}
 
 		cellar = res.Payload()
-		fmt.Print(cellar)
 
 		defer func() {
 			rmRes := tmp.DeleteAddon(ctx, cc, org, cellar.ID)
@@ -83,7 +82,7 @@ func TestAccCellarBucket_basic(t *testing.T) {
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for resourceName, resourceState := range state.RootModule().Resources {
-				tflog.Info(ctx, "TEST DESTROY", map[string]interface{}{"bucket": resourceState})
+				tflog.Debug(ctx, "TEST DESTROY", map[string]interface{}{"bucket": resourceState})
 				res := tmp.GetAddonEnv(context.Background(), cc, org, cellar.ID) // TODO: resourceState.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
