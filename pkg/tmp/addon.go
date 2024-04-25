@@ -101,10 +101,11 @@ func GetMateriaKV(ctx context.Context, cc *client.Client, organisationID, postgr
 }
 
 type MongoDB struct {
-	Host   string `json:"host"`
-	Port   int64  `json:"port"`
-	Token  string `json:"token"`
-	Status string `json:"status" example:"ACTIVE"`
+	Host     string `json:"host"`
+	Port     int64  `json:"port"`
+	Status   string `json:"status" example:"ACTIVE"`
+	User     string `tfsdk:"user"`
+	Password string `tfsdk:"password"`
 }
 
 func GetMongoDB(ctx context.Context, cc *client.Client, mongodbID string) client.Response[MongoDB] {

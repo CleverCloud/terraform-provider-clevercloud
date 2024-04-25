@@ -18,7 +18,7 @@ import (
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
 // So we need to handle the case there is no ProviderData
 func (r *ResourceAddon) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Info(ctx, "ResourceAddon.Configure()")
+	tflog.Debug(ctx, "ResourceAddon.Configure()")
 
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -97,7 +97,7 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 
 // Read resource information
 func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Info(ctx, "Addon READ", map[string]interface{}{"request": req})
+	tflog.Debug(ctx, "Addon READ", map[string]interface{}{"request": req})
 
 	var ad Addon
 	diags := req.State.Get(ctx, &ad)
@@ -168,7 +168,7 @@ func (r *ResourceAddon) Delete(ctx context.Context, req resource.DeleteRequest, 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Info(ctx, "Addon DELETE", map[string]interface{}{"addon": ad})
+	tflog.Debug(ctx, "Addon DELETE", map[string]interface{}{"addon": ad})
 
 	res := tmp.DeleteAddon(ctx, r.cc, r.org, ad.ID.ValueString())
 	if res.IsNotFoundError() {
