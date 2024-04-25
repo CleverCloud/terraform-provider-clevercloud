@@ -3,6 +3,7 @@ package mongodb
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -16,7 +17,7 @@ import (
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
 // So we need to handle the case there is no ProviderData
 func (r *ResourceMongoDB) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Info(ctx, "ResourceMongoDB.Configure()")
+	tflog.Debug(ctx, "ResourceMongoDB.Configure()")
 
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -47,10 +48,9 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 
 	addonsProviders := addonsProvidersRes.Payload()
 	prov := pkg.LookupAddonProvider(*addonsProviders, "mongodb-addon")
-
 	plan := pkg.LookupProviderPlan(prov, mg.Plan.ValueString())
 	if plan.ID == "" {
-		resp.Diagnostics.AddError("failed to find plan", "expect:, got: "+mg.Plan.String())
+		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov), ", ")+", got: "+mg.Plan.String())
 		return
 	}
 
@@ -83,12 +83,13 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	addonMG := mgInfoRes.Payload()
-	tflog.Info(ctx, "API response", map[string]interface{}{
+	tflog.Debug(ctx, "API response", map[string]interface{}{
 		"payload": fmt.Sprintf("%+v", addonMG),
 	})
 	mg.Host = pkg.FromStr(addonMG.Host)
 	mg.Port = pkg.FromI(int64(addonMG.Port))
-	mg.Token = pkg.FromStr(addonMG.Token)
+	mg.User = pkg.FromStr(addonMG.User)
+	mg.Password = pkg.FromStr(addonMG.Password)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 	if resp.Diagnostics.HasError() {
@@ -98,7 +99,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 
 // Read resource information
 func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Info(ctx, "MongoDB READ", map[string]interface{}{"request": req})
+	tflog.Debug(ctx, "MongoDB READ", map[string]interface{}{"request": req})
 
 	var mg MongoDB
 	diags := req.State.Get(ctx, &mg)
@@ -130,11 +131,12 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	tflog.Info(ctx, "STATE", map[string]interface{}{"mg": mg})
-	tflog.Info(ctx, "API", map[string]interface{}{"mg": addonMG})
+	tflog.Debug(ctx, "STATE", map[string]interface{}{"mg": mg})
+	tflog.Debug(ctx, "API", map[string]interface{}{"mg": addonMG})
 	mg.Host = pkg.FromStr(addonMG.Host)
 	mg.Port = pkg.FromI(int64(addonMG.Port))
-	mg.Token = pkg.FromStr(addonMG.Token)
+	mg.User = pkg.FromStr(addonMG.User)
+	mg.Password = pkg.FromStr(addonMG.Password)
 
 	diags = resp.State.Set(ctx, mg)
 	resp.Diagnostics.Append(diags...)
@@ -157,7 +159,7 @@ func (r *ResourceMongoDB) Delete(ctx context.Context, req resource.DeleteRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Info(ctx, "MongoDB DELETE", map[string]interface{}{"mg": mg})
+	tflog.Debug(ctx, "MongoDB DELETE", map[string]interface{}{"mg": mg})
 
 	res := tmp.DeleteAddon(ctx, r.cc, r.org, mg.ID.ValueString())
 	if res.IsNotFoundError() {
