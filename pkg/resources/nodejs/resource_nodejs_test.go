@@ -15,19 +15,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
-
-//go:embed resource_nodejs_test_block.tf
-var nodejsBlock string
-
-//go:embed resource_nodejs_test_block2.tf
-var nodejsBlock2 string
-
-//go:embed provider_test_block.tf
-var providerBlock string
 
 var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
@@ -41,6 +33,37 @@ func TestAccNodejs_basic(t *testing.T) {
 	fullName2 := fmt.Sprintf("clevercloud_nodejs.%s", rName2)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	nodejsBlock := helper.NewRessource(
+		"clevercloud_nodejs",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 2,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "M",
+			"redirect_https":     true,
+			"sticky_sessions":    true,
+			"app_folder":         "./app",
+			"environment":        map[string]any{"MY_KEY": "myval"},
+			"dependencies":       []string{},
+		}),
+		helper.SetBlockValues("hooks", map[string]any{"post_build": "echo \"build is OK!\""}),
+	).String()
+	nodejsBlock2 := helper.NewRessource(
+		"clevercloud_nodejs",
+		rName2,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName2,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 2,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "M",
+		}),
+		helper.SetBlockValues("deployment", map[string]any{"repository": "https://github.com/CleverCloud/nodejs-example.git"})).String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -68,7 +91,7 @@ func TestAccNodejs_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(nodejsBlock, rName, rName),
+			Config:       providerBlock + nodejsBlock,
 			Check: resource.ComposeAggregateTestCheckFunc(
 				// Test the state for provider's populated values
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
@@ -143,7 +166,7 @@ func TestAccNodejs_basic(t *testing.T) {
 			),
 		}, {
 			ResourceName: rName2,
-			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(nodejsBlock2, rName2, rName2),
+			Config:       providerBlock + nodejsBlock2,
 			Check: func(state *terraform.State) error {
 				id := state.RootModule().Resources[fullName2].Primary.ID
 

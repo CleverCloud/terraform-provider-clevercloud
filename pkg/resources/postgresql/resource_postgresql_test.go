@@ -13,16 +13,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
-
-//go:embed resource_postgresql_test_block.tf
-var postgresqlBlock string
-
-//go:embed provider_test_block.tf
-var providerBlock string
 
 var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
@@ -33,6 +28,15 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	postgresqlBlock := helper.NewRessource(
+		"clevercloud_postgresql",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+			"plan":   "dev",
+		})).String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -60,7 +64,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(postgresqlBlock, rName, rName),
+			Config:       providerBlock + postgresqlBlock,
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^addon_.*`)),
 				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`)),
@@ -78,6 +82,15 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 	//fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	postgresqlBlock := helper.NewRessource(
+		"clevercloud_postgresql",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+			"plan":   "dev",
+		})).String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -107,7 +120,7 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 			// create a database instance on first step
 			{
 				ResourceName: rName,
-				Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(postgresqlBlock, rName, rName),
+				Config:       providerBlock + postgresqlBlock,
 			},
 			{
 				ResourceName: rName,
