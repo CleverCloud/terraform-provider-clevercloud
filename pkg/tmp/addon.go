@@ -100,6 +100,18 @@ func GetMateriaKV(ctx context.Context, cc *client.Client, organisationID, postgr
 	return client.Get[MateriaKV](ctx, cc, path)
 }
 
+type MongoDB struct {
+	Host   string `json:"host"`
+	Port   int64  `json:"port"`
+	Token  string `json:"token"`
+	Status string `json:"status" example:"ACTIVE"`
+}
+
+func GetMongoDB(ctx context.Context, cc *client.Client, mongodbID string) client.Response[MongoDB] {
+	path := fmt.Sprintf("/v4/addon-providers/mongodb-addon/addons/%s", mongodbID)
+	return client.Get[MongoDB](ctx, cc, path)
+}
+
 type DeleteAddonResponse struct {
 	ID      int64  `json:"id"`
 	Message string `json:"message"`
