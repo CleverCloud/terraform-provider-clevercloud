@@ -13,16 +13,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
-
-//go:embed resource_addon_test_block.tf
-var addonBlock string
-
-//go:embed provider_test_block.tf
-var providerBlock string
 
 var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
@@ -33,6 +28,16 @@ func TestAccAddon_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_addon.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	addonBlock := helper.NewRessource(
+		"clevercloud_addon",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":                 rName,
+			"region":               "par",
+			"plan":                 "clever_solo",
+			"third_party_provider": "mailpace",
+		})).String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -57,7 +62,7 @@ func TestAccAddon_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(addonBlock, rName, rName),
+			Config:       providerBlock + addonBlock,
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^addon_.*`)),
 				//resource.TestMatchResourceAttr(fullName, "password", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
