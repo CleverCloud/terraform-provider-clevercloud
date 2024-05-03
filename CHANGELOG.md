@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.2.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.1.1...v0.2.0) (2024-05-03)
+
+
+### 🚀 Features
+
+* Mongo ([936f845](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/936f8451a7118b66141ca59301315ec384a58909))
+
+
+### 🐛 Bug Fixes
+
+* **test:** change ressource name (%s -&gt; rName) ([0c3a592](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/0c3a5922629f61dcf9a3b1a20b9b0bb2cb589857))
+
 ## [0.1.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.1.0...v0.1.1) (2024-04-15)
 
 
