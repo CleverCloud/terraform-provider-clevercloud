@@ -13,17 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 	"go.clever-cloud.com/terraform-provider/pkg/s3"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
-
-//go:embed resource_cellar_bucket_test_block.tf
-var cellarBucketBlock string
-
-//go:embed provider_test_block.tf
-var TestProviderBlock string
 
 var TestProtoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
@@ -31,9 +26,10 @@ var TestProtoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 
 func TestAccCellarBucket_basic(t *testing.T) {
 	ctx := context.Background()
-	bName := fmt.Sprintf("my-bucket-%d", time.Now().UnixMilli())
+	rName := fmt.Sprintf("my-bucket-%d", time.Now().UnixMilli())
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
 
 	cellar := &tmp.AddonResponse{}
 	if os.Getenv("TF_ACC") == "1" {
@@ -57,6 +53,14 @@ func TestAccCellarBucket_basic(t *testing.T) {
 		}()
 	}
 
+	cellarBucketBlock := helper.NewRessource(
+		"clevercloud_cellar_bucket",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"id":        rName,
+			"cellar_id": cellar.RealID,
+		})).String()
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			if org == "" {
@@ -68,8 +72,8 @@ func TestAccCellarBucket_basic(t *testing.T) {
 		},
 		ProtoV6ProviderFactories: TestProtoV6Provider,
 		Steps: []resource.TestStep{{
-			ResourceName: "cellar_bucket_" + bName,
-			Config:       fmt.Sprintf(TestProviderBlock, org) + fmt.Sprintf(cellarBucketBlock, bName, bName, cellar.RealID),
+			ResourceName: "cellar_bucket_" + rName,
+			Config:       providerBlock + cellarBucketBlock,
 			Check: resource.ComposeAggregateTestCheckFunc(
 				func(*terraform.State) error {
 					return nil
@@ -78,7 +82,7 @@ func TestAccCellarBucket_basic(t *testing.T) {
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for resourceName, resourceState := range state.RootModule().Resources {
-				tflog.Info(ctx, "TEST DESTROY", map[string]interface{}{"bucket": resourceState})
+				tflog.Debug(ctx, "TEST DESTROY", map[string]interface{}{"bucket": resourceState})
 				res := tmp.GetAddonEnv(context.Background(), cc, org, cellar.ID) // TODO: resourceState.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
@@ -92,7 +96,7 @@ func TestAccCellarBucket_basic(t *testing.T) {
 					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
 				}
 
-				exists, err := minioClient.BucketExists(ctx, bName)
+				exists, err := minioClient.BucketExists(ctx, rName)
 				if err != nil {
 					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
 				}

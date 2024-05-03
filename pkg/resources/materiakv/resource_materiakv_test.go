@@ -13,16 +13,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
-
-//go:embed resource_materiakv_test_block.tf
-var materiakvBlock string
-
-//go:embed provider_test_block.tf
-var providerBlock string
 
 var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
@@ -34,6 +29,8 @@ func TestAccMateriaKV_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_materiadb_kv.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	materiakvBlock := helper.NewRessource("clevercloud_materiadb_kv", rName).SetOneValue("name", rName).String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -61,7 +58,7 @@ func TestAccMateriaKV_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(materiakvBlock, rName, rName),
+			Config:       providerBlock + materiakvBlock,
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^kv_.*`)),
 				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*clever-cloud.com$`)),

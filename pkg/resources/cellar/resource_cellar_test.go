@@ -13,16 +13,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
-
-//go:embed resource_cellar_test_block.tf
-var cellarBlock string
-
-//go:embed provider_test_block.tf
-var providerBlock string
 
 var TestProtoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
@@ -30,10 +25,18 @@ var TestProtoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 
 func TestAccCellar_basic(t *testing.T) {
 	ctx := context.Background()
-	cName := fmt.Sprintf("tf-test-cellar-%d", time.Now().UnixMilli())
-	fullName := fmt.Sprintf("clevercloud_cellar.%s", cName)
+	rName := fmt.Sprintf("tf-test-cellar-%d", time.Now().UnixMilli())
+	fullName := fmt.Sprintf("clevercloud_cellar.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	cellarBlock := helper.NewRessource(
+		"clevercloud_cellar",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+		})).String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -43,8 +46,8 @@ func TestAccCellar_basic(t *testing.T) {
 		},
 		ProtoV6ProviderFactories: TestProtoV6Provider,
 		Steps: []resource.TestStep{{
-			ResourceName: "cellar_" + cName,
-			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(cellarBlock, cName, cName),
+			ResourceName: "cellar_" + rName,
+			Config:       providerBlock + cellarBlock,
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^cellar_.*`)),
 				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*\.services.clever-cloud.com$`)),

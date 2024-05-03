@@ -16,7 +16,7 @@ import (
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
 // So we need to handle the case there is no ProviderData
 func (r *ResourcePHP) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Info(ctx, "ResourcePHP.Configure()")
+	tflog.Debug(ctx, "ResourcePHP.Configure()")
 
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -29,7 +29,7 @@ func (r *ResourcePHP) Configure(ctx context.Context, req resource.ConfigureReque
 		r.org = provider.Organization()
 	}
 
-	tflog.Info(ctx, "AFTER CONFIGURED", map[string]interface{}{"cc": r.cc == nil, "org": r.org})
+	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]interface{}{"cc": r.cc == nil, "org": r.org})
 }
 
 // Create a new resource
@@ -88,7 +88,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	tflog.Info(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]interface{}{})
+	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]interface{}{})
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
 	plan.VHost = pkg.FromStr(createAppRes.Application.Vhosts[0].Fqdn)
@@ -174,7 +174,7 @@ func (r *ResourcePHP) Delete(ctx context.Context, req resource.DeleteRequest, re
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Info(ctx, "PHP DELETE", map[string]interface{}{"state": state})
+	tflog.Debug(ctx, "PHP DELETE", map[string]interface{}{"state": state})
 
 	res := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
 	if res.IsNotFoundError() {

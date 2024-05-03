@@ -1,4 +1,4 @@
-package postgresql_test
+package mongodb_test
 
 import (
 	"context"
@@ -23,20 +23,13 @@ var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
 }
 
-func TestAccPostgreSQL_basic(t *testing.T) {
-	rName := fmt.Sprintf("tf-test-pg-%d", time.Now().UnixMilli())
-	fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
+func TestAccMongoDB_basic(t *testing.T) {
+	rName := fmt.Sprintf("tf-test-mg-%d", time.Now().UnixMilli())
+	fullName := fmt.Sprintf("clevercloud_mongodb.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
-	postgresqlBlock := helper.NewRessource(
-		"clevercloud_postgresql",
-		rName,
-		helper.SetKeyValues(map[string]any{
-			"name":   rName,
-			"region": "par",
-			"plan":   "dev",
-		})).String()
+	mongodbBlock := helper.NewRessource("clevercloud_mongodb", rName, helper.SetKeyValues(map[string]any{"name": rName, "plan": "dev"})).String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -47,7 +40,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6Provider,
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetPostgreSQL(context.Background(), cc, resource.Primary.ID)
+				res := tmp.GetMongoDB(context.Background(), cc, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}
@@ -64,33 +57,21 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       providerBlock + postgresqlBlock,
+			Config:       providerBlock + mongodbBlock,
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^addon_.*`)),
-				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`)),
-				resource.TestCheckResourceAttrSet(fullName, "port"),
-				resource.TestMatchResourceAttr(fullName, "database", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
-				resource.TestMatchResourceAttr(fullName, "user", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
-				resource.TestMatchResourceAttr(fullName, "password", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
 			),
 		}},
 	})
 }
 
-func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
-	rName := fmt.Sprintf("tf-test-pg-%d", time.Now().UnixMilli())
-	//fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
+func TestAccMongoDB_RefreshDeleted(t *testing.T) {
+	rName := fmt.Sprintf("tf-test-mg-%d", time.Now().UnixMilli())
+	//fullName := fmt.Sprintf("clevercloud_mongodb.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
-	postgresqlBlock := helper.NewRessource(
-		"clevercloud_postgresql",
-		rName,
-		helper.SetKeyValues(map[string]any{
-			"name":   rName,
-			"region": "par",
-			"plan":   "dev",
-		})).String()
+	mongodbBlock2 := helper.NewRessource("clevercloud_mongodb", rName, helper.SetKeyValues(map[string]any{"name": rName, "plan": "dev"})).String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -101,7 +82,7 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6Provider,
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetPostgreSQL(context.Background(), cc, resource.Primary.ID)
+				res := tmp.GetMongoDB(context.Background(), cc, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}
@@ -120,7 +101,7 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 			// create a database instance on first step
 			{
 				ResourceName: rName,
-				Config:       providerBlock + postgresqlBlock,
+				Config:       providerBlock + mongodbBlock2,
 			},
 			{
 				ResourceName: rName,

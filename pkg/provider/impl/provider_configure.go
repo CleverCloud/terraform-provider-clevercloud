@@ -13,7 +13,7 @@ import (
 func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var config ProviderData
 
-	tflog.Info(ctx, "configure provider...")
+	tflog.Debug(ctx, "configure provider...")
 
 	diags := req.Config.Get(ctx, &config)
 	resp.Diagnostics.Append(diags...)
@@ -59,5 +59,5 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 	resp.DataSourceData = p
 	resp.ResourceData = p
 
-	tflog.Info(ctx, "provider configured")
+	tflog.Debug(ctx, "provider configured")
 }
