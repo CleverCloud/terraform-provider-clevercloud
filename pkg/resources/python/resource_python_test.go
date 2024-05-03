@@ -164,7 +164,7 @@ func TestAccPython_basic(t *testing.T) {
 			Config: helper.NewProvider("clevercloud").SetOrganisation(org).String() + helper.NewRessource("clevercloud_python",
 				rName2,
 				helper.SetKeyValues(map[string]any{
-					"name":               rName,
+					"name":               "%s",
 					"region":             "par",
 					"min_instance_count": 1,
 					"max_instance_count": 2,

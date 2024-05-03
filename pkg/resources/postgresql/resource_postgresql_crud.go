@@ -3,7 +3,6 @@ package postgresql
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -17,7 +16,7 @@ import (
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
 // So we need to handle the case there is no ProviderData
 func (r *ResourcePostgreSQL) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourcePostgreSQL.Configure()")
+	tflog.Info(ctx, "ResourcePostgreSQL.Configure()")
 
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -50,7 +49,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	prov := pkg.LookupAddonProvider(*addonsProviders, "postgresql-addon")
 	plan := pkg.LookupProviderPlan(prov, pg.Plan.ValueString())
 	if plan.ID == "" {
-		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov), ", ")+", got: "+pg.Plan.String())
+		resp.Diagnostics.AddError("failed to find plan", "expect:, got: "+pg.Plan.String())
 		return
 	}
 
@@ -83,7 +82,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	addonPG := pgInfoRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]interface{}{
+	tflog.Info(ctx, "API response", map[string]interface{}{
 		"payload": fmt.Sprintf("%+v", addonPG),
 	})
 	pg.Host = pkg.FromStr(addonPG.Host)
@@ -100,7 +99,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 
 // Read resource information
 func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "PostgreSQL READ", map[string]interface{}{"request": req})
+	tflog.Info(ctx, "PostgreSQL READ", map[string]interface{}{"request": req})
 
 	var pg PostgreSQL
 	diags := req.State.Get(ctx, &pg)
@@ -132,8 +131,8 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	tflog.Debug(ctx, "STATE", map[string]interface{}{"pg": pg})
-	tflog.Debug(ctx, "API", map[string]interface{}{"pg": addonPG})
+	tflog.Info(ctx, "STATE", map[string]interface{}{"pg": pg})
+	tflog.Info(ctx, "API", map[string]interface{}{"pg": addonPG})
 	pg.Plan = pkg.FromStr(addonPG.Plan)
 	pg.Region = pkg.FromStr(addonPG.Zone)
 	//pg.Name = types.String{Value: addonPG.}
@@ -164,7 +163,7 @@ func (r *ResourcePostgreSQL) Delete(ctx context.Context, req resource.DeleteRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "PostgreSQL DELETE", map[string]interface{}{"pg": pg})
+	tflog.Info(ctx, "PostgreSQL DELETE", map[string]interface{}{"pg": pg})
 
 	res := tmp.DeleteAddon(ctx, r.cc, r.org, pg.ID.ValueString())
 	if res.IsNotFoundError() {

@@ -15,7 +15,7 @@ import (
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
 // So we need to handle the case there is no ProviderData
 func (r *ResourcePython) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourcePython.Configure()")
+	tflog.Info(ctx, "ResourcePython.Configure()")
 
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -28,7 +28,7 @@ func (r *ResourcePython) Configure(ctx context.Context, req resource.ConfigureRe
 		r.org = provider.Organization()
 	}
 
-	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]interface{}{"cc": r.cc == nil, "org": r.org})
+	tflog.Info(ctx, "AFTER CONFIGURED", map[string]interface{}{"cc": r.cc == nil, "org": r.org})
 }
 
 // Create a new resource
@@ -104,7 +104,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 
 // Read resource information
 func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Python READ", map[string]interface{}{"request": req})
+	tflog.Info(ctx, "Python READ", map[string]interface{}{"request": req})
 
 	var app Python
 	diags := req.State.Get(ctx, &app)
@@ -147,7 +147,7 @@ func (r *ResourcePython) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Python DELETE", map[string]interface{}{"app": app})
+	tflog.Info(ctx, "Python DELETE", map[string]interface{}{"app": app})
 
 	res := tmp.DeleteApp(ctx, r.cc, r.org, app.ID.ValueString())
 	if res.IsNotFoundError() {
