@@ -13,11 +13,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
-	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
+
+//go:embed provider_test_block.tf
+var providerBlock string
+
+//go:embed resource_java_test_block.tf
+var javaBlock string
 
 var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
@@ -29,18 +34,6 @@ func TestAccJava_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_java_war.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
-	javaBlock := helper.NewRessource(
-		"clevercloud_java_war",
-		rName,
-		helper.SetKeyValues(map[string]any{
-			"name":               rName,
-			"region":             "par",
-			"min_instance_count": 1,
-			"max_instance_count": 2,
-			"smallest_flavor":    "XS",
-			"biggest_flavor":     "M",
-		})).String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -52,7 +45,7 @@ func TestAccJava_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			Destroy:      false,
 			ResourceName: rName,
-			Config:       providerBlock + javaBlock,
+			Config:       fmt.Sprintf(providerBlock, org) + fmt.Sprintf(javaBlock, rName, rName),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),

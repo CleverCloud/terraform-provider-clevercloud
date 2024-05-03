@@ -16,7 +16,7 @@ import (
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
 // So we need to handle the case there is no ProviderData
 func (r *ResourceStatic) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceStatic.Configure()")
+	tflog.Info(ctx, "ResourceStatic.Configure()")
 
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -29,7 +29,7 @@ func (r *ResourceStatic) Configure(ctx context.Context, req resource.ConfigureRe
 		r.org = provider.Organization()
 	}
 
-	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]interface{}{"cc": r.cc == nil, "org": r.org})
+	tflog.Info(ctx, "AFTER CONFIGURED", map[string]interface{}{"cc": r.cc == nil, "org": r.org})
 }
 
 // Create a new resource
@@ -88,7 +88,7 @@ func (r *ResourceStatic) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]interface{}{})
+	tflog.Info(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]interface{}{})
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
 	plan.VHost = pkg.FromStr(createAppRes.Application.Vhosts[0].Fqdn)
@@ -184,7 +184,7 @@ func (r *ResourceStatic) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "STATIC DELETE", map[string]interface{}{"state": state})
+	tflog.Info(ctx, "STATIC DELETE", map[string]interface{}{"state": state})
 
 	res := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
 	if res.IsNotFoundError() {
