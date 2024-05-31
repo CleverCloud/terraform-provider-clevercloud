@@ -86,7 +86,7 @@ resource "clevercloud_python" "myapp" {
 - `max_instance_count` (Number) Maximum instance count, if different from min value, enable autoscaling
 - `min_instance_count` (Number) Minimum instance count
 - `name` (String) Application name
-- `region` (String) Geographical region where the app will be deployed
+- `region` (String) Geographical region where the database will be deployed
 - `smallest_flavor` (String) Smallest instance flavor
 
 ### Optional

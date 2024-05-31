@@ -30,7 +30,7 @@ resource "clevercloud_postgresql" "postgresql_database" {
 
 - `name` (String) Name of the service
 - `plan` (String) Database size and spec
-- `region` (String) Geographical region where the database will be deployed
+- `region` (String) Geographical region where the data will be stored
 
 ### Read-Only
 
