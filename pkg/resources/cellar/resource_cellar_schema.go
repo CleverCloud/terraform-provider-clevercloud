@@ -6,7 +6,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -31,7 +30,7 @@ func (r ResourceCellar) Schema(_ context.Context, req resource.SchemaRequest, re
 		Attributes: map[string]schema.Attribute{
 			// customer provided
 			"name":   schema.StringAttribute{Required: true, MarkdownDescription: "Name of the Cellar"},
-			"region": schema.StringAttribute{MarkdownDescription: "Geographical region where the data will be stored", Default: stringdefault.StaticString("par")},
+			"region": schema.StringAttribute{Required: true, MarkdownDescription: "Geographical region where the data will be stored"}, // TODO, Default: stringdefault.StaticString("par")},
 
 			// provider
 			"id":         schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier"},

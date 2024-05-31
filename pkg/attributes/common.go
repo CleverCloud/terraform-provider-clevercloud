@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -45,7 +44,8 @@ var runtimeCommon = map[string]schema.Attribute{
 		MarkdownDescription: "Use dedicated instance with given flavor for build step",
 	},
 	"region": schema.StringAttribute{
-		Default:             stringdefault.StaticString("par"),
+		Required: true,
+		// Default:             stringdefault.StaticString("par"), // TODO default value must be computed before apply
 		MarkdownDescription: "Geographical region where the database will be deployed",
 	},
 	"sticky_sessions": schema.BoolAttribute{
