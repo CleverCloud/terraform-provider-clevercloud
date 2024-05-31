@@ -30,7 +30,7 @@ func TestAccMateriaKV_basic(t *testing.T) {
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
-	materiakvBlock := helper.NewRessource("clevercloud_materia_kv", rName).SetOneValue("name", rName).String()
+	materiakvBlock := helper.NewRessource("clevercloud_materia_kv", rName, helper.SetKeyValues(map[string]any{"name": rName, "region": "par"})).String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {

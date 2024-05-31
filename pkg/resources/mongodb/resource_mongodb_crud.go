@@ -49,7 +49,6 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 	addonsProviders := addonsProvidersRes.Payload()
 	prov := pkg.LookupAddonProvider(*addonsProviders, "mongodb-addon")
 	plan := pkg.LookupProviderPlan(prov, mg.Plan.ValueString())
-	// TODO
 	if plan.ID == "" {
 		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov), ", ")+", got: "+mg.Plan.String())
 		return
