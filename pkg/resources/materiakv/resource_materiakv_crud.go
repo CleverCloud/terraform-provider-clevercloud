@@ -59,7 +59,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 		Name:       kv.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: "kv",
-		Region:     "par",
+		Region:     kv.Region.ValueString(),
 	}
 
 	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)

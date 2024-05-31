@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -15,6 +16,7 @@ type MateriaKV struct {
 	CreationDate types.Int64  `tfsdk:"creation_date"`
 	Host         types.String `tfsdk:"host"`
 	Port         types.Int64  `tfsdk:"port"`
+	Region       types.String `tfsdk:"region"`
 	Token        types.String `tfsdk:"token"`
 }
 
@@ -27,7 +29,8 @@ func (r ResourceMateriaKV) Schema(_ context.Context, req resource.SchemaRequest,
 		MarkdownDescription: resourceMateriaKVDoc,
 		Attributes: map[string]schema.Attribute{
 			// customer provided
-			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
+			"name":   schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
+			"region": schema.StringAttribute{MarkdownDescription: "Geographical region where the database will be deployed", Default: stringdefault.StaticString("par")},
 			// provider
 			"id":            schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier"},
 			"creation_date": schema.Int64Attribute{Computed: true, MarkdownDescription: "Date of database creation"},
