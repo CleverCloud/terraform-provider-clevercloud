@@ -22,6 +22,7 @@ See [product specification](https://www.clever-cloud.com/fr/product/mongodb/).
 
 - `name` (String) Name of the service
 - `plan` (String) Database size and spec
+- `region` (String) Geographical region where the data will be stored
 
 ### Read-Only
 
