@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -13,6 +14,7 @@ type MongoDB struct {
 	ID           types.String `tfsdk:"id"`
 	Name         types.String `tfsdk:"name"`
 	Plan         types.String `tfsdk:"plan"`
+	Region       types.String `tfsdk:"region"`
 	CreationDate types.Int64  `tfsdk:"creation_date"`
 	Host         types.String `tfsdk:"host"`
 	Port         types.Int64  `tfsdk:"port"`
@@ -29,8 +31,9 @@ func (r ResourceMongoDB) Schema(_ context.Context, req resource.SchemaRequest, r
 		MarkdownDescription: resourceMongoDBDoc,
 		Attributes: map[string]schema.Attribute{
 			// customer provided
-			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
-			"plan": schema.StringAttribute{Required: true, MarkdownDescription: "Database size and spec"},
+			"name":   schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
+			"plan":   schema.StringAttribute{Required: true, MarkdownDescription: "Database size and spec"},
+			"region": schema.StringAttribute{MarkdownDescription: "Geographical region where the database will be deployed", Default: stringdefault.StaticString("par")},
 
 			// provider
 			"id":            schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier"},
