@@ -1,1 +1,1 @@
-Manage MateriaDB KV databases
+Manage Materia KV databases

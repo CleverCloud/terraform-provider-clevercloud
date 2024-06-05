@@ -78,7 +78,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 
 	kvInfoRes := tmp.GetMateriaKV(ctx, r.cc, r.org, kv.ID.ValueString())
 	if kvInfoRes.HasError() {
-		resp.Diagnostics.AddError("failed to get materiadb connection infos", kvInfoRes.Error().Error())
+		resp.Diagnostics.AddError("failed to get materia kv connection infos", kvInfoRes.Error().Error())
 		return
 	}
 
