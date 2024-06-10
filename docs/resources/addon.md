@@ -26,8 +26,11 @@ List of available providers:
 
 - `name` (String) Name of the addon
 - `plan` (String) billing plan
-- `region` (String) Geographical region where the addon will be deployed (when relevant)
 - `third_party_provider` (String) Provider ID
+
+### Optional
+
+- `region` (String) Geographical region where the addon will be deployed (when relevant)
 
 ### Read-Only
 

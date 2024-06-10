@@ -21,6 +21,9 @@ See [product specification](https://www.clever-cloud.com/doc/deploy/addon/cellar
 ### Required
 
 - `name` (String) Name of the Cellar
+
+### Optional
+
 - `region` (String) Geographical region where the data will be stored
 
 ### Read-Only

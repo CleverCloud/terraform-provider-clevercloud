@@ -135,6 +135,9 @@ func TestAccNodejs_basic(t *testing.T) {
 					if !app.StickySessions {
 						return assertError("expect option to be set", "sticky_sessions", app.StickySessions)
 					}
+					if app.Zone != "par" {
+						return assertError("expect region to be 'par'", "region", app.Zone)
+					}
 
 					appEnvRes := tmp.GetAppEnv(ctx, cc, org, id)
 					if appEnvRes.HasError() {

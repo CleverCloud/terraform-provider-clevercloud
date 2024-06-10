@@ -24,7 +24,6 @@ See [PHP product](https://www.clever-cloud.com/doc/getting-started/by-language/p
 - `max_instance_count` (Number) Maximum instance count, if different from min value, enable autoscaling
 - `min_instance_count` (Number) Minimum instance count
 - `name` (String) Application name
-- `region` (String) Geographical region where the database will be deployed
 - `smallest_flavor` (String) Smallest instance flavor
 
 ### Optional
@@ -42,6 +41,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `php_version` (String) PHP version (Default: 8)
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redis_sessions` (Boolean) Use a linked Redis instance to store sessions (Default: false)
+- `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `webroot` (String) Define the DocumentRoot of your project (default: ".")
 

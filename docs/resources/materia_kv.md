@@ -18,6 +18,9 @@ Manage Materia KV databases
 ### Required
 
 - `name` (String) Name of the service
+
+### Optional
+
 - `region` (String) Geographical region where the data will be stored
 
 ### Read-Only
