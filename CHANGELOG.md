@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.3.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.2.0...v0.3.0) (2024-06-10)
+
+
+### 🚀 Features
+
+* set par as default regions ([fcb7dab](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/fcb7dab06844dacf5ede92f73cfee920f4a98855))
+
+
+### 🐛 Bug Fixes
+
+* remove all hardcoded region parameters + default="par" ([80b0224](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/80b0224a531ac3d5f36d69040cc0361142446da8))
+
 ## [0.2.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.1.1...v0.2.0) (2024-05-03)
 
 
