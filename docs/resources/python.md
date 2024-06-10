@@ -86,7 +86,6 @@ resource "clevercloud_python" "myapp" {
 - `max_instance_count` (Number) Maximum instance count, if different from min value, enable autoscaling
 - `min_instance_count` (Number) Minimum instance count
 - `name` (String) Application name
-- `region` (String) Geographical region where the database will be deployed
 - `smallest_flavor` (String) Smallest instance flavor
 
 ### Optional
@@ -103,6 +102,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `pip_requirements` (String) Define a custom requirements.txt file (default: requirements.txt)
 - `python_version` (String) Python version >= 2.7
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
+- `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 
 ### Read-Only

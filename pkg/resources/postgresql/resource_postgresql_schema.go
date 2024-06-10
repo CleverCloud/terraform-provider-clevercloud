@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -31,9 +32,14 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 		MarkdownDescription: resourcePostgresqlDoc,
 		Attributes: map[string]schema.Attribute{
 			// customer provided
-			"name":   schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
-			"plan":   schema.StringAttribute{Required: true, MarkdownDescription: "Database size and spec"},
-			"region": schema.StringAttribute{Required: true, MarkdownDescription: "Geographical region where the data will be stored"}, // TODO, Default: stringdefault.StaticString("par")},
+			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
+			"plan": schema.StringAttribute{Required: true, MarkdownDescription: "Database size and spec"},
+			"region": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString("par"),
+				MarkdownDescription: "Geographical region where the data will be stored",
+			},
 
 			// provider
 			"id":            schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier"},

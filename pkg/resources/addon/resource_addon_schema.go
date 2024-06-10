@@ -6,6 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -28,9 +29,14 @@ func (r ResourceAddon) Schema(_ context.Context, req resource.SchemaRequest, res
 		MarkdownDescription: resourcePostgresqlDoc,
 		Attributes: map[string]schema.Attribute{
 			// customer provided
-			"name":                 schema.StringAttribute{Required: true, MarkdownDescription: "Name of the addon"},
-			"plan":                 schema.StringAttribute{Required: true, MarkdownDescription: "billing plan"},
-			"region":               schema.StringAttribute{Required: true, MarkdownDescription: "Geographical region where the addon will be deployed (when relevant)"}, //TODO , Default: stringdefault.StaticString("par")},
+			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the addon"},
+			"plan": schema.StringAttribute{Required: true, MarkdownDescription: "billing plan"},
+			"region": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString("par"),
+				MarkdownDescription: "Geographical region where the addon will be deployed (when relevant)",
+			},
 			"third_party_provider": schema.StringAttribute{Required: true, MarkdownDescription: "Provider ID"},
 
 			// provider

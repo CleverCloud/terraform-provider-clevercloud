@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -39,7 +40,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	appRes := tmp.CreateApp(ctx, req.Client, req.Organization, req.Application)
 	if appRes.HasError() {
 		diags.AddError("failed to create application", appRes.Error().Error())
-		tflog.Error(ctx, "failed to create app", map[string]interface{}{"error": appRes.Error().Error()})
+		tflog.Error(ctx, "failed to create app", map[string]interface{}{"error": appRes.Error().Error(), "payload": fmt.Sprintf("%+v", req.Application)})
 		return nil, diags
 	}
 

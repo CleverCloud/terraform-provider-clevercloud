@@ -86,7 +86,6 @@ resource "clevercloud_nodejs" "myapp" {
 - `max_instance_count` (Number) Maximum instance count, if different from min value, enable autoscaling
 - `min_instance_count` (Number) Minimum instance count
 - `name` (String) Application name
-- `region` (String) Geographical region where the database will be deployed
 - `smallest_flavor` (String) Smallest instance flavor
 
 ### Optional
@@ -103,6 +102,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `package_manager` (String) Either npm, npm-ci, yarn, yarn2 or custom
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
+- `region` (String) Geographical region where the database will be deployed
 - `registry` (String) The host of your private repository, available values: github or the registry host
 - `registry_token` (String, Sensitive) Private repository token
 - `start_script` (String) Set custom start script, instead of `npm start`
