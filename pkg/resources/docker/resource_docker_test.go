@@ -1,4 +1,4 @@
-package materiakv_test
+package docker_test
 
 import (
 	"context"
@@ -23,14 +23,25 @@ var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
 }
 
-func TestAccMateriaKV_basic(t *testing.T) {
+func TestAccDocker_basic(t *testing.T) {
 	ctx := context.Background()
-	rName := fmt.Sprintf("tf-test-kv-%d", time.Now().UnixMilli())
-	fullName := fmt.Sprintf("clevercloud_materia_kv.%s", rName)
+	rName := fmt.Sprintf("tf-test-docker-%d", time.Now().UnixMilli())
+	fullName := fmt.Sprintf("clevercloud_docker.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
-	materiakvBlock := helper.NewRessource("clevercloud_materia_kv", rName, helper.SetKeyValues(map[string]any{"name": rName, "region": "par"})).String()
+	dockerBlock := helper.NewRessource(
+		"clevercloud_docker",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 2,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "M",
+			"additional_vhosts":  [1]string{"toto-tf5283457829345.com"},
+		})).String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -39,32 +50,32 @@ func TestAccMateriaKV_basic(t *testing.T) {
 			}
 		},
 		ProtoV6ProviderFactories: protoV6Provider,
+		Steps: []resource.TestStep{{
+			Destroy:      false,
+			ResourceName: rName,
+			Config:       providerBlock + dockerBlock,
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
+				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
+				resource.TestCheckResourceAttr(fullName, "region", "par"),
+			),
+		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetMateriaKV(ctx, cc, org, resource.Primary.ID)
+				res := tmp.GetApp(ctx, cc, org, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}
 				if res.HasError() {
 					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
 				}
-				if res.Payload().Status == "TO_DELETE" {
+				if res.Payload().State == "TO_DELETE" {
 					continue
 				}
 
-				return fmt.Errorf("expect resource '%s' to be deleted: %+v", resource.Primary.ID, res.Payload())
+				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
 			}
 			return nil
 		},
-		Steps: []resource.TestStep{{
-			ResourceName: rName,
-			Config:       providerBlock + materiakvBlock,
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^kv_.*`)),
-				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*clever-cloud.com$`)),
-				resource.TestCheckResourceAttrSet(fullName, "port"),
-				resource.TestCheckResourceAttrSet(fullName, "token"),
-			),
-		}},
 	})
 }
