@@ -125,7 +125,7 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 
 	addonKV := addonKVRes.Payload()
 
-	if addonKV.Status.Status == "TO_DELETE" {
+	if addonKV.Status == "TO_DELETE" {
 		resp.State.RemoveResource(ctx)
 		return
 	}

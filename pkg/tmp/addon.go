@@ -76,23 +76,17 @@ func GetPostgreSQL(ctx context.Context, cc *client.Client, postgresqlID string) 
 }
 
 type MateriaKV struct {
-	ID             string          `json:"id"`
-	ClusterID      string          `json:"clusterId"`
-	OrganisationID string          `json:"ownerId"`
-	Kind           string          `json:"kind"`
-	Plan           string          `json:"plan"`
-	Host           string          `json:"host"`
-	Port           int64           `json:"port"`
-	Token          string          `json:"token"`
-	TokenID        string          `json:"tokenId"`
-	Status         MateriaKVStatus `json:"status"`
+	ID             string `json:"id"`
+	ClusterID      string `json:"clusterId"`
+	OrganisationID string `json:"ownerId"`
+	Kind           string `json:"kind"`
+	Plan           string `json:"plan"`
+	Host           string `json:"host"`
+	Port           int64  `json:"port"`
+	Token          string `json:"token"`
+	TokenID        string `json:"tokenId"`
+	Status         string `json:"status"`
 	// ccapiUrl	"https://api.clever-cloud.com/v2/vendor/apps/addon_dbf12716-9353-41ef-aabf-e4b7fce1ba5e"
-}
-
-type MateriaKVStatus struct {
-	ID        string `json:"id"`
-	ServiceID string `json:"serviceId"`
-	Status    string `json:"status"`
 }
 
 func GetMateriaKV(ctx context.Context, cc *client.Client, organisationID, postgresqlID string) client.Response[MateriaKV] {
