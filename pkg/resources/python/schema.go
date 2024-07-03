@@ -42,7 +42,7 @@ type Python struct {
 	PipRequirements types.String `tfsdk:"pip_requirements"`
 }
 
-//go:embed resource_python.md
+//go:embed doc.md
 var pythonDoc string
 
 func (r ResourcePython) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {

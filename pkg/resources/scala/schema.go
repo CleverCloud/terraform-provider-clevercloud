@@ -1,4 +1,4 @@
-package static
+package scala
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 )
 
-type Static struct {
+type Scala struct {
 	ID               types.String           `tfsdk:"id"`
 	Name             types.String           `tfsdk:"name"`
 	Description      types.String           `tfsdk:"description"`
@@ -39,24 +39,24 @@ type Static struct {
 	// Scala related
 }
 
-//go:embed resource_static.md
-var staticDoc string
+//go:embed doc.md
+var scalaDoc string
 
-func (r ResourceStatic) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
+func (r ResourceScala) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 	res.Schema = schema.Schema{
 		Version:             0,
-		MarkdownDescription: staticDoc,
+		MarkdownDescription: scalaDoc,
 		Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
 		Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 	}
 }
 
 // https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (plan *Static) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+func (plan *Scala) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{}
 }
 
-func (plan *Static) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (plan *Scala) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -74,7 +74,7 @@ func (plan *Static) toEnv(ctx context.Context, diags diag.Diagnostics) map[strin
 	return env
 }
 
-func (java *Static) toDeployment() *application.Deployment {
+func (java *Scala) toDeployment() *application.Deployment {
 	if java.Deployment == nil || java.Deployment.Repository.IsNull() {
 		return nil
 	}

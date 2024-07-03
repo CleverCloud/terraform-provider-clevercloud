@@ -17,7 +17,7 @@ type CellarBucket struct {
 	CellarID types.String `tfsdk:"cellar_id"`
 }
 
-//go:embed resource_cellar_bucket.md
+//go:embed doc.md
 var resourceCellarBucketDoc string
 
 func (r ResourceCellarBucket) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {

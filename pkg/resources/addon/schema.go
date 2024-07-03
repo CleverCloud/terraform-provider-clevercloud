@@ -20,7 +20,7 @@ type Addon struct {
 	Configurations     types.Map    `tfsdk:"configurations"`
 }
 
-//go:embed resource_addon.md
+//go:embed doc.md
 var resourcePostgresqlDoc string
 
 func (r ResourceAddon) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
