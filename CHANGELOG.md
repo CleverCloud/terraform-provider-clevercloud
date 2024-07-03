@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.3.0...v0.4.0) (2024-07-03)
+
+
+### 🚀 Features
+
+* docker ([#79](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/79)) ([8c02ab3](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/8c02ab3b5d5823487abd7707cabb6ba8d7616bf2))
+
 ## [0.3.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.2.0...v0.3.0) (2024-06-10)
 
 
