@@ -15,3 +15,9 @@ func IfIsSetB(v types.Bool, fn func(s bool)) {
 		fn(v.ValueBool())
 	}
 }
+
+func IfIsSetI(v types.Int64, fn func(i int64)) {
+	if !v.IsNull() && !v.IsUnknown() {
+		fn(v.ValueInt64())
+	}
+}
