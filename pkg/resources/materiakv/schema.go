@@ -20,7 +20,7 @@ type MateriaKV struct {
 	Token        types.String `tfsdk:"token"`
 }
 
-//go:embed resource_materiakv.md
+//go:embed doc.md
 var resourceMateriaKVDoc string
 
 func (r ResourceMateriaKV) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {

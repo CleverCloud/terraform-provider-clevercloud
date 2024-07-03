@@ -22,7 +22,7 @@ type MongoDB struct {
 	Password     types.String `tfsdk:"password"`
 }
 
-//go:embed resource_mongodb.md
+//go:embed doc.md
 var resourceMongoDBDoc string
 
 func (r ResourceMongoDB) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {

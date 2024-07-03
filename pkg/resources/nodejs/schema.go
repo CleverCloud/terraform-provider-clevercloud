@@ -45,7 +45,7 @@ type NodeJS struct {
 	RegistryToken   types.String `tfsdk:"registry_token"`
 }
 
-//go:embed resource_nodejs.md
+//go:embed doc.md
 var nodejsDoc string
 
 func (r ResourceNodeJS) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {

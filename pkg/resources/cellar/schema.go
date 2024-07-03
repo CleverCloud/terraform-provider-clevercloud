@@ -21,7 +21,7 @@ type Cellar struct {
 	KeySecret types.String `tfsdk:"key_secret"`
 }
 
-//go:embed resource_cellar.md
+//go:embed doc.md
 var resourceCellarDoc string
 
 func (r ResourceCellar) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {

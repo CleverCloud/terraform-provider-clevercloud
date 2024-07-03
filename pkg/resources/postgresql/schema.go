@@ -23,7 +23,7 @@ type PostgreSQL struct {
 	Password     types.String `tfsdk:"password"`
 }
 
-//go:embed resource_postgresql.md
+//go:embed doc.md
 var resourcePostgresqlDoc string
 
 func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
