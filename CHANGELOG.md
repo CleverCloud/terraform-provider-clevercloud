@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.4.0...v0.4.1) (2024-07-12)
+
+
+### 🐛 Bug Fixes
+
+* **mongodb:** plan is nil ([b4545cb](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/b4545cb86561e55c54baefc19574be7d874070b6)), closes [#82](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/82)
+
 ## [0.4.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.3.0...v0.4.0) (2024-07-03)
 
 
