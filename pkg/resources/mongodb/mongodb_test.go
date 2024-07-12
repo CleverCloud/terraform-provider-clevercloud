@@ -29,7 +29,7 @@ func TestAccMongoDB_basic(t *testing.T) {
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
-	mongodbBlock := helper.NewRessource("clevercloud_mongodb", rName, helper.SetKeyValues(map[string]any{"name": rName, "plan": "dev", "region": "par"})).String()
+	mongodbBlock := helper.NewRessource("clevercloud_mongodb", rName, helper.SetKeyValues(map[string]any{"name": rName, "plan": "xs_med", "region": "par"})).String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -71,7 +71,7 @@ func TestAccMongoDB_RefreshDeleted(t *testing.T) {
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
-	mongodbBlock2 := helper.NewRessource("clevercloud_mongodb", rName, helper.SetKeyValues(map[string]any{"name": rName, "plan": "dev", "region": "par"})).String()
+	mongodbBlock2 := helper.NewRessource("clevercloud_mongodb", rName, helper.SetKeyValues(map[string]any{"name": rName, "plan": "xs_med", "region": "par"})).String()
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
