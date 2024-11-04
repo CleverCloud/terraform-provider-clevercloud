@@ -7,18 +7,18 @@ description: |-
   See Static product https://www.clever-cloud.com/doc/deploy/application/static/static/ specification.
   Example usage
   Basic
-  terraform
+  
   resource "clevercloud_static" "myapp" {
-      name = "tf-myapp"
-      region = "par"
-      min_instance_count = 1
-      max_instance_count = 2
-      smallest_flavor = "XS"
-      biggest_flavor = "M"
+  	name = "tf-myapp"
+  	region = "par"
+  	min_instance_count = 1
+  	max_instance_count = 2
+  	smallest_flavor = "XS"
+  	biggest_flavor = "M"
   }
   
   Advanced
-  terraform
+  
   resource "clevercloud_static" "myapp" {
       name = "tf-myapp"
       region = "par"

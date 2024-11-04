@@ -7,35 +7,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 )
 
 type Scala struct {
-	ID               types.String           `tfsdk:"id"`
-	Name             types.String           `tfsdk:"name"`
-	Description      types.String           `tfsdk:"description"`
-	MinInstanceCount types.Int64            `tfsdk:"min_instance_count"`
-	MaxInstanceCount types.Int64            `tfsdk:"max_instance_count"`
-	SmallestFlavor   types.String           `tfsdk:"smallest_flavor"`
-	BiggestFlavor    types.String           `tfsdk:"biggest_flavor"`
-	BuildFlavor      types.String           `tfsdk:"build_flavor"`
-	Region           types.String           `tfsdk:"region"`
-	StickySessions   types.Bool             `tfsdk:"sticky_sessions"`
-	RedirectHTTPS    types.Bool             `tfsdk:"redirect_https"`
-	VHost            types.String           `tfsdk:"vhost"`
-	AdditionalVHosts types.List             `tfsdk:"additional_vhosts"`
-	DeployURL        types.String           `tfsdk:"deploy_url"`
-	Deployment       *attributes.Deployment `tfsdk:"deployment"`
-	Hooks            *attributes.Hooks      `tfsdk:"hooks"`
-	Dependencies     types.Set              `tfsdk:"dependencies"`
-
-	// Env
-	AppFolder   types.String `tfsdk:"app_folder"`
-	Environment types.Map    `tfsdk:"environment"`
-
+	attributes.Runtime
 	// Scala related
 }
 

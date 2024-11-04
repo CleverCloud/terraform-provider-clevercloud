@@ -24,13 +24,13 @@ List of available providers:
 
 ### Required
 
-- `name` (String) Name of the addon
-- `plan` (String) billing plan
+- `name` (String) Name of the service
+- `plan` (String) Database size and spec
 - `third_party_provider` (String) Provider ID
 
 ### Optional
 
-- `region` (String) Geographical region where the addon will be deployed (when relevant)
+- `region` (String) Geographical region where the data will be stored
 
 ### Read-Only
 
