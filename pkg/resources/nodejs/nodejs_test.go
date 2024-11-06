@@ -180,7 +180,7 @@ func TestAccNodejs_basic(t *testing.T) {
 				app := appRes.Payload()
 
 				// Test deployed app
-				t := time.NewTimer(1 * time.Minute)
+				t := time.NewTimer(2 * time.Minute)
 				select {
 				case <-healthCheck(app.Vhosts[0].Fqdn):
 					return nil

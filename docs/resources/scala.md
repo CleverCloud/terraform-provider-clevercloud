@@ -3,22 +3,22 @@
 page_title: "clevercloud_scala Resource - terraform-provider-clevercloud"
 subcategory: ""
 description: |-
-  Manage Scala https://www.scala-lang.org/ applications.
+  Manage Scala applications.
   See Scala product https://www.clever-cloud.com/scala-hosting/ specification.
   Example usage
   Basic
-  terraform
+  
   resource "clevercloud_scala" "myapp" {
-      name = "tf-myapp"
-      region = "par"
-      min_instance_count = 1
-      max_instance_count = 2
-      smallest_flavor = "XS"
-      biggest_flavor = "M"
+  	name = "tf-myapp"
+  	region = "par"
+  	min_instance_count = 1
+  	max_instance_count = 2
+  	smallest_flavor = "XS"
+  	biggest_flavor = "M"
   }
   
   Advanced
-  terraform
+  
   resource "clevercloud_scala" "myapp" {
       name = "tf-myapp"
       region = "par"

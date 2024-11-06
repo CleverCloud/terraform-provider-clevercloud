@@ -12,6 +12,30 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
+type Runtime struct {
+	ID               types.String `tfsdk:"id"`
+	Name             types.String `tfsdk:"name"`
+	Description      types.String `tfsdk:"description"`
+	MinInstanceCount types.Int64  `tfsdk:"min_instance_count"`
+	MaxInstanceCount types.Int64  `tfsdk:"max_instance_count"`
+	SmallestFlavor   types.String `tfsdk:"smallest_flavor"`
+	BiggestFlavor    types.String `tfsdk:"biggest_flavor"`
+	BuildFlavor      types.String `tfsdk:"build_flavor"`
+	Region           types.String `tfsdk:"region"`
+	StickySessions   types.Bool   `tfsdk:"sticky_sessions"`
+	RedirectHTTPS    types.Bool   `tfsdk:"redirect_https"`
+	VHost            types.String `tfsdk:"vhost"`
+	AdditionalVHosts types.List   `tfsdk:"additional_vhosts"`
+	DeployURL        types.String `tfsdk:"deploy_url"`
+	Dependencies     types.Set    `tfsdk:"dependencies"`
+	Deployment       *Deployment  `tfsdk:"deployment"`
+	Hooks            *Hooks       `tfsdk:"hooks"`
+
+	// Env
+	AppFolder   types.String `tfsdk:"app_folder"`
+	Environment types.Map    `tfsdk:"environment"`
+}
+
 // This attributes are used on several runtimes
 var runtimeCommon = map[string]schema.Attribute{
 	// client provided
@@ -124,15 +148,5 @@ var runtimeCommon = map[string]schema.Attribute{
 }
 
 func WithRuntimeCommons(runtimeSpecifics map[string]schema.Attribute) map[string]schema.Attribute {
-	m := map[string]schema.Attribute{}
-
-	for attrName, attr := range runtimeCommon {
-		m[attrName] = attr
-	}
-
-	for attrName, attr := range runtimeSpecifics {
-		m[attrName] = attr
-	}
-
-	return m
+	return pkg.Merge(runtimeCommon, runtimeSpecifics)
 }
