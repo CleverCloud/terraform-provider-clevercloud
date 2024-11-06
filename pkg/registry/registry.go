@@ -8,6 +8,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar/bucket"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/docker"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/java"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/keycloak"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/materiakv"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/mongodb"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/nodejs"
@@ -34,4 +35,5 @@ var Resources = []func() resource.Resource{
 	scala.NewResourceScala(),
 	static.NewResourceStatic(),
 	docker.NewResourceDocker,
+	keycloak.NewResourceKeycloak,
 }
