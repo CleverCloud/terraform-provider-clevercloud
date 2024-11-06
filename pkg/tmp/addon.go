@@ -107,6 +107,27 @@ func GetMongoDB(ctx context.Context, cc *client.Client, mongodbID string) client
 	return client.Get[MongoDB](ctx, cc, path)
 }
 
+type Keycloak struct {
+	OwnerID        string                `json:"ownerId"`
+	ID             string                `json:"addonId"`
+	NetworkgroupID *string               `json:"networkgroupId"`
+	PostgresID     string                `json:"postgresId"`
+	FSBucketID     string                `json:"fsBucketId"`
+	Applications   []KeycloakApplication `json:"applications"`
+}
+type KeycloakApplication struct {
+	KeycloakID        string `json:"appId"`
+	KeycloakPlan      string `json:"planIdentifier"`
+	Host              string `json:"host"`
+	JavaApplicationID string `json:"javaId"`
+}
+
+// Not working ?
+func GetKeycloak(ctx context.Context, cc *client.Client, organisationID, keycloakID string) client.Response[Keycloak] {
+	path := fmt.Sprintf("v4/keycloaks/organisations/%s/keycloaks/%s", organisationID, keycloakID)
+	return client.Get[Keycloak](ctx, cc, path)
+}
+
 type DeleteAddonResponse struct {
 	ID      int64  `json:"id"`
 	Message string `json:"message"`

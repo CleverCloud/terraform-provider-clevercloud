@@ -1,6 +1,10 @@
 package pkg
 
-import "go.clever-cloud.com/terraform-provider/pkg/tmp"
+import (
+	"strings"
+
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+)
 
 func AddonProvidersAsList(providers []tmp.AddonProvider) []string {
 	return Map(providers, func(provider tmp.AddonProvider) string {
@@ -20,7 +24,7 @@ func LookupProviderPlan(provider *tmp.AddonProvider, planId string) *tmp.AddonPl
 	}
 
 	return First(provider.Plans, func(plan tmp.AddonPlan) bool {
-		return plan.Slug == planId
+		return strings.EqualFold(plan.Slug, planId)
 	})
 }
 
