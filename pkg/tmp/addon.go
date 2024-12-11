@@ -94,6 +94,31 @@ func GetMateriaKV(ctx context.Context, cc *client.Client, organisationID, postgr
 	return client.Get[MateriaKV](ctx, cc, path)
 }
 
+type Metabase struct {
+	OwnerID        string                `json:"ownerId"`
+	ID             string                `json:"addonId"`
+	NetworkgroupID *string               `json:"networkgroupId"`
+	PostgresID     string                `json:"postgresId"`
+	Status         string                `json:"status" example:"ACTIVE"`
+	Applications   []MetabaseApplication `json:"applications"`
+}
+type MetabaseApplication struct {
+	MetabaseID        string `json:"appId"`
+	MetabasePlan      string `json:"planIdentifier"`
+	Host              string `json:"host"`
+	JavaApplicationID string `json:"javaId"`
+}
+
+func CreateMetabase(ctx context.Context, cc *client.Client, organisation string, addon AddonRequest) client.Response[AddonResponse] {
+	path := "/v2/providers/addon-metabase/resources"
+	return client.Post[AddonResponse](ctx, cc, path, addon)
+}
+
+func GetMetabase(ctx context.Context, cc *client.Client, metabaseID string) client.Response[Metabase] {
+	path := fmt.Sprintf("/v4/addon-providers/addon-metabase/addons/%s", metabaseID)
+	return client.Get[Metabase](ctx, cc, path)
+}
+
 type MongoDB struct {
 	Host     string `json:"host"`
 	Port     int64  `json:"port"`

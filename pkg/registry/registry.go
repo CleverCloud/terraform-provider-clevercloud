@@ -10,6 +10,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/java"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/keycloak"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/materiakv"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/metabase"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/mongodb"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/nodejs"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/php"
@@ -27,6 +28,7 @@ var Resources = []func() resource.Resource{
 	cellar.NewResourceCellar,
 	java.NewResourceJava("war"),
 	materiakv.NewResourceMateriaKV,
+	metabase.NewResourceMetabase,
 	mongodb.NewResourceMongoDB,
 	nodejs.NewResourceNodeJS,
 	php.NewResourcePHP,
