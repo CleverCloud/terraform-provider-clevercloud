@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.5.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.4.1...v0.5.0) (2024-12-24)
+
+
+### 🚀 Features
+
+* keycloak ([#90](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/90)) ([d9df803](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/d9df803de7ade0a60bd69e6febbfd8f5fc056c3f)), closes [#86](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/86)
+* metabase ([5d9dc9a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5d9dc9a1bd6e28b92171e0994b41f5988bd344ad))
+
+
+### 🐛 Bug Fixes
+
+* Read for tests ([5d9dc9a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5d9dc9a1bd6e28b92171e0994b41f5988bd344ad))
+* suggested chances ([5d9dc9a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5d9dc9a1bd6e28b92171e0994b41f5988bd344ad))
+
 ## [0.4.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.4.0...v0.4.1) (2024-07-12)
 
 
