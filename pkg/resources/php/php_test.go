@@ -24,12 +24,13 @@ var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 }
 
 func TestAccPHP_basic(t *testing.T) {
+	t.Logf("starting....")
 	ctx := context.Background()
 	rName := fmt.Sprintf("tf-test-php-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_php.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
 	phpBlock := helper.NewRessource(
 		"clevercloud_php",
 		rName,
@@ -42,7 +43,7 @@ func TestAccPHP_basic(t *testing.T) {
 			"biggest_flavor":     "M",
 			"php_version":        "8",
 			"additional_vhosts":  [1]string{"toto-tf5283457829345.com"},
-		})).String()
+		}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -52,13 +53,21 @@ func TestAccPHP_basic(t *testing.T) {
 		},
 		ProtoV6ProviderFactories: protoV6Provider,
 		Steps: []resource.TestStep{{
-			Destroy:      false,
 			ResourceName: rName,
-			Config:       providerBlock + phpBlock,
+			Config:       providerBlock.Append(phpBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
 				resource.TestCheckResourceAttr(fullName, "region", "par"),
+			),
+		}, {
+			ResourceName: rName,
+			Config: providerBlock.Append(
+				phpBlock.SetOneValue("min_instance_count", 2).SetOneValue("max_instance_count", 6),
+			).String(),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(fullName, "min_instance_count", "2"),
+				resource.TestCheckResourceAttr(fullName, "max_instance_count", "6"),
 			),
 		}},
 		CheckDestroy: func(state *terraform.State) error {

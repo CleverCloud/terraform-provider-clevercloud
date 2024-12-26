@@ -29,8 +29,12 @@ func TestAccKeycloak_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_keycloak.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
-	materiakvBlock := helper.NewRessource("clevercloud_keycloak", rName, helper.SetKeyValues(map[string]any{"name": rName, "region": "par"})).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	materiakvBlock := helper.NewRessource(
+		"clevercloud_keycloak",
+		rName,
+		helper.SetKeyValues(map[string]any{"name": rName, "region": "par"}),
+	)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -55,7 +59,7 @@ func TestAccKeycloak_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       providerBlock + materiakvBlock,
+			Config:       providerBlock.Append(materiakvBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^keycloak_.*`)),
 				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*clever-cloud.com$`)),
