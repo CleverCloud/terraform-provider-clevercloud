@@ -28,7 +28,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
 	postgresqlBlock := helper.NewRessource(
 		"clevercloud_postgresql",
 		rName,
@@ -36,7 +36,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 			"name":   rName,
 			"region": "par",
 			"plan":   "dev",
-		})).String()
+		}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -64,7 +64,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       providerBlock + postgresqlBlock,
+			Config:       providerBlock.Append(postgresqlBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^addon_.*`)),
 				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`)),
@@ -82,7 +82,7 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 	//fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
 	postgresqlBlock := helper.NewRessource(
 		"clevercloud_postgresql",
 		rName,
@@ -90,7 +90,7 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 			"name":   rName,
 			"region": "par",
 			"plan":   "dev",
-		})).String()
+		}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -120,7 +120,7 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 			// create a database instance on first step
 			{
 				ResourceName: rName,
-				Config:       providerBlock + postgresqlBlock,
+				Config:       providerBlock.Append(postgresqlBlock).String(),
 			},
 			{
 				ResourceName: rName,

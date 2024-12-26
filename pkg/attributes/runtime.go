@@ -7,7 +7,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
@@ -98,10 +100,12 @@ var runtimeCommon = map[string]schema.Attribute{
 	"id": schema.StringAttribute{
 		Computed:            true,
 		MarkdownDescription: "Unique identifier generated during application creation",
+		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 	},
 	"deploy_url": schema.StringAttribute{
 		Computed:            true,
 		MarkdownDescription: "Git URL used to push source code",
+		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 	},
 	// cleverapps one
 	"vhost": schema.StringAttribute{

@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -34,9 +35,8 @@ func (r *ResourcePHP) Configure(ctx context.Context, req resource.ConfigureReque
 
 // Create a new resource
 func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	plan := PHP{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	tflog.Debug(ctx, "ResourcePHP.Create()")
+	plan := helper.PlanFrom[PHP](ctx, req.Plan, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -88,10 +88,11 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]interface{}{})
+	tflog.Debug(ctx, "BUILD FLAVOR RES", map[string]interface{}{"flavor": createAppRes.Application.BuildFlavor.Name})
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
 	plan.VHost = pkg.FromStr(createAppRes.Application.Vhosts[0].Fqdn)
+	//plan.AdditionalVHosts = createAppRes.Application.Vhosts
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
@@ -101,9 +102,8 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 
 // Read resource information
 func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state PHP
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	tflog.Debug(ctx, "ResourcePHP.Read()")
+	state := helper.StateFrom[PHP](ctx, req.State, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -163,11 +163,96 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 
 // Update resource
 func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
-	// TODO
+	tflog.Debug(ctx, "ResourcePHP.Update()")
+
+	plan := helper.PlanFrom[PHP](ctx, req.Plan, res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	state := helper.StateFrom[PHP](ctx, req.State, res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	instance := application.LookupInstance(ctx, r.cc, "php", "PHP", res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	environment := plan.toEnv(ctx, res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	vhosts := []string{}
+	if res.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...); res.Diagnostics.HasError() {
+		return
+	}
+
+	updateAppReq := application.UpdateReq{
+		ID:           state.ID.ValueString(),
+		Client:       r.cc,
+		Organization: r.org,
+		Application: tmp.UpdateAppReq{
+			Name:            plan.Name.ValueString(),
+			Deploy:          "git",
+			Description:     plan.Description.ValueString(),
+			InstanceType:    instance.Type,
+			InstanceVariant: instance.Variant.ID,
+			InstanceVersion: instance.Version,
+			BuildFlavor:     plan.BuildFlavor.ValueString(),
+			MinFlavor:       plan.SmallestFlavor.ValueString(),
+			MaxFlavor:       plan.BiggestFlavor.ValueString(),
+			MinInstances:    plan.MinInstanceCount.ValueInt64(),
+			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
+			StickySessions:  plan.StickySessions.ValueBool(),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			Zone:            plan.Region.ValueString(),
+			CancelOnPush:    false,
+		},
+		Environment: environment,
+		VHosts:      vhosts,
+		Deployment:  plan.toDeployment(),
+	}
+
+	_, diags := application.UpdateApp(ctx, updateAppReq)
+	res.Diagnostics.Append(diags...)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	hasDefaultVHost := pkg.HasSome(updateAppReq.VHosts, func(vhost string) bool {
+		return pkg.VhostCleverAppsRegExp.MatchString(vhost)
+	})
+	if hasDefaultVHost {
+		cleverapps := *pkg.First(vhosts, func(vhost string) bool {
+			return pkg.VhostCleverAppsRegExp.MatchString(vhost)
+		})
+		plan.VHost = pkg.FromStr(cleverapps)
+	} else {
+		plan.VHost = types.StringNull()
+	}
+
+	vhostsWithoutDefault := pkg.Filter(updateAppReq.VHosts, func(vhost string) bool {
+		ok := pkg.VhostCleverAppsRegExp.MatchString(vhost)
+		return !ok
+	})
+	if len(vhostsWithoutDefault) > 0 {
+		plan.AdditionalVHosts = pkg.FromListString(vhostsWithoutDefault)
+	} else {
+		plan.AdditionalVHosts = types.ListNull(types.StringType)
+	}
+
+	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
+	if res.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete resource
 func (r *ResourcePHP) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	tflog.Debug(ctx, "ResourcePHP.Delete()")
 	var state PHP
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
@@ -191,6 +276,7 @@ func (r *ResourcePHP) Delete(ctx context.Context, req resource.DeleteRequest, re
 
 // Import resource
 func (r *ResourcePHP) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	tflog.Debug(ctx, "ResourcePHP.ImportState()")
 	// Save the import identifier in the id attribute
 	// and call Read() to fill fields
 	attr := path.Root("id")

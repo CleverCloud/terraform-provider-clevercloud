@@ -33,7 +33,7 @@ func TestAccNodejs_basic(t *testing.T) {
 	fullName2 := fmt.Sprintf("clevercloud_nodejs.%s", rName2)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
 	nodejsBlock := helper.NewRessource(
 		"clevercloud_nodejs",
 		rName,
@@ -51,7 +51,7 @@ func TestAccNodejs_basic(t *testing.T) {
 			"dependencies":       []string{},
 		}),
 		helper.SetBlockValues("hooks", map[string]any{"post_build": "echo \"build is OK!\""}),
-	).String()
+	)
 	nodejsBlock2 := helper.NewRessource(
 		"clevercloud_nodejs",
 		rName2,
@@ -63,7 +63,7 @@ func TestAccNodejs_basic(t *testing.T) {
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
 		}),
-		helper.SetBlockValues("deployment", map[string]any{"repository": "https://github.com/CleverCloud/nodejs-example.git"})).String()
+		helper.SetBlockValues("deployment", map[string]any{"repository": "https://github.com/CleverCloud/nodejs-example.git"}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -91,7 +91,7 @@ func TestAccNodejs_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       providerBlock + nodejsBlock,
+			Config:       providerBlock.Append(nodejsBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				// Test the state for provider's populated values
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
@@ -169,7 +169,7 @@ func TestAccNodejs_basic(t *testing.T) {
 			),
 		}, {
 			ResourceName: rName2,
-			Config:       providerBlock + nodejsBlock2,
+			Config:       providerBlock.Append(nodejsBlock2).String(),
 			Check: func(state *terraform.State) error {
 				id := state.RootModule().Resources[fullName2].Primary.ID
 
