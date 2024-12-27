@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.5.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.5.0...v0.5.1) (2024-12-27)
+
+
+### 🐛 Bug Fixes
+
+* **runtime:** deploy right git ref ([d5607a6](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/d5607a63ac030d97dd1e0c11f41d3457860bb33d)), closes [#96](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/96)
+
 ## [0.5.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.4.1...v0.5.0) (2024-12-24)
 
 
