@@ -2,6 +2,7 @@ package application
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.dev/client"
 )
 
@@ -21,8 +23,7 @@ func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemot
 	cloneOpts := &git.CloneOptions{
 		URL:        d.Repository,
 		RemoteName: "origin",
-		//Depth:      1,
-		Progress: os.Stdout,
+		Progress:   os.Stdout,
 	}
 
 	r, err := git.CloneContext(ctx, memory.NewStorage(), nil, cloneOpts)
@@ -50,15 +51,26 @@ func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemot
 		RemoteURL:  cleverRemote,
 		Force:      true,
 		Progress:   os.Stdout,
-		// TODO: deploy right branch/tag/commit
-		/*RefSpecs: []config.RefSpec{
-			"master:master",
-		},*/
-		Auth:   auth,
-		Atomic: true,
+		Auth:       auth,
 	}
-	err = remote.Push(pushOptions)
-	if err != nil {
+	if d.Commit != nil {
+		// refs/heads/[BRANCH]
+		// [COMMIT]
+		ref := config.RefSpec(fmt.Sprintf("%s:refs/heads/master", *d.Commit))
+		if err := ref.Validate(); err != nil {
+			diags.AddError("failed to build ref spec to push", err.Error())
+			return diags
+		}
+
+		pushOptions.RefSpecs = []config.RefSpec{ref}
+	}
+
+	tflog.Debug(ctx, "pushing...", map[string]interface{}{
+		"options": fmt.Sprintf("%+v", pushOptions),
+	})
+
+	err = remote.PushContext(ctx, pushOptions)
+	if err != nil && err != git.NoErrAlreadyUpToDate {
 		diags.AddError("failed to push to clever remote", err.Error())
 		return diags
 	}

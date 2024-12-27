@@ -60,7 +60,7 @@ Can be either app_xxx or postgres_yyy ID format
 
 Optional:
 
-- `commit` (String) Deploy application on the given commit/tag
+- `commit` (String) Support multiple syntax like `refs/heads/[BRANCH]` or `[COMMIT]`, in most of the case, you can use `refs/heads/master`
 - `repository` (String)
 
 
