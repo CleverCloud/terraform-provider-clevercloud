@@ -1,7 +1,12 @@
 package attributes
 
 import (
+	"context"
+	"strings"
+
+	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
@@ -31,8 +36,26 @@ var blocks = map[string]schema.Block{
 			},
 			"commit": schema.StringAttribute{
 				Optional:            true,
-				Description:         "Support either '<branch>:<SHA>' or '<tag>'",
-				MarkdownDescription: "Deploy application on the given commit/tag",
+				Description:         "The git reference you want to deploy",
+				MarkdownDescription: "Support multiple syntax like `refs/heads/[BRANCH]` or `[COMMIT]`, in most of the case, you can use `refs/heads/master`",
+				Validators: []validator.String{
+					pkg.NewValidator(
+						"if reference (not commit hash) is provided test it's syntax",
+						func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
+							if req.ConfigValue.IsNull() || !strings.Contains(req.ConfigValue.ValueString(), "/") {
+								return
+							}
+
+							ref := plumbing.ReferenceName(req.ConfigValue.ValueString())
+							if err := ref.Validate(); err != nil {
+								res.Diagnostics.AddAttributeError(
+									req.Path,
+									"invalid Git reference",
+									err.Error(),
+								)
+							}
+						}),
+				},
 			},
 		},
 	},

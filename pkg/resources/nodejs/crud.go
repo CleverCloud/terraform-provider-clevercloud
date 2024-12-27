@@ -89,7 +89,6 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 	createRes, diags := application.CreateApp(ctx, createReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
-		tflog.Error(ctx, "ERROR IS WELL HERE", map[string]interface{}{})
 		return
 	}
 
