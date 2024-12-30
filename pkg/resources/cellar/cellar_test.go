@@ -29,14 +29,14 @@ func TestAccCellar_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_cellar.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
 	cellarBlock := helper.NewRessource(
 		"clevercloud_cellar",
 		rName,
 		helper.SetKeyValues(map[string]any{
 			"name":   rName,
 			"region": "par",
-		})).String()
+		}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -47,7 +47,7 @@ func TestAccCellar_basic(t *testing.T) {
 		ProtoV6ProviderFactories: TestProtoV6Provider,
 		Steps: []resource.TestStep{{
 			ResourceName: "cellar_" + rName,
-			Config:       providerBlock + cellarBlock,
+			Config:       providerBlock.Append(cellarBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^cellar_.*`)),
 				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*\.services.clever-cloud.com$`)),

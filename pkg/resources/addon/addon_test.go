@@ -28,7 +28,7 @@ func TestAccAddon_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_addon.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
 	addonBlock := helper.NewRessource(
 		"clevercloud_addon",
 		rName,
@@ -37,7 +37,7 @@ func TestAccAddon_basic(t *testing.T) {
 			"region":               "par",
 			"plan":                 "clever_solo",
 			"third_party_provider": "mailpace",
-		})).String()
+		}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -62,7 +62,7 @@ func TestAccAddon_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       providerBlock + addonBlock,
+			Config:       providerBlock.Append(addonBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^addon_.*`)),
 				//resource.TestMatchResourceAttr(fullName, "password", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),

@@ -6,7 +6,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -39,8 +41,8 @@ func (r ResourceCellar) Schema(_ context.Context, req resource.SchemaRequest, re
 			},
 
 			// provider
-			"id":         schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier"},
-			"host":       schema.StringAttribute{Computed: true, MarkdownDescription: "S3 compatible Cellar endpoint"},
+			"id":         schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"host":       schema.StringAttribute{Computed: true, MarkdownDescription: "S3 compatible Cellar endpoint", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"key_id":     schema.StringAttribute{Computed: true, MarkdownDescription: "Key ID used to authenticate"},
 			"key_secret": schema.StringAttribute{Computed: true, Sensitive: true, MarkdownDescription: "Key secret used to authenticate"},
 		},

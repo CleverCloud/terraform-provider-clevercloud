@@ -29,7 +29,7 @@ func TestAccDocker_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_docker.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
 	dockerBlock := helper.NewRessource(
 		"clevercloud_docker",
 		rName,
@@ -41,7 +41,7 @@ func TestAccDocker_basic(t *testing.T) {
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
 			"additional_vhosts":  [1]string{"toto-tf5283457829345.com"},
-		})).String()
+		}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -53,7 +53,7 @@ func TestAccDocker_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			Destroy:      false,
 			ResourceName: rName,
-			Config:       providerBlock + dockerBlock,
+			Config:       providerBlock.Append(dockerBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),

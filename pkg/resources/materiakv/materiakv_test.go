@@ -29,8 +29,8 @@ func TestAccMateriaKV_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_materia_kv.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
-	materiakvBlock := helper.NewRessource("clevercloud_materia_kv", rName, helper.SetKeyValues(map[string]any{"name": rName, "region": "par"})).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	materiakvBlock := helper.NewRessource("clevercloud_materia_kv", rName, helper.SetKeyValues(map[string]any{"name": rName, "region": "par"}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -58,7 +58,7 @@ func TestAccMateriaKV_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       providerBlock + materiakvBlock,
+			Config:       providerBlock.Append(materiakvBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^kv_.*`)),
 				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*clever-cloud.com$`)),

@@ -29,7 +29,7 @@ func TestAccScala_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_scala.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
 	scalaBlock := helper.NewRessource(
 		"clevercloud_scala",
 		rName,
@@ -40,7 +40,7 @@ func TestAccScala_basic(t *testing.T) {
 			"max_instance_count": 2,
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
-		})).String()
+		}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -52,7 +52,7 @@ func TestAccScala_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			Destroy:      false,
 			ResourceName: rName,
-			Config:       providerBlock + scalaBlock,
+			Config:       providerBlock.Append(scalaBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),

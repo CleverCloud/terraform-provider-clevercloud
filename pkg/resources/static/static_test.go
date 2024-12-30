@@ -29,7 +29,7 @@ func TestAccStatic_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_static.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
 	staticBlock := helper.NewRessource(
 		"clevercloud_static",
 		rName,
@@ -40,7 +40,7 @@ func TestAccStatic_basic(t *testing.T) {
 			"max_instance_count": 2,
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
-		})).String()
+		}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -52,7 +52,7 @@ func TestAccStatic_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			Destroy:      false,
 			ResourceName: rName,
-			Config:       providerBlock + staticBlock,
+			Config:       providerBlock.Append(staticBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
