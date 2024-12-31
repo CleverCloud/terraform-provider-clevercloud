@@ -1,41 +1,51 @@
-name: Doc synchronization
+# Check docs are up-to-date only on pull request.
+# Succeeds if it is.
+# Fail if not, generates a new version then commits it. 
+
+name: Docs synchronization
+
+permissions:
+    contents: write
+    pull-requests: write
 
 on:
-  push:
-    branches:
-      - master
   pull_request:
-    branches:
-      - master
+    branches: [master]
   workflow_dispatch:
 
-permissions: 
-  contents: read
-
 jobs:
-  doc-sync:
-    name: check if doc is generate
+  docs-synch:
+    name: Auto-updates docs on pull requests when needed
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: sets up go environnement
-        uses: actions/setup-go@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v4
         with:
             go-version: '1.21'
+      
       - name: Get dependencies
         run: go mod download
       - name: Install tfplugindocs
         run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
       - name: Run tfplugindocs
         run: go generate ./...
+      
       - name: Fail if any files changed
         shell: bash
+        continue-on-error: true
         run: |
           if [[ $(git status --porcelain=v1 docs/ | wc -l) -ne 0 ]]; then
-          echo "Please ensure tfplugindocs changes are committed to docs/"
+          echo "docs/ needs an update"
           echo "Changed files:"
           git diff docs/
           git status docs/
           exit 1
           fi
+    
+      - name: Commit docs update
+        if: |
+          failure()
+        run: |
+          git config user.name "Github Actions docs synchronizer Bot"
+          git config user.email "actions@github.com"
+          echo "test commit docs update"
