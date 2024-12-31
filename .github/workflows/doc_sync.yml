@@ -2,11 +2,7 @@
 # Succeeds if it is.
 # Fail if not, generates a new version then commits it. 
 
-name: Docs synchronization
-
-permissions:
-    contents: write
-    pull-requests: write
+name: Docs synchronizer
 
 on:
   pull_request:
@@ -17,14 +13,21 @@ jobs:
   docs-synch:
     name: Auto-updates docs on pull requests when needed
     runs-on: ubuntu-latest
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the changed files back to the repository.
+      contents: write
+
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
       - uses: actions/setup-go@v4
         with:
             go-version: '1.21'
-      
       - name: Get dependencies
         run: go mod download
+
       - name: Install tfplugindocs
         run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
       - name: Run tfplugindocs
@@ -32,7 +35,6 @@ jobs:
       
       - name: Fail if any files changed
         shell: bash
-        continue-on-error: true
         run: |
           if [[ $(git status --porcelain=v1 docs/ | wc -l) -ne 0 ]]; then
           echo "docs/ needs an update"
@@ -45,7 +47,9 @@ jobs:
       - name: Commit docs update
         if: |
           failure()
-        run: |
-          git config user.name "Github Actions docs synchronizer Bot"
-          git config user.email "actions@github.com"
-          echo "test commit docs update"
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: auto-update documentations
+          file_pattern: 'docs/'
+          commit_user_name: Docs synchronizer Bot
+          commit_user_email: git-auto-commit-action@gusers.noreply.github.com
