@@ -213,15 +213,21 @@ func GetProductInstance(ctx context.Context, cc *client.Client) client.Response[
 }
 
 type UpdateAppReq struct {
-	CancelOnPush   bool   `json:"cancelOnPush"`
-	Description    string `json:"description"`
-	ForceHTTPS     string `json:"forceHttps"`
-	Homogeneous    bool   `json:"homogeneous"`
-	AppID          string `json:"id"`
-	Name           string `json:"name"`
-	SeparateBuild  bool   `json:"separateBuild"`
-	StickySessions bool   `json:"stickySessions"`
-	Zone           string `json:"zone"`
+	Name            string `json:"name" example:"SOME_NAME"`
+	Deploy          string `json:"deploy" example:"git"`
+	Description     string `json:"description" example:"SOME_DESC"`
+	InstanceType    string `json:"instanceType" example:"node"`
+	InstanceVariant string `json:"instanceVariant" example:"395103fb-d6e2-4fdd-93bc-bc99146f1ea2"`
+	InstanceVersion string `json:"instanceVersion" example:"20220330"`
+	MinFlavor       string `json:"minFlavor" example:"pico"`
+	MaxFlavor       string `json:"maxFlavor" example:"M"`
+	BuildFlavor     string `json:"buildFlavor" example:"XL"`
+	MinInstances    int64  `json:"minInstances" example:"1"`
+	MaxInstances    int64  `json:"maxInstances" example:"4"`
+	Zone            string `json:"zone" example:"par"`
+	CancelOnPush    bool   `json:"cancelOnPush"`
+	StickySessions  bool   `json:"stickySessions"`
+	ForceHttps      string `json:"forceHttps"`
 }
 
 func UpdateApp(ctx context.Context, cc *client.Client, organisationID, applicationID string, req UpdateAppReq) client.Response[CreatAppResponse] {

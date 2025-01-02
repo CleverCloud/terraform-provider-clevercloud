@@ -29,8 +29,12 @@ func TestAccMetabase_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_metabase.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
-	metabaseBlock := helper.NewRessource("clevercloud_metabase", rName, helper.SetKeyValues(map[string]any{"name": rName, "plan": "beta", "region": "par"})).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	metabaseBlock := helper.NewRessource(
+		"clevercloud_metabase",
+		rName,
+		helper.SetKeyValues(map[string]any{"name": rName, "plan": "beta", "region": "par"}),
+	)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -58,7 +62,7 @@ func TestAccMetabase_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       providerBlock + metabaseBlock,
+			Config:       providerBlock.Append(metabaseBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^addon_.*`)),
 			),

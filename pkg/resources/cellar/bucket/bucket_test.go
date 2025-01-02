@@ -29,7 +29,7 @@ func TestAccCellarBucket_basic(t *testing.T) {
 	rName := fmt.Sprintf("my-bucket-%d", time.Now().UnixMilli())
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
 
 	cellar := &tmp.AddonResponse{}
 	if os.Getenv("TF_ACC") == "1" {
@@ -41,6 +41,7 @@ func TestAccCellarBucket_basic(t *testing.T) {
 		})
 		if res.HasError() {
 			t.Errorf("failed to create depdendence Cellar: %s", res.Error().Error())
+			return
 		}
 
 		cellar = res.Payload()
@@ -59,7 +60,7 @@ func TestAccCellarBucket_basic(t *testing.T) {
 		helper.SetKeyValues(map[string]any{
 			"id":        rName,
 			"cellar_id": cellar.RealID,
-		})).String()
+		}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -73,7 +74,7 @@ func TestAccCellarBucket_basic(t *testing.T) {
 		ProtoV6ProviderFactories: TestProtoV6Provider,
 		Steps: []resource.TestStep{{
 			ResourceName: "cellar_bucket_" + rName,
-			Config:       providerBlock + cellarBucketBlock,
+			Config:       providerBlock.Append(cellarBucketBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				func(*terraform.State) error {
 					return nil

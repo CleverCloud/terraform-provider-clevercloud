@@ -28,8 +28,8 @@ func TestAccMongoDB_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_mongodb.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
-	mongodbBlock := helper.NewRessource("clevercloud_mongodb", rName, helper.SetKeyValues(map[string]any{"name": rName, "plan": "xs_med", "region": "par"})).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	mongodbBlock := helper.NewRessource("clevercloud_mongodb", rName, helper.SetKeyValues(map[string]any{"name": rName, "plan": "xs_med", "region": "par"}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -57,7 +57,7 @@ func TestAccMongoDB_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       providerBlock + mongodbBlock,
+			Config:       providerBlock.Append(mongodbBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^addon_.*`)),
 			),
@@ -70,8 +70,8 @@ func TestAccMongoDB_RefreshDeleted(t *testing.T) {
 	//fullName := fmt.Sprintf("clevercloud_mongodb.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org).String()
-	mongodbBlock2 := helper.NewRessource("clevercloud_mongodb", rName, helper.SetKeyValues(map[string]any{"name": rName, "plan": "xs_med", "region": "par"})).String()
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	mongodbBlock2 := helper.NewRessource("clevercloud_mongodb", rName, helper.SetKeyValues(map[string]any{"name": rName, "plan": "xs_med", "region": "par"}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -101,7 +101,7 @@ func TestAccMongoDB_RefreshDeleted(t *testing.T) {
 			// create a database instance on first step
 			{
 				ResourceName: rName,
-				Config:       providerBlock + mongodbBlock2,
+				Config:       providerBlock.Append(mongodbBlock2).String(),
 			},
 			{
 				ResourceName: rName,

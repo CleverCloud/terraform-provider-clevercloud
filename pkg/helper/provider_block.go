@@ -1,9 +1,16 @@
 package helper
 
+import (
+	"fmt"
+
+	"go.clever-cloud.com/terraform-provider/pkg"
+)
+
 // Provider structur
 type Provider struct {
 	provider     string
 	organisation string
+	blocks       []fmt.Stringer
 }
 
 // New function type that accepts pointer to Provider
@@ -37,6 +44,11 @@ func (p *Provider) SetOrganisation(orgName string) *Provider {
 	return p
 }
 
+func (p *Provider) Append(blocks ...fmt.Stringer) *Provider {
+	p.blocks = blocks
+	return p
+}
+
 // Provider block
 //   - desc: chained function that stringify Provider into a terraform block
 //   - args: none
@@ -45,6 +57,8 @@ func (p *Provider) String() string {
 	s := `provider "` + p.provider + `" {
 	organisation = "` + p.organisation + `"
 }
-`
+` + pkg.Reduce[fmt.Stringer, string](p.blocks, "", func(acc string, block fmt.Stringer) string {
+		return acc + block.String() + "\n"
+	})
 	return s
 }
