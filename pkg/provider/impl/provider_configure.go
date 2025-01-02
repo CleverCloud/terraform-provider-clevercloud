@@ -26,6 +26,10 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 	} else {
 		p.organization = config.Organisation.ValueString()
 	}
+	if p.organization == "" {
+		resp.Diagnostics.AddError("Invalid provider configuration", "Organisation should be set by either the organisation parameter or by the CC_ORGANISATION environment variable")
+		return
+	}
 
 	// Allow to get creds from CLI config directory or by injected variables
 	if config.Secret.IsUnknown() ||
