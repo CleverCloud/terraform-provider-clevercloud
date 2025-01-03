@@ -9,9 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
@@ -40,26 +37,18 @@ func (r ResourceDocker) Schema(ctx context.Context, req resource.SchemaRequest, 
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
 			"dockerfile": schema.StringAttribute{
 				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString("Dockerfile"),
 				MarkdownDescription: "The name of the Dockerfile to build",
 			},
 			"container_port": schema.Int64Attribute{
 				Optional:            true,
-				Computed:            true,
-				Default:             int64default.StaticInt64(8080),
 				MarkdownDescription: "Set to custom HTTP port if your Docker container runs on custom port",
 			},
 			"container_port_tcp": schema.Int64Attribute{
 				Optional:            true,
-				Computed:            true,
-				Default:             int64default.StaticInt64(4040),
 				MarkdownDescription: "Set to custom TCP port if your Docker container runs on custom port.",
 			},
 			"enable_ipv6": schema.BoolAttribute{
 				Optional:            true,
-				Computed:            true,
-				Default:             booldefault.StaticBool(false),
 				MarkdownDescription: "Activate the support of IPv6 with an IPv6 subnet int the docker daemon",
 			},
 			"registry_url": schema.StringAttribute{
@@ -76,8 +65,6 @@ func (r ResourceDocker) Schema(ctx context.Context, req resource.SchemaRequest, 
 			},
 			"daemon_socket_mount": schema.BoolAttribute{
 				Optional:            true,
-				Computed:            true,
-				Default:             booldefault.StaticBool(false),
 				MarkdownDescription: "Set to true to access the host Docker socket from inside your container",
 			},
 		}),
