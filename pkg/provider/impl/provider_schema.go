@@ -44,7 +44,7 @@ func (p *Provider) Schema(_ context.Context, req provider.SchemaRequest, res *pr
 			},
 			"organisation": schema.StringAttribute{
 				Sensitive:           true,
-				Required:            true,
+				Optional:            true, // can be read from environment variable
 				MarkdownDescription: "CleverCloud organisation, can be either orga_xxx, or user_xxx for personal spaces. This parameter can also be provided via CC_ORGANISATION environment variable.",
 				Validators: []validator.String{
 					pkg.NewValidatorRegex("valid owner name", regexp.MustCompile(`^(user|orga)_.{36}`)),
