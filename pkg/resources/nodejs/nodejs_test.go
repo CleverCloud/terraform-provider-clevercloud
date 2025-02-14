@@ -168,6 +168,15 @@ func TestAccNodejs_basic(t *testing.T) {
 				},
 			),
 		}, {
+			ResourceName: rName,
+			Config: providerBlock.Append(
+				nodejsBlock.SetOneValue("min_instance_count", 2).SetOneValue("max_instance_count", 6),
+			).String(),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(fullName, "min_instance_count", "2"),
+				resource.TestCheckResourceAttr(fullName, "max_instance_count", "6"),
+			),
+		}, {
 			ResourceName: rName2,
 			Config:       providerBlock.Append(nodejsBlock2).String(),
 			Check: func(state *terraform.State) error {
