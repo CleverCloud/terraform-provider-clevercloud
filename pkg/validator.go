@@ -25,7 +25,7 @@ func (av *attributeValidator) ValidateString(ctx context.Context, req validator.
 	av.validateFunc(ctx, req, res)
 }
 
-func NewValidator(description string, fn func(context.Context, validator.StringRequest, *validator.StringResponse)) validator.String {
+func NewValidator(description string, fn func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse)) validator.String {
 	return &attributeValidator{desc: description, validateFunc: fn}
 }
 

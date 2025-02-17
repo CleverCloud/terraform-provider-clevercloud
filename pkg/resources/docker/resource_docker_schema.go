@@ -4,11 +4,13 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"net"
 	"strconv"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
@@ -21,6 +23,7 @@ type Docker struct {
 	ContainerPort     types.Int64  `tfsdk:"container_port"`
 	ContainerPortTCP  types.Int64  `tfsdk:"container_port_tcp"`
 	EnableIPv6        types.Bool   `tfsdk:"enable_ipv6"`
+	IPv6Cidr          types.String `tfsdk:"ipv6_cidr"`
 	RegistryURL       types.String `tfsdk:"registry_url"`
 	RegistryUser      types.String `tfsdk:"registry_user"`
 	RegistryPassword  types.String `tfsdk:"registry_password"`
@@ -48,8 +51,29 @@ func (r ResourceDocker) Schema(ctx context.Context, req resource.SchemaRequest, 
 				MarkdownDescription: "Set to custom TCP port if your Docker container runs on custom port.",
 			},
 			"enable_ipv6": schema.BoolAttribute{
+				Optional:           true,
+				DeprecationMessage: "never works, please use `ipv6_cidr`",
+			},
+			"ipv6_cidr": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Activate the support of IPv6 with an IPv6 subnet int the docker daemon",
+				Validators: []validator.String{
+					pkg.NewValidator("IPv6 CIDR 🍾", func(_ context.Context, req validator.StringRequest, res *validator.StringResponse) {
+						if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+							return
+						}
+
+						str := req.ConfigValue.ValueString()
+						ip, _, err := net.ParseCIDR(str)
+						if err != nil {
+							res.Diagnostics.AddAttributeError(req.Path, "invalid IPv6 CIDR provided", err.Error())
+						}
+
+						if len(ip) != net.IPv6len {
+							res.Diagnostics.AddAttributeError(req.Path, "invalid IPv6 CIDR provided", "expect an IPv6 before the mask")
+						}
+					}),
+				},
 			},
 			"registry_url": schema.StringAttribute{
 				Optional:            true,
@@ -95,7 +119,7 @@ func (p *Docker) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]s
 	pkg.IfIsSet(p.Dockerfile, func(s string) { env["CC_DOCKERFILE"] = s })
 	pkg.IfIsSetI(p.ContainerPort, func(i int64) { env["CC_DOCKER_EXPOSED_HTTP_PORT"] = fmt.Sprintf("%d", i) })
 	pkg.IfIsSetI(p.ContainerPortTCP, func(i int64) { env["CC_DOCKER_EXPOSED_TCP_PORT"] = fmt.Sprintf("%d", i) })
-	pkg.IfIsSetB(p.EnableIPv6, func(e bool) { env["CC_DOCKER_FIXED_CIDR_V6"] = strconv.FormatBool(e) })
+	pkg.IfIsSet(p.IPv6Cidr, func(s string) { env["CC_DOCKER_FIXED_CIDR_V6"] = s })
 	pkg.IfIsSet(p.RegistryURL, func(s string) { env["CC_DOCKER_LOGIN_SERVER"] = s })
 	pkg.IfIsSet(p.RegistryUser, func(s string) { env["CC_DOCKER_LOGIN_USERNAME"] = s })
 	pkg.IfIsSet(p.RegistryPassword, func(s string) { env["CC_DOCKER_LOGIN_PASSWORD"] = s })
