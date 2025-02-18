@@ -16,6 +16,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/php"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/postgresql"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/python"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/redis"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/scala"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/static"
 )
@@ -38,4 +39,5 @@ var Resources = []func() resource.Resource{
 	static.NewResourceStatic(),
 	docker.NewResourceDocker,
 	keycloak.NewResourceKeycloak,
+	redis.NewResourceRedis,
 }
