@@ -4,10 +4,12 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.dev/client"
 )
 
 type ResourceKeycloak struct {
+	resources.Controller[Keycloak]
 	cc  *client.Client
 	org string
 }

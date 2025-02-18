@@ -51,7 +51,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 
 	plan := pkg.LookupProviderPlan(provider, "alpha")
 	if plan == nil {
-		resp.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
+		resp.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider.Plans), ", "))
 		return
 	}
 

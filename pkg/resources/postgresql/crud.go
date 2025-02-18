@@ -29,28 +29,21 @@ func (r *ResourcePostgreSQL) Configure(ctx context.Context, req resource.Configu
 		r.cc = provider.Client()
 		r.org = provider.Organization()
 	}
+
+	r.Init(ctx, r.cc, r.org, "postgresql-addon", resp.Diagnostics)
 }
 
 // Create a new resource
 func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	pg := PostgreSQL{}
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &pg)...)
+	pg := r.GetState(ctx, &req.Plan, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
-	if addonsProvidersRes.HasError() {
-		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
-		return
-	}
-
-	addonsProviders := addonsProvidersRes.Payload()
-	prov := pkg.LookupAddonProvider(*addonsProviders, "postgresql-addon")
-	plan := pkg.LookupProviderPlan(prov, pg.Plan.ValueString())
+	plan := r.LookupPlanBySlug(pg.Plan.ValueString())
 	if plan.ID == "" {
-		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov), ", ")+", got: "+pg.Plan.String())
+		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(r.Plans()), ", ")+", got: "+pg.Plan.String())
 		return
 	}
 
@@ -92,26 +85,21 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	pg.User = pkg.FromStr(addonPG.User)
 	pg.Password = pkg.FromStr(addonPG.Password)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	r.SetState(ctx, &resp.State, *pg, resp.Diagnostics)
 }
 
 // Read resource information
 func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "PostgreSQL READ", map[string]interface{}{"request": req})
 
-	var pg PostgreSQL
-	diags := req.State.Get(ctx, &pg)
-	resp.Diagnostics.Append(diags...)
+	pg := r.GetState(ctx, &req.State, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	addonPGRes := tmp.GetPostgreSQL(ctx, r.cc, pg.ID.ValueString())
 	if addonPGRes.IsNotFoundError() {
-		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
+		diags := resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
 			return
@@ -143,11 +131,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	pg.User = pkg.FromStr(addonPG.User)
 	pg.Password = pkg.FromStr(addonPG.Password)
 
-	diags = resp.State.Set(ctx, pg)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	r.SetState(ctx, &resp.State, *pg, resp.Diagnostics)
 }
 
 // Update resource
@@ -157,10 +141,7 @@ func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequ
 
 // Delete resource
 func (r *ResourcePostgreSQL) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var pg PostgreSQL
-
-	diags := req.State.Get(ctx, &pg)
-	resp.Diagnostics.Append(diags...)
+	pg := r.GetState(ctx, &req.State, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
