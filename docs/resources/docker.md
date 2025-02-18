@@ -56,9 +56,10 @@ Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
 - `dockerfile` (String) The name of the Dockerfile to build
-- `enable_ipv6` (Boolean) Activate the support of IPv6 with an IPv6 subnet int the docker daemon
+- `enable_ipv6` (Boolean, Deprecated)
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
+- `ipv6_cidr` (String) Activate the support of IPv6 with an IPv6 subnet int the docker daemon
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
 - `registry_password` (String) The password of your username
