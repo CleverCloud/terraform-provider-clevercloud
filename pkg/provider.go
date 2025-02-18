@@ -18,13 +18,23 @@ func LookupAddonProvider(providers []tmp.AddonProvider, providerId string) *tmp.
 	})
 }
 
-func LookupProviderPlan(provider *tmp.AddonProvider, planId string) *tmp.AddonPlan {
+func LookupProviderPlan(provider *tmp.AddonProvider, planSlug string) *tmp.AddonPlan {
 	if provider == nil {
 		return nil
 	}
 
 	return First(provider.Plans, func(plan tmp.AddonPlan) bool {
-		return strings.EqualFold(plan.Slug, planId)
+		return strings.EqualFold(plan.Slug, planSlug)
+	})
+}
+
+func LookupProviderPlanByID(provider *tmp.AddonProvider, planID string) *tmp.AddonPlan {
+	if provider == nil {
+		return nil
+	}
+
+	return First(provider.Plans, func(plan tmp.AddonPlan) bool {
+		return strings.EqualFold(plan.ID, planID)
 	})
 }
 
