@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.6.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.5.1...v0.6.0) (2025-02-19)
+
+
+### Features
+
+* commit docs update ([1b08092](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1b08092032cb2bedef894aba0b290711645bdfa6))
+* **PHP:** implem update ([b2b2fef](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/b2b2fef5f190cd246288649685084a373b835f5b))
+* redis ([73eb8a0](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/73eb8a099e529ecf634a76548b270c3cf50f6e57))
+* update ([9b682c3](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/9b682c3d1937281737ba563267be3b411f47505c))
+* use stefanzweifel/git-auto-commit-action@v5 to commit ([8f36ccb](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/8f36ccbda19ee1468f99c986625c2b1ca9dfa06c))
+
+
+### Bug Fixes
+
+* **docker:** remove default values for specific docker attributes ([538e703](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/538e703881f1ea1643c145981146010a30b3b606))
+* **docker:** support IPv6 CIDR ([3d94909](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/3d949097114d355fc72cdeaf36613871d454136c))
+* **org:** make the organisation parameter optional ([05ace76](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/05ace76560a5568c0f07ad8ceaa893b8bb926c9c))
+
 ## [0.5.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.5.0...v0.5.1) (2024-12-27)
 
 
