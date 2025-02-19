@@ -57,5 +57,6 @@
       "section": "🤖 Continuous Integration",
       "hidden": true
     }
-  ]
+  ],
+  ".": "0.6.0"
 }
