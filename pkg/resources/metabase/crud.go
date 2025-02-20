@@ -50,7 +50,7 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 	prov := pkg.LookupAddonProvider(*addonsProviders, "metabase")
 	plan := pkg.LookupProviderPlan(prov, mb.Plan.ValueString())
 	if plan == nil || plan.ID == "" {
-		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov), ", ")+", got: "+mb.Plan.String())
+		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov.Plans), ", ")+", got: "+mb.Plan.String())
 		return
 	}
 

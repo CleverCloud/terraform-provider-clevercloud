@@ -50,7 +50,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 	prov := pkg.LookupAddonProvider(*addonsProviders, "mongodb-addon")
 	plan := pkg.LookupProviderPlan(prov, mg.Plan.ValueString())
 	if plan == nil || plan.ID == "" {
-		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov), ", ")+", got: "+mg.Plan.String())
+		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov.Plans), ", ")+", got: "+mg.Plan.String())
 		return
 	}
 

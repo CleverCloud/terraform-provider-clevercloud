@@ -29,30 +29,21 @@ func (r *ResourceKeycloak) Configure(ctx context.Context, req resource.Configure
 		r.org = provider.Organization()
 	}
 
+	r.Init(ctx, r.cc, r.org, "keycloak", resp.Diagnostics)
+
 	tflog.Warn(ctx, "Keycloak product is still in beta, use it with care")
 }
 
 // Create a new resource
 func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	kc := Keycloak{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &kc)...)
+	kc := r.GetState(ctx, &req.Plan, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
-	if addonsProvidersRes.HasError() {
-		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
-		return
-	}
-
-	addonsProviders := addonsProvidersRes.Payload()
-	provider := pkg.LookupAddonProvider(*addonsProviders, "keycloak")
-
-	plan := pkg.LookupProviderPlan(provider, "beta")
+	plan := r.LookupPlanBySlug("beta")
 	if plan == nil {
-		resp.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
+		resp.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(r.Plans()), ", "))
 		return
 	}
 
@@ -98,30 +89,21 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 
 	kc.Host = pkg.FromStr(hostEnvVar.Value)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, kc)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	r.SetState(ctx, &resp.State, *kc, resp.Diagnostics)
 }
 
 // Read resource information
 func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "Keycloak READ", map[string]interface{}{"request": req})
 
-	var kc Keycloak
-	diags := req.State.Get(ctx, &kc)
-	resp.Diagnostics.Append(diags...)
+	kc := r.GetState(ctx, &req.State, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// TODO
 
-	diags = resp.State.Set(ctx, kc)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	r.SetState(ctx, &resp.State, *kc, resp.Diagnostics)
 }
 
 // Update resource
@@ -131,10 +113,7 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 
 // Delete resource
 func (r *ResourceKeycloak) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	kc := Keycloak{}
-
-	diags := req.State.Get(ctx, &kc)
-	resp.Diagnostics.Append(diags...)
+	kc := r.GetState(ctx, &req.State, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

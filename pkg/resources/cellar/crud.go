@@ -27,30 +27,21 @@ func (r *ResourceCellar) Configure(ctx context.Context, req resource.ConfigureRe
 		r.cc = provider.Client()
 		r.org = provider.Organization()
 	}
+
+	r.Init(ctx, r.cc, r.org, "cellar-addon", resp.Diagnostics)
 }
 
 // Create a new resource
 func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	cellar := Cellar{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &cellar)...)
+	cellar := r.GetState(ctx, &req.Plan, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
-	if addonsProvidersRes.HasError() {
-		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
-		return
+	plan := r.LookupFirstPlan()
+	if plan == nil {
+		resp.Diagnostics.AddError("failed to find cellar default plan", "expect at least 1 plan for Cellar")
 	}
-	addonsProviders := addonsProvidersRes.Payload()
-
-	prov := pkg.LookupAddonProvider(*addonsProviders, "cellar-addon")
-	if prov == nil {
-		resp.Diagnostics.AddError("failed to fin provider", "")
-		return
-	}
-	plan := prov.Plans[0]
 
 	addonReq := tmp.AddonRequest{
 		Name:       cellar.Name.ValueString(),
@@ -81,25 +72,21 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 	cellar.KeyID = pkg.FromStr(creds.KeyID)
 	cellar.KeySecret = pkg.FromStr(creds.KeySecret)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
+	r.SetState(ctx, &resp.State, *cellar, resp.Diagnostics)
 }
 
 // Read resource information
 func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "Cellar READ", map[string]interface{}{"request": req})
 
-	var cellar Cellar
-	resp.Diagnostics.Append(req.State.Get(ctx, &cellar)...)
+	cellar := r.GetState(ctx, &req.State, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	// TODO
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	r.SetState(ctx, &resp.State, *cellar, resp.Diagnostics)
 }
 
 // Update resource
@@ -109,12 +96,11 @@ func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest,
 
 // Delete resource
 func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var cellar Cellar
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &cellar)...)
+	cellar := r.GetState(ctx, &req.State, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
 	tflog.Debug(ctx, "CELLAR DELETE", map[string]interface{}{"cellar": cellar})
 
 	addonRes := tmp.GetAddon(ctx, r.cc, r.org, cellar.ID.ValueString())

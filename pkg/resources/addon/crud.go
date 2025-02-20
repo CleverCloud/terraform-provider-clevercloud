@@ -57,7 +57,7 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 
 	plan := pkg.LookupProviderPlan(provider, ad.Plan.ValueString())
 	if plan == nil {
-		resp.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
+		resp.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider.Plans), ", "))
 		return
 	}
 

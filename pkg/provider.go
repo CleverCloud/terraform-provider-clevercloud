@@ -38,8 +38,8 @@ func LookupProviderPlanByID(provider *tmp.AddonProvider, planID string) *tmp.Add
 	})
 }
 
-func ProviderPlansAsList(provider *tmp.AddonProvider) []string {
-	return Map(provider.Plans, func(plan tmp.AddonPlan) string {
+func ProviderPlansAsList(plans []tmp.AddonPlan) []string {
+	return Map(plans, func(plan tmp.AddonPlan) string {
 		return plan.Slug
 	})
 }
