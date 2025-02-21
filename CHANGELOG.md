@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.6.0...v0.7.0) (2025-02-21)
+
+
+### Features
+
+* java update ([d943091](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/d9430912bab1bd735a912cbe9bd7307eb5e0971a))
+
 ## [0.6.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.5.1...v0.6.0) (2025-02-19)
 
 
