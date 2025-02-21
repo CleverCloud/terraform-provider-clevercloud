@@ -18,6 +18,7 @@ Manage Keycloak
 ### Required
 
 - `name` (String) Name of the service
+- `plan` (String) Database size and spec
 
 ### Optional
 
