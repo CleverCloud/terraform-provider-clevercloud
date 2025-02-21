@@ -25,7 +25,7 @@ var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 
 func TestAccJava_basic(t *testing.T) {
 	ctx := context.Background()
-	rName := fmt.Sprintf("tf-java-php-%d", time.Now().UnixMilli())
+	rName := fmt.Sprintf("tf-test-java-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_java_war.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
@@ -57,6 +57,14 @@ func TestAccJava_basic(t *testing.T) {
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
 				resource.TestCheckResourceAttr(fullName, "region", "par"),
+			),
+		}, {
+			ResourceName: rName,
+			Config: providerBlock.Append(
+				javaBlock.SetOneValue("biggest_flavor", "XS"),
+			).String(),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(fullName, "biggest_flavor", "XS"),
 			),
 		}},
 		CheckDestroy: func(state *terraform.State) error {
