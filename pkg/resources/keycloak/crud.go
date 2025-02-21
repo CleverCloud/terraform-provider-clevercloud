@@ -50,7 +50,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 	addonsProviders := addonsProvidersRes.Payload()
 	provider := pkg.LookupAddonProvider(*addonsProviders, "keycloak")
 
-	plan := pkg.LookupProviderPlan(provider, "beta")
+	plan := pkg.LookupProviderPlan(provider, kc.Plan.ValueString())
 	if plan == nil {
 		resp.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
 		return

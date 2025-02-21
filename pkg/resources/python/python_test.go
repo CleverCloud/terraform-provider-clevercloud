@@ -33,6 +33,28 @@ func TestAccPython_basic(t *testing.T) {
 	fullName2 := fmt.Sprintf("clevercloud_python.%s", rName2)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	pythonBlock := helper.NewRessource(
+		"clevercloud_python",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 2,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "M",
+			"redirect_https":     true,
+			"sticky_sessions":    true,
+			"app_folder":         "./app",
+			"python_version":     "2.7",
+			"pip_requirements":   "requirements.txt",
+			"environment": map[string]any{
+				"MY_KEY": "myval",
+			},
+		}),
+		helper.SetBlockValues("hooks", map[string]any{"post_build": "echo \"build is OK!\""}),
+	)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -60,28 +82,7 @@ func TestAccPython_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config: helper.NewProvider("clevercloud").
-				SetOrganisation(org).String() + helper.NewRessource(
-				"clevercloud_python",
-				rName,
-				helper.SetKeyValues(map[string]any{
-					"name":               rName,
-					"region":             "par",
-					"min_instance_count": 1,
-					"max_instance_count": 2,
-					"smallest_flavor":    "XS",
-					"biggest_flavor":     "M",
-					"redirect_https":     true,
-					"sticky_sessions":    true,
-					"app_folder":         "./app",
-					"python_version":     "2.7",
-					"pip_requirements":   "requirements.txt",
-					"environment": map[string]any{
-						"MY_KEY": "myval",
-					},
-				}),
-				helper.SetBlockValues("hooks", map[string]any{"post_build": "echo \"build is OK!\""}),
-			).String(),
+			Config:       providerBlock.Append(pythonBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				// Test the state for provider's populated values
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
@@ -158,6 +159,14 @@ func TestAccPython_basic(t *testing.T) {
 
 					return nil
 				},
+			),
+		}, {
+			ResourceName: rName,
+			Config: providerBlock.Append(
+				pythonBlock.SetOneValue("biggest_flavor", "XS"),
+			).String(),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(fullName, "biggest_flavor", "XS"),
 			),
 		}, {
 			ResourceName: rName2,

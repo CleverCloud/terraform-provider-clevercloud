@@ -33,7 +33,7 @@ func TestAccMetabase_basic(t *testing.T) {
 	metabaseBlock := helper.NewRessource(
 		"clevercloud_metabase",
 		rName,
-		helper.SetKeyValues(map[string]any{"name": rName, "plan": "beta", "region": "par"}),
+		helper.SetKeyValues(map[string]any{"name": rName, "plan": "base", "region": "par"}),
 	)
 
 	resource.Test(t, resource.TestCase{
