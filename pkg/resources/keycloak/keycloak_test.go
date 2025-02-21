@@ -33,7 +33,7 @@ func TestAccKeycloak_basic(t *testing.T) {
 	materiakvBlock := helper.NewRessource(
 		"clevercloud_keycloak",
 		rName,
-		helper.SetKeyValues(map[string]any{"name": rName, "region": "par"}),
+		helper.SetKeyValues(map[string]any{"name": rName, "plan": "base", "region": "par"}),
 	)
 
 	resource.Test(t, resource.TestCase{
