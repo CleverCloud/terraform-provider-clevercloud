@@ -59,6 +59,14 @@ func TestAccDocker_basic(t *testing.T) {
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
 				resource.TestCheckResourceAttr(fullName, "region", "par"),
 			),
+		}, {
+			ResourceName: rName,
+			Config: providerBlock.Append(
+				dockerBlock.SetOneValue("biggest_flavor", "XS"),
+			).String(),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(fullName, "biggest_flavor", "XS"),
+			),
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {

@@ -30,7 +30,7 @@ type Docker struct {
 	DaemonSocketMount types.Bool   `tfsdk:"daemon_socket_mount"`
 }
 
-//go:embed resource_docker.md
+//go:embed doc.md
 var dockerDoc string
 
 func (r ResourceDocker) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
