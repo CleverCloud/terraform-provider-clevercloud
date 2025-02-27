@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -163,7 +164,97 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 
 // Update resource
 func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
-	// TODO
+	tflog.Debug(ctx, "ResourceDocker.Update()")
+
+	// Retrieve values from plan and state
+	plan := helper.PlanFrom[Docker](ctx, req.Plan, res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+	state := helper.StateFrom[Docker](ctx, req.State, res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	// Retrieve instance of the app from context
+	instance := application.LookupInstance(ctx, r.cc, "docker", "Docker", res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	// Retriev all env values by extracting ctx env viriables and merge it with the app env variables
+	environment := plan.toEnv(ctx, res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	// Same as env but with vhosts
+	vhosts := []string{}
+	if res.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...); res.Diagnostics.HasError() {
+		return
+	}
+
+	// Get the updated values from plan and instance
+	updateAppReq := application.UpdateReq{
+		ID:           state.ID.ValueString(),
+		Client:       r.cc,
+		Organization: r.org,
+		Application: tmp.UpdateAppReq{
+			Name:            plan.Name.ValueString(),
+			Deploy:          "git",
+			Description:     plan.Description.ValueString(),
+			InstanceType:    instance.Type,
+			InstanceVariant: instance.Variant.ID,
+			InstanceVersion: instance.Version,
+			BuildFlavor:     plan.BuildFlavor.ValueString(),
+			MinFlavor:       plan.SmallestFlavor.ValueString(),
+			MaxFlavor:       plan.BiggestFlavor.ValueString(),
+			MinInstances:    plan.MinInstanceCount.ValueInt64(),
+			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
+			StickySessions:  plan.StickySessions.ValueBool(),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			Zone:            plan.Region.ValueString(),
+			CancelOnPush:    false,
+		},
+		Environment: environment,
+		VHosts:      vhosts,
+		Deployment:  plan.toDeployment(),
+	}
+
+	// Correctly named: update the app (via PUT Method)
+	_, diags := application.UpdateApp(ctx, updateAppReq)
+	res.Diagnostics.Append(diags...)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	//
+	hasDefaultVHost := pkg.HasSome(updateAppReq.VHosts, func(vhost string) bool {
+		return pkg.VhostCleverAppsRegExp.MatchString(vhost)
+	})
+	if hasDefaultVHost {
+		cleverapps := *pkg.First(vhosts, func(vhost string) bool {
+			return pkg.VhostCleverAppsRegExp.MatchString(vhost)
+		})
+		plan.VHost = pkg.FromStr(cleverapps)
+	} else {
+		plan.VHost = types.StringNull()
+	}
+
+	vhostsWithoutDefault := pkg.Filter(updateAppReq.VHosts, func(vhost string) bool {
+		ok := pkg.VhostCleverAppsRegExp.MatchString(vhost)
+		return !ok
+	})
+	if len(vhostsWithoutDefault) > 0 {
+		plan.AdditionalVHosts = pkg.FromListString(vhostsWithoutDefault)
+	} else {
+		plan.AdditionalVHosts = types.ListNull(types.StringType)
+	}
+
+	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
+	if res.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete resource
