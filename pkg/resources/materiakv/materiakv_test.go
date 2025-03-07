@@ -48,7 +48,7 @@ func TestAccMateriaKV_basic(t *testing.T) {
 				if res.HasError() {
 					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
 				}
-				if res.Payload().Status == "TO_DELETE" {
+				if res.Payload().Status == "TO_DELETE" || res.Payload().Status == "DELETED" {
 					continue
 				}
 
