@@ -4,9 +4,12 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.dev/client"
 )
 
@@ -19,6 +22,24 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// Sentry, on the higher CONFIGURABLE level
+	if config.ErrorReports.ValueBool() { // implicit == true
+		err := sentry.Init(sentry.ClientOptions{
+			Dsn:              "https://9f1c17cd85db40f5a1991aefcc182944@glitchtip.corp.clever-cloud.com/35",
+			AttachStacktrace: true,
+			Release:          pkg.Version,
+			Dist:             req.TerraformVersion,
+			Tags: map[string]string{
+				"endpoint": config.Endpoint.ValueString(),
+				"owner":    config.Organisation.ValueString(),
+			},
+		})
+		if err != nil {
+			tflog.Warn(ctx, "failed to setup sentry", map[string]interface{}{"error": err.Error()})
+		}
+		defer sentry.Flush(2 * time.Second)
 	}
 
 	if config.Organisation.IsUnknown() || config.Organisation.IsNull() {
