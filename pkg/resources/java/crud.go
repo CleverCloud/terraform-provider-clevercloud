@@ -30,7 +30,7 @@ func (r *ResourceJava) Configure(ctx context.Context, req resource.ConfigureRequ
 		r.org = provider.Organization()
 	}
 
-	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]interface{}{"cc": r.cc == nil, "org": r.org})
+	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
 }
 
 // Create a new resource
@@ -89,7 +89,7 @@ func (r *ResourceJava) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]interface{}{})
+	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]any{})
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
 	plan.VHost = pkg.FromStr(createAppRes.Application.Vhosts[0].Fqdn)
@@ -277,7 +277,7 @@ func (r *ResourceJava) Delete(ctx context.Context, req resource.DeleteRequest, r
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "JAVA DELETE", map[string]interface{}{"state": state})
+	tflog.Debug(ctx, "JAVA DELETE", map[string]any{"state": state})
 
 	res := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
 	if res.IsNotFoundError() {

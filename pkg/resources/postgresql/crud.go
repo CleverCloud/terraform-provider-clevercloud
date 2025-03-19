@@ -83,7 +83,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	addonPG := pgInfoRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]interface{}{
+	tflog.Debug(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", addonPG),
 	})
 	pg.Host = pkg.FromStr(addonPG.Host)
@@ -100,7 +100,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 
 // Read resource information
 func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "PostgreSQL READ", map[string]interface{}{"request": req})
+	tflog.Debug(ctx, "PostgreSQL READ", map[string]any{"request": req})
 
 	var pg PostgreSQL
 	diags := req.State.Get(ctx, &pg)
@@ -132,8 +132,8 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	tflog.Debug(ctx, "STATE", map[string]interface{}{"pg": pg})
-	tflog.Debug(ctx, "API", map[string]interface{}{"pg": addonPG})
+	tflog.Debug(ctx, "STATE", map[string]any{"pg": pg})
+	tflog.Debug(ctx, "API", map[string]any{"pg": addonPG})
 	pg.Plan = pkg.FromStr(addonPG.Plan)
 	pg.Region = pkg.FromStr(addonPG.Zone)
 	//pg.Name = types.String{Value: addonPG.}
@@ -164,7 +164,7 @@ func (r *ResourcePostgreSQL) Delete(ctx context.Context, req resource.DeleteRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "PostgreSQL DELETE", map[string]interface{}{"pg": pg})
+	tflog.Debug(ctx, "PostgreSQL DELETE", map[string]any{"pg": pg})
 
 	res := tmp.DeleteAddon(ctx, r.cc, r.org, pg.ID.ValueString())
 	if res.IsNotFoundError() {

@@ -201,7 +201,7 @@ func TestAccNodejs_basic(t *testing.T) {
 	})
 }
 
-func assertError(msg string, a, b interface{}) error {
+func assertError(msg string, a, b any) error {
 	return fmt.Errorf("%s, got: '%v', expect: '%v'", msg, a, b)
 }
 

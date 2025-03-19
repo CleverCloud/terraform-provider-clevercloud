@@ -30,7 +30,7 @@ func (r *ResourcePython) Configure(ctx context.Context, req resource.ConfigureRe
 		r.org = provider.Organization()
 	}
 
-	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]interface{}{"cc": r.cc == nil, "org": r.org})
+	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
 }
 
 // Create a new resource
@@ -106,7 +106,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 
 // Read resource information
 func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Python READ", map[string]interface{}{"request": req})
+	tflog.Debug(ctx, "Python READ", map[string]any{"request": req})
 
 	var app Python
 	diags := req.State.Get(ctx, &app)
@@ -239,7 +239,7 @@ func (r *ResourcePython) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Python DELETE", map[string]interface{}{"app": app})
+	tflog.Debug(ctx, "Python DELETE", map[string]any{"app": app})
 
 	res := tmp.DeleteApp(ctx, r.cc, r.org, app.ID.ValueString())
 	if res.IsNotFoundError() {

@@ -83,7 +83,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	addonMG := mgInfoRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]interface{}{
+	tflog.Debug(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", addonMG),
 	})
 	mg.Host = pkg.FromStr(addonMG.Host)
@@ -99,7 +99,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 
 // Read resource information
 func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "MongoDB READ", map[string]interface{}{"request": req})
+	tflog.Debug(ctx, "MongoDB READ", map[string]any{"request": req})
 
 	var mg MongoDB
 	diags := req.State.Get(ctx, &mg)
@@ -131,8 +131,8 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	tflog.Debug(ctx, "STATE", map[string]interface{}{"mg": mg})
-	tflog.Debug(ctx, "API", map[string]interface{}{"mg": addonMG})
+	tflog.Debug(ctx, "STATE", map[string]any{"mg": mg})
+	tflog.Debug(ctx, "API", map[string]any{"mg": addonMG})
 	mg.Host = pkg.FromStr(addonMG.Host)
 	mg.Port = pkg.FromI(int64(addonMG.Port))
 	mg.User = pkg.FromStr(addonMG.User)
@@ -159,7 +159,7 @@ func (r *ResourceMongoDB) Delete(ctx context.Context, req resource.DeleteRequest
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "MongoDB DELETE", map[string]interface{}{"mg": mg})
+	tflog.Debug(ctx, "MongoDB DELETE", map[string]any{"mg": mg})
 
 	res := tmp.DeleteAddon(ctx, r.cc, r.org, mg.ID.ValueString())
 	if res.IsNotFoundError() {

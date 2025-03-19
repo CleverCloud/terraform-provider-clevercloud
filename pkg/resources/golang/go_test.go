@@ -1,10 +1,9 @@
-package python_test
+package golang_test
 
 import (
 	"context"
 	_ "embed"
 	"fmt"
-	"net/http"
 	"os"
 	"regexp"
 	"testing"
@@ -25,17 +24,15 @@ var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
 }
 
-func TestAccPython_basic(t *testing.T) {
+func TestAccGo_basic(t *testing.T) {
 	ctx := context.Background()
-	rName := fmt.Sprintf("tf-test-python-%d", time.Now().UnixMilli())
-	rName2 := fmt.Sprintf("tf-test-python-%d-2", time.Now().UnixMilli())
-	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
-	fullName2 := fmt.Sprintf("clevercloud_python.%s", rName2)
+	rName := fmt.Sprintf("tf-test-go-%d", time.Now().UnixMilli())
+	fullName := fmt.Sprintf("clevercloud_go.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
-	pythonBlock := helper.NewRessource(
-		"clevercloud_python",
+	goBlock := helper.NewRessource(
+		"clevercloud_go",
 		rName,
 		helper.SetKeyValues(map[string]any{
 			"name":               rName,
@@ -47,15 +44,11 @@ func TestAccPython_basic(t *testing.T) {
 			"redirect_https":     true,
 			"sticky_sessions":    true,
 			"app_folder":         "./app",
-			"python_version":     "2.7",
-			"pip_requirements":   "requirements.txt",
-			"environment": map[string]any{
-				"MY_KEY": "myval",
-			},
+			"environment":        map[string]any{"MY_KEY": "myval"},
+			"dependencies":       []string{},
 		}),
 		helper.SetBlockValues("hooks", map[string]any{"post_build": "echo \"build is OK!\""}),
 	)
-
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			if org == "" {
@@ -82,7 +75,7 @@ func TestAccPython_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       providerBlock.Append(pythonBlock).String(),
+			Config:       providerBlock.Append(goBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				// Test the state for provider's populated values
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
@@ -126,6 +119,9 @@ func TestAccPython_basic(t *testing.T) {
 					if !app.StickySessions {
 						return assertError("expect option to be set", "sticky_sessions", app.StickySessions)
 					}
+					if app.Zone != "par" {
+						return assertError("expect region to be 'par'", "region", app.Zone)
+					}
 
 					appEnvRes := tmp.GetAppEnv(ctx, cc, org, id)
 					if appEnvRes.HasError() {
@@ -139,7 +135,7 @@ func TestAccPython_basic(t *testing.T) {
 
 					v := env["MY_KEY"]
 					if v != "myval" {
-						return assertError("bad env var value MY_KEY", "myval", v)
+						return assertError("bad env var value MY_KEY", "myval3", v)
 					}
 
 					v2 := env["APP_FOLDER"]
@@ -152,82 +148,22 @@ func TestAccPython_basic(t *testing.T) {
 						return assertError("bad env var value CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
 					}
 
-					v4 := env["CC_PIP_REQUIREMENTS_FILE"]
-					if v4 != "requirements.txt" {
-						return assertError("bad env var value CC_PIP_REQUIREMENTS_FILE", "requirements.txt", v4)
-					}
-
 					return nil
 				},
 			),
 		}, {
 			ResourceName: rName,
 			Config: providerBlock.Append(
-				pythonBlock.SetOneValue("biggest_flavor", "XS"),
+				goBlock.SetOneValue("min_instance_count", 2).SetOneValue("max_instance_count", 6),
 			).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(fullName, "biggest_flavor", "XS"),
+				resource.TestCheckResourceAttr(fullName, "min_instance_count", "2"),
+				resource.TestCheckResourceAttr(fullName, "max_instance_count", "6"),
 			),
-		}, {
-			ResourceName: rName2,
-			Config: helper.NewProvider("clevercloud").SetOrganisation(org).String() + helper.NewRessource("clevercloud_python",
-				rName2,
-				helper.SetKeyValues(map[string]any{
-					"name":               rName,
-					"region":             "par",
-					"min_instance_count": 1,
-					"max_instance_count": 2,
-					"smallest_flavor":    "XS",
-					"biggest_flavor":     "M",
-				}),
-				helper.SetBlockValues("deployment", map[string]any{"repository": "https://github.com/CleverCloud/flask-example.git"})).String(),
-			Check: func(state *terraform.State) error {
-				id := state.RootModule().Resources[fullName2].Primary.ID
-
-				appRes := tmp.GetApp(ctx, cc, org, id)
-				if appRes.HasError() {
-					return fmt.Errorf("failed to get application: %w", appRes.Error())
-				}
-				app := appRes.Payload()
-
-				// Test deployed app
-				t := time.NewTimer(2 * time.Minute)
-				select {
-				case <-healthCheck(app.Vhosts[0].Fqdn):
-					return nil
-				case <-t.C:
-					return fmt.Errorf("application did not respond in the allowed time")
-				}
-			},
 		}},
 	})
 }
 
 func assertError(msg string, a, b any) error {
 	return fmt.Errorf("%s, got: '%v', expect: '%v'", msg, a, b)
-}
-
-func healthCheck(vhost string) chan struct{} {
-	c := make(chan struct{})
-
-	fmt.Printf("Test on %s\n", vhost)
-
-	go func() {
-		for {
-			res, err := http.Get(fmt.Sprintf("https://%s", vhost))
-			if err != nil {
-				fmt.Printf("%s\n", err.Error())
-				continue
-			}
-
-			fmt.Printf("RESPONSE %d\n", res.StatusCode)
-			if res.StatusCode != 200 {
-				time.Sleep(1 * time.Second)
-				continue
-			}
-			c <- struct{}{}
-		}
-	}()
-
-	return c
 }

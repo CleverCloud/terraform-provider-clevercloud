@@ -62,7 +62,7 @@ func (r *ResourceCellarBucket) Create(ctx context.Context, req resource.CreateRe
 
 // Read resource information
 func (r *ResourceCellarBucket) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Cellar READ", map[string]interface{}{"request": req})
+	tflog.Debug(ctx, "Cellar READ", map[string]any{"request": req})
 
 	var cellar CellarBucket
 	resp.Diagnostics.Append(req.State.Get(ctx, &cellar)...)
@@ -91,7 +91,7 @@ func (r *ResourceCellarBucket) Delete(ctx context.Context, req resource.DeleteRe
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "CELLAR BUCKET DELETE", map[string]interface{}{"bucket": bucket})
+	tflog.Debug(ctx, "CELLAR BUCKET DELETE", map[string]any{"bucket": bucket})
 
 	cellarEnvRes := tmp.GetAddonEnv(ctx, r.cc, r.org, bucket.CellarID.ValueString())
 	if cellarEnvRes.HasError() {
