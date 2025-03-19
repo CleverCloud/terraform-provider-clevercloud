@@ -14,12 +14,13 @@ import (
 
 // ProviderData is struct implementation of Provider.GetSchema()
 type ProviderData struct {
-	Endpoint     types.String `tfsdk:"endpoint"`
-	Token        types.String `tfsdk:"token"`
-	Secret       types.String `tfsdk:"secret"`
-	Organisation types.String `tfsdk:"organisation"`
-	ConsumerKey  types.String `tfsdk:"consumer_key"`
+	Endpoint       types.String `tfsdk:"endpoint"`
+	Token          types.String `tfsdk:"token"`
+	Secret         types.String `tfsdk:"secret"`
+	Organisation   types.String `tfsdk:"organisation"`
+	ConsumerKey    types.String `tfsdk:"consumer_key"`
 	ConsumerSecret types.String `tfsdk:"consumer_secret"`
+	ErrorReports   types.Bool   `tfsdk:"error_reports"`
 }
 
 //go:embed provider.md
@@ -60,6 +61,10 @@ func (p *Provider) Schema(_ context.Context, req provider.SchemaRequest, res *pr
 				Optional:            true,
 				Sensitive:           true,
 				MarkdownDescription: "CleverCloud OAuth1 consumer secret. Allows using a dedicated OAuth consumer.",
+			},
+			"error_reports": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Report any errors on provider directly to provider",
 			},
 		},
 	}

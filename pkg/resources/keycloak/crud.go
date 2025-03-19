@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -67,6 +68,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 
 	createAddonRes := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
 	if createAddonRes.HasError() {
+		sentry.CaptureException(createAddonRes.Error())
 		res.Diagnostics.AddError("failed to create Keycloak", createAddonRes.Error().Error())
 		return
 	}

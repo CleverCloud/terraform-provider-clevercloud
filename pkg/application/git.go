@@ -73,18 +73,22 @@ func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemo
 		return diags
 	}
 
-	token, secret := cc.Oauth1UserCredentials()
-	auth := &http.BasicAuth{Username: token, Password: secret}
-
 	pushOptions := &git.PushOptions{
 		RemoteName: "clever",
 		Force:      true,
 		Progress:   os.Stdout,
-		Auth:       auth,
 		RefSpecs: []config.RefSpec{
 			config.RefSpec(fmt.Sprintf("%s:%s", currentRef.Name(), plumbing.Master)),
 		},
 	}
+
+	if authenticator, ok := cc.Authenticator().(*client.OAuth1Config); ok {
+		pushOptions.Auth = &http.BasicAuth{
+			Username: authenticator.AccessToken,
+			Password: authenticator.AccessSecret,
+		}
+	}
+
 	if d.Commit != nil {
 		refNameOrCommit := *d.Commit
 		var refSpec config.RefSpec
