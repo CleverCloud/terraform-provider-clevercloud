@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.7.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.6.0...v0.7.0) (2025-03-19)
+
+
+### Features
+
+* add docker update ([ffd278b](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/ffd278bb4facd753fe0d9616a0992212836ac6bd))
+* add scala update ([788a1cd](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/788a1cd551dbb511e60ded77b9b2ee2f7acbea01))
+* add static update ([69497d5](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/69497d5225c7b6075e2b769eb051fa3869872164))
+* go ([c07c7d9](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/c07c7d99b24c606ce9a5346c0d5f97ea71db1999))
+* java update ([d943091](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/d9430912bab1bd735a912cbe9bd7307eb5e0971a))
+* python update ([b5cb9eb](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/b5cb9ebd9c857e4de5cd91b68b2126754ec25702))
+
+
+### Bug Fixes
+
+* **plan:** remove test plan ([16eaedb](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/16eaedb5ab55b13d6c2d4a7c2ea72750adae7b32))
+* **tests:** materiaKV add status DELETED ([9f3f3e3](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/9f3f3e355be7a0b2f86a8a21008d77b846ee0488))
+
 ## [0.6.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.5.1...v0.6.0) (2025-02-19)
 
 
