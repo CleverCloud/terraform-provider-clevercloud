@@ -18,6 +18,7 @@ CleverCloud provider allow you to interact with CleverCloud platform.
 ### Optional
 
 - `endpoint` (String) CleverCloud API endpoint, default to https://api.clever-cloud.com
+- `error_reports` (Boolean) Report any errors on provider directly to provider
 - `organisation` (String, Sensitive) CleverCloud organisation, can be either orga_xxx, or user_xxx for personal spaces. This parameter can also be provided via CC_ORGANISATION environment variable.
 - `secret` (String, Sensitive) CleverCloud OAuth1 secret, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_SECRET environment variable.
 - `token` (String, Sensitive) CleverCloud OAuth1 token, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_TOKEN environment variable.
