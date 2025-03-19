@@ -18,6 +18,7 @@ type ProviderData struct {
 	Token        types.String `tfsdk:"token"`
 	Secret       types.String `tfsdk:"secret"`
 	Organisation types.String `tfsdk:"organisation"`
+	ErrorReports types.Bool   `tfsdk:"error_reports"`
 }
 
 //go:embed provider.md
@@ -49,6 +50,10 @@ func (p *Provider) Schema(_ context.Context, req provider.SchemaRequest, res *pr
 				Validators: []validator.String{
 					pkg.NewValidatorRegex("valid owner name", regexp.MustCompile(`^(user|orga)_.{36}`)),
 				},
+			},
+			"error_reports": schema.BoolAttribute{
+				Optional:            true,
+				MarkdownDescription: "Report any errors on provider directly to provider",
 			},
 		},
 	}
