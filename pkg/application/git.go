@@ -56,16 +56,22 @@ func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemot
 	if d.Commit != nil {
 		// refs/heads/[BRANCH]
 		// [COMMIT]
-		ref := config.RefSpec(fmt.Sprintf("%s:refs/heads/master", *d.Commit))
+		refStr := fmt.Sprintf("%s:refs/heads/master", *d.Commit)
+		tflog.Debug(ctx, "refspec", map[string]any{"ref": refStr})
+		ref := config.RefSpec(refStr)
 		if err := ref.Validate(); err != nil {
 			diags.AddError("failed to build ref spec to push", err.Error())
 			return diags
 		}
 
 		pushOptions.RefSpecs = []config.RefSpec{ref}
+	} else {
+		pushOptions.RefSpecs = []config.RefSpec{
+			config.RefSpec("main:refs/heads/master"),
+		}
 	}
 
-	tflog.Debug(ctx, "pushing...", map[string]interface{}{
+	tflog.Debug(ctx, "pushing...", map[string]any{
 		"options": fmt.Sprintf("%+v", pushOptions),
 	})
 

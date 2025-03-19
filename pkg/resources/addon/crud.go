@@ -97,7 +97,7 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 
 // Read resource information
 func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Addon READ", map[string]interface{}{"request": req})
+	tflog.Debug(ctx, "Addon READ", map[string]any{"request": req})
 
 	var ad Addon
 	diags := req.State.Get(ctx, &ad)
@@ -168,7 +168,7 @@ func (r *ResourceAddon) Delete(ctx context.Context, req resource.DeleteRequest, 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Addon DELETE", map[string]interface{}{"addon": ad})
+	tflog.Debug(ctx, "Addon DELETE", map[string]any{"addon": ad})
 
 	res := tmp.DeleteAddon(ctx, r.cc, r.org, ad.ID.ValueString())
 	if res.IsNotFoundError() {

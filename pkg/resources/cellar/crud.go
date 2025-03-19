@@ -66,7 +66,7 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	addonRes := res.Payload()
 
-	tflog.Debug(ctx, "get addon env vars", map[string]interface{}{"cellar": addonRes.RealID})
+	tflog.Debug(ctx, "get addon env vars", map[string]any{"cellar": addonRes.RealID})
 	envRes := tmp.GetAddonEnv(ctx, r.cc, r.org, addonRes.RealID)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon env vars", envRes.Error().Error())
@@ -86,7 +86,7 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 
 // Read resource information
 func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Cellar READ", map[string]interface{}{"request": req})
+	tflog.Debug(ctx, "Cellar READ", map[string]any{"request": req})
 
 	var cellar Cellar
 	resp.Diagnostics.Append(req.State.Get(ctx, &cellar)...)
@@ -115,7 +115,7 @@ func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "CELLAR DELETE", map[string]interface{}{"cellar": cellar})
+	tflog.Debug(ctx, "CELLAR DELETE", map[string]any{"cellar": cellar})
 
 	addonRes := tmp.GetAddon(ctx, r.cc, r.org, cellar.ID.ValueString())
 	if addonRes.IsNotFoundError() {

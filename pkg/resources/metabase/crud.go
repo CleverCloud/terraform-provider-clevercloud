@@ -83,7 +83,7 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	addonMB := *mbInfoRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]interface{}{
+	tflog.Debug(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", addonMB),
 	})
 
@@ -105,7 +105,7 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 
 // Read resource information
 func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Metabase READ", map[string]interface{}{"request": req})
+	tflog.Debug(ctx, "Metabase READ", map[string]any{"request": req})
 
 	var mb Metabase
 	diags := req.State.Get(ctx, &mb)
@@ -136,8 +136,8 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.State.RemoveResource(ctx)
 		return
 	}
-	tflog.Debug(ctx, "STATE", map[string]interface{}{"mb": mb})
-	tflog.Debug(ctx, "API", map[string]interface{}{"mb": addonMB})
+	tflog.Debug(ctx, "STATE", map[string]any{"mb": mb})
+	tflog.Debug(ctx, "API", map[string]any{"mb": addonMB})
 	// mb.Host = pkg.FromStr(addonMB.Applications[0].Host)
 	// mb.Port = pkg.FromI(int64(addonMB.Port))
 	// mb.User = pkg.FromStr(addonMB.User)
@@ -161,7 +161,7 @@ func (r *ResourceMetabase) Delete(ctx context.Context, req resource.DeleteReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Metabase DELETE", map[string]interface{}{"mb": mb})
+	tflog.Debug(ctx, "Metabase DELETE", map[string]any{"mb": mb})
 
 	res := tmp.DeleteAddon(ctx, r.cc, r.org, mb.ID.ValueString())
 	if res.IsNotFoundError() {

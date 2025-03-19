@@ -51,7 +51,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	appRes := tmp.CreateApp(ctx, req.Client, req.Organization, req.Application)
 	if appRes.HasError() {
 		diags.AddError("failed to create application", appRes.Error().Error())
-		tflog.Error(ctx, "failed to create app", map[string]interface{}{"error": appRes.Error().Error(), "payload": fmt.Sprintf("%+v", req.Application)})
+		tflog.Error(ctx, "failed to create app", map[string]any{"error": appRes.Error().Error(), "payload": fmt.Sprintf("%+v", req.Application)})
 		return nil, diags
 	}
 
@@ -82,7 +82,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 
 		depRes := tmp.AddAppLinkedAddons(ctx, req.Client, req.Organization, res.Application.ID, dependency)
 		if depRes.HasError() {
-			tflog.Error(ctx, "ERROR: "+dependency, map[string]interface{}{"err": depRes.Error().Error()})
+			tflog.Error(ctx, "ERROR: "+dependency, map[string]any{"err": depRes.Error().Error()})
 			diags.AddError("failed to add dependency", depRes.Error().Error())
 		}
 	}
@@ -99,7 +99,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	appRes := tmp.UpdateApp(ctx, req.Client, req.Organization, req.ID, req.Application)
 	if appRes.HasError() {
 		diags.AddError("failed to update application", appRes.Error().Error())
-		tflog.Error(ctx, "failed to update app", map[string]interface{}{"error": appRes.Error().Error(), "payload": fmt.Sprintf("%+v", req.Application)})
+		tflog.Error(ctx, "failed to update app", map[string]any{"error": appRes.Error().Error(), "payload": fmt.Sprintf("%+v", req.Application)})
 		return nil, diags
 	}
 
@@ -131,7 +131,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 
 		depRes := tmp.AddAppLinkedAddons(ctx, req.Client, req.Organization, res.Application.ID, dependency)
 		if depRes.HasError() {
-			tflog.Error(ctx, "ERROR: "+dependency, map[string]interface{}{"err": depRes.Error().Error()})
+			tflog.Error(ctx, "ERROR: "+dependency, map[string]any{"err": depRes.Error().Error()})
 			diags.AddError("failed to add dependency", depRes.Error().Error())
 		}
 	}

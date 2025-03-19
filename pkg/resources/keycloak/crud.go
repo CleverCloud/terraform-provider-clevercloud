@@ -84,7 +84,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	kcEnv := *kcEnvRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]interface{}{
+	tflog.Debug(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", kcEnv),
 	})
 
@@ -106,7 +106,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 
 // Read resource information
 func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Keycloak READ", map[string]interface{}{"request": req})
+	tflog.Debug(ctx, "Keycloak READ", map[string]any{"request": req})
 
 	var kc Keycloak
 	diags := req.State.Get(ctx, &kc)
@@ -138,7 +138,7 @@ func (r *ResourceKeycloak) Delete(ctx context.Context, req resource.DeleteReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Keycloak DELETE", map[string]interface{}{"keycloak": kc})
+	tflog.Debug(ctx, "Keycloak DELETE", map[string]any{"keycloak": kc})
 
 	res := tmp.DeleteAddon(ctx, r.cc, r.org, kc.ID.ValueString())
 	if res.IsNotFoundError() {

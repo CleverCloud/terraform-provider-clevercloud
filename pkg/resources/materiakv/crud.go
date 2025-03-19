@@ -83,7 +83,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 	}
 
 	kvInfo := kvInfoRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]interface{}{
+	tflog.Debug(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", kvInfo),
 	})
 	kv.Host = pkg.FromStr(kvInfo.Host)
@@ -98,7 +98,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 
 // Read resource information
 func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "MateriaKV READ", map[string]interface{}{"request": req})
+	tflog.Debug(ctx, "MateriaKV READ", map[string]any{"request": req})
 
 	var kv MateriaKV
 	diags := req.State.Get(ctx, &kv)
@@ -130,8 +130,8 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	tflog.Debug(ctx, "STATE", map[string]interface{}{"kv": kv})
-	tflog.Debug(ctx, "API", map[string]interface{}{"kv": addonKV})
+	tflog.Debug(ctx, "STATE", map[string]any{"kv": kv})
+	tflog.Debug(ctx, "API", map[string]any{"kv": addonKV})
 	kv.Host = pkg.FromStr(addonKV.Host)
 	kv.Port = pkg.FromI(int64(addonKV.Port))
 	kv.Token = pkg.FromStr(addonKV.Token)
@@ -157,7 +157,7 @@ func (r *ResourceMateriaKV) Delete(ctx context.Context, req resource.DeleteReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "MateriaKV DELETE", map[string]interface{}{"kv": kv})
+	tflog.Debug(ctx, "MateriaKV DELETE", map[string]any{"kv": kv})
 
 	res := tmp.DeleteAddon(ctx, r.cc, r.org, kv.ID.ValueString())
 	if res.IsNotFoundError() {

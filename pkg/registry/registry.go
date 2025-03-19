@@ -7,6 +7,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar/bucket"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/docker"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/golang"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/java"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/keycloak"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/materiakv"
@@ -40,4 +41,5 @@ var Resources = []func() resource.Resource{
 	docker.NewResourceDocker,
 	keycloak.NewResourceKeycloak,
 	redis.NewResourceRedis,
+	golang.NewResourceGo,
 }

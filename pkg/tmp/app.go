@@ -132,18 +132,18 @@ type Vhost struct {
 	Fqdn string `json:"fqdn"`
 }
 type BuildFlavor struct {
-	Name            string      `json:"name"`
-	Mem             int         `json:"mem"`
-	Cpus            int         `json:"cpus"`
-	Gpus            int         `json:"gpus"`
-	Disk            interface{} `json:"disk"`
-	Price           float64     `json:"price"`
-	Available       bool        `json:"available"`
-	Microservice    bool        `json:"microservice"`
-	MachineLearning bool        `json:"machine_learning"`
-	Nice            int         `json:"nice"`
-	PriceID         string      `json:"price_id"`
-	Memory          Memory      `json:"memory"`
+	Name            string  `json:"name"`
+	Mem             int     `json:"mem"`
+	Cpus            int     `json:"cpus"`
+	Gpus            int     `json:"gpus"`
+	Disk            any     `json:"disk"`
+	Price           float64 `json:"price"`
+	Available       bool    `json:"available"`
+	Microservice    bool    `json:"microservice"`
+	MachineLearning bool    `json:"machine_learning"`
+	Nice            int     `json:"nice"`
+	PriceID         string  `json:"price_id"`
+	Memory          Memory  `json:"memory"`
 }
 
 type Env struct {
@@ -161,9 +161,9 @@ func GetApp(ctx context.Context, cc *client.Client, organisationID, applicationI
 	return client.Get[CreatAppResponse](ctx, cc, path)
 }
 
-func DeleteApp(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[interface{}] {
+func DeleteApp(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[any] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s", organisationID, applicationID)
-	return client.Delete[interface{}](ctx, cc, path)
+	return client.Delete[any](ctx, cc, path)
 }
 
 func GetAppEnv(ctx context.Context, cc *client.Client, organisationID string, applicationID string) client.Response[[]Env] {
@@ -171,9 +171,9 @@ func GetAppEnv(ctx context.Context, cc *client.Client, organisationID string, ap
 	return client.Get[[]Env](ctx, cc, path)
 }
 
-func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID string, applicationID string, envs map[string]string) client.Response[interface{}] {
+func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID string, applicationID string, envs map[string]string) client.Response[any] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/env", organisationID, applicationID)
-	return client.Put[interface{}](ctx, cc, path, envs)
+	return client.Put[any](ctx, cc, path, envs)
 }
 
 type ProductInstance struct {
@@ -193,18 +193,18 @@ type ProductInstance struct {
 }
 
 type DefaultFlavor struct {
-	Name            string      `json:"name"`
-	Mem             int         `json:"mem"`
-	Cpus            int         `json:"cpus"`
-	Gpus            int         `json:"gpus"`
-	Disk            interface{} `json:"disk"`
-	Price           float64     `json:"price"`
-	Available       bool        `json:"available"`
-	Microservice    bool        `json:"microservice"`
-	MachineLearning bool        `json:"machine_learning"`
-	Nice            int         `json:"nice"`
-	PriceID         string      `json:"price_id"`
-	Memory          Memory      `json:"memory"`
+	Name            string  `json:"name"`
+	Mem             int     `json:"mem"`
+	Cpus            int     `json:"cpus"`
+	Gpus            int     `json:"gpus"`
+	Disk            any     `json:"disk"`
+	Price           float64 `json:"price"`
+	Available       bool    `json:"available"`
+	Microservice    bool    `json:"microservice"`
+	MachineLearning bool    `json:"machine_learning"`
+	Nice            int     `json:"nice"`
+	PriceID         string  `json:"price_id"`
+	Memory          Memory  `json:"memory"`
 }
 
 func GetProductInstance(ctx context.Context, cc *client.Client) client.Response[[]ProductInstance] {
@@ -235,9 +235,9 @@ func UpdateApp(ctx context.Context, cc *client.Client, organisationID, applicati
 	return client.Put[CreatAppResponse](ctx, cc, path, req)
 }
 
-func AddAppVHost(ctx context.Context, cc *client.Client, organisationID, applicationID, vhost string) client.Response[interface{}] {
+func AddAppVHost(ctx context.Context, cc *client.Client, organisationID, applicationID, vhost string) client.Response[any] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/vhosts/%s", organisationID, applicationID, vhost)
-	return client.Put[interface{}](ctx, cc, path, map[string]string{})
+	return client.Put[any](ctx, cc, path, map[string]string{})
 }
 
 func AddAppLinkedAddons(ctx context.Context, cc *client.Client, organisationID, applicationID, addonID string) client.Response[client.Nothing] {

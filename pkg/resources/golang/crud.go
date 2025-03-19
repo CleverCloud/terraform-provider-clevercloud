@@ -1,4 +1,4 @@
-package scala
+package golang
 
 import (
 	"context"
@@ -16,8 +16,8 @@ import (
 
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
 // So we need to handle the case there is no ProviderData
-func (r *ResourceScala) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceScala.Configure()")
+func (r *ResourceGo) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	tflog.Debug(ctx, "ResourceGo.Configure()")
 
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -34,31 +34,35 @@ func (r *ResourceScala) Configure(ctx context.Context, req resource.ConfigureReq
 }
 
 // Create a new resource
-func (r *ResourceScala) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	plan := Scala{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	instance := application.LookupInstance(ctx, r.cc, "java", "Scala + SBT", resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
+func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
+	plan := helper.PlanFrom[Go](ctx, req.Plan, res.Diagnostics)
+	if res.Diagnostics.HasError() {
 		return
 	}
 
 	vhosts := []string{}
-	resp.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...)
-	if resp.Diagnostics.HasError() {
+	res.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...)
+	if res.Diagnostics.HasError() {
 		return
 	}
 
-	environment := plan.toEnv(ctx, resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
+	instance := application.LookupInstance(ctx, r.cc, "go", "Go", res.Diagnostics)
+	if res.Diagnostics.HasError() {
 		return
 	}
 
-	createAppReq := application.CreateReq{
+	environment := plan.toEnv(ctx, res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	dependencies := []string{}
+	res.Diagnostics.Append(plan.Dependencies.ElementsAs(ctx, &dependencies, false)...)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	createReq := application.CreateReq{
 		Client:       r.cc,
 		Organization: r.org,
 		Application: tmp.CreateAppRequest{
@@ -68,7 +72,6 @@ func (r *ResourceScala) Create(ctx context.Context, req resource.CreateRequest, 
 			InstanceType:    instance.Type,
 			InstanceVariant: instance.Variant.ID,
 			InstanceVersion: instance.Version,
-			BuildFlavor:     plan.BuildFlavor.ValueString(),
 			MinFlavor:       plan.SmallestFlavor.ValueString(),
 			MaxFlavor:       plan.BiggestFlavor.ValueString(),
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
@@ -76,118 +79,74 @@ func (r *ResourceScala) Create(ctx context.Context, req resource.CreateRequest, 
 			StickySessions:  plan.StickySessions.ValueBool(),
 			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
-			CancelOnPush:    false,
 		},
-		Environment: environment,
-		VHosts:      vhosts,
-		Deployment:  plan.toDeployment(),
+		Environment:  environment,
+		VHosts:       vhosts,
+		Deployment:   plan.toDeployment(),
+		Dependencies: dependencies,
 	}
 
-	createAppRes, diags := application.CreateApp(ctx, createAppReq)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
+	createRes, diags := application.CreateApp(ctx, createReq)
+	res.Diagnostics.Append(diags...)
+	if res.Diagnostics.HasError() {
 		return
 	}
 
-	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]any{})
-	plan.ID = pkg.FromStr(createAppRes.Application.ID)
-	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
-	plan.VHost = pkg.FromStr(createAppRes.Application.Vhosts[0].Fqdn)
+	plan.ID = pkg.FromStr(createRes.Application.ID)
+	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
+	plan.VHost = pkg.FromStr(createRes.Application.Vhosts[0].Fqdn)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-	if resp.Diagnostics.HasError() {
+	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
+	if res.Diagnostics.HasError() {
 		return
 	}
 }
 
 // Read resource information
-func (r *ResourceScala) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state Scala
+func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *resource.ReadResponse) {
+	tflog.Debug(ctx, "Go READ", map[string]any{"request": req})
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	readRes, diags := application.ReadApp(ctx, r.cc, r.org, state.ID.ValueString())
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if readRes.AppIsDeleted {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	state.Name = pkg.FromStr(readRes.App.Name)
-	state.Description = pkg.FromStr(readRes.App.Description)
-	state.MinInstanceCount = pkg.FromI(int64(readRes.App.Instance.MinInstances))
-	state.MaxInstanceCount = pkg.FromI(int64(readRes.App.Instance.MaxInstances))
-	state.SmallestFlavor = pkg.FromStr(readRes.App.Instance.MinFlavor.Name)
-	state.BiggestFlavor = pkg.FromStr(readRes.App.Instance.MaxFlavor.Name)
-	state.Region = pkg.FromStr(readRes.App.Zone)
-	state.DeployURL = pkg.FromStr(readRes.App.DeployURL)
-
-	if readRes.App.SeparateBuild {
-		state.BuildFlavor = pkg.FromStr(readRes.App.BuildFlavor.Name)
-	} else {
-		state.BuildFlavor = types.StringNull()
-	}
-
-	vhosts := pkg.Map(readRes.App.Vhosts, func(vhost tmp.Vhost) string {
-		return vhost.Fqdn
-	})
-	hasDefaultVHost := pkg.HasSome(vhosts, func(vhost string) bool {
-		return pkg.VhostCleverAppsRegExp.MatchString(vhost)
-	})
-	if hasDefaultVHost {
-		cleverapps := *pkg.First(vhosts, func(vhost string) bool {
-			return pkg.VhostCleverAppsRegExp.MatchString(vhost)
-		})
-		state.VHost = pkg.FromStr(cleverapps)
-	} else {
-		state.VHost = types.StringNull()
-	}
-
-	vhostsWithoutDefault := pkg.Filter(vhosts, func(vhost string) bool {
-		ok := pkg.VhostCleverAppsRegExp.MatchString(vhost)
-		return !ok
-	})
-	if len(vhostsWithoutDefault) > 0 {
-		state.AdditionalVHosts = pkg.FromListString(vhostsWithoutDefault)
-	} else {
-		state.AdditionalVHosts = types.ListNull(types.StringType)
-	}
-
-	for envName, envValue := range readRes.EnvAsMap() {
-		switch envName {
-		case "APP_FOLDER":
-			state.AppFolder = pkg.FromStr(envValue)
-		default:
-			//state.Environment.
-		}
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-}
-
-// Update resource
-func (r *ResourceScala) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
-	tflog.Debug(ctx, "ResourceScala.Update()")
-
-	// Retrieve values from plan and state
-	plan := helper.PlanFrom[Scala](ctx, req.Plan, res.Diagnostics)
+	state := helper.StateFrom[Go](ctx, req.State, res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	state := helper.StateFrom[Scala](ctx, req.State, res.Diagnostics)
+
+	appRes, diags := application.ReadApp(ctx, r.cc, r.org, state.ID.ValueString())
+	res.Diagnostics.Append(diags...)
+	if res.Diagnostics.HasError() {
+		return
+	}
+	if appRes.AppIsDeleted {
+		res.State.RemoveResource(ctx)
+		return
+	}
+
+	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
+	state.VHost = pkg.FromStr(appRes.App.Vhosts[0].Fqdn)
+
+	diags = res.State.Set(ctx, state)
+	res.Diagnostics.Append(diags...)
+	if res.Diagnostics.HasError() {
+		return
+	}
+}
+
+// Update resource
+func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceGo.Update()")
+
+	// Retrieve values from plan and state
+	plan := helper.PlanFrom[Go](ctx, req.Plan, res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+	state := helper.StateFrom[Go](ctx, req.State, res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstance(ctx, r.cc, "java", "Scala + SBT", res.Diagnostics)
+	instance := application.LookupInstance(ctx, r.cc, "go", "Go", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -268,30 +227,29 @@ func (r *ResourceScala) Update(ctx context.Context, req resource.UpdateRequest, 
 }
 
 // Delete resource
-func (r *ResourceScala) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state Scala
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-	tflog.Debug(ctx, "SCALA DELETE", map[string]any{"state": state})
-
-	res := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
-	if res.IsNotFoundError() {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	if res.HasError() {
-		resp.Diagnostics.AddError("failed to delete app", res.Error().Error())
+func (r *ResourceGo) Delete(ctx context.Context, req resource.DeleteRequest, res *resource.DeleteResponse) {
+	state := helper.StateFrom[Go](ctx, req.State, res.Diagnostics)
+	if res.Diagnostics.HasError() {
 		return
 	}
 
-	resp.State.RemoveResource(ctx)
+	tflog.Debug(ctx, "Go DELETE", map[string]any{"state": state})
+
+	deleteRes := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
+	if deleteRes.IsNotFoundError() {
+		res.State.RemoveResource(ctx)
+		return
+	}
+	if deleteRes.HasError() {
+		res.Diagnostics.AddError("failed to delete app", deleteRes.Error().Error())
+		return
+	}
+
+	res.State.RemoveResource(ctx)
 }
 
 // Import resource
-func (r *ResourceScala) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+func (r *ResourceGo) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	// Save the import identifier in the id attribute
 	// and call Read() to fill fields
 	attr := path.Root("id")

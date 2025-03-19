@@ -30,7 +30,7 @@ func (r *ResourceDocker) Configure(ctx context.Context, req resource.ConfigureRe
 		r.org = provider.Organization()
 	}
 
-	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]interface{}{"cc": r.cc == nil, "org": r.org})
+	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
 }
 
 // Create a new resource
@@ -89,7 +89,7 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]interface{}{})
+	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]any{})
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
 	plan.VHost = pkg.FromStr(createAppRes.Application.Vhosts[0].Fqdn)
@@ -265,7 +265,7 @@ func (r *ResourceDocker) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "DOCKER DELETE", map[string]interface{}{"state": state})
+	tflog.Debug(ctx, "DOCKER DELETE", map[string]any{"state": state})
 
 	res := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
 	if res.IsNotFoundError() {

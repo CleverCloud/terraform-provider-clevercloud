@@ -44,7 +44,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 		))
 	}
 
-	selfRes := client.Get[map[string]interface{}](ctx, p.cc, "/v2/self")
+	selfRes := client.Get[map[string]any](ctx, p.cc, "/v2/self")
 	if selfRes.HasError() {
 		if selfRes.StatusCode() == 401 || selfRes.StatusCode() == 403 {
 			resp.Diagnostics.AddError("invalid CleverCloud Client configuration", selfRes.Error().Error())

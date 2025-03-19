@@ -87,7 +87,7 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 		acc[v.Name] = pkg.FromStr(v.Value)
 		return acc
 	})
-	tflog.Info(ctx, "API response", map[string]interface{}{
+	tflog.Info(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", envAsMap),
 	})
 	port, err := strconv.ParseInt(envAsMap["REDIS_PORT"].ValueString(), 10, 64)
@@ -106,7 +106,7 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 
 // Read resource information
 func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Redis READ", map[string]interface{}{"request": req})
+	tflog.Debug(ctx, "Redis READ", map[string]any{"request": req})
 
 	var rd Redis
 	diags := req.State.Get(ctx, &rd)
@@ -132,7 +132,7 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 
 	addonRD := addonRes.Payload()
-	tflog.Debug(ctx, "redis", map[string]interface{}{"payload": fmt.Sprintf("%+v", addonRD)})
+	tflog.Debug(ctx, "redis", map[string]any{"payload": fmt.Sprintf("%+v", addonRD)})
 
 	envRes := tmp.GetAddonEnv(ctx, r.cc, r.org, rd.ID.ValueString())
 	if envRes.HasError() {
@@ -145,7 +145,7 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 		acc[v.Name] = pkg.FromStr(v.Value)
 		return acc
 	})
-	tflog.Info(ctx, "API response", map[string]interface{}{
+	tflog.Info(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", envAsMap),
 	})
 	port, err := strconv.ParseInt(envAsMap["REDIS_PORT"].ValueString(), 10, 64)
@@ -181,7 +181,7 @@ func (r *ResourceRedis) Delete(ctx context.Context, req resource.DeleteRequest, 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Redis DELETE", map[string]interface{}{"rd": rd})
+	tflog.Debug(ctx, "Redis DELETE", map[string]any{"rd": rd})
 
 	res := tmp.DeleteAddon(ctx, r.cc, r.org, rd.ID.ValueString())
 	if res.IsNotFoundError() {
