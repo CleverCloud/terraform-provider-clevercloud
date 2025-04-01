@@ -28,9 +28,9 @@ var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 func TestAccNodejs_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := fmt.Sprintf("tf-test-node-%d", time.Now().UnixMilli())
-	rName2 := fmt.Sprintf("tf-test-node-%d-2", time.Now().UnixMilli())
+	//rName2 := fmt.Sprintf("tf-test-node-%d-2", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_nodejs.%s", rName)
-	fullName2 := fmt.Sprintf("clevercloud_nodejs.%s", rName2)
+	//fullName2 := fmt.Sprintf("clevercloud_nodejs.%s", rName2)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
@@ -44,6 +44,7 @@ func TestAccNodejs_basic(t *testing.T) {
 			"max_instance_count": 2,
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
+			"build_flavor":       "XL",
 			"redirect_https":     true,
 			"sticky_sessions":    true,
 			"app_folder":         "./app",
@@ -52,19 +53,19 @@ func TestAccNodejs_basic(t *testing.T) {
 		}),
 		helper.SetBlockValues("hooks", map[string]any{"post_build": "echo \"build is OK!\""}),
 	)
-	nodejsBlock2 := helper.NewRessource(
-		"clevercloud_nodejs",
-		rName2,
-		helper.SetKeyValues(map[string]any{
-			"name":               rName2,
-			"region":             "par",
-			"min_instance_count": 1,
-			"max_instance_count": 2,
-			"smallest_flavor":    "XS",
-			"biggest_flavor":     "M",
-		}),
-		helper.SetBlockValues("deployment", map[string]any{"repository": "https://github.com/CleverCloud/nodejs-example.git"}))
-
+	/*nodejsBlock2 := helper.NewRessource(
+	"clevercloud_nodejs",
+	rName2,
+	helper.SetKeyValues(map[string]any{
+		"name":               rName2,
+		"region":             "par",
+		"min_instance_count": 1,
+		"max_instance_count": 2,
+		"smallest_flavor":    "XS",
+		"biggest_flavor":     "M",
+	}),
+	helper.SetBlockValues("deployment", map[string]any{"repository": "https://github.com/CleverCloud/nodejs-example.git"}))
+	*/
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			if org == "" {
@@ -97,6 +98,7 @@ func TestAccNodejs_basic(t *testing.T) {
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
 				resource.TestCheckResourceAttr(fullName, "region", "par"),
+				resource.TestCheckResourceAttr(fullName, "build_flavor", "XL"),
 
 				// Test CleverCloud API for configured applications
 				func(state *terraform.State) error {
@@ -117,15 +119,19 @@ func TestAccNodejs_basic(t *testing.T) {
 					}
 
 					if app.Instance.MaxInstances != 2 {
-						return assertError("invalid name", app.Name, rName)
+						return assertError("invalid name", app.Instance.MaxInstances, 2)
 					}
 
 					if app.Instance.MinFlavor.Name != "XS" {
-						return assertError("invalid name", app.Name, rName)
+						return assertError("invalid name", app.Instance.MinFlavor.Name, "XS")
 					}
 
 					if app.Instance.MaxFlavor.Name != "M" {
-						return assertError("invalid name", app.Name, rName)
+						return assertError("invalid max instance name", app.Instance.MaxFlavor.Name, "M")
+					}
+
+					if app.BuildFlavor.Name != "XL" {
+						return assertError("invalid build flavor", app.BuildFlavor.Name, "XL")
 					}
 
 					if app.ForceHTTPS != "ENABLED" {
