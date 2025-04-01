@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.7.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.7.0...v0.7.1) (2025-04-01)
+
+
+### Bug Fixes
+
+* **nodejs:** apply build-flavor ([ef82251](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/ef82251922b8f0f03f1aff54bdd7abc955a46812)), closes [#128](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/128)
+
 ## [0.7.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.6.0...v0.7.0) (2025-03-19)
 
 
