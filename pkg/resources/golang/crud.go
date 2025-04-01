@@ -76,6 +76,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 			MaxFlavor:       plan.BiggestFlavor.ValueString(),
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
+			BuildFlavor:     plan.BuildFlavor.ValueString(),
 			StickySessions:  plan.StickySessions.ValueBool(),
 			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
