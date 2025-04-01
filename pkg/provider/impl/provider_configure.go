@@ -50,10 +50,10 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 			resp.Diagnostics.AddError("invalid CleverCloud Client configuration", selfRes.Error().Error())
 		} else {
 			resp.Diagnostics.AddError(
-				"Clever Cloud is not available :/",
+				"Unknown error from Clever Cloud",
 				fmt.Sprintf(
-					"you can contact the Clever Cloud support with the next Request ID: '%s'",
-					selfRes.SozuID(),
+					"Status %d, contact the Clever Cloud support with the next Request ID: '%s'",
+					selfRes.StatusCode(), selfRes.SozuID(),
 				))
 		}
 		return
