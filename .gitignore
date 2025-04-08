@@ -1,8 +1,7 @@
-.DS_Store
 vendor
-
 terraform-provider-clevercloud
 bin
+dist
 
 # Local .terraform directories
 **/.terraform/*
@@ -40,6 +39,3 @@ override.tf.json
 terraform.rc
 terraform
 
-.envrc
-
-.vscode/

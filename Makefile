@@ -3,8 +3,18 @@ HOSTNAME=registry.terraform.io
 NAMESPACE=CleverCloud
 NAME=clevercloud
 BINARY=terraform-provider-${NAME}
-VERSION=0.0.3
 OS_ARCH=linux_amd64
+TAG_COMMIT := $(shell git rev-list --abbrev-commit --tags --max-count=1)
+TAG := $(shell git describe --abbrev=0 --tags ${TAG_COMMIT} 2>/dev/null || true)
+COMMIT := $(shell git rev-parse --short HEAD)
+
+ifndef VERSION
+	ifeq ($(COMMIT), $(TAG_COMMIT))
+		VERSION := $(TAG)
+	else
+		VERSION := $(TAG)-$(COMMIT)
+	endif
+endif
 
 default: install
 
