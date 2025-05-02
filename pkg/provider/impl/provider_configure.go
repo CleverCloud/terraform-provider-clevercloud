@@ -32,28 +32,49 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 	}
 
 	// Allow to get creds from CLI config directory or by injected variables
-	if config.Secret.IsUnknown() ||
-		config.Token.IsUnknown() ||
-		config.Secret.IsNull() ||
-		config.Token.IsNull() {
-		p.cc = client.New(client.WithAutoOauthConfig())
-	} else {
-		p.cc = client.New(client.WithUserOauthConfig(
+	var clientOptions []func(*client.Client)
+	if !config.Endpoint.IsUnknown() && !config.Endpoint.IsNull() && config.Endpoint.ValueString() != "" {
+		clientOptions = append(clientOptions, client.WithEndpoint(config.Endpoint.ValueString()))
+	}
+
+	// New branch: allow setting all OAuth1 params
+	if !config.ConsumerKey.IsUnknown() && !config.ConsumerKey.IsNull() && config.ConsumerKey.ValueString() != "" &&
+		!config.ConsumerSecret.IsUnknown() && !config.ConsumerSecret.IsNull() && config.ConsumerSecret.ValueString() != "" &&
+		!config.Token.IsUnknown() && !config.Token.IsNull() && config.Token.ValueString() != "" &&
+		!config.Secret.IsUnknown() && !config.Secret.IsNull() && config.Secret.ValueString() != "" {
+		clientOptions = append(clientOptions, client.WithOauthConfig(
+			config.ConsumerKey.ValueString(),
+			config.ConsumerSecret.ValueString(),
 			config.Token.ValueString(),
 			config.Secret.ValueString(),
 		))
+		p.cc = client.New(clientOptions...)
+	} else if config.Secret.IsUnknown() ||
+		config.Token.IsUnknown() ||
+		config.Secret.IsNull() ||
+		config.Token.IsNull() {
+		clientOptions = append(clientOptions, client.WithAutoOauthConfig())
+		p.cc = client.New(clientOptions...)
+	} else {
+		clientOptions = append(clientOptions, client.WithUserOauthConfig(
+			config.Token.ValueString(),
+			config.Secret.ValueString(),
+		))
+		p.cc = client.New(clientOptions...)
 	}
 
 	selfRes := client.Get[map[string]any](ctx, p.cc, "/v2/self")
 	if selfRes.HasError() {
+		endpoint := config.Endpoint.ValueString()
+		tflog.Debug(ctx, fmt.Sprintf("CleverCloud client endpoint=%q", endpoint))
 		if selfRes.StatusCode() == 401 || selfRes.StatusCode() == 403 {
 			resp.Diagnostics.AddError("invalid CleverCloud Client configuration", selfRes.Error().Error())
 		} else {
 			resp.Diagnostics.AddError(
 				"Unknown error from Clever Cloud",
 				fmt.Sprintf(
-					"Status %d, contact the Clever Cloud support with the next Request ID: '%s'",
-					selfRes.StatusCode(), selfRes.SozuID(),
+					"Status %d, contact the Clever Cloud support with the next Request ID: '%s'\nError: %s",
+					selfRes.StatusCode(), selfRes.SozuID(), selfRes.Error().Error(),
 				))
 		}
 		return

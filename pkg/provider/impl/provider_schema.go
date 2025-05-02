@@ -18,6 +18,8 @@ type ProviderData struct {
 	Token        types.String `tfsdk:"token"`
 	Secret       types.String `tfsdk:"secret"`
 	Organisation types.String `tfsdk:"organisation"`
+	ConsumerKey  types.String `tfsdk:"consumer_key"`
+	ConsumerSecret types.String `tfsdk:"consumer_secret"`
 }
 
 //go:embed provider.md
@@ -49,6 +51,15 @@ func (p *Provider) Schema(_ context.Context, req provider.SchemaRequest, res *pr
 				Validators: []validator.String{
 					pkg.NewValidatorRegex("valid owner name", regexp.MustCompile(`^(user|orga)_.{36}`)),
 				},
+			},
+			"consumer_key": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "CleverCloud OAuth1 consumer key. Allows using a dedicated OAuth consumer.",
+			},
+			"consumer_secret": schema.StringAttribute{
+				Optional:            true,
+				Sensitive:           true,
+				MarkdownDescription: "CleverCloud OAuth1 consumer secret. Allows using a dedicated OAuth consumer.",
 			},
 		},
 	}
