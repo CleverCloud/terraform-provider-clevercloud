@@ -48,7 +48,7 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	instance := application.LookupInstance(ctx, r.cc, "node", "Node", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "node", resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -166,7 +166,7 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstance(ctx, r.cc, "node", "Node", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "node", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

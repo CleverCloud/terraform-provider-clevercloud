@@ -207,8 +207,11 @@ type DefaultFlavor struct {
 	Memory          Memory  `json:"memory"`
 }
 
-func GetProductInstance(ctx context.Context, cc *client.Client) client.Response[[]ProductInstance] {
+func GetProductInstance(ctx context.Context, cc *client.Client, ownerId *string) client.Response[[]ProductInstance] {
 	path := "/v2/products/instances"
+	if ownerId != nil {
+		path = fmt.Sprintf("%s?for=%s", path, *ownerId)
+	}
 	return client.Get[[]ProductInstance](ctx, cc, path)
 }
 

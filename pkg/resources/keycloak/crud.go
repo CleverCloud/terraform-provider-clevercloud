@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -33,17 +34,18 @@ func (r *ResourceKeycloak) Configure(ctx context.Context, req resource.Configure
 }
 
 // Create a new resource
-func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
 	kc := Keycloak{}
 
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &kc)...)
-	if resp.Diagnostics.HasError() {
+	helper.PlanFrom[Keycloak](ctx, req.Plan, res.Diagnostics)
+	res.Diagnostics.Append(req.Plan.Get(ctx, &kc)...)
+	if res.Diagnostics.HasError() {
 		return
 	}
 
 	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
 	if addonsProvidersRes.HasError() {
-		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
+		res.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
 	}
 
@@ -52,7 +54,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 
 	plan := pkg.LookupProviderPlan(provider, kc.Plan.ValueString())
 	if plan == nil {
-		resp.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
+		res.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
 		return
 	}
 
@@ -63,23 +65,23 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		Region:     kc.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
-	if res.HasError() {
-		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
+	createAddonRes := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
+	if createAddonRes.HasError() {
+		res.Diagnostics.AddError("failed to create Keycloak", createAddonRes.Error().Error())
 		return
 	}
 
-	kc.ID = pkg.FromStr(res.Payload().RealID)
-	kc.CreationDate = pkg.FromI(res.Payload().CreationDate)
+	kc.ID = pkg.FromStr(createAddonRes.Payload().RealID)
+	kc.CreationDate = pkg.FromI(createAddonRes.Payload().CreationDate)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, kc)...)
-	if resp.Diagnostics.HasError() {
+	res.Diagnostics.Append(res.State.Set(ctx, kc)...)
+	if res.Diagnostics.HasError() {
 		return
 	}
 
 	kcEnvRes := tmp.GetAddonEnv(ctx, r.cc, r.org, kc.ID.ValueString())
 	if kcEnvRes.HasError() {
-		resp.Diagnostics.AddError("failed to get Keycloak connection infos", kcEnvRes.Error().Error())
+		res.Diagnostics.AddError("failed to get Keycloak connection infos", kcEnvRes.Error().Error())
 		return
 	}
 
@@ -92,14 +94,14 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		return v.Name == "CC_KEYCLOAK_URL"
 	})
 	if hostEnvVar == nil {
-		resp.Diagnostics.AddError("cannot get Keycloak infos", "missing CC_KEYCLOAK_URL env var on created addon")
+		res.Diagnostics.AddError("cannot get Keycloak infos", "missing CC_KEYCLOAK_URL env var on created addon")
 		return
 	}
 
 	kc.Host = pkg.FromStr(hostEnvVar.Value)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, kc)...)
-	if resp.Diagnostics.HasError() {
+	res.Diagnostics.Append(res.State.Set(ctx, kc)...)
+	if res.Diagnostics.HasError() {
 		return
 	}
 }

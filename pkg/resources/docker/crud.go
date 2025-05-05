@@ -42,7 +42,7 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	instance := application.LookupInstance(ctx, r.cc, "docker", "Docker", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "docker", resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -177,7 +177,7 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstance(ctx, r.cc, "docker", "Docker", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "docker", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

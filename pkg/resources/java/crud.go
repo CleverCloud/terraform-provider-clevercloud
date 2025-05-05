@@ -42,7 +42,7 @@ func (r *ResourceJava) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	instance := application.LookupInstance(ctx, r.cc, "java", r.toProductName(), resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, r.profile, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -189,7 +189,7 @@ func (r *ResourceJava) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstance(ctx, r.cc, "java", r.toProductName(), res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, r.profile, res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
