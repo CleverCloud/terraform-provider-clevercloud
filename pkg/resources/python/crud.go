@@ -48,7 +48,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	instance := application.LookupInstance(ctx, r.cc, "python", "Python", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "python", resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -151,7 +151,7 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstance(ctx, r.cc, "python", "Python", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "python", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

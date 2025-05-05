@@ -42,7 +42,7 @@ func (r *ResourceStatic) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	instance := application.LookupInstance(ctx, r.cc, "php", "Static", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "static-apache", resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -187,7 +187,7 @@ func (r *ResourceStatic) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstance(ctx, r.cc, "php", "Static", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "static-apache", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

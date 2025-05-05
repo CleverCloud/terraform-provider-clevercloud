@@ -42,7 +42,7 @@ func (r *ResourceScala) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	instance := application.LookupInstance(ctx, r.cc, "java", "Scala + SBT", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "sbt", resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -187,7 +187,7 @@ func (r *ResourceScala) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstance(ctx, r.cc, "java", "Scala + SBT", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "sbt", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

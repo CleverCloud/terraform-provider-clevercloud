@@ -49,7 +49,11 @@ lint:
 testacc:
 	TF_ACC=1 go test ./... -v $(TESTARGS) -timeout 120m
 
+
 .PHONY: docs
 docs:
 	tfplugindocs generate
+# https://github.com/hashicorp/terraform-plugin-docs/pull/446
+	sed -i '/subcategory*/d' ./docs/index.md
+	find ./docs/resources/* -type f -exec sed -i '/subcategory*/d' {} \;
 	tfplugindocs validate

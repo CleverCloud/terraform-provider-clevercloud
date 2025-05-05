@@ -41,7 +41,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	instance := application.LookupInstance(ctx, r.cc, "php", "PHP", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "php", resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -175,7 +175,7 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	instance := application.LookupInstance(ctx, r.cc, "php", "PHP", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "php", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

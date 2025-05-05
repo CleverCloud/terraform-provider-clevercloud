@@ -46,7 +46,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 		return
 	}
 
-	instance := application.LookupInstance(ctx, r.cc, "go", "Go", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "go", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -147,7 +147,7 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstance(ctx, r.cc, "go", "Go", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "go", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

@@ -27,12 +27,3 @@ func (r *ResourceJava) Metadata(ctx context.Context, req resource.MetadataReques
 		res.TypeName = res.TypeName + "_" + r.profile
 	}
 }
-
-// Convert a profile into product name
-func (r *ResourceJava) toProductName() string {
-	m := map[string]string{
-		"war": "Java + WAR",
-	}
-
-	return m[r.profile]
-}
