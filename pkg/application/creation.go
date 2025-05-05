@@ -109,6 +109,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	envRes := tmp.UpdateAppEnv(ctx, req.Client, req.Organization, res.Application.ID, req.Environment)
 	if envRes.HasError() {
 		diags.AddError("failed to configure application environment", envRes.Error().Error())
+		return nil, diags
 	}
 
 	// VHosts
@@ -116,6 +117,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 		addVhostRes := tmp.AddAppVHost(ctx, req.Client, req.Organization, res.Application.ID, vhost)
 		if addVhostRes.HasError() {
 			diags.AddError("failed to add additional vhost", addVhostRes.Error().Error())
+			return nil, diags
 		}
 	}
 	// TODO: old vhost need to be cleaned
@@ -123,6 +125,9 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	// Git Deployment
 	if req.Deployment != nil {
 		diags.Append(gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
+		if diags.HasError() {
+			return nil, diags
+		}
 	}
 
 	// Dependencies
@@ -133,6 +138,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 		if depRes.HasError() {
 			tflog.Error(ctx, "ERROR: "+dependency, map[string]any{"err": depRes.Error().Error()})
 			diags.AddError("failed to add dependency", depRes.Error().Error())
+			return nil, diags
 		}
 	}
 	// TODO: unlink unneeded deps
