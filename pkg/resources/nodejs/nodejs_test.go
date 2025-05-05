@@ -64,7 +64,10 @@ func TestAccNodejs_basic(t *testing.T) {
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
 		}),
-		helper.SetBlockValues("deployment", map[string]any{"repository": "https://github.com/CleverCloud/nodejs-example.git"}))
+		helper.SetBlockValues("deployment", map[string]any{
+			"repository": "https://github.com/CleverCloud/nodejs-example.git",
+			"commit":     "a397296e135b24e682a011e31f8e15f2fa8a5a0e",
+		}))
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
