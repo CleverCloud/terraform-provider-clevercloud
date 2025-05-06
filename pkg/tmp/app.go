@@ -238,9 +238,19 @@ func UpdateApp(ctx context.Context, cc *client.Client, organisationID, applicati
 	return client.Put[CreatAppResponse](ctx, cc, path, req)
 }
 
+func GetAppVhosts(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[[]Vhost] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/vhosts", organisationID, applicationID)
+	return client.Get[[]Vhost](ctx, cc, path)
+}
+
 func AddAppVHost(ctx context.Context, cc *client.Client, organisationID, applicationID, vhost string) client.Response[any] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/vhosts/%s", organisationID, applicationID, vhost)
 	return client.Put[any](ctx, cc, path, map[string]string{})
+}
+
+func DeleteAppVHost(ctx context.Context, cc *client.Client, organisationID, applicationID, vhost string) client.Response[any] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/vhosts/%s", organisationID, applicationID, vhost)
+	return client.Delete[any](ctx, cc, path)
 }
 
 func AddAppLinkedAddons(ctx context.Context, cc *client.Client, organisationID, applicationID, addonID string) client.Response[client.Nothing] {
