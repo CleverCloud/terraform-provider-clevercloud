@@ -3,6 +3,8 @@ package application
 import (
 	"context"
 	"fmt"
+	"net/url"
+	"slices"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -64,12 +66,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	}
 
 	// VHosts
-	for _, vhost := range req.VHosts {
-		addVhostRes := tmp.AddAppVHost(ctx, req.Client, req.Organization, res.Application.ID, vhost)
-		if addVhostRes.HasError() {
-			diags.AddError("failed to add additional vhost", addVhostRes.Error().Error())
-		}
-	}
+	UpdateVhosts(ctx, req.Client, req.Organization, req.VHosts, diags, res.Application.ID)
 
 	// Git Deployment
 	if req.Deployment != nil {
@@ -113,14 +110,10 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	}
 
 	// VHosts
-	for _, vhost := range req.VHosts {
-		addVhostRes := tmp.AddAppVHost(ctx, req.Client, req.Organization, res.Application.ID, vhost)
-		if addVhostRes.HasError() {
-			diags.AddError("failed to add additional vhost", addVhostRes.Error().Error())
-			return nil, diags
-		}
+	updateSuccess := UpdateVhosts(ctx, req.Client, req.Organization, req.VHosts, diags, res.Application.ID)
+	if !updateSuccess {
+		return nil, diags
 	}
-	// TODO: old vhost need to be cleaned
 
 	// Git Deployment
 	if req.Deployment != nil {
@@ -153,4 +146,62 @@ func FromForceHTTPS(force bool) string {
 	} else {
 		return "DISABLED"
 	}
+}
+
+func UpdateVhosts(ctx context.Context, client *client.Client, organization string, reqVhosts []string, diags diag.Diagnostics, applicationID string) bool {
+
+	// Get current vhosts from remote
+	vhostsRes := tmp.GetAppVhosts(ctx, client, organization, applicationID)
+	if vhostsRes.HasError() {
+		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
+		return false
+	}
+
+	remoteVhosts := []string{}
+	for _, vhost := range *vhostsRes.Payload() {
+		remoteVhosts = append(remoteVhosts, vhost.Fqdn)
+	}
+
+	tflog.Debug(ctx, "Config vhosts:", map[string]any{"vhosts": reqVhosts})
+	tflog.Debug(ctx, "Remote vhosts:", map[string]any{"vhosts": remoteVhosts})
+
+	// Get vhosts defined in config
+	vhostsToAdd := []string{}
+
+	for _, vhost := range reqVhosts {
+		if !slices.Contains(remoteVhosts, vhost) {
+			vhostsToAdd = append(vhostsToAdd, vhost)
+		}
+	}
+
+	tflog.Debug(ctx, "Vhosts to add:", map[string]any{"vhostsToAdd": vhostsToAdd})
+
+	vhostsToRemove := []string{}
+	for _, vhost := range remoteVhosts {
+		if !slices.Contains(reqVhosts, vhost) {
+			vhostsToRemove = append(vhostsToRemove, vhost)
+		}
+	}
+
+	tflog.Debug(ctx, "Vhosts to remove:", map[string]any{"vhostsToRemove": vhostsToRemove})
+
+	// Delete vhosts that need to be removed
+	for _, vhost := range vhostsToRemove {
+		deleteVhostRes := tmp.DeleteAppVHost(ctx, client, organization, applicationID, url.QueryEscape(vhost))
+		if deleteVhostRes.HasError() {
+			diags.AddError(fmt.Sprintf("failed to remove vhost \"%s\"", vhost), deleteVhostRes.Error().Error())
+			return false
+		}
+	}
+
+	// Add new vhosts
+	for _, vhost := range vhostsToAdd {
+		addVhostRes := tmp.AddAppVHost(ctx, client, organization, applicationID, url.QueryEscape(vhost))
+		if addVhostRes.HasError() {
+			diags.AddError(fmt.Sprintf("failed to add vhost \"%s\"", vhost), addVhostRes.Error().Error())
+			return false
+		}
+	}
+
+	return true
 }
