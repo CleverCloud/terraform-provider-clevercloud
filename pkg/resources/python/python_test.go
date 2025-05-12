@@ -184,16 +184,20 @@ func TestAccPython_basic(t *testing.T) {
 			Check: func(state *terraform.State) error {
 				id := state.RootModule().Resources[fullName2].Primary.ID
 
-				appRes := tmp.GetApp(ctx, cc, org, id)
-				if appRes.HasError() {
-					return fmt.Errorf("failed to get application: %w", appRes.Error())
+				vhostsRes := tmp.GetAppVhosts(ctx, cc, org, id)
+				if vhostsRes.HasError() {
+					return fmt.Errorf("failed to get application: %w", vhostsRes.Error())
 				}
-				app := appRes.Payload()
+				vhosts := vhostsRes.Payload()
+
+				if len(*vhosts) == 0 {
+					return fmt.Errorf("there is no vhost for app: %s", id)
+				}
 
 				// Test deployed app
 				t := time.NewTimer(2 * time.Minute)
 				select {
-				case <-healthCheck(app.Vhosts[0].Fqdn):
+				case <-healthCheck(vhosts.CleverAppsFQDN(id).Fqdn):
 					return nil
 				case <-t.C:
 					return fmt.Errorf("application did not respond in the allowed time")

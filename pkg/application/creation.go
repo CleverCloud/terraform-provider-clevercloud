@@ -156,20 +156,16 @@ func UpdateVhosts(ctx context.Context, client *client.Client, organization strin
 		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
 		return false
 	}
-
-	remoteVhosts := []string{}
-	for _, vhost := range *vhostsRes.Payload() {
-		remoteVhosts = append(remoteVhosts, vhost.Fqdn)
-	}
+	remoteVHosts := vhostsRes.Payload().WithoutCleverApps(applicationID)
 
 	tflog.Debug(ctx, "Config vhosts:", map[string]any{"vhosts": reqVhosts})
-	tflog.Debug(ctx, "Remote vhosts:", map[string]any{"vhosts": remoteVhosts})
+	tflog.Debug(ctx, "Remote vhosts:", map[string]any{"vhosts": remoteVHosts})
 
 	// Get vhosts defined in config
 	vhostsToAdd := []string{}
 
-	for _, vhost := range reqVhosts {
-		if !slices.Contains(remoteVhosts, vhost) {
+	for _, vhost := range reqVhosts { // we cannot add a cleverapps domain with the app_ prefix
+		if !slices.Contains(remoteVHosts.AsString(), vhost) {
 			vhostsToAdd = append(vhostsToAdd, vhost)
 		}
 	}
@@ -177,9 +173,9 @@ func UpdateVhosts(ctx context.Context, client *client.Client, organization strin
 	tflog.Debug(ctx, "Vhosts to add:", map[string]any{"vhostsToAdd": vhostsToAdd})
 
 	vhostsToRemove := []string{}
-	for _, vhost := range remoteVhosts {
-		if !slices.Contains(reqVhosts, vhost) {
-			vhostsToRemove = append(vhostsToRemove, vhost)
+	for _, vhost := range remoteVHosts {
+		if !slices.Contains(reqVhosts, vhost.Fqdn) {
+			vhostsToRemove = append(vhostsToRemove, vhost.Fqdn)
 		}
 	}
 

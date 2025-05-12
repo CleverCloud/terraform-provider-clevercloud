@@ -135,9 +135,7 @@ func (r *ResourceStatic) Read(ctx context.Context, req resource.ReadRequest, res
 		state.BuildFlavor = types.StringNull()
 	}
 
-	vhosts := pkg.Map(readRes.App.Vhosts, func(vhost tmp.Vhost) string {
-		return vhost.Fqdn
-	})
+	vhosts := readRes.App.Vhosts.AsString()
 	hasDefaultVHost := pkg.HasSome(vhosts, func(vhost string) bool {
 		return pkg.VhostCleverAppsRegExp.MatchString(vhost)
 	})

@@ -3,6 +3,8 @@ package tmp
 import (
 	"context"
 	"fmt"
+	"iter"
+	"strings"
 
 	"go.clever-cloud.dev/client"
 )
@@ -32,7 +34,7 @@ type CreatAppResponse struct {
 	Zone           string      `json:"zone"`
 	Instance       Instance    `json:"instance"`
 	Deployment     Deployment  `json:"deployment"`
-	Vhosts         []Vhost     `json:"vhosts"`
+	Vhosts         VHosts      `json:"vhosts"`
 	CreationDate   int64       `json:"creationDate"`
 	LastDeploy     int         `json:"last_deploy"`
 	Archived       bool        `json:"archived"`
@@ -128,9 +130,65 @@ type Deployment struct {
 	URL          string `json:"url"`
 	HTTPURL      string `json:"httpUrl"`
 }
-type Vhost struct {
+type VHosts []VHost
+type VHost struct {
 	Fqdn string `json:"fqdn"`
 }
+
+func (vhosts VHosts) First() *VHost {
+	if len(vhosts) == 0 {
+		return nil
+	}
+	return &vhosts[0]
+}
+
+func (vhosts VHosts) AsString() []string {
+	result := make([]string, len(vhosts))
+	for i, vhost := range vhosts {
+		result[i] = vhost.Fqdn
+	}
+	return result
+}
+
+func (vhosts VHosts) AllAsString() iter.Seq[string] {
+	return func(yield func(string) bool) {
+		for _, vhost := range vhosts {
+			if !yield(vhost.Fqdn) {
+				return
+			}
+		}
+	}
+}
+
+// remove default domain (cleverapps one)
+// Ex: app-7a1f2c81-bb18-4682-95fc-b7187a056150.cleverapps.io
+func (vhosts VHosts) WithoutCleverApps(appId string) VHosts {
+	cleverapps := fmt.Sprintf("%s.cleverapps.io", strings.ReplaceAll(appId, "_", "-"))
+	result := []VHost{}
+
+	for _, vhost := range vhosts {
+		if vhost.Fqdn == cleverapps {
+			continue
+		}
+
+		result = append(result, vhost)
+	}
+
+	return result
+}
+
+func (vhosts VHosts) CleverAppsFQDN(appId string) *VHost {
+	cleverapps := fmt.Sprintf("%s.cleverapps.io", strings.ReplaceAll(appId, "_", "-"))
+
+	for _, vhost := range vhosts {
+		if vhost.Fqdn == cleverapps {
+			return &vhost
+		}
+	}
+
+	return nil
+}
+
 type BuildFlavor struct {
 	Name            string  `json:"name"`
 	Mem             int     `json:"mem"`
@@ -238,9 +296,9 @@ func UpdateApp(ctx context.Context, cc *client.Client, organisationID, applicati
 	return client.Put[CreatAppResponse](ctx, cc, path, req)
 }
 
-func GetAppVhosts(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[[]Vhost] {
+func GetAppVhosts(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[VHosts] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/vhosts", organisationID, applicationID)
-	return client.Get[[]Vhost](ctx, cc, path)
+	return client.Get[VHosts](ctx, cc, path)
 }
 
 func AddAppVHost(ctx context.Context, cc *client.Client, organisationID, applicationID, vhost string) client.Response[any] {

@@ -123,7 +123,7 @@ func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *re
 	}
 
 	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
-	state.VHost = pkg.FromStr(appRes.App.Vhosts[0].Fqdn)
+	//state.VHost = pkg.FromStr(appRes.App.Vhosts[0].Fqdn) // TODO
 
 	diags = res.State.Set(ctx, state)
 	res.Diagnostics.Append(diags...)

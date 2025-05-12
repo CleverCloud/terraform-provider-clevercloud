@@ -97,7 +97,12 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 
 	plan.ID = pkg.FromStr(createRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
-	plan.VHost = pkg.FromStr(createRes.Application.Vhosts[0].Fqdn)
+	plan.VHost = pkg.FromStr(
+		createRes.Application.Vhosts.CleverAppsFQDN(createRes.Application.ID).Fqdn,
+	)
+	plan.AdditionalVHosts = pkg.FromListString(
+		createRes.Application.Vhosts.WithoutCleverApps(createRes.Application.ID).AsString(),
+	)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
@@ -127,7 +132,7 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	app.DeployURL = pkg.FromStr(appRes.App.DeployURL)
-	app.VHost = pkg.FromStr(appRes.App.Vhosts[0].Fqdn)
+	// app.VHost = pkg.FromStr(appRes.App.Vhosts[0].Fqdn) TODO
 
 	diags = resp.State.Set(ctx, app)
 	resp.Diagnostics.Append(diags...)
