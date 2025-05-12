@@ -22,6 +22,10 @@ func FromI(i int64) types.Int64 {
 
 // Convert a native int64 into a tfsdk one
 func FromListString(items []string) types.List {
+	if len(items) == 0 {
+		return types.ListNull(types.StringType)
+	}
+
 	return types.ListValueMust(
 		types.StringType,
 		Map(items, func(item string) attr.Value {

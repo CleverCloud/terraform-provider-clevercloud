@@ -134,9 +134,7 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 		state.BuildFlavor = types.StringNull()
 	}
 
-	vhosts := pkg.Map(app.App.Vhosts, func(vhost tmp.Vhost) string {
-		return vhost.Fqdn
-	})
+	vhosts := app.App.Vhosts.AsString()
 	hasDefaultVHost := pkg.HasSome(vhosts, func(vhost string) bool {
 		return pkg.VhostCleverAppsRegExp.MatchString(vhost)
 	})
