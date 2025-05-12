@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.7.2](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.7.1...v0.7.2) (2025-05-12)
+
+
+### Bug Fixes
+
+* **apps:** cleverapps default domain ([cd3c305](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/cd3c30524cf6ea24af78eef0cdba2b4269a8fcf6))
+* **git:** return erro if commit does not exists ([cd6a7f3](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/cd6a7f3d240c627b63d30d91d3b5a957e8b59aac))
+* magic image ([d093643](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/d093643ade4e7789793fe93dc9b771c9bde00417))
+* push ([9dea69c](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/9dea69ce2ff6a821d111a97667cabb5331e0fac5))
+
 ## [0.7.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.7.0...v0.7.1) (2025-04-01)
 
 
