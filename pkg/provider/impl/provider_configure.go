@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.dev/client"
 )
 
@@ -19,6 +20,11 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	// Sentry, on the higher CONFIGURABLE level
+	if config.ErrorReports.ValueBool() {
+		pkg.SetupSentry()
 	}
 
 	if config.Organisation.IsUnknown() || config.Organisation.IsNull() {

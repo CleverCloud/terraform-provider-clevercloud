@@ -4,8 +4,12 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
+	"os"
 
+	"github.com/getsentry/sentry-go"
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
 )
 
@@ -24,6 +28,19 @@ func main() {
 		Address:         "registry.terraform.io/hashicorp/clevercloud",
 		Debug:           debug,
 		ProtocolVersion: 6,
+	}
+
+	if os.Getenv("CC_TELEMETRY") == "true" {
+		pkg.SetupSentry()
+
+		defer func() {
+			if r := recover(); r != nil {
+				ev := sentry.NewEvent()
+				ev.Message = "panic in provider"
+				ev.Extra["panic"] = fmt.Sprintf("%+v", r)
+				sentry.CaptureEvent(ev)
+			}
+		}()
 	}
 
 	err := providerserver.Serve(ctx, impl.New(version), opts)
