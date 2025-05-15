@@ -3,6 +3,7 @@ package tmp
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	"go.clever-cloud.dev/client"
@@ -67,6 +68,10 @@ func GetAddonsProviders(ctx context.Context, cc *client.Client) client.Response[
 
 func CreateAddon(ctx context.Context, cc *client.Client, organisation string, addon AddonRequest) client.Response[AddonResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/addons", organisation)
+
+	j, _ := json.Marshal(addon)
+	fmt.Printf("%s\n%s\n", path, string(j))
+
 	return client.Post[AddonResponse](ctx, cc, path, addon)
 }
 
@@ -168,13 +173,19 @@ type EnvVar struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
+type EnvVars []EnvVar
 
 func GetAddon(ctx context.Context, cc *client.Client, organisation string, addon string) client.Response[AddonResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/addons/%s", organisation, addon)
 	return client.Get[AddonResponse](ctx, cc, path)
 }
 
-func GetAddonEnv(ctx context.Context, cc *client.Client, organisation string, addon string) client.Response[[]EnvVar] {
+func GetAddonEnv(ctx context.Context, cc *client.Client, organisation string, addon string) client.Response[EnvVars] {
 	path := fmt.Sprintf("/v2/organisations/%s/addons/%s/env", organisation, addon)
-	return client.Get[[]EnvVar](ctx, cc, path)
+	return client.Get[EnvVars](ctx, cc, path)
+}
+
+func UpdateAddon(ctx context.Context, cc *client.Client, organisation string, addon string, env map[string]string) client.Response[AddonResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/addons/%s", organisation, addon)
+	return client.Put[AddonResponse](ctx, cc, path, env)
 }

@@ -20,7 +20,7 @@ type CellarCreds struct {
 }
 
 // Extract S3 credentials from Clever Cloud Cellar exposed env vars
-func FromEnvVars(envVars []tmp.EnvVar) *CellarCreds {
+func FromEnvVars(envVars tmp.EnvVars) *CellarCreds {
 	creds := &CellarCreds{}
 
 	for _, envVar := range envVars {
@@ -38,7 +38,7 @@ func FromEnvVars(envVars []tmp.EnvVar) *CellarCreds {
 	return creds
 }
 
-func MinioClientFromEnvsFor(envVars []tmp.EnvVar) (*minio.Client, error) {
+func MinioClientFromEnvsFor(envVars tmp.EnvVars) (*minio.Client, error) {
 	creds := FromEnvVars(envVars)
 	return minioClientFor(creds.Host, creds.KeyID, creds.KeySecret)
 }
