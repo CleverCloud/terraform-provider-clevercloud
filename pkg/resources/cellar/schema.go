@@ -32,7 +32,10 @@ func (r ResourceCellar) Schema(_ context.Context, req resource.SchemaRequest, re
 		MarkdownDescription: resourceCellarDoc,
 		Attributes: map[string]schema.Attribute{
 			// customer provided
-			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the Cellar"},
+			"name": schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "Name of the Cellar",
+			},
 			"region": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -41,10 +44,22 @@ func (r ResourceCellar) Schema(_ context.Context, req resource.SchemaRequest, re
 			},
 
 			// provider
-			"id":         schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"host":       schema.StringAttribute{Computed: true, MarkdownDescription: "S3 compatible Cellar endpoint", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"key_id":     schema.StringAttribute{Computed: true, MarkdownDescription: "Key ID used to authenticate"},
-			"key_secret": schema.StringAttribute{Computed: true, Sensitive: true, MarkdownDescription: "Key secret used to authenticate"},
+			"id": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "Generated unique identifier",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
+			"host": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "S3 compatible Cellar endpoint",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"key_id": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "Key ID used to authenticate"},
+			"key_secret": schema.StringAttribute{
+				Computed:            true,
+				Sensitive:           true,
+				MarkdownDescription: "Key secret used to authenticate"},
 		},
 	}
 }

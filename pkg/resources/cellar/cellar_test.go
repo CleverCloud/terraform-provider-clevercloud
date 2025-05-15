@@ -26,6 +26,7 @@ var TestProtoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 func TestAccCellar_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := fmt.Sprintf("tf-test-cellar-%d", time.Now().UnixMilli())
+	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_cellar.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
@@ -49,6 +50,17 @@ func TestAccCellar_basic(t *testing.T) {
 			ResourceName: "cellar_" + rName,
 			Config:       providerBlock.Append(cellarBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(fullName, "name", rName),
+				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^cellar_.*`)),
+				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*\.services.clever-cloud.com$`)),
+				resource.TestMatchResourceAttr(fullName, "key_id", regexp.MustCompile(`^[A-Z0-9]{20}$`)),
+				resource.TestMatchResourceAttr(fullName, "key_secret", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
+			),
+		}, {
+			ResourceName: "cellar_" + rName,
+			Config:       providerBlock.Append(cellarBlock.SetOneValue("name", rNameEdited)).String(),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(fullName, "name", rNameEdited),
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^cellar_.*`)),
 				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*\.services.clever-cloud.com$`)),
 				resource.TestMatchResourceAttr(fullName, "key_id", regexp.MustCompile(`^[A-Z0-9]{20}$`)),
