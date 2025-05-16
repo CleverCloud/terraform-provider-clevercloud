@@ -7,6 +7,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar/bucket"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/docker"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/fsbucket"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/golang"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/java"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/keycloak"
@@ -28,6 +29,7 @@ var Resources = []func() resource.Resource{
 	addon.NewResourceAddon,
 	bucket.NewResourceCellarBucket,
 	cellar.NewResourceCellar,
+	fsbucket.NewResourceFSBucket,
 	java.NewResourceJava("war"),
 	materiakv.NewResourceMateriaKV,
 	metabase.NewResourceMetabase,
