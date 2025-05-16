@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.8.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.7.2...v0.8.0) (2025-05-16)
+
+
+### Features
+
+* **cellar:** support update ([9ad14d8](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/9ad14d8cf7430ccc209dcf4f5bed903a7de3c9e8)), closes [#141](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/141)
+* **fsbucket:** init ([e06943b](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/e06943ba79061c2073e39bf0776b6f48d7ef879b)), closes [#144](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/144)
+
 ## [0.7.2](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.7.1...v0.7.2) (2025-05-12)
 
 
