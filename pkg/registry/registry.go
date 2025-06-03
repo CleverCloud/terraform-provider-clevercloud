@@ -16,6 +16,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/mongodb"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/nodejs"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/php"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/play2"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/postgresql"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/python"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/redis"
@@ -44,4 +45,5 @@ var Resources = []func() resource.Resource{
 	keycloak.NewResourceKeycloak,
 	redis.NewResourceRedis,
 	golang.NewResourceGo,
+	play2.NewResourcePlay2(),
 }
