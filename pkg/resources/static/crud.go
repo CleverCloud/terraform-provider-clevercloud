@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
@@ -48,11 +48,7 @@ func (r *ResourceStatic) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	vhosts := []string{}
-	resp.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
 
 	environment := plan.toEnv(ctx, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -93,7 +89,29 @@ func (r *ResourceStatic) Create(ctx context.Context, req resource.CreateRequest,
 	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]any{})
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
-	plan.VHost = pkg.FromStr(createAppRes.Application.Vhosts[0].Fqdn)
+	// legacy, to drop
+	plan.VHost = basetypes.NewStringNull()
+
+	createdVhosts := createAppRes.Application.Vhosts
+	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
+		plan.VHosts, _ = pkg.FromSetString(createdVhosts.AsString())
+	} else { // practitionner give it's own vhost, remove cleverapps one
+
+		deleteVhostRes := tmp.DeleteAppVHost(
+			ctx,
+			r.cc,
+			r.org,
+			plan.ID.ValueString(),
+			createdVhosts.CleverAppsFQDN(plan.ID.ValueString()).Fqdn,
+		)
+		if deleteVhostRes.HasError() {
+			diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
+			return
+		}
+
+		plan.VHosts, diags = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString())
+		resp.Diagnostics.Append(diags...)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
@@ -132,27 +150,8 @@ func (r *ResourceStatic) Read(ctx context.Context, req resource.ReadRequest, res
 	state.BuildFlavor = readRes.GetBuildFlavor()
 
 	vhosts := readRes.App.Vhosts.AsString()
-	hasDefaultVHost := pkg.HasSome(vhosts, func(vhost string) bool {
-		return pkg.VhostCleverAppsRegExp.MatchString(vhost)
-	})
-	if hasDefaultVHost {
-		cleverapps := *pkg.First(vhosts, func(vhost string) bool {
-			return pkg.VhostCleverAppsRegExp.MatchString(vhost)
-		})
-		state.VHost = pkg.FromStr(cleverapps)
-	} else {
-		state.VHost = types.StringNull()
-	}
-
-	vhostsWithoutDefault := pkg.Filter(vhosts, func(vhost string) bool {
-		ok := pkg.VhostCleverAppsRegExp.MatchString(vhost)
-		return !ok
-	})
-	if len(vhostsWithoutDefault) > 0 {
-		state.AdditionalVHosts = pkg.FromListString(vhostsWithoutDefault)
-	} else {
-		state.AdditionalVHosts = types.ListNull(types.StringType)
-	}
+	state.VHosts, _ = pkg.FromSetString(vhosts)
+	state.VHost = basetypes.NewStringNull()
 
 	for envName, envValue := range readRes.EnvAsMap() {
 		switch envName {
@@ -197,10 +196,7 @@ func (r *ResourceStatic) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Same as env but with vhosts
-	vhosts := []string{}
-	if res.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...); res.Diagnostics.HasError() {
-		return
-	}
+	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
 
 	// Get the updated values from plan and instance
 	updateAppReq := application.UpdateReq{
@@ -231,34 +227,14 @@ func (r *ResourceStatic) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Correctly named: update the app (via PUT Method)
-	_, diags := application.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	//
-	hasDefaultVHost := pkg.HasSome(updateAppReq.VHosts, func(vhost string) bool {
-		return pkg.VhostCleverAppsRegExp.MatchString(vhost)
-	})
-	if hasDefaultVHost {
-		cleverapps := *pkg.First(vhosts, func(vhost string) bool {
-			return pkg.VhostCleverAppsRegExp.MatchString(vhost)
-		})
-		plan.VHost = pkg.FromStr(cleverapps)
-	} else {
-		plan.VHost = types.StringNull()
-	}
-
-	vhostsWithoutDefault := pkg.Filter(updateAppReq.VHosts, func(vhost string) bool {
-		ok := pkg.VhostCleverAppsRegExp.MatchString(vhost)
-		return !ok
-	})
-	if len(vhostsWithoutDefault) > 0 {
-		plan.AdditionalVHosts = pkg.FromListString(vhostsWithoutDefault)
-	} else {
-		plan.AdditionalVHosts = types.ListNull(types.StringType)
-	}
+	plan.VHosts, _ = pkg.FromSetString(updatedApp.Application.Vhosts.AsString())
+	plan.VHost = basetypes.NewStringNull()
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {

@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
@@ -41,11 +41,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 		return
 	}
 
-	vhosts := []string{}
-	res.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
+	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
 
 	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "go", res.Diagnostics)
 	if res.Diagnostics.HasError() {
@@ -96,8 +92,28 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 
 	plan.ID = pkg.FromStr(createRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
-	plan.VHost = pkg.FromStr(createRes.Application.Vhosts[0].Fqdn)
 	plan.BuildFlavor = createRes.GetBuildFlavor()
+	plan.VHost = basetypes.NewStringNull()
+
+	createdVhosts := createRes.Application.Vhosts
+	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
+		plan.VHosts, _ = pkg.FromSetString(createdVhosts.AsString())
+	} else { // practitionner give it's own vhost, remove cleverapps one
+
+		deleteVhostRes := tmp.DeleteAppVHost(
+			ctx,
+			r.cc,
+			r.org,
+			plan.ID.ValueString(),
+			createdVhosts.CleverAppsFQDN(plan.ID.ValueString()).Fqdn,
+		)
+		if deleteVhostRes.HasError() {
+			diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
+			return
+		}
+
+		plan.VHosts, _ = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString())
+	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {
@@ -135,7 +151,10 @@ func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *re
 	state.BuildFlavor = appRes.GetBuildFlavor()
 	state.StickySessions = pkg.FromBool(appRes.App.StickySessions)
 	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
-	state.AdditionalVHosts = pkg.FromListString(appRes.App.Vhosts.WithoutCleverApps(appRes.App.ID).AsString())
+
+	vhosts := appRes.App.Vhosts.AsString()
+	state.VHosts, _ = pkg.FromSetString(vhosts)
+	state.VHost = basetypes.NewStringNull()
 
 	diags = res.State.Set(ctx, state)
 	res.Diagnostics.Append(diags...)
@@ -175,10 +194,7 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 
 	// Same as env but with vhosts
-	vhosts := []string{}
-	if res.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...); res.Diagnostics.HasError() {
-		return
-	}
+	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
 
 	// Get the updated values from plan and instance
 	updateAppReq := application.UpdateReq{
@@ -209,34 +225,14 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 
 	// Correctly named: update the app (via PUT Method)
-	_, diags := application.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	//
-	hasDefaultVHost := pkg.HasSome(updateAppReq.VHosts, func(vhost string) bool {
-		return pkg.VhostCleverAppsRegExp.MatchString(vhost)
-	})
-	if hasDefaultVHost {
-		cleverapps := *pkg.First(vhosts, func(vhost string) bool {
-			return pkg.VhostCleverAppsRegExp.MatchString(vhost)
-		})
-		plan.VHost = pkg.FromStr(cleverapps)
-	} else {
-		plan.VHost = types.StringNull()
-	}
-
-	vhostsWithoutDefault := pkg.Filter(updateAppReq.VHosts, func(vhost string) bool {
-		ok := pkg.VhostCleverAppsRegExp.MatchString(vhost)
-		return !ok
-	})
-	if len(vhostsWithoutDefault) > 0 {
-		plan.AdditionalVHosts = pkg.FromListString(vhostsWithoutDefault)
-	} else {
-		plan.AdditionalVHosts = types.ListNull(types.StringType)
-	}
+	plan.VHosts, _ = pkg.FromSetString(updatedApp.Application.Vhosts.AsString())
+	plan.VHost = basetypes.NewStringNull()
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {

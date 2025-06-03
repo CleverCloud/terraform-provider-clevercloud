@@ -2,11 +2,12 @@ package nodejs
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
@@ -43,11 +44,7 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	vhosts := []string{}
-	resp.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
 
 	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "node", resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -99,10 +96,29 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 	// TODO set fields
 	plan.ID = pkg.FromStr(createRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
+
+	// legacy
 	plan.VHost = pkg.FromStr(createRes.Application.Vhosts.CleverAppsFQDN(createRes.Application.ID).Fqdn)
-	plan.AdditionalVHosts = pkg.FromListString(
-		createRes.Application.Vhosts.WithoutCleverApps(createRes.Application.ID).AsString(),
-	)
+
+	createdVhosts := createRes.Application.Vhosts
+	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
+		plan.VHosts, _ = pkg.FromSetString(createdVhosts.AsString())
+	} else { // practitionner give it's own vhost, remove cleverapps one
+
+		deleteVhostRes := tmp.DeleteAppVHost(
+			ctx,
+			r.cc,
+			r.org,
+			plan.ID.ValueString(),
+			createdVhosts.CleverAppsFQDN(plan.ID.ValueString()).Fqdn,
+		)
+		if deleteVhostRes.HasError() {
+			diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
+			return
+		}
+
+		plan.VHosts, _ = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString())
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
@@ -114,28 +130,12 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "NodeJS READ", map[string]any{"request": req})
 
-	var app NodeJS
-	diags := req.State.Get(ctx, &app)
-	resp.Diagnostics.Append(diags...)
+	state := helper.StateFrom[NodeJS](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	/*appRes := tmp.GetApp(ctx, r.cc, r.org, app.ID.ValueString())
-	if appRes.IsNotFoundError() {
-		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown)
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-	if appRes.HasError() {
-		resp.Diagnostics.AddError("failed to get app", appRes.Error().Error())
-	}
-
-	appNode := appRes.Payload()
-	*/
-	appRes, diags := application.ReadApp(ctx, r.cc, r.org, app.ID.ValueString())
+	appRes, diags := application.ReadApp(ctx, r.cc, r.org, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -145,10 +145,25 @@ func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	app.DeployURL = pkg.FromStr(appRes.App.DeployURL)
-	//app.VHost = pkg.FromStr(appRes.App.Vhosts[0].Fqdn)
+	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
+	state.Name = pkg.FromStr(appRes.App.Name)
+	state.Description = pkg.FromStr(appRes.App.Description)
+	state.Region = pkg.FromStr(appRes.App.Zone)
+	state.MinInstanceCount = basetypes.NewInt64Value(int64(appRes.App.Instance.MinInstances))
+	state.MaxInstanceCount = basetypes.NewInt64Value(int64(appRes.App.Instance.MaxInstances))
+	state.SmallestFlavor = pkg.FromStr(appRes.App.Instance.MinFlavor.Name)
+	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
+	state.StickySessions = pkg.FromBool(appRes.App.StickySessions)
+	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 
-	diags = resp.State.Set(ctx, app)
+	vhosts := appRes.App.Vhosts.AsString()
+	state.VHosts, diags = pkg.FromSetString(vhosts)
+	resp.Diagnostics.Append(diags...)
+
+	state.VHost = basetypes.NewStringNull()
+	fmt.Printf("####### vhosts after a read: %s\n", state.VHosts)
+
+	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -186,10 +201,7 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Same as env but with vhosts
-	vhosts := []string{}
-	if res.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...); res.Diagnostics.HasError() {
-		return
-	}
+	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
 
 	// Get the updated values from plan and instance
 	updateAppReq := application.UpdateReq{
@@ -220,34 +232,14 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Correctly named: update the app (via PUT Method)
-	_, diags := application.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	//
-	hasDefaultVHost := pkg.HasSome(updateAppReq.VHosts, func(vhost string) bool {
-		return pkg.VhostCleverAppsRegExp.MatchString(vhost)
-	})
-	if hasDefaultVHost {
-		cleverapps := *pkg.First(vhosts, func(vhost string) bool {
-			return pkg.VhostCleverAppsRegExp.MatchString(vhost)
-		})
-		plan.VHost = pkg.FromStr(cleverapps)
-	} else {
-		plan.VHost = types.StringNull()
-	}
-
-	vhostsWithoutDefault := pkg.Filter(updateAppReq.VHosts, func(vhost string) bool {
-		ok := pkg.VhostCleverAppsRegExp.MatchString(vhost)
-		return !ok
-	})
-	if len(vhostsWithoutDefault) > 0 {
-		plan.AdditionalVHosts = pkg.FromListString(vhostsWithoutDefault)
-	} else {
-		plan.AdditionalVHosts = types.ListNull(types.StringType)
-	}
+	plan.VHosts, _ = pkg.FromSetString(updatedApp.Application.Vhosts.AsString())
+	plan.VHost = basetypes.NewStringNull()
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {
