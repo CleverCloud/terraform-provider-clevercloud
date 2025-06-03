@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.9.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.8.0...v0.9.0) (2025-06-03)
+
+
+### Features
+
+* **app:** support local Git repositories ([199939f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/199939f334e4b3fb56d20348444bf4f0f3323e9f)), closes [#147](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/147)
+* **app:** trigger restart on env changes ([b6494b1](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/b6494b1f5460f2542a07e41c5c94829a7d450f8b)), closes [#146](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/146)
+* **play2:** init ([f600a03](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/f600a0346752c8fd4c55a5058b951a287ed5d0a1)), closes [#148](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/148)
+
 ## [0.8.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.7.2...v0.8.0) (2025-05-16)
 
 
