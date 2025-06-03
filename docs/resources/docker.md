@@ -78,7 +78,7 @@ Can be either app_xxx or postgres_yyy ID format
 Optional:
 
 - `commit` (String) Support multiple syntax like `refs/heads/[BRANCH]` or `[COMMIT]`, in most of the case, you can use `refs/heads/master`
-- `repository` (String)
+- `repository` (String) The repository URL to deploy, can be 'https://...', 'file://...'
 
 
 <a id="nestedblock--hooks"></a>

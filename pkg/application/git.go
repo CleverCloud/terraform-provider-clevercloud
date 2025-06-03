@@ -35,39 +35,29 @@ func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemot
 }
 
 func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemote string) diag.Diagnostics {
-	diags := diag.Diagnostics{}
-	cleverRemote = strings.Replace(cleverRemote, "git+ssh", "https", 1) //+ ".git" // switch protocol
-	fs := memory.NewStorage()
-	wt := memfs.New()
+	cleverRemote = strings.Replace(cleverRemote, "git+ssh", "https", 1) // switch protocol
 
-	cloneOpts := &git.CloneOptions{
-		URL:        d.Repository,
-		RemoteName: "origin",
-		Progress:   os.Stdout,
-	}
-
-	if d.Commit != nil && strings.HasPrefix(*d.Commit, "refs/") {
-		cloneOpts.ReferenceName = plumbing.ReferenceName(*d.Commit)
-	}
-
-	r, err := git.CloneContext(ctx, fs, wt, cloneOpts)
-	if err != nil {
-		diags.AddError("failed to clone repository", err.Error())
+	repo, diags := OpenOrClone(ctx, d.Repository, d.Commit)
+	if diags.HasError() {
 		return diags
 	}
 
-	currentRef, err := r.Head()
+	currentRef, err := repo.Head()
 	if err != nil {
 		diags.AddError("failed to get current ref", err.Error())
 		return diags
 	}
 
 	remoteOpts := &config.RemoteConfig{
-		Name: "clever",
+		Name: "tf-clever",
 		URLs: []string{cleverRemote, cleverRemote}, // for fetch and push
 	}
 
-	remote, err := r.CreateRemote(remoteOpts)
+	if err := repo.DeleteRemote("tf-clever"); err == nil {
+		diags.AddWarning("a remote was set on this repository, it will be deleted", "remote = tf-clever")
+	}
+
+	remote, err := repo.CreateRemote(remoteOpts)
 	if err != nil {
 		diags.AddError("failed to add clever remote", err.Error())
 		return diags
@@ -77,7 +67,7 @@ func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemo
 	auth := &http.BasicAuth{Username: token, Password: secret}
 
 	pushOptions := &git.PushOptions{
-		RemoteName: "clever",
+		RemoteName: "tf-clever",
 		Force:      true,
 		Progress:   os.Stdout,
 		Auth:       auth,
@@ -95,7 +85,7 @@ func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemo
 		// [COMMIT_SHA] a397296e135b24e682a011e31f8e15f2fa8a5a0e
 
 		if IsSHA1(refNameOrCommit) {
-			commit, err := r.CommitObject(plumbing.NewHash(refNameOrCommit))
+			commit, err := repo.CommitObject(plumbing.NewHash(refNameOrCommit))
 			if err == plumbing.ErrObjectNotFound {
 				diags.AddError("requested commit not found", fmt.Sprintf("no commit '%s'", refNameOrCommit))
 				return diags
@@ -112,7 +102,7 @@ func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemo
 			}
 
 			// We need to check if provided ref exists (several issues with main/master)
-			ref, err := r.Storer.Reference(plumbing.ReferenceName(refNameOrCommit))
+			ref, err := repo.Storer.Reference(plumbing.ReferenceName(refNameOrCommit))
 			if err == plumbing.ErrReferenceNotFound {
 				diags.AddError("requested reference not found", fmt.Sprintf("no reference named '%s'", refNameOrCommit))
 				return diags
@@ -149,4 +139,48 @@ func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemo
 func IsSHA1(s string) bool {
 	h, err := hex.DecodeString(s)
 	return err == nil && len(h) == sha1.Size
+}
+
+func OpenOrClone(ctx context.Context, repoUrl string, commit *string) (*git.Repository, diag.Diagnostics) {
+	if strings.HasPrefix(repoUrl, "file://") {
+		return open(repoUrl)
+	}
+
+	return clone(ctx, repoUrl, commit)
+}
+
+func open(repoUrl string) (*git.Repository, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
+
+	repo, err := git.PlainOpen(strings.TrimPrefix(repoUrl, "file://"))
+	if err != nil {
+		diags.AddError("failed to open repository", fmt.Sprintf("cannot open '%s': %s", repoUrl, err.Error()))
+		return nil, diags
+	}
+
+	return repo, diags
+}
+
+func clone(ctx context.Context, repoUrl string, commit *string) (*git.Repository, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
+	fs := memory.NewStorage()
+	wt := memfs.New()
+
+	cloneOpts := &git.CloneOptions{
+		URL:        repoUrl,
+		RemoteName: "origin",
+		Progress:   os.Stdout,
+	}
+
+	if commit != nil && strings.HasPrefix(*commit, "refs/") {
+		cloneOpts.ReferenceName = plumbing.ReferenceName(*commit)
+	}
+
+	r, err := git.CloneContext(ctx, fs, wt, cloneOpts)
+	if err != nil {
+		diags.AddError("failed to clone repository", err.Error())
+		return nil, diags
+	}
+
+	return r, diags
 }

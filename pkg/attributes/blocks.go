@@ -31,8 +31,8 @@ var blocks = map[string]schema.Block{
 		Attributes: map[string]schema.Attribute{
 			"repository": schema.StringAttribute{
 				Optional:            true, // If "deployment" attribute is defined, then repository is required
-				Description:         "",
-				MarkdownDescription: "",
+				Description:         "The repository URL to deploy, can be 'https://...', 'file://...'",
+				MarkdownDescription: "The repository URL to deploy, can be 'https://...', 'file://...'",
 			},
 			"commit": schema.StringAttribute{
 				Optional:            true,
