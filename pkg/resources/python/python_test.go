@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,6 +32,7 @@ func TestAccPython_basic(t *testing.T) {
 	rName2 := fmt.Sprintf("tf-test-python-%d-2", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_python.%s", rName2)
+	vhost := "bubhbfbnriubielrbeuvieuv.com"
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
@@ -88,7 +90,6 @@ func TestAccPython_basic(t *testing.T) {
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
 				resource.TestCheckResourceAttr(fullName, "region", "par"),
-
 				// Test CleverCloud API for configured applications
 				func(state *terraform.State) error {
 					id := state.RootModule().Resources[fullName].Primary.ID
@@ -100,31 +101,35 @@ func TestAccPython_basic(t *testing.T) {
 					app := appRes.Payload()
 
 					if app.Name != rName {
-						return assertError("invalid name", app.Name, rName)
+						return assertError("invalid name", "name", app.Name, rName)
 					}
 
 					if app.Instance.MinInstances != 1 {
-						return assertError("invalid min instance count", app.Instance.MinInstances, "1")
+						return assertError("invalid min instance count", "min_instance_count", app.Instance.MinInstances, 1)
 					}
 
 					if app.Instance.MaxInstances != 2 {
-						return assertError("invalid name", app.Name, rName)
+						return assertError("invalid max instance count", "max_instance_count", app.Instance.MaxInstances, 2)
 					}
 
 					if app.Instance.MinFlavor.Name != "XS" {
-						return assertError("invalid name", app.Name, rName)
+						return assertError("invalid min flavor", "min_flavor", app.Instance.MinFlavor.Name, "XS")
 					}
 
 					if app.Instance.MaxFlavor.Name != "M" {
-						return assertError("invalid name", app.Name, rName)
+						return assertError("invalid max flavor", "max_flavor", app.Instance.MaxFlavor.Name, "M")
 					}
 
 					if app.ForceHTTPS != "ENABLED" {
-						return assertError("expect option to be set", "redirect_https", app.ForceHTTPS)
+						return assertError("expect option to be set", "redirect_https", app.ForceHTTPS, "ENABLED")
 					}
 
 					if !app.StickySessions {
-						return assertError("expect option to be set", "sticky_sessions", app.StickySessions)
+						return assertError("expect option to be set", "sticky_sessions", app.StickySessions, true)
+					}
+
+					if len(app.Vhosts) != 1 || !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io") {
+						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), "1 cleverapps.io domain")
 					}
 
 					appEnvRes := tmp.GetAppEnv(ctx, cc, org, id)
@@ -139,22 +144,22 @@ func TestAccPython_basic(t *testing.T) {
 
 					v := env["MY_KEY"]
 					if v != "myval" {
-						return assertError("bad env var value MY_KEY", "myval", v)
+						return assertError("bad env var value", "env:MY_KEY", v, "myval")
 					}
 
 					v2 := env["APP_FOLDER"]
 					if v2 != "./app" {
-						return assertError("bad env var value APP_FOLER", "./app", v2)
+						return assertError("bad env var value", "env:APP_FOLDER", v2, "./app")
 					}
 
 					v3 := env["CC_POST_BUILD_HOOK"]
 					if v3 != "echo \"build is OK!\"" {
-						return assertError("bad env var value CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
+						return assertError("bad env var value", "env:CC_POST_BUILD_HOOK", v3, "echo \"build is OK!\"")
 					}
 
 					v4 := env["CC_PIP_REQUIREMENTS_FILE"]
 					if v4 != "requirements.txt" {
-						return assertError("bad env var value CC_PIP_REQUIREMENTS_FILE", "requirements.txt", v4)
+						return assertError("bad env var value", "env:CC_PIP_REQUIREMENTS_FILE", v4, "requirements.txt")
 					}
 
 					return nil
@@ -163,24 +168,47 @@ func TestAccPython_basic(t *testing.T) {
 		}, {
 			ResourceName: rName,
 			Config: providerBlock.Append(
-				pythonBlock.SetOneValue("biggest_flavor", "XS"),
+				pythonBlock.
+					SetOneValue("biggest_flavor", "XS").
+					SetOneValue("vhosts", []string{"bubhbfbnriubielrbeuvieuv.com"}),
 			).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr(fullName, "biggest_flavor", "XS"),
+				func(s *terraform.State) error {
+					id := s.RootModule().Resources[fullName].Primary.ID
+
+					appRes := tmp.GetApp(ctx, cc, org, id)
+					if appRes.HasError() {
+						return fmt.Errorf("failed to get application: %w", appRes.Error())
+					}
+					app := appRes.Payload()
+
+					if len(app.Vhosts) != 1 || app.Vhosts[0].Fqdn != vhost {
+						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), vhost)
+					}
+					return nil
+				},
 			),
 		}, {
 			ResourceName: rName2,
-			Config: helper.NewProvider("clevercloud").SetOrganisation(org).String() + helper.NewRessource("clevercloud_python",
-				rName2,
-				helper.SetKeyValues(map[string]any{
-					"name":               rName,
-					"region":             "par",
-					"min_instance_count": 1,
-					"max_instance_count": 2,
-					"smallest_flavor":    "XS",
-					"biggest_flavor":     "M",
-				}),
-				helper.SetBlockValues("deployment", map[string]any{"repository": "https://github.com/CleverCloud/flask-example.git"})).String(),
+			Config: providerBlock.Append(
+				helper.NewRessource(
+					"clevercloud_python",
+					rName2,
+					helper.SetKeyValues(map[string]any{
+						"name":               rName,
+						"region":             "par",
+						"min_instance_count": 1,
+						"max_instance_count": 2,
+						"smallest_flavor":    "XS",
+						"biggest_flavor":     "M",
+					}),
+					helper.SetBlockValues(
+						"deployment",
+						map[string]any{"repository": "https://github.com/CleverCloud/flask-example.git"},
+					),
+				),
+			).String(),
 			Check: func(state *terraform.State) error {
 				id := state.RootModule().Resources[fullName2].Primary.ID
 
@@ -207,8 +235,8 @@ func TestAccPython_basic(t *testing.T) {
 	})
 }
 
-func assertError(msg string, a, b any) error {
-	return fmt.Errorf("%s, got: '%v', expect: '%v'", msg, a, b)
+func assertError(msg, param string, got, expect any) error {
+	return fmt.Errorf("%s, %s = '%v', expect: '%v'", msg, param, got, expect)
 }
 
 func healthCheck(vhost string) chan struct{} {

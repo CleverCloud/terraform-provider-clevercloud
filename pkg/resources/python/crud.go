@@ -6,7 +6,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
@@ -36,18 +36,12 @@ func (r *ResourcePython) Configure(ctx context.Context, req resource.ConfigureRe
 
 // Create a new resource
 func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	plan := Python{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	plan := helper.PlanFrom[Python](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	vhosts := []string{}
-	resp.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
 
 	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "python", resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -98,12 +92,29 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 
 	plan.ID = pkg.FromStr(createRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
-	plan.VHost = pkg.FromStr(
-		createRes.Application.Vhosts.CleverAppsFQDN(createRes.Application.ID).Fqdn,
-	)
-	plan.AdditionalVHosts = pkg.FromListString(
-		createRes.Application.Vhosts.WithoutCleverApps(createRes.Application.ID).AsString(),
-	)
+
+	// legacy, to drop
+	plan.VHost = basetypes.NewStringNull()
+
+	createdVhosts := createRes.Application.Vhosts
+	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
+		plan.VHosts, _ = pkg.FromSetString(createdVhosts.AsString())
+	} else { // practitionner give it's own vhost, remove cleverapps one
+
+		deleteVhostRes := tmp.DeleteAppVHost(
+			ctx,
+			r.cc,
+			r.org,
+			plan.ID.ValueString(),
+			createdVhosts.CleverAppsFQDN(plan.ID.ValueString()).Fqdn,
+		)
+		if deleteVhostRes.HasError() {
+			diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
+			return
+		}
+
+		plan.VHosts, _ = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString())
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
@@ -115,14 +126,12 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "Python READ", map[string]any{"request": req})
 
-	var app Python
-	diags := req.State.Get(ctx, &app)
-	resp.Diagnostics.Append(diags...)
+	state := helper.StateFrom[Python](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	appRes, diags := application.ReadApp(ctx, r.cc, r.org, app.ID.ValueString())
+	appRes, diags := application.ReadApp(ctx, r.cc, r.org, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -132,10 +141,13 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	app.DeployURL = pkg.FromStr(appRes.App.DeployURL)
-	// app.VHost = pkg.FromStr(appRes.App.Vhosts[0].Fqdn) TODO
+	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
 
-	diags = resp.State.Set(ctx, app)
+	vhosts := appRes.App.Vhosts.AsString()
+	state.VHosts, _ = pkg.FromSetString(vhosts)
+	state.VHost = basetypes.NewStringNull()
+
+	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -173,10 +185,7 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Same as env but with vhosts
-	vhosts := []string{}
-	if res.Diagnostics.Append(plan.AdditionalVHosts.ElementsAs(ctx, &vhosts, false)...); res.Diagnostics.HasError() {
-		return
-	}
+	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
 
 	// Get the updated values from plan and instance
 	updateAppReq := application.UpdateReq{
@@ -207,33 +216,33 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Correctly named: update the app (via PUT Method)
-	_, diags := application.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	//
-	hasDefaultVHost := pkg.HasSome(updateAppReq.VHosts, func(vhost string) bool {
-		return pkg.VhostCleverAppsRegExp.MatchString(vhost)
-	})
-	if hasDefaultVHost {
-		cleverapps := *pkg.First(vhosts, func(vhost string) bool {
-			return pkg.VhostCleverAppsRegExp.MatchString(vhost)
-		})
-		plan.VHost = pkg.FromStr(cleverapps)
-	} else {
-		plan.VHost = types.StringNull()
-	}
+	plan.VHost = basetypes.NewStringNull()
 
-	vhostsWithoutDefault := pkg.Filter(updateAppReq.VHosts, func(vhost string) bool {
-		ok := pkg.VhostCleverAppsRegExp.MatchString(vhost)
-		return !ok
-	})
-	if len(vhostsWithoutDefault) > 0 {
-		plan.AdditionalVHosts = pkg.FromListString(vhostsWithoutDefault)
-	} else {
-		plan.AdditionalVHosts = types.ListNull(types.StringType)
+	cleverAppsVhost := updatedApp.Application.Vhosts.CleverAppsFQDN(plan.ID.ValueString())
+	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
+		plan.VHosts, _ = pkg.FromSetString(updatedApp.Application.Vhosts.AsString())
+	} else { // practitionner give it's own vhost, remove cleverapps one
+		if cleverAppsVhost != nil {
+			deleteVhostRes := tmp.DeleteAppVHost(
+				ctx,
+				r.cc,
+				r.org,
+				plan.ID.ValueString(),
+				cleverAppsVhost.Fqdn,
+			)
+			if deleteVhostRes.HasError() {
+				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
+				return
+			}
+
+			plan.VHosts, _ = pkg.FromSetString(updatedApp.Application.Vhosts.WithoutCleverApps(plan.ID.ValueString()).AsString())
+		}
 	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)

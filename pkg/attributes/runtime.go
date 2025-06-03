@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 
@@ -27,6 +28,7 @@ type Runtime struct {
 	StickySessions   types.Bool   `tfsdk:"sticky_sessions"`
 	RedirectHTTPS    types.Bool   `tfsdk:"redirect_https"`
 	VHost            types.String `tfsdk:"vhost"`
+	VHosts           types.Set    `tfsdk:"vhosts"`
 	AdditionalVHosts types.List   `tfsdk:"additional_vhosts"`
 	DeployURL        types.String `tfsdk:"deploy_url"`
 	Dependencies     types.Set    `tfsdk:"dependencies"`
@@ -36,6 +38,12 @@ type Runtime struct {
 	// Env
 	AppFolder   types.String `tfsdk:"app_folder"`
 	Environment types.Map    `tfsdk:"environment"`
+}
+
+func (r Runtime) VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) []string {
+	vhosts := []string{}
+	diags.Append(r.VHosts.ElementsAs(ctx, &vhosts, true)...)
+	return vhosts
 }
 
 // This attributes are used on several runtimes
@@ -89,6 +97,13 @@ var runtimeCommon = map[string]schema.Attribute{
 		ElementType:         types.StringType,
 		Optional:            true,
 		MarkdownDescription: "Add custom hostname in addition to the default one, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)",
+		DeprecationMessage:  "Use vhosts instead (if you provide any vhost, no cleverapps.io domain will be returned)",
+	},
+	"vhosts": schema.SetAttribute{
+		ElementType:         types.StringType,
+		Optional:            true,
+		Computed:            true,
+		MarkdownDescription: "Add custom hostname, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)",
 	},
 	// APP_FOLDER
 	"app_folder": schema.StringAttribute{
@@ -111,8 +126,8 @@ var runtimeCommon = map[string]schema.Attribute{
 	"vhost": schema.StringAttribute{
 		Computed:            true,
 		MarkdownDescription: "Default vhost to access your app",
+		DeprecationMessage:  "Use vhosts instead",
 	},
-
 	"environment": schema.MapAttribute{
 		Optional:    true,
 		Sensitive:   true,

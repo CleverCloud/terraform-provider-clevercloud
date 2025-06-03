@@ -66,7 +66,6 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 		tflog.Error(ctx, "failed to create app", map[string]any{"error": appRes.Error().Error(), "payload": fmt.Sprintf("%+v", req.Application)})
 		return nil, diags
 	}
-
 	res.Application = *appRes.Payload()
 
 	// Environment
@@ -76,7 +75,15 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	}
 
 	// VHosts
-	UpdateVhosts(ctx, req.Client, req.Organization, req.VHosts, diags, res.Application.ID)
+	UpdateVhosts(ctx, req.Client, req.Organization, req.VHosts, &diags, res.Application.ID)
+
+	// This is dirty, but we need a refresh
+	vhostsRes := tmp.GetAppVhosts(ctx, req.Client, req.Organization, res.Application.ID)
+	if vhostsRes.HasError() {
+		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
+		return nil, diags
+	}
+	res.Application.Vhosts = *vhostsRes.Payload()
 
 	// Git Deployment
 	if req.Deployment != nil {
@@ -120,10 +127,18 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	}
 
 	// VHosts
-	updateSuccess := UpdateVhosts(ctx, req.Client, req.Organization, req.VHosts, diags, res.Application.ID)
+	updateSuccess := UpdateVhosts(ctx, req.Client, req.Organization, req.VHosts, &diags, res.Application.ID)
 	if !updateSuccess {
 		return nil, diags
 	}
+
+	// This is dirty, but we need a refresh
+	vhostsRes := tmp.GetAppVhosts(ctx, req.Client, req.Organization, res.Application.ID)
+	if vhostsRes.HasError() {
+		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
+		return nil, diags
+	}
+	res.Application.Vhosts = *vhostsRes.Payload()
 
 	// Dependencies
 	for _, dependency := range req.Dependencies {
@@ -171,7 +186,8 @@ func ToForceHTTPS(force string) bool {
 	return force == "ENABLED"
 }
 
-func UpdateVhosts(ctx context.Context, client *client.Client, organization string, reqVhosts []string, diags diag.Diagnostics, applicationID string) bool {
+// does not touch cleverapps.io domain
+func UpdateVhosts(ctx context.Context, client *client.Client, organization string, reqVhosts []string, diags *diag.Diagnostics, applicationID string) bool {
 
 	// Get current vhosts from remote
 	vhostsRes := tmp.GetAppVhosts(ctx, client, organization, applicationID)
@@ -202,7 +218,7 @@ func UpdateVhosts(ctx context.Context, client *client.Client, organization strin
 		}
 	}
 
-	tflog.Debug(ctx, "Vhosts to remove:", map[string]any{"vhostsToRemove": vhostsToRemove})
+	tflog.Debug(ctx, "UPDATE VHOSTS", map[string]any{"toRemove": vhostsToRemove, "toAdd": vhostsToAdd})
 
 	// Delete vhosts that need to be removed
 	for _, vhost := range vhostsToRemove {

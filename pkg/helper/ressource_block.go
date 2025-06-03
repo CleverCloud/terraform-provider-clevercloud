@@ -117,6 +117,11 @@ func map_String(m map[string]any, s, tab, separator string) string {
 `
 			return map_String(m[key].(map[string]any), acc, `		`, separator) + tab + `}
 `
+		case []string:
+			strs := pkg.Map(c_type, func(s string) string {
+				return `"` + s + `"`
+			})
+			return acc + tab + key + separator + ` [ ` + strings.Join(strs, ", ") + " ]\n"
 		default:
 			return acc + `// Type ` + reflect.TypeOf(c_type).String() + ` of key "` + key + `" not considered yet
 `

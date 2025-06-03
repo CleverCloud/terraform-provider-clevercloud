@@ -27,7 +27,7 @@ See [PHP product](https://www.clever-cloud.com/doc/getting-started/by-language/p
 
 ### Optional
 
-- `additional_vhosts` (List of String) Add custom hostname in addition to the default one, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
+- `additional_vhosts` (List of String, Deprecated) Add custom hostname in addition to the default one, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build step
 - `dependencies` (Set of String) A list of application or addons requires to run this application.
@@ -42,13 +42,14 @@ Can be either app_xxx or postgres_yyy ID format
 - `redis_sessions` (Boolean) Use a linked Redis instance to store sessions (Default: false)
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
+- `vhosts` (List of String) Add custom hostname, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
 - `webroot` (String) Define the DocumentRoot of your project (default: ".")
 
 ### Read-Only
 
 - `deploy_url` (String) Git URL used to push source code
 - `id` (String) Unique identifier generated during application creation
-- `vhost` (String) Default vhost to access your app
+- `vhost` (String, Deprecated) Default vhost to access your app
 
 <a id="nestedblock--deployment"></a>
 ### Nested Schema for `deployment`
