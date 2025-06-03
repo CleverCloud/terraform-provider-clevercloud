@@ -164,6 +164,7 @@ func (vhosts VHosts) AllAsString() iter.Seq[string] {
 // Ex: app-7a1f2c81-bb18-4682-95fc-b7187a056150.cleverapps.io
 func (vhosts VHosts) WithoutCleverApps(appId string) VHosts {
 	cleverapps := fmt.Sprintf("%s.cleverapps.io", strings.ReplaceAll(appId, "_", "-"))
+	fmt.Printf("vhosts test: %s %+v\n", cleverapps, vhosts)
 	result := []VHost{}
 
 	for _, vhost := range vhosts {
@@ -174,6 +175,7 @@ func (vhosts VHosts) WithoutCleverApps(appId string) VHosts {
 		result = append(result, vhost)
 	}
 
+	fmt.Printf("vhosts result: %+v\n", result)
 	return result
 }
 

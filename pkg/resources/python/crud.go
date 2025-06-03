@@ -2,6 +2,7 @@ package python
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -35,9 +36,7 @@ func (r *ResourcePython) Configure(ctx context.Context, req resource.ConfigureRe
 
 // Create a new resource
 func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	plan := Python{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	plan := helper.PlanFrom[Python](ctx, req.Plan, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -47,6 +46,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	fmt.Printf("TO CREATE: %+v\n", vhosts)
 
 	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "python", resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -114,14 +114,12 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "Python READ", map[string]any{"request": req})
 
-	var app Python
-	diags := req.State.Get(ctx, &app)
-	resp.Diagnostics.Append(diags...)
+	state := helper.StateFrom[Python](ctx, req.State, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	appRes, diags := application.ReadApp(ctx, r.cc, r.org, app.ID.ValueString())
+	appRes, diags := application.ReadApp(ctx, r.cc, r.org, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -131,10 +129,10 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	app.DeployURL = pkg.FromStr(appRes.App.DeployURL)
+	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
 	// app.VHost = pkg.FromStr(appRes.App.Vhosts[0].Fqdn) TODO
 
-	diags = resp.State.Set(ctx, app)
+	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

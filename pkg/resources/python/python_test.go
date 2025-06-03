@@ -49,6 +49,7 @@ func TestAccPython_basic(t *testing.T) {
 			"app_folder":         "./app",
 			"python_version":     "2.7",
 			"pip_requirements":   "requirements.txt",
+			"additional_vhosts":  []string{"example.com"},
 			"environment": map[string]any{
 				"MY_KEY": "myval",
 			},
@@ -88,7 +89,6 @@ func TestAccPython_basic(t *testing.T) {
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
 				resource.TestCheckResourceAttr(fullName, "region", "par"),
-
 				// Test CleverCloud API for configured applications
 				func(state *terraform.State) error {
 					id := state.RootModule().Resources[fullName].Primary.ID
@@ -100,31 +100,36 @@ func TestAccPython_basic(t *testing.T) {
 					app := appRes.Payload()
 
 					if app.Name != rName {
-						return assertError("invalid name", app.Name, rName)
+						return assertError("invalid name", "name", app.Name, rName)
 					}
 
 					if app.Instance.MinInstances != 1 {
-						return assertError("invalid min instance count", app.Instance.MinInstances, "1")
+						return assertError("invalid min instance count", "min_instance_count", app.Instance.MinInstances, 1)
 					}
 
 					if app.Instance.MaxInstances != 2 {
-						return assertError("invalid name", app.Name, rName)
+						return assertError("invalid max instance count", "max_instance_count", app.Instance.MaxInstances, 2)
 					}
 
 					if app.Instance.MinFlavor.Name != "XS" {
-						return assertError("invalid name", app.Name, rName)
+						return assertError("invalid min flavor", "min_flavor", app.Instance.MinFlavor.Name, "XS")
 					}
 
 					if app.Instance.MaxFlavor.Name != "M" {
-						return assertError("invalid name", app.Name, rName)
+						return assertError("invalid max flavor", "max_flavor", app.Instance.MaxFlavor.Name, "M")
 					}
 
 					if app.ForceHTTPS != "ENABLED" {
-						return assertError("expect option to be set", "redirect_https", app.ForceHTTPS)
+						return assertError("expect option to be set", "redirect_https", app.ForceHTTPS, "ENABLED")
 					}
 
 					if !app.StickySessions {
-						return assertError("expect option to be set", "sticky_sessions", app.StickySessions)
+						return assertError("expect option to be set", "sticky_sessions", app.StickySessions, true)
+					}
+
+					fmt.Printf("vhosts: %+v\n", app.Vhosts)
+					if len(app.Vhosts.AsString()) != 2 || app.Vhosts.WithoutCleverApps(id)[0].Fqdn != "example.com" {
+						return assertError("invalid vhost list", "additional_vhosts", app.Vhosts.AsString(), []string{"example.com"})
 					}
 
 					appEnvRes := tmp.GetAppEnv(ctx, cc, org, id)
@@ -139,22 +144,22 @@ func TestAccPython_basic(t *testing.T) {
 
 					v := env["MY_KEY"]
 					if v != "myval" {
-						return assertError("bad env var value MY_KEY", "myval", v)
+						return assertError("bad env var value", "env:MY_KEY", v, "myval")
 					}
 
 					v2 := env["APP_FOLDER"]
 					if v2 != "./app" {
-						return assertError("bad env var value APP_FOLER", "./app", v2)
+						return assertError("bad env var value", "env:APP_FOLDER", v2, "./app")
 					}
 
 					v3 := env["CC_POST_BUILD_HOOK"]
 					if v3 != "echo \"build is OK!\"" {
-						return assertError("bad env var value CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
+						return assertError("bad env var value", "env:CC_POST_BUILD_HOOK", v3, "echo \"build is OK!\"")
 					}
 
 					v4 := env["CC_PIP_REQUIREMENTS_FILE"]
 					if v4 != "requirements.txt" {
-						return assertError("bad env var value CC_PIP_REQUIREMENTS_FILE", "requirements.txt", v4)
+						return assertError("bad env var value", "env:CC_PIP_REQUIREMENTS_FILE", v4, "requirements.txt")
 					}
 
 					return nil
@@ -207,8 +212,8 @@ func TestAccPython_basic(t *testing.T) {
 	})
 }
 
-func assertError(msg string, a, b any) error {
-	return fmt.Errorf("%s, got: '%v', expect: '%v'", msg, a, b)
+func assertError(msg, param string, got, expect any) error {
+	return fmt.Errorf("%s, %s = '%v', expect: '%v'", msg, param, got, expect)
 }
 
 func healthCheck(vhost string) chan struct{} {
