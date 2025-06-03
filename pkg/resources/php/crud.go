@@ -2,6 +2,7 @@ package php
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -178,7 +179,11 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	environment := plan.toEnv(ctx, res.Diagnostics)
+	planEnvironment := plan.toEnv(ctx, res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+	stateEnvironment := state.toEnv(ctx, res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -209,9 +214,10 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
-		Environment: environment,
-		VHosts:      vhosts,
-		Deployment:  plan.toDeployment(),
+		Environment:    planEnvironment,
+		VHosts:         vhosts,
+		Deployment:     plan.toDeployment(),
+		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
 	_, diags := application.UpdateApp(ctx, updateAppReq)
