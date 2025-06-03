@@ -320,3 +320,15 @@ func GetAppLinkedAddons(ctx context.Context, cc *client.Client, organisationID, 
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/addons", organisationID, applicationID)
 	return client.Get[[]AddonResponse](ctx, cc, path)
 }
+
+type RestartAppRes struct {
+	ID           int    `json:"id"`
+	Message      string `json:"message"`
+	Type         string `json:"type"` // error / success
+	DeploymentID string `json:"deploymentId"`
+}
+
+func RestartApp(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[RestartAppRes] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/instances", organisationID, applicationID)
+	return client.Post[RestartAppRes](ctx, cc, path, nil)
+}

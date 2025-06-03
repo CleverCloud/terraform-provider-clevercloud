@@ -2,6 +2,7 @@ package java
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -193,7 +194,11 @@ func (r *ResourceJava) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	// Retriev all env values by extracting ctx env viriables and merge it with the app env variables
-	environment := plan.toEnv(ctx, res.Diagnostics)
+	planEnvironment := plan.toEnv(ctx, res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+	stateEnvironment := state.toEnv(ctx, res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -226,9 +231,10 @@ func (r *ResourceJava) Update(ctx context.Context, req resource.UpdateRequest, r
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
-		Environment: environment,
-		VHosts:      vhosts,
-		Deployment:  plan.toDeployment(),
+		Environment:    planEnvironment,
+		VHosts:         vhosts,
+		Deployment:     plan.toDeployment(),
+		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
 	// Correctly named: update the app (via PUT Method)

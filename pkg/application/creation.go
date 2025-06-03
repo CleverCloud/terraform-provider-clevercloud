@@ -23,14 +23,15 @@ type CreateReq struct {
 }
 
 type UpdateReq struct {
-	ID           string
-	Client       *client.Client
-	Organization string
-	Application  tmp.UpdateAppReq
-	Environment  map[string]string
-	VHosts       []string
-	Deployment   *Deployment
-	Dependencies []string
+	ID             string
+	Client         *client.Client
+	Organization   string
+	Application    tmp.UpdateAppReq
+	Environment    map[string]string
+	VHosts         []string
+	Deployment     *Deployment
+	Dependencies   []string
+	TriggerRestart bool // when env vars change for example
 }
 
 type Deployment struct {
@@ -115,14 +116,6 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 		return nil, diags
 	}
 
-	// Git Deployment
-	if req.Deployment != nil {
-		diags.Append(gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
-		if diags.HasError() {
-			return nil, diags
-		}
-	}
-
 	// Dependencies
 	for _, dependency := range req.Dependencies {
 		// TODO: support another apps as dependency
@@ -135,6 +128,23 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 		}
 	}
 	// TODO: unlink unneeded deps
+
+	// Git Deployment (when commit change)
+	if req.Deployment != nil {
+		diags.Append(gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
+		if diags.HasError() {
+			return nil, diags
+		}
+	}
+
+	// trigger restart of the app if needed (when env change)
+	if req.TriggerRestart {
+		restartRes := tmp.RestartApp(ctx, req.Client, req.Organization, res.Application.ID)
+		if restartRes.HasError() {
+			diags.AddError("failed to restart app", restartRes.Error().Error())
+			return nil, diags
+		}
+	}
 
 	return res, diags
 }
