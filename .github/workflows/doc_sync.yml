@@ -31,7 +31,7 @@ jobs:
       - name: Install tfplugindocs
         run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
       - name: Run tfplugindocs
-        run: go generate ./...
+        run: go generate ./... && make docs
       
       - name: Fail if any files changed
         shell: bash

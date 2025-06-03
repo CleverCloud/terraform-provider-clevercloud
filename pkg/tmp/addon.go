@@ -3,7 +3,6 @@ package tmp
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"go.clever-cloud.dev/client"
@@ -68,10 +67,6 @@ func GetAddonsProviders(ctx context.Context, cc *client.Client) client.Response[
 
 func CreateAddon(ctx context.Context, cc *client.Client, organisation string, addon AddonRequest) client.Response[AddonResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/addons", organisation)
-
-	j, _ := json.Marshal(addon)
-	fmt.Printf("%s\n%s\n", path, string(j))
-
 	return client.Post[AddonResponse](ctx, cc, path, addon)
 }
 
