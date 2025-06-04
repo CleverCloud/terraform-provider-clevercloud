@@ -178,11 +178,11 @@ func (r *ResourceJava) Update(ctx context.Context, req resource.UpdateRequest, r
 	tflog.Debug(ctx, "ResourceJava.Update()")
 
 	// Retrieve values from plan and state
-	plan := helper.PlanFrom[Java](ctx, req.Plan, res.Diagnostics)
+	plan := helper.PlanFrom[Java](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	state := helper.StateFrom[Java](ctx, req.State, res.Diagnostics)
+	state := helper.StateFrom[Java](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

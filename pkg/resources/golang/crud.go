@@ -36,7 +36,7 @@ func (r *ResourceGo) Configure(ctx context.Context, req resource.ConfigureReques
 
 // Create a new resource
 func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
-	plan := helper.PlanFrom[Go](ctx, req.Plan, res.Diagnostics)
+	plan := helper.PlanFrom[Go](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -108,7 +108,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *resource.ReadResponse) {
 	tflog.Debug(ctx, "Go READ", map[string]any{"request": req})
 
-	state := helper.StateFrom[Go](ctx, req.State, res.Diagnostics)
+	state := helper.StateFrom[Go](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -138,11 +138,11 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 	tflog.Debug(ctx, "ResourceGo.Update()")
 
 	// Retrieve values from plan and state
-	plan := helper.PlanFrom[Go](ctx, req.Plan, res.Diagnostics)
+	plan := helper.PlanFrom[Go](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	state := helper.StateFrom[Go](ctx, req.State, res.Diagnostics)
+	state := helper.StateFrom[Go](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -235,7 +235,7 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 
 // Delete resource
 func (r *ResourceGo) Delete(ctx context.Context, req resource.DeleteRequest, res *resource.DeleteResponse) {
-	state := helper.StateFrom[Go](ctx, req.State, res.Diagnostics)
+	state := helper.StateFrom[Go](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

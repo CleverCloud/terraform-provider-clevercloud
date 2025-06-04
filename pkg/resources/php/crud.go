@@ -37,7 +37,7 @@ func (r *ResourcePHP) Configure(ctx context.Context, req resource.ConfigureReque
 // Create a new resource
 func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	tflog.Debug(ctx, "ResourcePHP.Create()")
-	plan := helper.PlanFrom[PHP](ctx, req.Plan, resp.Diagnostics)
+	plan := helper.PlanFrom[PHP](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -104,7 +104,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 // Read resource information
 func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "ResourcePHP.Read()")
-	state := helper.StateFrom[PHP](ctx, req.State, resp.Diagnostics)
+	state := helper.StateFrom[PHP](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -164,12 +164,12 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
 	tflog.Debug(ctx, "ResourcePHP.Update()")
 
-	plan := helper.PlanFrom[PHP](ctx, req.Plan, res.Diagnostics)
+	plan := helper.PlanFrom[PHP](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	state := helper.StateFrom[PHP](ctx, req.State, res.Diagnostics)
+	state := helper.StateFrom[PHP](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

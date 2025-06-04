@@ -35,9 +35,7 @@ func (r *ResourceKeycloak) Configure(ctx context.Context, req resource.Configure
 
 // Create a new resource
 func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
-	kc := Keycloak{}
-
-	helper.PlanFrom[Keycloak](ctx, req.Plan, res.Diagnostics)
+	kc := helper.PlanFrom[Keycloak](ctx, req.Plan, &res.Diagnostics)
 	res.Diagnostics.Append(req.Plan.Get(ctx, &kc)...)
 	if res.Diagnostics.HasError() {
 		return

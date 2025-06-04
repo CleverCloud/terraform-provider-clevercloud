@@ -166,11 +166,11 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 	tflog.Debug(ctx, "ResourceDocker.Update()")
 
 	// Retrieve values from plan and state
-	plan := helper.PlanFrom[Docker](ctx, req.Plan, res.Diagnostics)
+	plan := helper.PlanFrom[Docker](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	state := helper.StateFrom[Docker](ctx, req.State, res.Diagnostics)
+	state := helper.StateFrom[Docker](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
