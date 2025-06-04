@@ -171,11 +171,11 @@ func (r *ResourceStatic) Update(ctx context.Context, req resource.UpdateRequest,
 	tflog.Debug(ctx, "ResourceStatic.Update()")
 
 	// Retrieve values from plan and state
-	plan := helper.PlanFrom[Static](ctx, req.Plan, res.Diagnostics)
+	plan := helper.PlanFrom[Static](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	state := helper.StateFrom[Static](ctx, req.State, res.Diagnostics)
+	state := helper.StateFrom[Static](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

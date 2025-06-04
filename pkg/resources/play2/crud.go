@@ -36,7 +36,7 @@ func (r *ResourcePlay2) Configure(ctx context.Context, req resource.ConfigureReq
 
 // Create a new resource
 func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	plan := helper.PlanFrom[Play2](ctx, req.Plan, resp.Diagnostics)
+	plan := helper.PlanFrom[Play2](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -101,7 +101,7 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 
 // Read resource information
 func (r *ResourcePlay2) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	state := helper.StateFrom[Play2](ctx, req.State, resp.Diagnostics)
+	state := helper.StateFrom[Play2](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -167,11 +167,11 @@ func (r *ResourcePlay2) Update(ctx context.Context, req resource.UpdateRequest, 
 	tflog.Debug(ctx, "ResourcePlay2.Update()")
 
 	// Retrieve values from plan and state
-	plan := helper.PlanFrom[Play2](ctx, req.Plan, res.Diagnostics)
+	plan := helper.PlanFrom[Play2](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	state := helper.StateFrom[Play2](ctx, req.State, res.Diagnostics)
+	state := helper.StateFrom[Play2](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -265,7 +265,7 @@ func (r *ResourcePlay2) Update(ctx context.Context, req resource.UpdateRequest, 
 
 // Delete resource
 func (r *ResourcePlay2) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	state := helper.StateFrom[Play2](ctx, req.State, resp.Diagnostics)
+	state := helper.StateFrom[Play2](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

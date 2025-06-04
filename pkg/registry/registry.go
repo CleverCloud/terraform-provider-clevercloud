@@ -18,6 +18,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/php"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/play2"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/postgresql"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/pulsar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/python"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/redis"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/scala"
@@ -46,4 +47,5 @@ var Resources = []func() resource.Resource{
 	redis.NewResourceRedis,
 	golang.NewResourceGo,
 	play2.NewResourcePlay2(),
+	pulsar.NewResourcePulsar,
 }

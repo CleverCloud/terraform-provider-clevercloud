@@ -32,7 +32,7 @@ func (r *ResourceFSBucket) Configure(ctx context.Context, req resource.Configure
 
 // Create a new resource
 func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	fsbucket := helper.PlanFrom[FSBucket](ctx, req.Plan, resp.Diagnostics)
+	fsbucket := helper.PlanFrom[FSBucket](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -92,7 +92,7 @@ func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateReques
 func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "FSBucket READ", map[string]any{"request": req})
 
-	fsbucket := helper.StateFrom[FSBucket](ctx, req.State, resp.Diagnostics)
+	fsbucket := helper.StateFrom[FSBucket](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -133,12 +133,12 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 
 // Update resource
 func (r *ResourceFSBucket) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	plan := helper.PlanFrom[FSBucket](ctx, req.Plan, resp.Diagnostics)
+	plan := helper.PlanFrom[FSBucket](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	state := helper.StateFrom[FSBucket](ctx, req.State, resp.Diagnostics)
+	state := helper.StateFrom[FSBucket](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -166,7 +166,7 @@ func (r *ResourceFSBucket) Update(ctx context.Context, req resource.UpdateReques
 
 // Delete resource
 func (r *ResourceFSBucket) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	fsbucket := helper.StateFrom[FSBucket](ctx, req.State, resp.Diagnostics)
+	fsbucket := helper.StateFrom[FSBucket](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
