@@ -7,6 +7,7 @@ import (
 	"slices"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
@@ -43,6 +44,14 @@ type Deployment struct {
 
 type CreateRes struct {
 	Application tmp.CreatAppResponse
+}
+
+func (r *CreateRes) GetBuildFlavor() types.String {
+	if !r.Application.SeparateBuild {
+		return types.StringNull()
+	}
+
+	return types.StringValue(r.Application.BuildFlavor.Name)
 }
 
 func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics) {
@@ -156,6 +165,10 @@ func FromForceHTTPS(force bool) string {
 	} else {
 		return "DISABLED"
 	}
+}
+
+func ToForceHTTPS(force string) bool {
+	return force == "ENABLED"
 }
 
 func UpdateVhosts(ctx context.Context, client *client.Client, organization string, reqVhosts []string, diags diag.Diagnostics, applicationID string) bool {

@@ -127,12 +127,7 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 	state.BiggestFlavor = pkg.FromStr(appPHP.App.Instance.MaxFlavor.Name)
 	state.Region = pkg.FromStr(appPHP.App.Zone)
 	state.DeployURL = pkg.FromStr(appPHP.App.DeployURL)
-
-	if appPHP.App.SeparateBuild {
-		state.BuildFlavor = pkg.FromStr(appPHP.App.BuildFlavor.Name)
-	} else {
-		state.BuildFlavor = types.StringNull()
-	}
+	state.BuildFlavor = appPHP.GetBuildFlavor()
 
 	vhosts := appPHP.App.Vhosts.AsString()
 	hasDefaultVHost := pkg.HasSome(vhosts, func(vhost string) bool {

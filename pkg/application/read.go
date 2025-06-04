@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
@@ -13,6 +14,13 @@ type ReadAppRes struct {
 	App          tmp.CreatAppResponse
 	AppIsDeleted bool
 	Env          []tmp.Env
+}
+
+func (res *ReadAppRes) GetBuildFlavor() types.String {
+	if !res.App.SeparateBuild {
+		return types.StringNull()
+	}
+	return types.StringValue(res.App.BuildFlavor.Name)
 }
 
 func ReadApp(ctx context.Context, cc *client.Client, orgId, appId string) (*ReadAppRes, diag.Diagnostics) {

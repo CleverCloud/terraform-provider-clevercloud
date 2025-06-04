@@ -129,12 +129,7 @@ func (r *ResourceJava) Read(ctx context.Context, req resource.ReadRequest, resp 
 	state.BiggestFlavor = pkg.FromStr(readRes.App.Instance.MaxFlavor.Name)
 	state.Region = pkg.FromStr(readRes.App.Zone)
 	state.DeployURL = pkg.FromStr(readRes.App.DeployURL)
-
-	if readRes.App.SeparateBuild {
-		state.BuildFlavor = pkg.FromStr(readRes.App.BuildFlavor.Name)
-	} else {
-		state.BuildFlavor = types.StringNull()
-	}
+	state.BuildFlavor = readRes.GetBuildFlavor()
 
 	vhosts := readRes.App.Vhosts.AsString()
 	hasDefaultVHost := pkg.HasSome(vhosts, func(vhost string) bool {
