@@ -128,12 +128,7 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 	state.BiggestFlavor = pkg.FromStr(app.App.Instance.MaxFlavor.Name)
 	state.Region = pkg.FromStr(app.App.Zone)
 	state.DeployURL = pkg.FromStr(app.App.DeployURL)
-
-	if app.App.SeparateBuild {
-		state.BuildFlavor = pkg.FromStr(app.App.BuildFlavor.Name)
-	} else {
-		state.BuildFlavor = types.StringNull()
-	}
+	state.BuildFlavor = app.GetBuildFlavor()
 
 	vhosts := app.App.Vhosts.AsString()
 	hasDefaultVHost := pkg.HasSome(vhosts, func(vhost string) bool {

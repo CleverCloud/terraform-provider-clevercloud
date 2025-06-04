@@ -20,6 +20,11 @@ func FromI(i int64) types.Int64 {
 	return types.Int64Value(i)
 }
 
+// Convert a native bool into a tfsdk one
+func FromBool(b bool) types.Bool {
+	return types.BoolValue(b)
+}
+
 // Convert a native int64 into a tfsdk one
 func FromListString(items []string) types.List {
 	if len(items) == 0 {

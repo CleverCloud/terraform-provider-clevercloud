@@ -97,6 +97,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 	plan.ID = pkg.FromStr(createRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
 	plan.VHost = pkg.FromStr(createRes.Application.Vhosts[0].Fqdn)
+	plan.BuildFlavor = createRes.GetBuildFlavor()
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {
@@ -124,7 +125,17 @@ func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *re
 	}
 
 	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
-	//state.VHost = pkg.FromStr(appRes.App.Vhosts[0].Fqdn) // TODO
+	state.Name = pkg.FromStr(appRes.App.Name)
+	state.Description = pkg.FromStr(appRes.App.Description)
+	state.Region = pkg.FromStr(appRes.App.Zone)
+	state.SmallestFlavor = pkg.FromStr(appRes.App.Instance.MinFlavor.Name)
+	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
+	state.MinInstanceCount = pkg.FromI(int64(appRes.App.Instance.MinInstances))
+	state.MaxInstanceCount = pkg.FromI(int64(appRes.App.Instance.MaxInstances))
+	state.BuildFlavor = appRes.GetBuildFlavor()
+	state.StickySessions = pkg.FromBool(appRes.App.StickySessions)
+	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
+	state.AdditionalVHosts = pkg.FromListString(appRes.App.Vhosts.WithoutCleverApps(appRes.App.ID).AsString())
 
 	diags = res.State.Set(ctx, state)
 	res.Diagnostics.Append(diags...)
