@@ -88,3 +88,23 @@ func GetPulsarCluster(ctx context.Context, cc *client.Client, clusterID string) 
 	path := fmt.Sprintf("/v4/addon-providers/addon-pulsar/clusters/%s", clusterID)
 	return client.Get[PulsarCluster](ctx, cc, path)
 }
+
+type StoragePolicies struct {
+	Retention *StoragePolicy `json:"retentionPolicies"`
+	Offload   *StoragePolicy `json:"offloadPolicies"`
+}
+
+type StoragePolicy struct {
+	Size     *int64 `json:"sizeInMB"`
+	Duration *int64 `json:"durationInDays"`
+}
+
+func GetPulsarStoragePolicies(ctx context.Context, cc *client.Client, pulsarID string) client.Response[StoragePolicies] {
+	path := fmt.Sprintf("/v4/addon-providers/addon-pulsar/addons/%s/storage-policies", pulsarID)
+	return client.Get[StoragePolicies](ctx, cc, path)
+}
+
+func UpdatePulsarStoragePolicies(ctx context.Context, cc *client.Client, PulsarID string, policies StoragePolicies) client.Response[StoragePolicies] {
+	path := fmt.Sprintf("/v4/addon-providers/addon-pulsar/addons/%s/storage-policies", PulsarID)
+	return client.Patch[StoragePolicies](ctx, cc, path, policies)
+}

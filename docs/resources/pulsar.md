@@ -23,7 +23,10 @@ See [product specification](https://www.clever-cloud.com/pulsar/).
 
 ### Optional
 
+- `offload_threshold_size` (Number) Pulsar offload size in megabytes
 - `region` (String) Geographical region where the data will be stored
+- `retention_size` (Number) Pulsar retention size in megabytes
+- `retention_time` (Number) Pulsar retention time in days
 
 ### Read-Only
 

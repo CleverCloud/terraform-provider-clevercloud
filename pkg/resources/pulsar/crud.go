@@ -3,14 +3,17 @@ package pulsar
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/client"
 )
 
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
@@ -63,7 +66,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	addon := res.Payload()
 
-	plan.ID = pkg.FromStr(addon.RealID)
+	plan.ID = basetypes.NewStringValue(addon.RealID)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
@@ -79,16 +82,16 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 
 	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.cc, pulsar.ClusterID)
 	if pulsarClusterRes.HasError() {
-		resp.Diagnostics.AddError("failed to get pulsar env", pulsarClusterRes.Error().Error())
+		resp.Diagnostics.AddError("failed to get pulsar cluster", pulsarClusterRes.Error().Error())
 		return
 	}
 	pulsarCluster := pulsarClusterRes.Payload()
 
-	plan.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar+ssl://%s:%d", pulsarCluster.URL, pulsarCluster.PulsarTLSPort))
-	plan.HTTPUrl = pkg.FromStr(fmt.Sprintf("https://%s:%d", pulsarCluster.URL, pulsarCluster.WebTLSPort))
-	plan.Tenant = pkg.FromStr(pulsar.Tenant)
-	plan.Namespace = pkg.FromStr(pulsar.Namespace)
-	plan.Token = pkg.FromStr(pulsar.Token)
+	plan.BinaryURL = basetypes.NewStringValue(fmt.Sprintf("pulsar+ssl://%s:%d", pulsarCluster.URL, pulsarCluster.PulsarTLSPort))
+	plan.HTTPUrl = basetypes.NewStringValue(fmt.Sprintf("https://%s:%d", pulsarCluster.URL, pulsarCluster.WebTLSPort))
+	plan.Tenant = basetypes.NewStringValue(pulsar.Tenant)
+	plan.Namespace = basetypes.NewStringValue(pulsar.Namespace)
+	plan.Token = basetypes.NewStringValue(pulsar.Token)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
@@ -121,18 +124,95 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 	pulsarCluster := pulsarClusterRes.Payload()
 
-	state.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar+ssl://%s:%d", pulsarCluster.URL, pulsarCluster.PulsarTLSPort))
-	state.HTTPUrl = pkg.FromStr(fmt.Sprintf("https://%s:%d", pulsarCluster.URL, pulsarCluster.WebTLSPort))
-	state.Tenant = pkg.FromStr(pulsar.Tenant)
-	state.Namespace = pkg.FromStr(pulsar.Namespace)
-	state.Token = pkg.FromStr(pulsar.Token)
+	state.BinaryURL = basetypes.NewStringValue(fmt.Sprintf("pulsar+ssl://%s:%d", pulsarCluster.URL, pulsarCluster.PulsarTLSPort))
+	state.HTTPUrl = basetypes.NewStringValue(fmt.Sprintf("https://%s:%d", pulsarCluster.URL, pulsarCluster.WebTLSPort))
+	state.Tenant = basetypes.NewStringValue(pulsar.Tenant)
+	state.Namespace = basetypes.NewStringValue(pulsar.Namespace)
+	state.Token = basetypes.NewStringValue(pulsar.Token)
+
+	var pulsarPoliciesRes client.Response[tmp.StoragePolicies]
+	for i := range 500 { // hello sadness my old friend
+		pulsarPoliciesRes = tmp.GetPulsarStoragePolicies(ctx, r.cc, state.ID.ValueString())
+		if !pulsarPoliciesRes.HasError() {
+			break
+		}
+		tflog.Debug(ctx, "failed to get pulsar policies, retrying...", map[string]any{"retry": i, "error": pulsarPoliciesRes.Error().Error()})
+		time.Sleep(500 * time.Millisecond)
+	}
+	if pulsarPoliciesRes.HasError() {
+		resp.Diagnostics.AddError("failed to get pulsar policies", pulsarPoliciesRes.Error().Error())
+		return
+	}
+	pulsarPolicies := pulsarPoliciesRes.Payload()
+
+	if pulsarPolicies.Offload != nil {
+		state.OffloadThresholdSize = basetypes.NewInt64PointerValue(pulsarPolicies.Offload.Size)
+	} else {
+		state.OffloadThresholdSize = basetypes.NewInt64Null()
+	}
+
+	if pulsarPolicies.Retention != nil {
+		state.RetentionSize = basetypes.NewInt64PointerValue(pulsarPolicies.Retention.Size)
+		state.RetentionTime = basetypes.NewInt64PointerValue(pulsarPolicies.Retention.Duration)
+	} else {
+		state.RetentionSize = basetypes.NewInt64Null()
+		state.RetentionTime = basetypes.NewInt64Null()
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Update resource
 func (r *ResourcePulsar) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// TODO
+	state := helper.StateFrom[Pulsar](ctx, req.State, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan := helper.PlanFrom[Pulsar](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	updateRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+		"name": plan.Name.ValueString(),
+	})
+	if updateRes.HasError() {
+		resp.Diagnostics.AddError("failed to update addon", updateRes.Error().Error())
+	} else {
+		state.Name = plan.Name
+	}
+
+	updatePoliciesRes := tmp.UpdatePulsarStoragePolicies(ctx, r.cc, plan.ID.ValueString(), tmp.StoragePolicies{
+		Retention: &tmp.StoragePolicy{
+			Size:     plan.RetentionSize.ValueInt64Pointer(),
+			Duration: plan.RetentionTime.ValueInt64Pointer(),
+		},
+		Offload: &tmp.StoragePolicy{
+			Size: plan.OffloadThresholdSize.ValueInt64Pointer(),
+		},
+	})
+	if updatePoliciesRes.HasError() {
+		resp.Diagnostics.AddError("failed to update pulsar policies", updatePoliciesRes.Error().Error())
+	} else {
+		pulsarPolicies := updatePoliciesRes.Payload()
+
+		if pulsarPolicies.Offload != nil {
+			state.OffloadThresholdSize = basetypes.NewInt64PointerValue(pulsarPolicies.Offload.Size)
+		} else {
+			state.OffloadThresholdSize = basetypes.NewInt64Null()
+		}
+
+		if pulsarPolicies.Retention != nil {
+			state.RetentionSize = basetypes.NewInt64PointerValue(pulsarPolicies.Retention.Size)
+			state.RetentionTime = basetypes.NewInt64PointerValue(pulsarPolicies.Retention.Duration)
+		} else {
+			state.RetentionSize = basetypes.NewInt64Null()
+			state.RetentionTime = basetypes.NewInt64Null()
+		}
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Delete resource

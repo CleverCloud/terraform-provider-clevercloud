@@ -18,11 +18,14 @@ type Pulsar struct {
 	Name   types.String `tfsdk:"name"`
 	Region types.String `tfsdk:"region"`
 
-	BinaryURL types.String `tfsdk:"binary_url"`
-	HTTPUrl   types.String `tfsdk:"http_url"`
-	Tenant    types.String `tfsdk:"tenant"`
-	Namespace types.String `tfsdk:"namespace"`
-	Token     types.String `tfsdk:"token"`
+	BinaryURL            types.String `tfsdk:"binary_url"`
+	HTTPUrl              types.String `tfsdk:"http_url"`
+	Tenant               types.String `tfsdk:"tenant"`
+	Namespace            types.String `tfsdk:"namespace"`
+	Token                types.String `tfsdk:"token"`
+	RetentionSize        types.Int64  `tfsdk:"retention_size"`
+	RetentionTime        types.Int64  `tfsdk:"retention_time"`
+	OffloadThresholdSize types.Int64  `tfsdk:"offload_threshold_size"`
 }
 
 //go:embed doc.md
@@ -33,14 +36,17 @@ func (r ResourcePulsar) Schema(_ context.Context, req resource.SchemaRequest, re
 		Version:             0,
 		MarkdownDescription: resourcePulsarDoc,
 		Attributes: map[string]schema.Attribute{
-			"id":         schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"name":       schema.StringAttribute{Required: true, MarkdownDescription: "Name of the Pulsar"},
-			"region":     schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Geographical region where the data will be stored", Default: stringdefault.StaticString("par")},
-			"binary_url": schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar native protocol address"},
-			"http_url":   schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar REST API address"},
-			"tenant":     schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar tenant"},
-			"namespace":  schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar namespace"},
-			"token":      schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar authentication token"},
+			"id":                     schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"name":                   schema.StringAttribute{Required: true, MarkdownDescription: "Name of the Pulsar"},
+			"region":                 schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Geographical region where the data will be stored", Default: stringdefault.StaticString("par")},
+			"binary_url":             schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar native protocol address"},
+			"http_url":               schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar REST API address"},
+			"tenant":                 schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar tenant"},
+			"namespace":              schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar namespace"},
+			"token":                  schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar authentication token"},
+			"retention_size":         schema.Int64Attribute{Optional: true, MarkdownDescription: "Pulsar retention size in megabytes"},
+			"retention_time":         schema.Int64Attribute{Optional: true, MarkdownDescription: "Pulsar retention time in days"},
+			"offload_threshold_size": schema.Int64Attribute{Optional: true, MarkdownDescription: "Pulsar offload size in megabytes"},
 		},
 	}
 }
