@@ -3,14 +3,14 @@
 page_title: "clevercloud_pulsar Resource - terraform-provider-clevercloud"
 description: |-
   Manage pulsar https://www.pulsar.org/ product.
-  See product specification https://www.clever-cloud.com/pulsar/.
+  See product specification https://www.clever-cloud.com/product/pulsar/.
 ---
 
 # clevercloud_pulsar (Resource)
 
 Manage [pulsar](https://www.pulsar.org/) product.
 
-See [product specification](https://www.clever-cloud.com/pulsar/).
+See [product specification](https://www.clever-cloud.com/product/pulsar/).
 
 
 
