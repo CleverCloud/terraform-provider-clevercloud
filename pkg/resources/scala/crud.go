@@ -171,11 +171,11 @@ func (r *ResourceScala) Update(ctx context.Context, req resource.UpdateRequest, 
 	tflog.Debug(ctx, "ResourceScala.Update()")
 
 	// Retrieve values from plan and state
-	plan := helper.PlanFrom[Scala](ctx, req.Plan, res.Diagnostics)
+	plan := helper.PlanFrom[Scala](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	state := helper.StateFrom[Scala](ctx, req.State, res.Diagnostics)
+	state := helper.StateFrom[Scala](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

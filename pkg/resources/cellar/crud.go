@@ -32,7 +32,7 @@ func (r *ResourceCellar) Configure(ctx context.Context, req resource.ConfigureRe
 
 // Create a new resource
 func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	cellar := helper.PlanFrom[Cellar](ctx, req.Plan, resp.Diagnostics)
+	cellar := helper.PlanFrom[Cellar](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -87,7 +87,7 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "Cellar READ", map[string]any{"request": req})
 
-	cellar := helper.StateFrom[Cellar](ctx, req.State, resp.Diagnostics)
+	cellar := helper.StateFrom[Cellar](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -125,12 +125,12 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 
 // Update resource
 func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	plan := helper.PlanFrom[Cellar](ctx, req.Plan, resp.Diagnostics)
+	plan := helper.PlanFrom[Cellar](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	state := helper.StateFrom[Cellar](ctx, req.State, resp.Diagnostics)
+	state := helper.StateFrom[Cellar](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
