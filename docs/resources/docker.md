@@ -44,7 +44,7 @@ resource "clevercloud_docker" "docker_instance" {
 
 ### Optional
 
-- `additional_vhosts` (List of String) Add custom hostname in addition to the default one, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
+- `additional_vhosts` (List of String, Deprecated) Add custom hostname in addition to the default one, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build step
 - `container_port` (Number) Set to custom HTTP port if your Docker container runs on custom port
@@ -65,12 +65,13 @@ Can be either app_xxx or postgres_yyy ID format
 - `registry_url` (String) The server of your private registry (optional).	Docker’s public registry
 - `registry_user` (String) The username to login to a private registry
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
+- `vhosts` (List of String) Add custom hostname, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
 
 ### Read-Only
 
 - `deploy_url` (String) Git URL used to push source code
 - `id` (String) Unique identifier generated during application creation
-- `vhost` (String) Default vhost to access your app
+- `vhost` (String, Deprecated) Default vhost to access your app
 
 <a id="nestedblock--deployment"></a>
 ### Nested Schema for `deployment`
