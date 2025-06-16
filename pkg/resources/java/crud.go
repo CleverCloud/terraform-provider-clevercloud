@@ -36,9 +36,7 @@ func (r *ResourceJava) Configure(ctx context.Context, req resource.ConfigureRequ
 
 // Create a new resource
 func (r *ResourceJava) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	plan := Java{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	plan := helper.PlanFrom[Java](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -94,7 +92,8 @@ func (r *ResourceJava) Create(ctx context.Context, req resource.CreateRequest, r
 
 	createdVhosts := createAppRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts, _ = pkg.FromSetString(createdVhosts.AsString())
+		plan.VHosts, diags = pkg.FromSetString(createdVhosts.AsString())
+		resp.Diagnostics.Append(diags...)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
 		deleteVhostRes := tmp.DeleteAppVHost(
@@ -109,7 +108,8 @@ func (r *ResourceJava) Create(ctx context.Context, req resource.CreateRequest, r
 			return
 		}
 
-		plan.VHosts, _ = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString())
+		plan.VHosts, diags = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString())
+		resp.Diagnostics.Append(diags...)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -120,9 +120,7 @@ func (r *ResourceJava) Create(ctx context.Context, req resource.CreateRequest, r
 
 // Read resource information
 func (r *ResourceJava) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state Java
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	state := helper.StateFrom[Java](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -149,7 +147,9 @@ func (r *ResourceJava) Read(ctx context.Context, req resource.ReadRequest, resp 
 	state.BuildFlavor = readRes.GetBuildFlavor()
 
 	vhosts := readRes.App.Vhosts.AsString()
-	state.VHosts, _ = pkg.FromSetString(vhosts)
+	state.VHosts, diags = pkg.FromSetString(vhosts)
+	resp.Diagnostics.Append(diags...)
+
 	state.VHost = basetypes.NewStringNull()
 
 	for envName, envValue := range readRes.EnvAsMap() {
@@ -157,7 +157,7 @@ func (r *ResourceJava) Read(ctx context.Context, req resource.ReadRequest, resp 
 		case "APP_FOLDER":
 			state.AppFolder = pkg.FromStr(envValue)
 		case "CC_JAVA_VERSION":
-			state.AppFolder = pkg.FromStr(envValue)
+			state.JavaVersion = pkg.FromStr(envValue)
 		default:
 			//state.Environment.
 		}
@@ -234,7 +234,9 @@ func (r *ResourceJava) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	plan.VHosts, _ = pkg.FromSetString(updatedApp.Application.Vhosts.AsString())
+	plan.VHosts, diags = pkg.FromSetString(updatedApp.Application.Vhosts.AsString())
+	res.Diagnostics.Append(diags...)
+
 	plan.VHost = basetypes.NewStringNull()
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
@@ -245,13 +247,12 @@ func (r *ResourceJava) Update(ctx context.Context, req resource.UpdateRequest, r
 
 // Delete resource
 func (r *ResourceJava) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state Java
+	tflog.Debug(ctx, "ResourceJava.Delete()")
 
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	state := helper.StateFrom[Java](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "JAVA DELETE", map[string]any{"state": state})
 
 	res := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
 	if res.IsNotFoundError() {

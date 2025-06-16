@@ -2,7 +2,6 @@ package nodejs
 
 import (
 	"context"
-	"fmt"
 	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -37,9 +36,7 @@ func (r *ResourceNodeJS) Configure(ctx context.Context, req resource.ConfigureRe
 
 // Create a new resource
 func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	plan := NodeJS{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	plan := helper.PlanFrom[NodeJS](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -153,15 +150,12 @@ func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, res
 	state.MaxInstanceCount = basetypes.NewInt64Value(int64(appRes.App.Instance.MaxInstances))
 	state.SmallestFlavor = pkg.FromStr(appRes.App.Instance.MinFlavor.Name)
 	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
-	state.StickySessions = pkg.FromBool(appRes.App.StickySessions)
-	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 
 	vhosts := appRes.App.Vhosts.AsString()
 	state.VHosts, diags = pkg.FromSetString(vhosts)
 	resp.Diagnostics.Append(diags...)
 
 	state.VHost = basetypes.NewStringNull()
-	fmt.Printf("####### vhosts after a read: %s\n", state.VHosts)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -238,7 +232,9 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	plan.VHosts, _ = pkg.FromSetString(updatedApp.Application.Vhosts.AsString())
+	plan.VHosts, diags = pkg.FromSetString(updatedApp.Application.Vhosts.AsString())
+	res.Diagnostics.Append(diags...)
+
 	plan.VHost = basetypes.NewStringNull()
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
