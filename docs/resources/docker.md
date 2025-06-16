@@ -65,7 +65,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `registry_url` (String) The server of your private registry (optional).	Docker’s public registry
 - `registry_user` (String) The username to login to a private registry
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
-- `vhosts` (List of String) Add custom hostname, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
+- `vhosts` (Set of String) Add custom hostname, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
 
 ### Read-Only
 

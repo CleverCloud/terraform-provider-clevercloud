@@ -98,7 +98,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
-- `vhosts` (List of String) Add custom hostname, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
+- `vhosts` (Set of String) Add custom hostname, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
 
 ### Read-Only
 

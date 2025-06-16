@@ -42,7 +42,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `redis_sessions` (Boolean) Use a linked Redis instance to store sessions (Default: false)
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
-- `vhosts` (List of String) Add custom hostname, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
+- `vhosts` (Set of String) Add custom hostname, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
 - `webroot` (String) Define the DocumentRoot of your project (default: ".")
 
 ### Read-Only
