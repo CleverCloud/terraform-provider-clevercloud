@@ -66,6 +66,14 @@ func TestAccJava_basic(t *testing.T) {
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestCheckResourceAttr(fullName, "biggest_flavor", "XS"),
 			),
+		}, {
+			ResourceName: rName,
+			Config: providerBlock.Append(
+				javaBlock.SetOneValue("java_version", "21"),
+			).String(),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(fullName, "biggest_flavor", "XS"),
+			),
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {

@@ -4,6 +4,8 @@ import (
 	"context"
 	_ "embed"
 
+	"maps"
+
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -50,9 +52,7 @@ func (plan *Java) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]
 	if diags.HasError() {
 		return env
 	}
-	for k, v := range customEnv {
-		env[k] = v
-	}
+	maps.Copy(env, customEnv)
 
 	pkg.IfIsSet(plan.AppFolder, func(s string) { env["APP_FOLDER"] = s })
 	pkg.IfIsSet(plan.JavaVersion, func(s string) { env["CC_JAVA_VERSION"] = s })
