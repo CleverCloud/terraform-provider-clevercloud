@@ -29,6 +29,7 @@ func (r *ResourceGo) Configure(ctx context.Context, req resource.ConfigureReques
 	if ok {
 		r.cc = provider.Client()
 		r.org = provider.Organization()
+		r.gitAuth = provider.GitAuth()
 	}
 
 	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
@@ -80,7 +81,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 		},
 		Environment:  environment,
 		VHosts:       vhosts,
-		Deployment:   plan.toDeployment(),
+		Deployment:   plan.toDeployment(r.gitAuth),
 		Dependencies: dependencies,
 	}
 
@@ -97,7 +98,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 
 	createdVhosts := createRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts, _ = pkg.FromSetString(createdVhosts.AsString())
+		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &res.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
 		deleteVhostRes := tmp.DeleteAppVHost(
@@ -112,7 +113,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 			return
 		}
 
-		plan.VHosts, _ = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString())
+		plan.VHosts = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &res.Diagnostics)
 	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
@@ -153,7 +154,7 @@ func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *re
 	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 
 	vhosts := appRes.App.Vhosts.AsString()
-	state.VHosts, _ = pkg.FromSetString(vhosts)
+	state.VHosts = pkg.FromSetString(vhosts, &res.Diagnostics)
 	state.VHost = basetypes.NewStringNull()
 
 	diags = res.State.Set(ctx, state)
@@ -220,7 +221,7 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 		},
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
-		Deployment:     plan.toDeployment(),
+		Deployment:     plan.toDeployment(r.gitAuth),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
@@ -231,7 +232,7 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 		return
 	}
 
-	plan.VHosts, _ = pkg.FromSetString(updatedApp.Application.Vhosts.AsString())
+	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 	plan.VHost = basetypes.NewStringNull()
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)

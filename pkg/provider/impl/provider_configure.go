@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.dev/client"
@@ -15,15 +16,13 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 
 	tflog.Debug(ctx, "configure provider...")
 
-	diags := req.Config.Get(ctx, &config)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if config.Organisation.IsUnknown() || config.Organisation.IsNull() {
-		p.organization = os.Getenv("CC_ORGANISATION")
-	} else {
+	p.organization = os.Getenv("CC_ORGANISATION")
+	if !config.Organisation.IsUnknown() && !config.Organisation.IsNull() {
 		p.organization = config.Organisation.ValueString()
 	}
 	if p.organization == "" {
@@ -48,20 +47,28 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 			config.Token.ValueString(),
 			config.Secret.ValueString(),
 		))
-		p.cc = client.New(clientOptions...)
+		p.gitAuth = &http.BasicAuth{Username: config.Token.ValueString(), Password: config.Secret.ValueString()}
+
 	} else if config.Secret.IsUnknown() ||
 		config.Token.IsUnknown() ||
 		config.Secret.IsNull() ||
 		config.Token.IsNull() {
 		clientOptions = append(clientOptions, client.WithAutoOauthConfig())
-		p.cc = client.New(clientOptions...)
+
+		tmpClient := client.New()
+		c := tmpClient.GuessOauth1Config()
+		p.gitAuth = &http.BasicAuth{Username: c.AccessToken, Password: c.AccessSecret}
+
 	} else {
 		clientOptions = append(clientOptions, client.WithUserOauthConfig(
 			config.Token.ValueString(),
 			config.Secret.ValueString(),
 		))
-		p.cc = client.New(clientOptions...)
+
+		p.gitAuth = &http.BasicAuth{Username: config.Token.ValueString(), Password: config.Secret.ValueString()}
 	}
+
+	p.cc = client.New(clientOptions...)
 
 	selfRes := client.Get[map[string]any](ctx, p.cc, "/v2/self")
 	if selfRes.HasError() {

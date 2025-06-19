@@ -14,6 +14,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/materiakv"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/metabase"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/mongodb"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/networkgroup"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/nodejs"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/php"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/play2"
@@ -48,4 +49,5 @@ var Resources = []func() resource.Resource{
 	golang.NewResourceGo,
 	play2.NewResourcePlay2(),
 	pulsar.NewResourcePulsar,
+	networkgroup.NewResourceNetworkgroup,
 }
