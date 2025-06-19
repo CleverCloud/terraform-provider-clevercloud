@@ -92,8 +92,7 @@ func (r *ResourceJava) Create(ctx context.Context, req resource.CreateRequest, r
 
 	createdVhosts := createAppRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts, diags = pkg.FromSetString(createdVhosts.AsString())
-		resp.Diagnostics.Append(diags...)
+		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
 		deleteVhostRes := tmp.DeleteAppVHost(
@@ -108,8 +107,7 @@ func (r *ResourceJava) Create(ctx context.Context, req resource.CreateRequest, r
 			return
 		}
 
-		plan.VHosts, diags = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString())
-		resp.Diagnostics.Append(diags...)
+		plan.VHosts = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -147,8 +145,7 @@ func (r *ResourceJava) Read(ctx context.Context, req resource.ReadRequest, resp 
 	state.BuildFlavor = readRes.GetBuildFlavor()
 
 	vhosts := readRes.App.Vhosts.AsString()
-	state.VHosts, diags = pkg.FromSetString(vhosts)
-	resp.Diagnostics.Append(diags...)
+	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
 
 	state.VHost = basetypes.NewStringNull()
 
@@ -234,7 +231,7 @@ func (r *ResourceJava) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	plan.VHosts, diags = pkg.FromSetString(updatedApp.Application.Vhosts.AsString())
+	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 	res.Diagnostics.Append(diags...)
 
 	plan.VHost = basetypes.NewStringNull()

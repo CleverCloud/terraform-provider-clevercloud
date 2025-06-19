@@ -94,7 +94,7 @@ func (r *ResourceScala) Create(ctx context.Context, req resource.CreateRequest, 
 
 	createdVhosts := createAppRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts, _ = pkg.FromSetString(createdVhosts.AsString())
+		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
 		deleteVhostRes := tmp.DeleteAppVHost(
@@ -109,7 +109,7 @@ func (r *ResourceScala) Create(ctx context.Context, req resource.CreateRequest, 
 			return
 		}
 
-		plan.VHosts, _ = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString())
+		plan.VHosts = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -149,7 +149,7 @@ func (r *ResourceScala) Read(ctx context.Context, req resource.ReadRequest, resp
 	state.BuildFlavor = readRes.GetBuildFlavor()
 
 	vhosts := readRes.App.Vhosts.AsString()
-	state.VHosts, _ = pkg.FromSetString(vhosts)
+	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
 	state.VHost = basetypes.NewStringNull()
 
 	for envName, envValue := range readRes.EnvAsMap() {
@@ -232,9 +232,7 @@ func (r *ResourceScala) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	plan.VHosts, diags = pkg.FromSetString(updatedApp.Application.Vhosts.AsString())
-	res.Diagnostics.Append(diags...)
-
+	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 	plan.VHost = basetypes.NewStringNull()
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
