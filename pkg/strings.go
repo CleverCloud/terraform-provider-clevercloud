@@ -1,7 +1,7 @@
 package pkg
 
 import (
-	"fmt"
+	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -31,7 +31,6 @@ func FromBool(b bool) types.Bool {
 
 // Convert a native int64 into a tfsdk one
 func FromListString(items []string) types.List {
-	fmt.Printf("####### items: %d\n", len(items))
 	if len(items) == 0 {
 		return types.ListNull(types.StringType)
 	}
@@ -44,8 +43,18 @@ func FromListString(items []string) types.List {
 }
 
 // Convert a native int64 into a tfsdk one
-func FromSetString(items []string) (types.Set, diag.Diagnostics) {
-	return basetypes.NewSetValue(types.StringType, Map(items, func(item string) attr.Value {
+func FromSetString(items []string, diags *diag.Diagnostics) types.Set {
+	s, d := basetypes.NewSetValue(types.StringType, Map(items, func(item string) attr.Value {
 		return types.StringValue(item)
 	}))
+	diags.Append(d...)
+
+	return s
+}
+
+func SetToStringSlice(ctx context.Context, items types.Set, diags *diag.Diagnostics) []string {
+	var strs []string
+	diags.Append(items.ElementsAs(ctx, &strs, true)...)
+
+	return strs
 }

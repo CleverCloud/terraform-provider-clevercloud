@@ -29,6 +29,7 @@ func (r *ResourcePHP) Configure(ctx context.Context, req resource.ConfigureReque
 	if ok {
 		r.cc = provider.Client()
 		r.org = provider.Organization()
+		r.gitAuth = provider.GitAuth()
 	}
 
 	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
@@ -76,7 +77,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		},
 		Environment: environment,
 		VHosts:      vhosts,
-		Deployment:  plan.toDeployment(),
+		Deployment:  plan.toDeployment(r.gitAuth),
 	}
 
 	createAppRes, diags := application.CreateApp(ctx, createAppReq)
@@ -93,7 +94,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 
 	createdVhosts := createAppRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts, _ = pkg.FromSetString(createdVhosts.AsString())
+		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
 		deleteVhostRes := tmp.DeleteAppVHost(
@@ -108,7 +109,8 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 			return
 		}
 
-		plan.VHosts, _ = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString())
+		plan.VHosts = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &resp.Diagnostics)
+
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -146,7 +148,7 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 	state.BuildFlavor = appPHP.GetBuildFlavor()
 
 	vhosts := appPHP.App.Vhosts.AsString()
-	state.VHosts, _ = pkg.FromSetString(vhosts)
+	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
 	state.VHost = basetypes.NewStringNull()
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
@@ -205,7 +207,7 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 		},
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
-		Deployment:     plan.toDeployment(),
+		Deployment:     plan.toDeployment(r.gitAuth),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
@@ -215,7 +217,7 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	plan.VHosts, _ = pkg.FromSetString(updatedApp.Application.Vhosts.AsString())
+	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 	plan.VHost = basetypes.NewStringNull()
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)

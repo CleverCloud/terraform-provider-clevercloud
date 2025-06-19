@@ -1,6 +1,8 @@
 package impl
 
 import (
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
+
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"go.clever-cloud.dev/client"
 )
@@ -8,6 +10,7 @@ import (
 type Provider struct {
 	version      string
 	cc           *client.Client
+	gitAuth      *http.BasicAuth
 	organization string
 }
 
@@ -22,4 +25,8 @@ func (p *Provider) Organization() string {
 }
 func (p *Provider) Client() *client.Client {
 	return p.cc
+}
+
+func (p *Provider) GitAuth() *http.BasicAuth {
+	return p.gitAuth
 }

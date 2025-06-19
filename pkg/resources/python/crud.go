@@ -29,6 +29,7 @@ func (r *ResourcePython) Configure(ctx context.Context, req resource.ConfigureRe
 	if ok {
 		r.cc = provider.Client()
 		r.org = provider.Organization()
+		r.gitAuth = provider.GitAuth()
 	}
 
 	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
@@ -80,7 +81,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 		},
 		Environment:  environment,
 		VHosts:       vhosts,
-		Deployment:   plan.toDeployment(),
+		Deployment:   plan.toDeployment(r.gitAuth),
 		Dependencies: dependencies,
 	}
 
@@ -98,7 +99,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 
 	createdVhosts := createRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts, _ = pkg.FromSetString(createdVhosts.AsString())
+		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
 		deleteVhostRes := tmp.DeleteAppVHost(
@@ -113,7 +114,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 			return
 		}
 
-		plan.VHosts, _ = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString())
+		plan.VHosts = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -144,7 +145,7 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
 
 	vhosts := appRes.App.Vhosts.AsString()
-	state.VHosts, _ = pkg.FromSetString(vhosts)
+	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
 	state.VHost = basetypes.NewStringNull()
 
 	diags = resp.State.Set(ctx, state)
@@ -211,7 +212,7 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 		},
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
-		Deployment:     plan.toDeployment(),
+		Deployment:     plan.toDeployment(r.gitAuth),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
@@ -226,7 +227,7 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 
 	cleverAppsVhost := updatedApp.Application.Vhosts.CleverAppsFQDN(plan.ID.ValueString())
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts, _ = pkg.FromSetString(updatedApp.Application.Vhosts.AsString())
+		plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 		if cleverAppsVhost != nil {
 			deleteVhostRes := tmp.DeleteAppVHost(
@@ -241,7 +242,7 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 				return
 			}
 
-			plan.VHosts, _ = pkg.FromSetString(updatedApp.Application.Vhosts.WithoutCleverApps(plan.ID.ValueString()).AsString())
+			plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &res.Diagnostics)
 		}
 	}
 
