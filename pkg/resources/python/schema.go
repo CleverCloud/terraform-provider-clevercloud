@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -68,13 +69,14 @@ func (py Python) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]s
 	return env
 }
 
-func (py Python) toDeployment() *application.Deployment {
+func (py Python) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if py.Deployment == nil || py.Deployment.Repository.IsNull() {
 		return nil
 	}
 
 	return &application.Deployment{
-		Repository: py.Deployment.Repository.ValueString(),
-		Commit:     py.Deployment.Commit.ValueStringPointer(),
+		Repository:    py.Deployment.Repository.ValueString(),
+		Commit:        py.Deployment.Commit.ValueStringPointer(),
+		CleverGitAuth: gitAuth,
 	}
 }

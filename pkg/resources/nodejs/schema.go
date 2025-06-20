@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -90,13 +91,14 @@ func (node NodeJS) toEnv(ctx context.Context, diags diag.Diagnostics) map[string
 	return env
 }
 
-func (node NodeJS) toDeployment() *application.Deployment {
+func (node NodeJS) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if node.Deployment == nil || node.Deployment.Repository.IsNull() {
 		return nil
 	}
 
 	return &application.Deployment{
-		Repository: node.Deployment.Repository.ValueString(),
-		Commit:     node.Deployment.Commit.ValueStringPointer(),
+		Repository:    node.Deployment.Repository.ValueString(),
+		Commit:        node.Deployment.Commit.ValueStringPointer(),
+		CleverGitAuth: gitAuth,
 	}
 }

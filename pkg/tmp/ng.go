@@ -58,9 +58,9 @@ type NetworkgroupCreation struct {
 	Members     []Member `json:"members"`
 }
 
-func CreateNetworkgroup(ctx context.Context, cc *client.Client, organisationID string, networkgroup NetworkgroupCreation) client.Response[map[string]any] {
+func CreateNetworkgroup(ctx context.Context, cc *client.Client, organisationID string, networkgroup NetworkgroupCreation) client.Response[client.Nothing] {
 	path := fmt.Sprintf("/v4/networkgroups/organisations/%s/networkgroups", organisationID)
-	return client.Post[map[string]any](ctx, cc, path, networkgroup)
+	return client.Post[client.Nothing](ctx, cc, path, networkgroup)
 }
 
 func DeleteNetworkgroup(ctx context.Context, cc *client.Client, organisationID string, networkgroupID string) client.Response[any] {

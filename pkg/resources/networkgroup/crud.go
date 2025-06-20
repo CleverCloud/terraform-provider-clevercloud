@@ -27,9 +27,11 @@ func (r *ResourceNG) Configure(ctx context.Context, req resource.ConfigureReques
 	}
 
 	provider, ok := req.ProviderData.(provider.Provider)
+	fmt.Printf("############## Provider: %v\n", provider)
 	if ok {
 		r.cc = provider.Client()
 		r.org = provider.Organization()
+		r.gitAuth = provider.GitAuth()
 	}
 }
 
@@ -44,21 +46,24 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 	fmt.Printf("############## Networkgroup ID: %s\n", id)
 	plan.ID = basetypes.NewStringValue(id)
 	ngRes := tmp.CreateNetworkgroup(ctx, r.cc, r.org, tmp.NetworkgroupCreation{
+		ID:          id,
 		Label:       plan.Name.ValueString(),
 		Description: plan.Description.ValueString(),
 		Tags:        pkg.SetToStringSlice(ctx, plan.Tags, &resp.Diagnostics),
 	})
+	if ngRes.HasError() {
+		resp.Diagnostics.AddError("failed to create networkgroup", ngRes.Error().Error())
+		return
+	}
 
-	fmt.Printf("Networkgroup created: \n%+v\n", ngRes.Payload())
+	ng, err := r.WaitForNG(ctx, r.cc, r.org, id)
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get created networkgroup", err.Error())
+		return
+	}
 
-	r.WaitForNG(ctx, r.cc, r.org, id)
-
-	//ng := ngRes.Payload()
-	/*plan.ID = basetypes.NewStringValue(ng.ID)
 	plan.Name = basetypes.NewStringValue(ng.Label)
-	plan.Description = basetypes.NewStringPointerValue(ng.Description)
-	plan.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
-	plan.Network = pkg.FromStr(ng.NetworkIP)*/
+	plan.Network = pkg.FromStr(ng.NetworkIP)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -82,6 +87,7 @@ func (r *ResourceNG) Read(ctx context.Context, req resource.ReadRequest, resp *r
 	state.Name = basetypes.NewStringValue(ng.Label)
 	state.Description = basetypes.NewStringPointerValue(ng.Description)
 	state.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
+	state.Network = pkg.FromStr(ng.NetworkIP)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -95,8 +101,14 @@ func (r *ResourceNG) Update(ctx context.Context, req resource.UpdateRequest, res
 func (r *ResourceNG) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	tflog.Debug(ctx, "Networkgroup DELETE")
 
-	_ = helper.StateFrom[Networkgroup](ctx, req.State, &resp.Diagnostics)
+	state := helper.StateFrom[Networkgroup](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	res := tmp.DeleteNetworkgroup(ctx, r.cc, r.org, state.ID.ValueString())
+	if res.HasError() && !res.IsNotFoundError() {
+		resp.Diagnostics.AddError("failed to delete networkgroup", res.Error().Error())
 		return
 	}
 
@@ -111,16 +123,23 @@ func (r *ResourceNG) ImportState(ctx context.Context, req resource.ImportStateRe
 	resource.ImportStatePassthroughID(ctx, attr, req, resp)
 }
 
-func (r *ResourceNG) WaitForNG(ctx context.Context, cc *client.Client, organisationID, ngId string) {
-	for range 5 {
-		res := tmp.SearchNetworkgroup(ctx, cc, organisationID, ngId)
-		if res.HasError() {
-			fmt.Printf("ERR: %+v\n", res.Error())
-			time.Sleep(1 * time.Second)
-			continue
-		}
-		fmt.Printf("%+v\n", res.Payload())
+func (r *ResourceNG) WaitForNG(ctx context.Context, cc *client.Client, organisationID, ngId string) (*tmp.Networkgroup, error) {
+	var lastErr error
 
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, lastErr
+		default:
+			res := tmp.GetNetworkgroup(ctx, cc, organisationID, ngId)
+			if res.HasError() {
+				lastErr = res.Error()
+				time.Sleep(1 * time.Second)
+				continue
+			}
+
+			return res.Payload(), nil
+		}
 	}
 
 }

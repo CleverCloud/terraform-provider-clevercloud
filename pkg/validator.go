@@ -75,3 +75,24 @@ func (sv *SetValidator) MarkdownDescription(ctx context.Context) string {
 func (sv *SetValidator) ValidateSet(ctx context.Context, req validator.SetRequest, res *validator.SetResponse) {
 	sv.fn(ctx, req, res)
 }
+
+type stringValidator struct {
+	description string
+	fn          func(context.Context, validator.StringRequest, *validator.StringResponse)
+}
+
+func NewStringValidator(description string, fn func(context.Context, validator.StringRequest, *validator.StringResponse)) validator.String {
+	return &stringValidator{description, fn}
+}
+
+func (sv *stringValidator) Description(context.Context) string {
+	return sv.description
+}
+
+func (sv *stringValidator) MarkdownDescription(ctx context.Context) string {
+	return sv.Description(ctx)
+}
+
+func (sv *stringValidator) ValidateString(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
+	sv.fn(ctx, req, res)
+}

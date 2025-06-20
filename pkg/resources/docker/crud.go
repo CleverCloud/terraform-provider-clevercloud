@@ -29,6 +29,7 @@ func (r *ResourceDocker) Configure(ctx context.Context, req resource.ConfigureRe
 	if ok {
 		r.cc = provider.Client()
 		r.org = provider.Organization()
+		r.gitAuth = provider.GitAuth()
 	}
 
 	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
@@ -77,7 +78,7 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		},
 		Environment: environment,
 		VHosts:      vhosts,
-		Deployment:  plan.toDeployment(),
+		Deployment:  plan.toDeployment(r.gitAuth),
 	}
 
 	createAppRes, diags := application.CreateApp(ctx, createAppReq)
@@ -211,7 +212,7 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 		},
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
-		Deployment:     plan.toDeployment(),
+		Deployment:     plan.toDeployment(r.gitAuth),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 

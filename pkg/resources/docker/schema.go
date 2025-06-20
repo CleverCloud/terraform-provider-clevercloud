@@ -7,6 +7,7 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -130,13 +131,14 @@ func (p *Docker) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]s
 	return env
 }
 
-func (p *Docker) toDeployment() *application.Deployment {
+func (p *Docker) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if p.Deployment == nil || p.Deployment.Repository.IsNull() {
 		return nil
 	}
 
 	return &application.Deployment{
-		Repository: p.Deployment.Repository.ValueString(),
-		Commit:     p.Deployment.Commit.ValueStringPointer(),
+		Repository:    p.Deployment.Repository.ValueString(),
+		Commit:        p.Deployment.Commit.ValueStringPointer(),
+		CleverGitAuth: gitAuth,
 	}
 }
