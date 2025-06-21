@@ -13,7 +13,6 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -63,14 +62,11 @@ func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemo
 		return diags
 	}
 
-	token, secret := cc.Oauth1UserCredentials()
-	auth := &http.BasicAuth{Username: token, Password: secret}
-
 	pushOptions := &git.PushOptions{
 		RemoteName: "tf-clever",
 		Force:      true,
 		Progress:   os.Stdout,
-		Auth:       auth,
+		Auth:       d.CleverGitAuth,
 		RefSpecs: []config.RefSpec{
 			config.RefSpec(fmt.Sprintf("%s:%s", currentRef.Name(), plumbing.Master)),
 		},

@@ -7,6 +7,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -37,6 +38,7 @@ type UpdateReq struct {
 }
 
 type Deployment struct {
+	CleverGitAuth  *http.BasicAuth
 	Repository     string
 	Commit         *string
 	User, Password *string
