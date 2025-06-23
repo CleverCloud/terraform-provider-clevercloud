@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -12,6 +13,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/client"
 )
 
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
@@ -19,16 +21,41 @@ import (
 func (r *ResourcePostgreSQL) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
 	tflog.Debug(ctx, "ResourcePostgreSQL.Configure()")
 
+	r.FetchPostgresInfos(ctx, &resp.Diagnostics)
+
 	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
+	if req.ProviderData != nil {
+
+		provider, ok := req.ProviderData.(provider.Provider)
+		if ok {
+			r.cc = provider.Client()
+			r.org = provider.Organization()
+		}
+
+		tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
+	}
+}
+
+func (r *ResourcePostgreSQL) FetchPostgresInfos(ctx context.Context, diags *diag.Diagnostics) {
+	cc := client.New()
+
+	res := tmp.GetPostgresInfos(ctx, cc)
+	if res.HasError() {
+		tflog.Error(ctx, "failed to get postgres infos", map[string]any{"error": res.Error().Error()})
 		return
 	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
+	r.infos = res.Payload()
+	for k := range r.infos.Dedicated {
+		r.dedicatedVersions = append(r.dedicatedVersions, k)
 	}
+}
+
+func (r *ResourcePostgreSQL) Infos(ctx context.Context, diags *diag.Diagnostics) *tmp.PostgresInfos {
+	if r.infos == nil {
+		r.FetchPostgresInfos(ctx, diags)
+	}
+
+	return r.infos
 }
 
 // Create a new resource
@@ -59,6 +86,11 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		Plan:       plan.ID,
 		ProviderID: "postgresql-addon",
 		Region:     pg.Region.ValueString(),
+		Options:    map[string]string{},
+	}
+
+	if !pg.Version.IsNull() && !pg.Version.IsUnknown() {
+		addonReq.Options["version"] = pg.Version.ValueString()
 	}
 
 	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
@@ -66,10 +98,11 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
 	}
+	createdPg := res.Payload()
 
-	pg.ID = pkg.FromStr(res.Payload().ID)
-	pg.CreationDate = pkg.FromI(res.Payload().CreationDate)
-	pg.Plan = pkg.FromStr(res.Payload().Plan.Slug)
+	pg.ID = pkg.FromStr(createdPg.ID)
+	pg.CreationDate = pkg.FromI(createdPg.CreationDate)
+	pg.Plan = pkg.FromStr(createdPg.Plan.Slug)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 	if resp.Diagnostics.HasError() {
@@ -81,8 +114,8 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		resp.Diagnostics.AddError("failed to get postgres connection infos", pgInfoRes.Error().Error())
 		return
 	}
-
 	addonPG := pgInfoRes.Payload()
+
 	tflog.Debug(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", addonPG),
 	})
@@ -91,6 +124,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	pg.Database = pkg.FromStr(addonPG.Database)
 	pg.User = pkg.FromStr(addonPG.User)
 	pg.Password = pkg.FromStr(addonPG.Password)
+	pg.Version = pkg.FromStr(addonPG.Version)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 	if resp.Diagnostics.HasError() {
@@ -142,6 +176,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	pg.Database = pkg.FromStr(addonPG.Database)
 	pg.User = pkg.FromStr(addonPG.User)
 	pg.Password = pkg.FromStr(addonPG.Password)
+	pg.Version = pkg.FromStr(addonPG.Version)
 
 	diags = resp.State.Set(ctx, pg)
 	resp.Diagnostics.Append(diags...)

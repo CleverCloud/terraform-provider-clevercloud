@@ -33,6 +33,7 @@ resource "clevercloud_postgresql" "postgresql_database" {
 ### Optional
 
 - `region` (String) Geographical region where the data will be stored
+- `version` (String) PostgreSQL version
 
 ### Read-Only
 

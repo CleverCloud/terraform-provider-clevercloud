@@ -55,10 +55,10 @@ type PostgreSQL struct {
 	Plan     string `json:"plan" example:"xs_med"`
 	Port     int    `json:"port" example:"6388"`
 	// read_only_users:[]
-	Status string `json:"status" example:"ACTIVE"`
-	User   string `json:"user" example:"uxw1ikwnp6gflbgp5iun"`
-	// version:14
-	Zone string `json:"zone" example:"par"`
+	Status  string `json:"status" example:"ACTIVE"`
+	User    string `json:"user" example:"uxw1ikwnp6gflbgp5iun"`
+	Version string `json:"version"` // 14
+	Zone    string `json:"zone" example:"par"`
 }
 
 func GetAddonsProviders(ctx context.Context, cc *client.Client) client.Response[[]AddonProvider] {
@@ -183,4 +183,24 @@ func GetAddonEnv(ctx context.Context, cc *client.Client, organisation string, ad
 func UpdateAddon(ctx context.Context, cc *client.Client, organisation string, addon string, env map[string]string) client.Response[AddonResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/addons/%s", organisation, addon)
 	return client.Put[AddonResponse](ctx, cc, path, env)
+}
+
+type PostgresInfos struct {
+	DefaultDedicatedVersion string            `json:"defaultDedicatedVersion"`
+	ProviderID              string            `json:"providerId"`
+	Clusters                []PostgresCluster `json:"clusters"`
+	Dedicated               map[string]any    `json:"dedicated"`
+}
+
+type PostgresCluster struct {
+	ID       string `json:"id"`
+	Label    string `json:"label"`
+	Region   string `json:"zone"`
+	Version  string `json:"version"`
+	Features []any  `json:"features"`
+}
+
+func GetPostgresInfos(ctx context.Context, cc *client.Client) client.Response[PostgresInfos] {
+	path := "/v4/addon-providers/postgresql-addon"
+	return client.Get[PostgresInfos](ctx, cc, path)
 }

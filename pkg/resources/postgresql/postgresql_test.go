@@ -25,7 +25,9 @@ var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
 
 func TestAccPostgreSQL_basic(t *testing.T) {
 	rName := fmt.Sprintf("tf-test-pg-%d", time.Now().UnixMilli())
+	rName2 := fmt.Sprintf("tf-test2-pg-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
+	fullName2 := fmt.Sprintf("clevercloud_postgresql.%s", rName2)
 	cc := client.New(client.WithAutoOauthConfig())
 	org := os.Getenv("ORGANISATION")
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
@@ -72,8 +74,43 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 				resource.TestMatchResourceAttr(fullName, "database", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
 				resource.TestMatchResourceAttr(fullName, "user", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
 				resource.TestMatchResourceAttr(fullName, "password", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
+				resource.TestCheckResourceAttr(fullName, "plan", "dev"),
 			),
-		}},
+		}, {
+			ResourceName: rName2,
+			Config: providerBlock.Append(helper.NewRessource(
+				"clevercloud_postgresql",
+				rName2,
+				helper.SetKeyValues(map[string]any{
+					"name":    rName2,
+					"region":  "par",
+					"plan":    "xs_sml",
+					"version": "17",
+				}))).String(),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestMatchResourceAttr(fullName2, "id", regexp.MustCompile(`^addon_.*`)),
+				resource.TestMatchResourceAttr(fullName2, "host", regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`)),
+				resource.TestCheckResourceAttrSet(fullName2, "port"),
+				resource.TestMatchResourceAttr(fullName2, "database", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
+				resource.TestMatchResourceAttr(fullName2, "user", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
+				resource.TestMatchResourceAttr(fullName2, "password", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
+				resource.TestCheckResourceAttr(fullName2, "plan", "xs_sml"),
+				resource.TestCheckResourceAttr(fullName2, "version", "17"),
+			),
+		}, /*{
+			ResourceName: rName3,
+			Config: providerBlock.Append(helper.NewRessource(
+				"clevercloud_postgresql",
+				rName3,
+				helper.SetKeyValues(map[string]any{
+					"name":    rName2,
+					"region":  "par",
+					"plan":    "dev",
+					"version": "10",
+				}))).String(),
+			ExpectError: regexp.MustCompile(`Error running pre-apply plan`),
+		},*/
+		},
 	})
 }
 
