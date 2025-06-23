@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.10.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.9.0...v0.10.0) (2025-06-23)
+
+
+### Features
+
+* networkgroup ([c37ce75](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/c37ce75cd3ae34f858a4f24ad8fd0be4ff7e19d0))
+* ng ([c37ce75](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/c37ce75cd3ae34f858a4f24ad8fd0be4ff7e19d0))
+* **postgresql:** support version ([8153c96](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/8153c9670c03ca00ec35430167f734216bfccb38)), closes [#162](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/162)
+* **pulsar:** init ([cd83d5c](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/cd83d5c09ef0cd38308b8f96f134329ef5f33d64))
+
+
+### Bug Fixes
+
+* **java:** correct env vars to state ([c6d0e59](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/c6d0e593db22327c6e9a2a0ac9cb78aab28b2eb6)), closes [#159](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/159)
+
 ## [0.9.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.8.0...v0.9.0) (2025-06-03)
 
 
