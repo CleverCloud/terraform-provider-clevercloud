@@ -157,6 +157,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	// TODO: unlink unneeded deps
 
 	// Git Deployment (when commit change)
+	// TODO: compare plan commit and remote one
 	if req.Deployment != nil {
 		diags.Append(gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
 		if diags.HasError() {

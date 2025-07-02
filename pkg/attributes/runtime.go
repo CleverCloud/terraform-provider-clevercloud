@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type Runtime struct {
@@ -44,6 +45,14 @@ func (r Runtime) VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) [
 	vhosts := []string{}
 	diags.Append(r.VHosts.ElementsAs(ctx, &vhosts, true)...)
 	return vhosts
+}
+
+func (r Runtime) VHostsAsModel(ctx context.Context, diags *diag.Diagnostics) tmp.VHosts {
+	vhosts := r.VHostsAsStrings(ctx, diags)
+
+	return pkg.Map(vhosts, func(vhost string) tmp.VHost {
+		return tmp.VHost{Fqdn: vhost}
+	})
 }
 
 // This attributes are used on several runtimes

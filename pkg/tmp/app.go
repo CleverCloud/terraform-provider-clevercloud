@@ -130,6 +130,7 @@ type Deployment struct {
 	URL          string `json:"url"`
 	HTTPURL      string `json:"httpUrl"`
 }
+
 type VHosts []VHost
 type VHost struct {
 	Fqdn string `json:"fqdn"`
@@ -187,6 +188,28 @@ func (vhosts VHosts) CleverAppsFQDN(appId string) *VHost {
 	}
 
 	return nil
+}
+
+func (vhosts VHosts) Contains(vhost VHost) bool {
+	for _, v := range vhosts {
+		if v.Fqdn == vhost.Fqdn {
+			return true
+		}
+	}
+	return false
+}
+
+// return all vhosts which are not present on both
+func (vhosts VHosts) Diff(otherVhosts VHosts) VHosts {
+	res := VHosts{}
+
+	for _, vhost := range vhosts {
+		if !otherVhosts.Contains(vhost) {
+			res = append(res, vhost)
+		}
+	}
+
+	return res
 }
 
 type BuildFlavor struct {

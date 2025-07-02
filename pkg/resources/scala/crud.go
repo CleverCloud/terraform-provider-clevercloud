@@ -93,24 +93,33 @@ func (r *ResourceScala) Create(ctx context.Context, req resource.CreateRequest, 
 	// legacy, to drop
 	plan.VHost = basetypes.NewStringNull()
 
+	// intermediate save, in case of....
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	createdVhosts := createAppRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
 		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
-		deleteVhostRes := tmp.DeleteAppVHost(
-			ctx,
-			r.cc,
-			r.org,
-			plan.ID.ValueString(),
-			createdVhosts.CleverAppsFQDN(plan.ID.ValueString()).Fqdn,
-		)
-		if deleteVhostRes.HasError() {
-			diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-			return
-		}
+		vhostsToDrop := createdVhosts.Diff(plan.VHostsAsModel(ctx, &resp.Diagnostics))
 
-		plan.VHosts = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &resp.Diagnostics)
+		for _, vhost := range vhostsToDrop {
+
+			deleteVhostRes := tmp.DeleteAppVHost(
+				ctx,
+				r.cc,
+				r.org,
+				plan.ID.ValueString(),
+				vhost.Fqdn,
+			)
+			if deleteVhostRes.HasError() {
+				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
+				return
+			}
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
