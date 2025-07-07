@@ -93,6 +93,13 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		addonReq.Options["version"] = pg.Version.ValueString()
 	}
 
+	if !pg.Backup.IsNull() && !pg.Backup.IsUnknown() {
+		backupValue := fmt.Sprintf("%t", pg.Backup.ValueBool())
+		addonReq.Options["do-backup"] = backupValue
+	} else {
+		addonReq.Options["do-backup"] = "true"
+	}
+
 	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
@@ -177,6 +184,12 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	pg.User = pkg.FromStr(addonPG.User)
 	pg.Password = pkg.FromStr(addonPG.Password)
 	pg.Version = pkg.FromStr(addonPG.Version)
+
+	for _, feature := range addonPG.Features {
+		if feature.Name == "do-backup" {
+			pg.Backup = pkg.FromBool(feature.Enabled)
+		}
+	}
 
 	diags = resp.State.Set(ctx, pg)
 	resp.Diagnostics.Append(diags...)

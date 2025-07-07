@@ -55,10 +55,16 @@ type PostgreSQL struct {
 	Plan     string `json:"plan" example:"xs_med"`
 	Port     int    `json:"port" example:"6388"`
 	// read_only_users:[]
-	Status  string `json:"status" example:"ACTIVE"`
-	User    string `json:"user" example:"uxw1ikwnp6gflbgp5iun"`
-	Version string `json:"version"` // 14
-	Zone    string `json:"zone" example:"par"`
+	Status   string              `json:"status" example:"ACTIVE"`
+	User     string              `json:"user" example:"uxw1ikwnp6gflbgp5iun"`
+	Version  string              `json:"version"` // 14
+	Zone     string              `json:"zone" example:"par"`
+	Features []PostgreSQLFeature `json:"features"`
+}
+
+type PostgreSQLFeature struct {
+	Name    string `json:"name"`
+	Enabled bool   `json:"enabled"`
 }
 
 func GetAddonsProviders(ctx context.Context, cc *client.Client) client.Response[[]AddonProvider] {

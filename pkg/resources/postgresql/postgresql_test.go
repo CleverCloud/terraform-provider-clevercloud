@@ -38,6 +38,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 			"name":   rName,
 			"region": "par",
 			"plan":   "dev",
+			"backup": true,
 		}))
 
 	resource.Test(t, resource.TestCase{
@@ -75,6 +76,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 				resource.TestMatchResourceAttr(fullName, "user", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
 				resource.TestMatchResourceAttr(fullName, "password", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
 				resource.TestCheckResourceAttr(fullName, "plan", "dev"),
+				resource.TestCheckResourceAttr(fullName, "backup", "true"),
 			),
 		}, {
 			ResourceName: rName2,
@@ -86,6 +88,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 					"region":  "par",
 					"plan":    "xs_sml",
 					"version": "17",
+					"backup":  true,
 				}))).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
 				resource.TestMatchResourceAttr(fullName2, "id", regexp.MustCompile(`^addon_.*`)),
@@ -96,6 +99,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 				resource.TestMatchResourceAttr(fullName2, "password", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
 				resource.TestCheckResourceAttr(fullName2, "plan", "xs_sml"),
 				resource.TestCheckResourceAttr(fullName2, "version", "17"),
+				resource.TestCheckResourceAttr(fullName2, "backup", "true"),
 			),
 		}, /*{
 			ResourceName: rName3,

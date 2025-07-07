@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -24,6 +25,7 @@ type PostgreSQL struct {
 	User     types.String `tfsdk:"user"`
 	Password types.String `tfsdk:"password"`
 	Version  types.String `tfsdk:"version"`
+	Backup   types.Bool   `tfsdk:"backup"`
 }
 
 //go:embed doc.md
@@ -46,6 +48,12 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 				Validators: []validator.String{
 					pkg.NewStringValidator("Match existing PostgresQL version", r.validatePGVersion),
 				},
+			},
+			"backup": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(true),
+				MarkdownDescription: "Enable or disable backups for this PostgreSQL addon. Since backups are included in the addon price, disabling it has no impact on your billing.",
 			},
 		}),
 	}

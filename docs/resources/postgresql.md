@@ -32,6 +32,7 @@ resource "clevercloud_postgresql" "postgresql_database" {
 
 ### Optional
 
+- `backup` (Boolean) Enable or disable backups for this PostgreSQL addon. Since backups are included in the addon price, disabling it has no impact on your billing.
 - `region` (String) Geographical region where the data will be stored
 - `version` (String) PostgreSQL version
 
