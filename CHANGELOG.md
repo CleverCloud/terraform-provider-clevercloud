@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.10.0...v0.11.0) (2025-07-08)
+
+
+### Features
+
+* **postgresql:** allow to disable backups ([ebf7d26](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/ebf7d26b527459f56df3490fe28a803c766e9ac1))
+
 ## [0.10.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.9.0...v0.10.0) (2025-06-23)
 
 
