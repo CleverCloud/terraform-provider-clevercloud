@@ -27,7 +27,6 @@ type Runtime struct {
 	Region           types.String `tfsdk:"region"`
 	StickySessions   types.Bool   `tfsdk:"sticky_sessions"`
 	RedirectHTTPS    types.Bool   `tfsdk:"redirect_https"`
-	VHost            types.String `tfsdk:"vhost"`
 	VHosts           types.Set    `tfsdk:"vhosts"`
 	AdditionalVHosts types.List   `tfsdk:"additional_vhosts"`
 	DeployURL        types.String `tfsdk:"deploy_url"`
@@ -121,12 +120,6 @@ var runtimeCommon = map[string]schema.Attribute{
 		Computed:            true,
 		MarkdownDescription: "Git URL used to push source code",
 		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
-	},
-	// cleverapps one
-	"vhost": schema.StringAttribute{
-		Computed:            true,
-		MarkdownDescription: "Default vhost to access your app",
-		DeprecationMessage:  "Use vhosts instead",
 	},
 	"environment": schema.MapAttribute{
 		Optional:    true,

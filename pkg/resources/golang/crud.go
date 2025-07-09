@@ -6,7 +6,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
@@ -94,7 +93,6 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 	plan.ID = pkg.FromStr(createRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
 	plan.BuildFlavor = createRes.GetBuildFlavor()
-	plan.VHost = basetypes.NewStringNull()
 
 	createdVhosts := createRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
@@ -155,7 +153,6 @@ func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *re
 
 	vhosts := appRes.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &res.Diagnostics)
-	state.VHost = basetypes.NewStringNull()
 
 	diags = res.State.Set(ctx, state)
 	res.Diagnostics.Append(diags...)
@@ -233,7 +230,6 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 
 	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
-	plan.VHost = basetypes.NewStringNull()
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {

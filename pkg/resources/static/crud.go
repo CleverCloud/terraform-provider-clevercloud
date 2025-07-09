@@ -6,7 +6,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
@@ -97,8 +96,6 @@ func (r *ResourceStatic) Create(ctx context.Context, req resource.CreateRequest,
 	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]any{})
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
-	// legacy, to drop
-	plan.VHost = basetypes.NewStringNull()
 
 	createdVhosts := createAppRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
@@ -159,7 +156,6 @@ func (r *ResourceStatic) Read(ctx context.Context, req resource.ReadRequest, res
 
 	vhosts := readRes.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
-	state.VHost = basetypes.NewStringNull()
 
 	for envName, envValue := range readRes.EnvAsMap() {
 		switch envName {
@@ -242,7 +238,6 @@ func (r *ResourceStatic) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
-	plan.VHost = basetypes.NewStringNull()
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {
