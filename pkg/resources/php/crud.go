@@ -101,19 +101,19 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
-		deleteVhostRes := tmp.DeleteAppVHost(
-			ctx,
-			r.cc,
-			r.org,
-			plan.ID.ValueString(),
-			createdVhosts.CleverAppsFQDN(plan.ID.ValueString()).Fqdn,
-		)
-		if deleteVhostRes.HasError() {
-			diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-			return
+		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
+			deleteVhostRes := tmp.DeleteAppVHost(
+				ctx,
+				r.cc,
+				r.org,
+				plan.ID.ValueString(),
+				vhost,
+			)
+			if deleteVhostRes.HasError() {
+				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
+				return
+			}
 		}
-
-		plan.VHosts = pkg.FromSetString(createdVhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &resp.Diagnostics)
 
 	}
 

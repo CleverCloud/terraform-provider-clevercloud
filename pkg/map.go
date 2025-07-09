@@ -1,5 +1,9 @@
 package pkg
 
+import (
+	"slices"
+)
+
 func Map[T, U any](items []T, fn func(T) U) []U {
 	r := make([]U, len(items))
 
@@ -66,4 +70,18 @@ func Merge[T comparable, U any](m1, m2 map[T]U) map[T]U {
 	}
 
 	return m
+}
+
+func Diff[T comparable](m1, m2 []T) []T {
+	diff := []T{}
+
+	for _, m2Item := range m2 {
+		if slices.Contains(m1, m2Item) {
+			continue
+		}
+
+		diff = append(diff, m2Item)
+	}
+
+	return diff
 }
