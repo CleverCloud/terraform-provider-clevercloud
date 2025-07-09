@@ -124,9 +124,12 @@ func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemo
 	})
 
 	err = remote.PushContext(ctx, pushOptions)
-	if err != nil /*&& err != git.NoErrAlreadyUpToDate*/ {
-		diags.AddError("failed to push to clever remote", err.Error())
-		return diags
+	if err != nil {
+		if err != git.NoErrAlreadyUpToDate {
+			diags.AddWarning("Git push rejected", "repository is already up-to-date")
+		} else {
+			diags.AddError("failed to push to clever remote", err.Error())
+		}
 	}
 
 	return diags
