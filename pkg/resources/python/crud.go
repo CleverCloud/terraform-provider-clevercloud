@@ -6,7 +6,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
@@ -94,9 +93,6 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 	plan.ID = pkg.FromStr(createRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
 
-	// legacy, to drop
-	plan.VHost = basetypes.NewStringNull()
-
 	createdVhosts := createRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
 		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
@@ -146,7 +142,6 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 
 	vhosts := appRes.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
-	state.VHost = basetypes.NewStringNull()
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -222,8 +217,6 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 	if res.Diagnostics.HasError() {
 		return
 	}
-
-	plan.VHost = basetypes.NewStringNull()
 
 	cleverAppsVhost := updatedApp.Application.Vhosts.CleverAppsFQDN(plan.ID.ValueString())
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one

@@ -95,9 +95,6 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 	plan.ID = pkg.FromStr(createRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
 
-	// legacy
-	plan.VHost = pkg.FromStr(createRes.Application.Vhosts.CleverAppsFQDN(createRes.Application.ID).Fqdn)
-
 	createdVhosts := createRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
 		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
@@ -154,8 +151,6 @@ func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, res
 
 	vhosts := appRes.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
-
-	state.VHost = basetypes.NewStringNull()
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -233,8 +228,6 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
-	plan.VHost = basetypes.NewStringNull()
-
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {
 		return
