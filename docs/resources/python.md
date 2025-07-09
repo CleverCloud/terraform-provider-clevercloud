@@ -109,7 +109,6 @@ Can be either app_xxx or postgres_yyy ID format
 
 - `deploy_url` (String) Git URL used to push source code
 - `id` (String) Unique identifier generated during application creation
-- `vhost` (String, Deprecated) Default vhost to access your app
 
 <a id="nestedblock--deployment"></a>
 ### Nested Schema for `deployment`
