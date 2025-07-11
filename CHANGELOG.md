@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.11.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.11.0...v0.11.1) (2025-07-11)
+
+
+### Bug Fixes
+
+* drop vhost ([9667b27](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/9667b27921b3204f1485b88f5fac0c1c8ceb0089))
+* **git:** do not throw if already up to date ([1e64c69](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1e64c69e404c45198533f6b438dc32a253c65bfb))
+* **nodejs:** clean cleverapps vhosts ([2b26ec8](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/2b26ec8c73a36e78790aff9d0aa066eaaa0b14f3))
+
 ## [0.11.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.10.0...v0.11.0) (2025-07-08)
 
 
