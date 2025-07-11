@@ -55,6 +55,12 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	dependencies := []string{}
+	resp.Diagnostics.Append(plan.Dependencies.ElementsAs(ctx, &dependencies, false)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	createAppReq := application.CreateReq{
 		Client:       r.cc,
 		Organization: r.org,
@@ -75,9 +81,10 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
-		Environment: environment,
-		VHosts:      vhosts,
-		Deployment:  plan.toDeployment(r.gitAuth),
+		Environment:  environment,
+		VHosts:       vhosts,
+		Deployment:   plan.toDeployment(r.gitAuth),
+		Dependencies: dependencies,
 	}
 
 	createAppRes, diags := application.CreateApp(ctx, createAppReq)
