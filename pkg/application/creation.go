@@ -168,7 +168,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	// error id 4014 = cannot redeploy an application which has never been deployed yet (did you git push?)
 	if req.TriggerRestart {
 		restartRes := tmp.RestartApp(ctx, req.Client, req.Organization, res.Application.ID)
-		if restartRes.HasError(); !strings.Contains(restartRes.Error().Error(), "4014") {
+		if restartRes.HasError() && !strings.Contains(restartRes.Error().Error(), "4014") {
 			diags.AddError("failed to restart app", restartRes.Error().Error())
 			return nil, diags
 		}
