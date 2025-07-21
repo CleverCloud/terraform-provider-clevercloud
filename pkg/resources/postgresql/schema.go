@@ -25,7 +25,9 @@ type PostgreSQL struct {
 	User     types.String `tfsdk:"user"`
 	Password types.String `tfsdk:"password"`
 	Version  types.String `tfsdk:"version"`
-	Backup   types.Bool   `tfsdk:"backup"`
+	Uri      types.String `tfsdk:"uri"`
+
+	Backup types.Bool `tfsdk:"backup"`
 }
 
 //go:embed doc.md
@@ -41,6 +43,7 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 			"database": schema.StringAttribute{Computed: true, MarkdownDescription: "Database name on the PostgreSQL server"},
 			"user":     schema.StringAttribute{Computed: true, MarkdownDescription: "Login username"},
 			"password": schema.StringAttribute{Computed: true, MarkdownDescription: "Login password"},
+			"uri":      schema.StringAttribute{Computed: true, MarkdownDescription: "Database connection string (without credentials)"},
 			"version": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
