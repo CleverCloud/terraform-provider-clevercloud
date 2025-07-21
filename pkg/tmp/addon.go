@@ -62,6 +62,10 @@ type PostgreSQL struct {
 	Features []PostgreSQLFeature `json:"features"`
 }
 
+func (p PostgreSQL) Uri() string {
+	return fmt.Sprintf("postgresql://%s:%d/%s", p.Host, p.Port, p.Database)
+}
+
 type PostgreSQLFeature struct {
 	Name    string `json:"name"`
 	Enabled bool   `json:"enabled"`
