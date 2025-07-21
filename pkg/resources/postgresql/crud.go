@@ -132,6 +132,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	pg.User = pkg.FromStr(addonPG.User)
 	pg.Password = pkg.FromStr(addonPG.Password)
 	pg.Version = pkg.FromStr(addonPG.Version)
+	pg.Uri = pkg.FromStr(addonPG.Uri())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 	if resp.Diagnostics.HasError() {
@@ -184,6 +185,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	pg.User = pkg.FromStr(addonPG.User)
 	pg.Password = pkg.FromStr(addonPG.Password)
 	pg.Version = pkg.FromStr(addonPG.Version)
+	pg.Uri = pkg.FromStr(addonPG.Uri())
 
 	for _, feature := range addonPG.Features {
 		if feature.Name == "do-backup" {
