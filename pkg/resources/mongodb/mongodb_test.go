@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -40,7 +41,15 @@ func TestAccMongoDB_basic(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6Provider,
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetMongoDB(context.Background(), cc, resource.Primary.ID)
+				addonId, err := tmp.RealIDToAddonID(context.Background(), cc, org, resource.Primary.ID)
+				if err != nil {
+					if strings.Contains(err.Error(), "not found") {
+						continue
+					}
+					return fmt.Errorf("failed to get addon ID: %s", err.Error())
+				}
+
+				res := tmp.GetMongoDB(context.Background(), cc, addonId)
 				if res.IsNotFoundError() {
 					continue
 				}
@@ -59,7 +68,7 @@ func TestAccMongoDB_basic(t *testing.T) {
 			ResourceName: rName,
 			Config:       providerBlock.Append(mongodbBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^addon_.*`)),
+				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^mongodb_.*`)),
 			),
 		}},
 	})
@@ -82,7 +91,15 @@ func TestAccMongoDB_RefreshDeleted(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6Provider,
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetMongoDB(context.Background(), cc, resource.Primary.ID)
+				addonId, err := tmp.RealIDToAddonID(context.Background(), cc, org, resource.Primary.ID)
+				if err != nil {
+					if strings.Contains(err.Error(), "not found") {
+						continue
+					}
+					return fmt.Errorf("failed to get addon ID: %s", err.Error())
+				}
+
+				res := tmp.GetMongoDB(context.Background(), cc, addonId)
 				if res.IsNotFoundError() {
 					continue
 				}

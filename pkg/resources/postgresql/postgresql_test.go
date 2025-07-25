@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -50,7 +51,15 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6Provider,
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetPostgreSQL(context.Background(), cc, resource.Primary.ID)
+				addonId, err := tmp.RealIDToAddonID(context.Background(), cc, org, resource.Primary.ID)
+				if err != nil {
+					if strings.Contains(err.Error(), "not found") {
+						continue
+					}
+					return fmt.Errorf("failed to get addon ID: %s", err.Error())
+				}
+
+				res := tmp.GetPostgreSQL(context.Background(), cc, addonId)
 				if res.IsNotFoundError() {
 					continue
 				}
@@ -69,7 +78,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 			ResourceName: rName,
 			Config:       providerBlock.Append(postgresqlBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^addon_.*`)),
+				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^postgresql_.*`)),
 				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`)),
 				resource.TestCheckResourceAttrSet(fullName, "port"),
 				resource.TestMatchResourceAttr(fullName, "database", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
@@ -91,7 +100,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 					"backup":  true,
 				}))).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestMatchResourceAttr(fullName2, "id", regexp.MustCompile(`^addon_.*`)),
+				resource.TestMatchResourceAttr(fullName2, "id", regexp.MustCompile(`^postgresql_.*`)),
 				resource.TestMatchResourceAttr(fullName2, "host", regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`)),
 				resource.TestCheckResourceAttrSet(fullName2, "port"),
 				resource.TestMatchResourceAttr(fullName2, "database", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
@@ -142,7 +151,15 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6Provider,
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetPostgreSQL(context.Background(), cc, resource.Primary.ID)
+				addonId, err := tmp.RealIDToAddonID(context.Background(), cc, org, resource.Primary.ID)
+				if err != nil {
+					if strings.Contains(err.Error(), "not found") {
+						continue
+					}
+					return fmt.Errorf("failed to get addon ID: %s", err.Error())
+				}
+
+				res := tmp.GetPostgreSQL(context.Background(), cc, addonId)
 				if res.IsNotFoundError() {
 					continue
 				}

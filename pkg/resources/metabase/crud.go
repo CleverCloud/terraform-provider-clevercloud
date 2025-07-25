@@ -7,9 +7,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -33,9 +33,7 @@ func (r *ResourceMetabase) Configure(ctx context.Context, req resource.Configure
 
 // Create a new resource
 func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	mb := Metabase{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &mb)...)
+	mb := helper.PlanFrom[Metabase](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -67,7 +65,7 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	mb.ID = pkg.FromStr(res.Payload().ID)
+	mb.ID = pkg.FromStr(res.Payload().RealID)
 	mb.CreationDate = pkg.FromI(res.Payload().CreationDate)
 	// mb.Plan = pkg.FromStr(res.Payload().Plan.Slug)
 
@@ -76,7 +74,7 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	mbInfoRes := tmp.GetAddonEnv(ctx, r.cc, r.org, mb.ID.ValueString())
+	mbInfoRes := tmp.GetAddonEnv(ctx, r.cc, r.org, res.Payload().ID)
 	if mbInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Metabase connection infos", mbInfoRes.Error().Error())
 		return
@@ -107,28 +105,20 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "Metabase READ", map[string]any{"request": req})
 
-	var mb Metabase
-	diags := req.State.Get(ctx, &mb)
-	resp.Diagnostics.Append(diags...)
+	mb := helper.StateFrom[Metabase](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	addonMBRes := tmp.GetMetabase(ctx, r.cc, mb.ID.ValueString())
 	if addonMBRes.IsNotFoundError() {
-		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+		resp.State.RemoveResource(ctx)
+		return
 	}
-	// if addonMBRes.IsNotFoundError() {
-	// 	resp.State.RemoveResource(ctx)
-	// 	return
-	// }
-	// if addonMBRes.HasError() {
-	// 	resp.Diagnostics.AddError("failed to get Metabase resource", addonMBRes.Error().Error())
-	// }
+	if addonMBRes.HasError() {
+		resp.Diagnostics.AddError("failed to get Metabase resource", addonMBRes.Error().Error())
+		return
+	}
 
 	addonMB := addonMBRes.Payload()
 
@@ -136,14 +126,22 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.State.RemoveResource(ctx)
 		return
 	}
+
+	realID, err := tmp.AddonIDToRealID(ctx, r.cc, r.org, mb.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
 	tflog.Debug(ctx, "STATE", map[string]any{"mb": mb})
 	tflog.Debug(ctx, "API", map[string]any{"mb": addonMB})
+	mb.ID = pkg.FromStr(realID)
 	// mb.Host = pkg.FromStr(addonMB.Applications[0].Host)
 	// mb.Port = pkg.FromI(int64(addonMB.Port))
 	// mb.User = pkg.FromStr(addonMB.User)
 	// mb.Password = pkg.FromStr(addonMB.Password)
 
-	diags = resp.State.Set(ctx, mb)
+	diags := resp.State.Set(ctx, mb)
 	resp.Diagnostics.Append(diags...)
 }
 
@@ -154,16 +152,20 @@ func (r *ResourceMetabase) Update(ctx context.Context, req resource.UpdateReques
 
 // Delete resource
 func (r *ResourceMetabase) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var mb Metabase
-
-	diags := req.State.Get(ctx, &mb)
-	resp.Diagnostics.Append(diags...)
+	mb := helper.StateFrom[Metabase](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
 	tflog.Debug(ctx, "Metabase DELETE", map[string]any{"mb": mb})
 
-	res := tmp.DeleteAddon(ctx, r.cc, r.org, mb.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, mb.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	res := tmp.DeleteAddon(ctx, r.cc, r.org, addonId)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

@@ -7,9 +7,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -33,12 +33,7 @@ func (r *ResourceMongoDB) Configure(ctx context.Context, req resource.ConfigureR
 
 // Create a new resource
 func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	mg := MongoDB{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &mg)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	mg := helper.PlanFrom[MongoDB](ctx, req.Plan, &resp.Diagnostics)
 
 	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
 	if addonsProvidersRes.HasError() {
@@ -67,7 +62,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	mg.ID = pkg.FromStr(res.Payload().ID)
+	mg.ID = pkg.FromStr(res.Payload().RealID)
 	mg.CreationDate = pkg.FromI(res.Payload().CreationDate)
 	mg.Plan = pkg.FromStr(res.Payload().Plan.Slug)
 
@@ -76,7 +71,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	mgInfoRes := tmp.GetMongoDB(ctx, r.cc, mg.ID.ValueString())
+	mgInfoRes := tmp.GetMongoDB(ctx, r.cc, res.Payload().ID)
 	if mgInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get MongoDB connection infos", mgInfoRes.Error().Error())
 		return
@@ -101,21 +96,18 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "MongoDB READ", map[string]any{"request": req})
 
-	var mg MongoDB
-	diags := req.State.Get(ctx, &mg)
-	resp.Diagnostics.Append(diags...)
+	mg := helper.StateFrom[MongoDB](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	addonMGRes := tmp.GetMongoDB(ctx, r.cc, mg.ID.ValueString())
-	if addonMGRes.IsNotFoundError() {
-		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, mg.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
 	}
+
+	addonMGRes := tmp.GetMongoDB(ctx, r.cc, addonId)
 	if addonMGRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -131,14 +123,21 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	realID, err := tmp.AddonIDToRealID(ctx, r.cc, r.org, mg.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
 	tflog.Debug(ctx, "STATE", map[string]any{"mg": mg})
 	tflog.Debug(ctx, "API", map[string]any{"mg": addonMG})
+	mg.ID = pkg.FromStr(realID)
 	mg.Host = pkg.FromStr(addonMG.Host)
 	mg.Port = pkg.FromI(int64(addonMG.Port))
 	mg.User = pkg.FromStr(addonMG.User)
 	mg.Password = pkg.FromStr(addonMG.Password)
 
-	diags = resp.State.Set(ctx, mg)
+	diags := resp.State.Set(ctx, mg)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -152,16 +151,20 @@ func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest
 
 // Delete resource
 func (r *ResourceMongoDB) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var mg MongoDB
-
-	diags := req.State.Get(ctx, &mg)
-	resp.Diagnostics.Append(diags...)
+	mg := helper.StateFrom[MongoDB](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
 	tflog.Debug(ctx, "MongoDB DELETE", map[string]any{"mg": mg})
 
-	res := tmp.DeleteAddon(ctx, r.cc, r.org, mg.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, mg.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	res := tmp.DeleteAddon(ctx, r.cc, r.org, addonId)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

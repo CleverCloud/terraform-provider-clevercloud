@@ -135,18 +135,6 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 	ad.CreationDate = pkg.FromI(a.CreationDate)
 	ad.Configurations = types.MapValueMust(types.StringType, envAsMap)
 
-	/*addonPGRes := tmp.GetPostgreSQL(ctx, r.cc, pg.ID.ValueString())
-	if addonPGRes.IsNotFoundError() {
-		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-	if addonPGRes.HasError() {
-		resp.Diagnostics.AddError("failed to get Postgres resource", addonPGRes.Error().Error())
-	}*/
-
 	diags = resp.State.Set(ctx, ad)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
