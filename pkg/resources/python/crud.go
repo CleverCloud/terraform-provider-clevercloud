@@ -139,6 +139,7 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
+	state.Deployment.Commit = pkg.FromStr(appRes.App.CommitID)
 
 	vhosts := appRes.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
