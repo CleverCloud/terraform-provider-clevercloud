@@ -94,7 +94,13 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	}
 
 	// Dependencies
-	for _, dependency := range req.Dependencies {
+	dependenciesWithAddonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, req.Dependencies...)
+	if err != nil {
+		diags.AddError("failed to get dependencies addon IDs", err.Error())
+		return nil, diags
+	}
+	tflog.Debug(ctx, "[create] dependencies to link", map[string]any{"dependencies": req.Dependencies, "addonIds": dependenciesWithAddonIDs})
+	for _, dependency := range dependenciesWithAddonIDs {
 		// TODO: support another apps as dependency
 
 		depRes := tmp.AddAppLinkedAddons(ctx, req.Client, req.Organization, res.Application.ID, dependency)
@@ -144,7 +150,15 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	res.Application.Vhosts = *vhostsRes.Payload()
 
 	// Dependencies
-	for _, dependency := range req.Dependencies {
+	dependenciesWithAddonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, req.Dependencies...)
+	if err != nil {
+		diags.AddError("failed to get dependencies addon IDs", err.Error())
+		return nil, diags
+	}
+
+	tflog.Debug(ctx, "[update] dependencies to link", map[string]any{"dependencies": req.Dependencies, "addonIds": dependenciesWithAddonIDs})
+
+	for _, dependency := range dependenciesWithAddonIDs {
 		// TODO: support another apps as dependency
 
 		depRes := tmp.AddAppLinkedAddons(ctx, req.Client, req.Organization, res.Application.ID, dependency)

@@ -4,6 +4,7 @@ package tmp
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"go.clever-cloud.dev/client"
 )
@@ -76,6 +77,7 @@ func CreateAddon(ctx context.Context, cc *client.Client, organisation string, ad
 	return client.Post[AddonResponse](ctx, cc, path, addon)
 }
 
+// Use Addon ID
 func GetPostgreSQL(ctx context.Context, cc *client.Client, postgresqlID string) client.Response[PostgreSQL] {
 	path := fmt.Sprintf("/v4/addon-providers/postgresql-addon/addons/%s", postgresqlID)
 	return client.Get[PostgreSQL](ctx, cc, path)
@@ -120,6 +122,7 @@ func CreateMetabase(ctx context.Context, cc *client.Client, organisation string,
 	return client.Post[AddonResponse](ctx, cc, path, addon)
 }
 
+// Use real ID
 func GetMetabase(ctx context.Context, cc *client.Client, metabaseID string) client.Response[Metabase] {
 	path := fmt.Sprintf("/v4/addon-providers/addon-metabase/addons/%s", metabaseID)
 	return client.Get[Metabase](ctx, cc, path)
@@ -133,6 +136,7 @@ type MongoDB struct {
 	Password string `tfsdk:"password"`
 }
 
+// Use Addon ID
 func GetMongoDB(ctx context.Context, cc *client.Client, mongodbID string) client.Response[MongoDB] {
 	path := fmt.Sprintf("/v4/addon-providers/mongodb-addon/addons/%s", mongodbID)
 	return client.Get[MongoDB](ctx, cc, path)
@@ -191,6 +195,11 @@ func UpdateAddon(ctx context.Context, cc *client.Client, organisation string, ad
 	return client.Put[AddonResponse](ctx, cc, path, env)
 }
 
+func ListAddons(ctx context.Context, cc *client.Client, organisation string) client.Response[[]AddonResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/addons", organisation)
+	return client.Get[[]AddonResponse](ctx, cc, path)
+}
+
 type PostgresInfos struct {
 	DefaultDedicatedVersion string            `json:"defaultDedicatedVersion"`
 	ProviderID              string            `json:"providerId"`
@@ -209,4 +218,75 @@ type PostgresCluster struct {
 func GetPostgresInfos(ctx context.Context, cc *client.Client) client.Response[PostgresInfos] {
 	path := "/v4/addon-providers/postgresql-addon"
 	return client.Get[PostgresInfos](ctx, cc, path)
+}
+
+func RealIDsToAddonIDs(ctx context.Context, client *client.Client, organisation string, realID ...string) ([]string, error) {
+	addonsRes := ListAddons(ctx, client, organisation)
+	if addonsRes.HasError() {
+		return nil, addonsRes.Error()
+	}
+	addons := *addonsRes.Payload()
+
+	addonIDs := make([]string, len(realID))
+	for i, id := range realID {
+		if strings.HasPrefix(id, "addon_") {
+			addonIDs[i] = id
+			continue
+		}
+
+		notFound := true
+
+		for _, addon := range addons {
+			if addon.RealID == id {
+				addonIDs[i] = addon.ID
+				notFound = false
+			}
+		}
+
+		if notFound {
+			return nil, fmt.Errorf("addon %s not found", id)
+		}
+	}
+
+	return addonIDs, nil
+}
+
+func RealIDToAddonID(ctx context.Context, client *client.Client, organisation string, realID string) (string, error) {
+	if strings.HasPrefix(realID, "addon_") {
+		return realID, nil
+	}
+
+	addonsRes := ListAddons(ctx, client, organisation)
+	if addonsRes.HasError() {
+		return "", addonsRes.Error()
+	}
+	addons := *addonsRes.Payload()
+
+	for _, addon := range addons {
+		if addon.RealID == realID {
+			return addon.ID, nil
+		}
+	}
+
+	return "", fmt.Errorf("addon %s not found", realID)
+}
+
+func AddonIDToRealID(ctx context.Context, client *client.Client, organisation string, addonID string) (string, error) {
+	if !strings.HasPrefix(addonID, "addon_") {
+		return addonID, nil
+	}
+
+	addonsRes := ListAddons(ctx, client, organisation)
+	if addonsRes.HasError() {
+		return "", addonsRes.Error()
+	}
+	addons := *addonsRes.Payload()
+
+	for _, addon := range addons {
+		if addon.ID == addonID {
+			return addon.RealID, nil
+		}
+	}
+
+	return "", fmt.Errorf("addon %s not found", addonID)
 }

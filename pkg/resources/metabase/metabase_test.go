@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"strings"
 	"testing"
 	"time"
 
@@ -45,7 +46,15 @@ func TestAccMetabase_basic(t *testing.T) {
 		ProtoV6ProviderFactories: protoV6Provider,
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetMetabase(ctx, cc, resource.Primary.ID)
+				addonId, err := tmp.RealIDToAddonID(ctx, cc, org, resource.Primary.ID)
+				if err != nil {
+					if strings.Contains(err.Error(), "not found") {
+						continue
+					}
+					return fmt.Errorf("failed to get addon ID: %s", err.Error())
+				}
+
+				res := tmp.GetMetabase(ctx, cc, addonId)
 				if res.IsNotFoundError() {
 					continue
 				}
@@ -64,7 +73,7 @@ func TestAccMetabase_basic(t *testing.T) {
 			ResourceName: rName,
 			Config:       providerBlock.Append(metabaseBlock).String(),
 			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^addon_.*`)),
+				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^metabase_.*`)),
 			),
 		}},
 	})
