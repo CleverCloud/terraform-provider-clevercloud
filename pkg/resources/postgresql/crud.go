@@ -8,9 +8,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
@@ -60,9 +60,7 @@ func (r *ResourcePostgreSQL) Infos(ctx context.Context, diags *diag.Diagnostics)
 
 // Create a new resource
 func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	pg := PostgreSQL{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &pg)...)
+	pg := helper.PlanFrom[PostgreSQL](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -107,7 +105,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	}
 	createdPg := res.Payload()
 
-	pg.ID = pkg.FromStr(createdPg.ID)
+	pg.ID = pkg.FromStr(createdPg.RealID)
 	pg.CreationDate = pkg.FromI(createdPg.CreationDate)
 	pg.Plan = pkg.FromStr(createdPg.Plan.Slug)
 
@@ -116,7 +114,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	pgInfoRes := tmp.GetPostgreSQL(ctx, r.cc, pg.ID.ValueString())
+	pgInfoRes := tmp.GetPostgreSQL(ctx, r.cc, createdPg.ID)
 	if pgInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get postgres connection infos", pgInfoRes.Error().Error())
 		return
@@ -144,27 +142,25 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "PostgreSQL READ", map[string]any{"request": req})
 
-	var pg PostgreSQL
-	diags := req.State.Get(ctx, &pg)
-	resp.Diagnostics.Append(diags...)
+	pg := helper.StateFrom[PostgreSQL](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	addonPGRes := tmp.GetPostgreSQL(ctx, r.cc, pg.ID.ValueString())
-	if addonPGRes.IsNotFoundError() {
-		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
+	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, pg.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
 	}
+
+	addonPGRes := tmp.GetPostgreSQL(ctx, r.cc, addonId)
 	if addonPGRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
 	}
 	if addonPGRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Postgres resource", addonPGRes.Error().Error())
+		return
 	}
 
 	addonPG := addonPGRes.Payload()
@@ -174,8 +170,15 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
+	realID, err := tmp.AddonIDToRealID(ctx, r.cc, r.org, pg.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
 	tflog.Debug(ctx, "STATE", map[string]any{"pg": pg})
 	tflog.Debug(ctx, "API", map[string]any{"pg": addonPG})
+	pg.ID = pkg.FromStr(realID)
 	pg.Plan = pkg.FromStr(addonPG.Plan)
 	pg.Region = pkg.FromStr(addonPG.Zone)
 	//pg.Name = types.String{Value: addonPG.}
@@ -193,7 +196,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 		}
 	}
 
-	diags = resp.State.Set(ctx, pg)
+	diags := resp.State.Set(ctx, pg)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -207,16 +210,19 @@ func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequ
 
 // Delete resource
 func (r *ResourcePostgreSQL) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var pg PostgreSQL
-
-	diags := req.State.Get(ctx, &pg)
-	resp.Diagnostics.Append(diags...)
+	pg := helper.StateFrom[PostgreSQL](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 	tflog.Debug(ctx, "PostgreSQL DELETE", map[string]any{"pg": pg})
 
-	res := tmp.DeleteAddon(ctx, r.cc, r.org, pg.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, pg.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	res := tmp.DeleteAddon(ctx, r.cc, r.org, addonId)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
