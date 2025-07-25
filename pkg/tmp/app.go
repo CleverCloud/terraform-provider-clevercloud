@@ -18,6 +18,7 @@ type CreateAppRequest struct {
 	InstanceVersion string `json:"instanceVersion" example:"20220330"`
 	MinFlavor       string `json:"minFlavor" example:"pico"`
 	MaxFlavor       string `json:"maxFlavor" example:"M"`
+	SeparateBuild   bool   `json:"separateBuild" example:"true"` // need to be true if BuildFlavor is set
 	BuildFlavor     string `json:"buildFlavor" example:"XL"`
 	MinInstances    int64  `json:"minInstances" example:"1"`
 	MaxInstances    int64  `json:"maxInstances" example:"4"`
