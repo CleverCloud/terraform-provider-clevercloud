@@ -36,6 +36,8 @@ var blocks = map[string]schema.Block{
 			},
 			"commit": schema.StringAttribute{
 				Optional:            true,
+				Required:            false,
+				Computed:            true, // if user provider repo but no commit, we will resolve last one when "git push"
 				Description:         "The git reference you want to deploy",
 				MarkdownDescription: "Support multiple syntax like `refs/heads/[BRANCH]` or `[COMMIT]`, in most of the case, you can use `refs/heads/master`",
 				Validators: []validator.String{

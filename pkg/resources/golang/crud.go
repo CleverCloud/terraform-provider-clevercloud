@@ -150,6 +150,7 @@ func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *re
 	state.BuildFlavor = appRes.GetBuildFlavor()
 	state.StickySessions = pkg.FromBool(appRes.App.StickySessions)
 	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
+	state.SetCommit(appRes.App.CommitID)
 
 	vhosts := appRes.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &res.Diagnostics)

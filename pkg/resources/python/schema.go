@@ -3,6 +3,7 @@ package python
 import (
 	"context"
 	_ "embed"
+	"fmt"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -74,9 +75,15 @@ func (py Python) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 		return nil
 	}
 
-	return &application.Deployment{
+	d := &application.Deployment{
 		Repository:    py.Deployment.Repository.ValueString(),
-		Commit:        py.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,
 	}
+
+	if !py.Deployment.Commit.IsNull() && !py.Deployment.Commit.IsUnknown() {
+		d.Commit = py.Deployment.Commit.ValueStringPointer()
+	}
+	fmt.Printf("############### py.Deployment.Commit: %+v\n", d)
+
+	return d
 }

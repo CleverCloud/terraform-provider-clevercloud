@@ -16,35 +16,47 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"go.clever-cloud.dev/client"
 )
 
-func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemote string) diag.Diagnostics {
-	var diags diag.Diagnostics
+type GitDeployResult struct {
+	ResolvedCommitHash string // filled only if no commit is provided to gitDeploy()
+	EffectivePush      bool
+}
+
+func gitDeploy(ctx context.Context, d Deployment, cleverRemote string, diags *diag.Diagnostics) GitDeployResult {
+	var result GitDeployResult
 
 	for range 5 {
-		diags = _gitDeploy(ctx, d, cc, cleverRemote)
+		result = _gitDeploy(ctx, d, cleverRemote, diags)
 		if !diags.HasError() {
 			break
 		}
 
 		time.Sleep(3 * time.Second)
 	}
-	return diags
+	return result
 }
 
-func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemote string) diag.Diagnostics {
+// Clone, add a remote, checkout and push the code to clever
+// EffectivePush is true if there is really something pushed
+// ResolvedCommitHash is the commit hash that was pushed if no commit was provided
+func _gitDeploy(ctx context.Context, d Deployment, cleverRemote string, diags *diag.Diagnostics) GitDeployResult {
+	result := GitDeployResult{EffectivePush: false}
 	cleverRemote = strings.Replace(cleverRemote, "git+ssh", "https", 1) // switch protocol
+	tflog.Info(ctx, "DEPLOY", map[string]any{
+		"repository": d.Repository,
+		"commit":     d.GetCommit(),
+	})
 
-	repo, diags := OpenOrClone(ctx, d.Repository, d.Commit)
+	repo := OpenOrClone(ctx, d.Repository, d.Commit, diags)
 	if diags.HasError() {
-		return diags
+		return result
 	}
 
 	currentRef, err := repo.Head()
 	if err != nil {
 		diags.AddError("failed to get current ref", err.Error())
-		return diags
+		return result
 	}
 
 	remoteOpts := &config.RemoteConfig{
@@ -59,7 +71,7 @@ func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemo
 	remote, err := repo.CreateRemote(remoteOpts)
 	if err != nil {
 		diags.AddError("failed to add clever remote", err.Error())
-		return diags
+		return result
 	}
 
 	pushOptions := &git.PushOptions{
@@ -84,11 +96,11 @@ func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemo
 			commit, err := repo.CommitObject(plumbing.NewHash(refNameOrCommit))
 			if err == plumbing.ErrObjectNotFound {
 				diags.AddError("requested commit not found", fmt.Sprintf("no commit '%s'", refNameOrCommit))
-				return diags
+				return result
 			}
 			if err != nil {
 				diags.AddError("failed to look for commit", err.Error())
-				return diags
+				return result
 			}
 
 			refSpec = config.RefSpec(fmt.Sprintf("%s:%s", commit.Hash.String(), plumbing.Master))
@@ -101,11 +113,11 @@ func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemo
 			ref, err := repo.Storer.Reference(plumbing.ReferenceName(refNameOrCommit))
 			if err == plumbing.ErrReferenceNotFound {
 				diags.AddError("requested reference not found", fmt.Sprintf("no reference named '%s'", refNameOrCommit))
-				return diags
+				return result
 			}
 			if err != nil {
 				diags.AddError("failed to get reference", err.Error())
-				return diags
+				return result
 			}
 
 			refSpec = config.RefSpec(fmt.Sprintf("%s:%s", ref.Hash().String(), plumbing.Master))
@@ -113,10 +125,13 @@ func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemo
 
 		if err := refSpec.Validate(); err != nil {
 			diags.AddError("failed to build ref spec to push", err.Error())
-			return diags
+			return result
 		}
 
 		pushOptions.RefSpecs = []config.RefSpec{refSpec}
+	} else {
+		// send current commit
+		result.ResolvedCommitHash = currentRef.Hash().String()
 	}
 
 	tflog.Debug(ctx, "pushing...", map[string]any{
@@ -130,9 +145,11 @@ func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemo
 		} else {
 			diags.AddError("failed to push to clever remote", err.Error())
 		}
+	} else {
+		result.EffectivePush = true
 	}
 
-	return diags
+	return result
 }
 
 func IsSHA1(s string) bool {
@@ -140,28 +157,25 @@ func IsSHA1(s string) bool {
 	return err == nil && len(h) == sha1.Size
 }
 
-func OpenOrClone(ctx context.Context, repoUrl string, commit *string) (*git.Repository, diag.Diagnostics) {
+func OpenOrClone(ctx context.Context, repoUrl string, commit *string, diags *diag.Diagnostics) *git.Repository {
 	if strings.HasPrefix(repoUrl, "file://") {
-		return open(repoUrl)
+		return open(repoUrl, diags)
 	}
 
-	return clone(ctx, repoUrl, commit)
+	return clone(ctx, repoUrl, commit, diags)
 }
 
-func open(repoUrl string) (*git.Repository, diag.Diagnostics) {
-	diags := diag.Diagnostics{}
-
+func open(repoUrl string, diags *diag.Diagnostics) *git.Repository {
 	repo, err := git.PlainOpen(strings.TrimPrefix(repoUrl, "file://"))
 	if err != nil {
 		diags.AddError("failed to open repository", fmt.Sprintf("cannot open '%s': %s", repoUrl, err.Error()))
-		return nil, diags
+		return nil
 	}
 
-	return repo, diags
+	return repo
 }
 
-func clone(ctx context.Context, repoUrl string, commit *string) (*git.Repository, diag.Diagnostics) {
-	diags := diag.Diagnostics{}
+func clone(ctx context.Context, repoUrl string, commit *string, diags *diag.Diagnostics) *git.Repository {
 	fs := memory.NewStorage()
 	wt := memfs.New()
 
@@ -178,8 +192,8 @@ func clone(ctx context.Context, repoUrl string, commit *string) (*git.Repository
 	r, err := git.CloneContext(ctx, fs, wt, cloneOpts)
 	if err != nil {
 		diags.AddError("failed to clone repository", err.Error())
-		return nil, diags
+		return nil
 	}
 
-	return r, diags
+	return r
 }

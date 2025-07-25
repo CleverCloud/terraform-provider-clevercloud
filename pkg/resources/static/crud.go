@@ -153,6 +153,7 @@ func (r *ResourceStatic) Read(ctx context.Context, req resource.ReadRequest, res
 	state.Region = pkg.FromStr(readRes.App.Zone)
 	state.DeployURL = pkg.FromStr(readRes.App.DeployURL)
 	state.BuildFlavor = readRes.GetBuildFlavor()
+	state.SetCommit(readRes.App.CommitID)
 
 	vhosts := readRes.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)

@@ -148,6 +148,7 @@ func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, res
 	state.MaxInstanceCount = basetypes.NewInt64Value(int64(appRes.App.Instance.MaxInstances))
 	state.SmallestFlavor = pkg.FromStr(appRes.App.Instance.MinFlavor.Name)
 	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
+	state.SetCommit(appRes.App.CommitID)
 
 	vhosts := appRes.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)

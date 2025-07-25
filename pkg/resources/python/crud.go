@@ -113,6 +113,14 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 		}
 	}
 
+	tflog.Info(ctx, "plan.Deployment: %+v\n", map[string]any{"deployment": plan.Deployment})
+	//fmt.Printf("plan.Deployment.Commit: %+v\n", plan.Deployment.Commit)
+	tflog.Info(ctx, "createRes.Commit: %+v\n", map[string]any{"commit": createRes.Commit})
+	if (plan.Deployment == nil || plan.Deployment.Commit.IsNull()) && createRes.Commit != "" {
+		tflog.Info(ctx, "############################ Setting commit to", map[string]any{"commit": createRes.Commit})
+		plan.SetCommit(createRes.Commit)
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -139,6 +147,7 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
+	state.SetCommit(appRes.App.CommitID)
 
 	vhosts := appRes.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
