@@ -63,6 +63,10 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	// Application
 	res := &CreateRes{}
 
+	if req.Application.BuildFlavor != "" {
+		req.Application.SeparateBuild = true
+	}
+
 	appRes := tmp.CreateApp(ctx, req.Client, req.Organization, req.Application)
 	if appRes.HasError() {
 		diags.AddError("failed to create application", appRes.Error().Error())

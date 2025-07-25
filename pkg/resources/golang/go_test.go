@@ -41,6 +41,7 @@ func TestAccGo_basic(t *testing.T) {
 			"max_instance_count": 2,
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
+			"build_flavor":       "M",
 			"redirect_https":     true,
 			"sticky_sessions":    true,
 			"app_folder":         "./app",
@@ -81,6 +82,7 @@ func TestAccGo_basic(t *testing.T) {
 				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
 				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
 				resource.TestCheckResourceAttr(fullName, "region", "par"),
+				resource.TestCheckResourceAttr(fullName, "build_flavor", "M"),
 
 				// Test CleverCloud API for configured applications
 				func(state *terraform.State) error {
