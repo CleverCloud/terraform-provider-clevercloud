@@ -35,14 +35,21 @@ type Runtime struct {
 	Hooks            *Hooks       `tfsdk:"hooks"`
 
 	// Env
-	AppFolder   types.String `tfsdk:"app_folder"`
-	Environment types.Map    `tfsdk:"environment"`
+	AppFolder          types.String `tfsdk:"app_folder"`
+	Environment        types.Map    `tfsdk:"environment"`
+	ExposedEnvironment types.Map    `tfsdk:"exposed_environment"`
 }
 
 func (r Runtime) VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) []string {
 	vhosts := []string{}
 	diags.Append(r.VHosts.ElementsAs(ctx, &vhosts, true)...)
 	return vhosts
+}
+
+func (r Runtime) ExposedEnvironmentAsStrings(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+	exposedEnv := map[string]string{}
+	diags.Append(r.ExposedEnvironment.ElementsAs(ctx, &exposedEnv, true)...)
+	return exposedEnv
 }
 
 // This attributes are used on several runtimes
@@ -126,6 +133,12 @@ var runtimeCommon = map[string]schema.Attribute{
 		Sensitive:   true,
 		Description: "Environment variables injected into the application",
 		ElementType: types.StringType,
+	},
+	"exposed_environment": schema.ListAttribute{
+		ElementType:         types.StringType,
+		Sensitive:           true,
+		Optional:            true,
+		MarkdownDescription: "Expose environment variables to the application",
 	},
 
 	"dependencies": schema.SetAttribute{

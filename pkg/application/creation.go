@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"reflect"
 	"slices"
 	"strings"
 
@@ -16,25 +17,27 @@ import (
 )
 
 type CreateReq struct {
-	Client       *client.Client
-	Organization string
-	Application  tmp.CreateAppRequest
-	Environment  map[string]string
-	VHosts       []string
-	Deployment   *Deployment
-	Dependencies []string
+	Client             *client.Client
+	Organization       string
+	Application        tmp.CreateAppRequest
+	Environment        map[string]string
+	ExposedEnvironment map[string]string
+	VHosts             []string
+	Deployment         *Deployment
+	Dependencies       []string
 }
 
 type UpdateReq struct {
-	ID             string
-	Client         *client.Client
-	Organization   string
-	Application    tmp.UpdateAppReq
-	Environment    map[string]string
-	VHosts         []string
-	Deployment     *Deployment
-	Dependencies   []string
-	TriggerRestart bool // when env vars change for example
+	ID                 string
+	Client             *client.Client
+	Organization       string
+	Application        tmp.UpdateAppReq
+	Environment        map[string]string
+	ExposedEnvironment map[string]string
+	VHosts             []string
+	Deployment         *Deployment
+	Dependencies       []string
+	TriggerRestart     bool // when env vars change for example
 }
 
 type Deployment struct {
@@ -87,6 +90,13 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 		return nil, diags
 	}
 	res.Application.Vhosts = *vhostsRes.Payload()
+
+	if len(req.ExposedEnvironment) > 0 {
+		exposedEnvRes := tmp.SetAppExposedEnv(ctx, req.Client, req.Organization, res.Application.ID, req.ExposedEnvironment)
+		if exposedEnvRes.HasError() {
+			diags.AddError("failed to configure application exposed environment", exposedEnvRes.Error().Error())
+		}
+	}
 
 	// Git Deployment
 	if req.Deployment != nil {
@@ -142,6 +152,21 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 		return nil, diags
 	}
 	res.Application.Vhosts = *vhostsRes.Payload()
+
+	// Exposed Environment
+	oldExposedEnvRes := tmp.GetAppExposedEnv(ctx, req.Client, req.Organization, res.Application.ID)
+	if oldExposedEnvRes.HasError() {
+		diags.AddError("failed to get application exposed environment", oldExposedEnvRes.Error().Error())
+		return nil, diags
+	}
+	oldExposedEnv := oldExposedEnvRes.Payload()
+
+	if !reflect.DeepEqual(oldExposedEnv, req.ExposedEnvironment) {
+		exposedEnvRes := tmp.SetAppExposedEnv(ctx, req.Client, req.Organization, res.Application.ID, req.ExposedEnvironment)
+		if exposedEnvRes.HasError() {
+			diags.AddError("failed to configure application exposed environment", exposedEnvRes.Error().Error())
+		}
+	}
 
 	// Dependencies
 	for _, dependency := range req.Dependencies {

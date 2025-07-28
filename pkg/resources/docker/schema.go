@@ -102,7 +102,7 @@ func (p *Docker) UpgradeState(ctx context.Context) map[int64]resource.StateUpgra
 	return map[int64]resource.StateUpgrader{}
 }
 
-func (p *Docker) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (p *Docker) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
