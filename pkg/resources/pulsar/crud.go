@@ -3,6 +3,7 @@ package pulsar
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -48,6 +49,10 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 	addonsProviders := addonsProvidersRes.Payload()
 	prov := pkg.LookupAddonProvider(*addonsProviders, "addon-pulsar")
 	addonPlan := pkg.LookupProviderPlan(prov, "beta")
+	if addonPlan == nil {
+		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov), ", "))
+		return
+	}
 
 	addonReq := tmp.AddonRequest{
 		Name:       plan.Name.ValueString(),

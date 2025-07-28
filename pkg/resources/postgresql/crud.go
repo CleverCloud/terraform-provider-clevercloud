@@ -76,7 +76,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	addonsProviders := addonsProvidersRes.Payload()
 	prov := pkg.LookupAddonProvider(*addonsProviders, "postgresql-addon")
 	plan := pkg.LookupProviderPlan(prov, pg.Plan.ValueString())
-	if plan.ID == "" {
+	if plan == nil {
 		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov), ", ")+", got: "+pg.Plan.String())
 		return
 	}
