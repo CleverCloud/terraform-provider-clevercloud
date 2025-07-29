@@ -22,6 +22,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/pulsar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/python"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/redis"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/rust"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/scala"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/static"
 )
@@ -49,5 +50,6 @@ var Resources = []func() resource.Resource{
 	golang.NewResourceGo,
 	play2.NewResourcePlay2(),
 	pulsar.NewResourcePulsar,
+	rust.NewResourceRust,
 	networkgroup.NewResourceNetworkgroup,
 }
