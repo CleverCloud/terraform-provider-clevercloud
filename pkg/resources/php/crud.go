@@ -150,6 +150,7 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 	state.Region = pkg.FromStr(appPHP.App.Zone)
 	state.DeployURL = pkg.FromStr(appPHP.App.DeployURL)
 	state.BuildFlavor = appPHP.GetBuildFlavor()
+	state.SetCommit(appPHP.App.CommitID)
 
 	vhosts := appPHP.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)

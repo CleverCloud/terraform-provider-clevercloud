@@ -45,8 +45,16 @@ type Deployment struct {
 	PrivateSSHKey  *string
 }
 
+func (d Deployment) GetCommit() string {
+	if d.Commit != nil {
+		return *d.Commit
+	}
+	return "<nil>"
+}
+
 type CreateRes struct {
 	Application tmp.CreatAppResponse
+	Commit      string // when there is a git URL to deploy but no commit SET
 }
 
 func (r *CreateRes) GetBuildFlavor() types.String {
@@ -92,18 +100,13 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	}
 	res.Application.Vhosts = *vhostsRes.Payload()
 
-	// Git Deployment
-	if req.Deployment != nil {
-		diags.Append(gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
-	}
-
 	// Dependencies
 	dependenciesWithAddonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, req.Dependencies...)
 	if err != nil {
 		diags.AddError("failed to get dependencies addon IDs", err.Error())
 		return nil, diags
 	}
-	tflog.Debug(ctx, "[create] dependencies to link", map[string]any{"dependencies": req.Dependencies, "addonIds": dependenciesWithAddonIDs})
+	tflog.Debug(ctx, "[create] mak to link", map[string]any{"dependencies": req.Dependencies, "addonIds": dependenciesWithAddonIDs})
 	for _, dependency := range dependenciesWithAddonIDs {
 		// TODO: support another apps as dependency
 
@@ -114,13 +117,23 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 		}
 	}
 
+	// Git Deployment
+	if req.Deployment != nil {
+		result := gitDeploy(ctx, *req.Deployment, res.Application.DeployURL, &diags)
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		tflog.Info(ctx, "### result.EffectivePush: %+v\n", map[string]any{"effectivePush": result.EffectivePush})
+		tflog.Info(ctx, "### result.DeployedCommit: %+v\n", map[string]any{"deployedCommit": result.ResolvedCommitHash})
+		res.Commit = result.ResolvedCommitHash
+	}
+
 	return res, diags
 }
 
 func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
-
-	// Application
 	res := &CreateRes{}
 
 	appRes := tmp.UpdateApp(ctx, req.Client, req.Organization, req.ID, req.Application)
@@ -175,16 +188,17 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	// TODO: unlink unneeded deps
 
 	// Git Deployment (when commit change)
+	hasBeenPushed := false
 	if req.Deployment != nil {
-		diags.Append(gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
-		if diags.HasError() {
-			return nil, diags
-		}
+		result := gitDeploy(ctx, *req.Deployment, res.Application.DeployURL, &diags)
+		hasBeenPushed = result.EffectivePush
+		res.Commit = result.ResolvedCommitHash
 	}
 
 	// trigger restart of the app if needed (when env change)
+	// don't trigger if we just "git push"
 	// error id 4014 = cannot redeploy an application which has never been deployed yet (did you git push?)
-	if req.TriggerRestart {
+	if req.TriggerRestart && !hasBeenPushed {
 		restartRes := tmp.RestartApp(ctx, req.Client, req.Organization, res.Application.ID)
 		if restartRes.HasError() && !strings.Contains(restartRes.Error().Error(), "4014") {
 			diags.AddError("failed to restart app", restartRes.Error().Error())

@@ -125,9 +125,7 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 
 // Read resource information
 func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state Docker
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	state := helper.StateFrom[Docker](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -151,6 +149,7 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 	state.Region = pkg.FromStr(app.App.Zone)
 	state.DeployURL = pkg.FromStr(app.App.DeployURL)
 	state.BuildFlavor = app.GetBuildFlavor()
+	state.SetCommit(app.App.CommitID)
 
 	vhosts := app.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)

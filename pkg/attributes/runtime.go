@@ -45,6 +45,18 @@ func (r Runtime) VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) [
 	return vhosts
 }
 
+// Set commit in Deployment block if not empty
+func (r *Runtime) SetCommit(commit string) {
+	if commit == "" {
+		return
+	}
+
+	if r.Deployment == nil {
+		r.Deployment = &Deployment{}
+	}
+	r.Deployment.Commit = pkg.FromStr(commit)
+}
+
 // This attributes are used on several runtimes
 var runtimeCommon = map[string]schema.Attribute{
 	// client provided
