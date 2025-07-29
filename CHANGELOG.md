@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.0.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.11.1...v1.0.0) (2025-07-29)
+
+
+### ⚠ BREAKING CHANGES
+
+* **addons:** use real ID everywhere
+
+### Features
+
+* rust ([b7b98b1](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/b7b98b1e10b5d3a2ead2acb3beb609edf46bc977)), closes [#185](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/185)
+
+
+### Bug Fixes
+
+* **addons:** use real ID everywhere ([41bb166](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/41bb166cc4619996cd4044fced62ba92a0a255d5))
+* **app:** fix condition to check if app needs to be restarted on update ([f3bea0a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/f3bea0adc57c92e97b2bfa28c44767f97acade30))
+* **go:** build instance ([58e72ab](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/58e72aba341bb38cf5df62f21dd1cf50a24a42f8))
+* **postgresal:** check plan == nil ([4b1500a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/4b1500a8de8d2a75b5c9fa3ef6e65d97f14abe54)), closes [#175](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/175)
+
 ## [0.11.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.11.0...v0.11.1) (2025-07-11)
 
 
