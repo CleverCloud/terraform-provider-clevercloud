@@ -29,3 +29,20 @@ Run the following command to initialize the workspace and apply the sample confi
 ```shell
 $ terraform init && terraform apply
 ```
+
+## Testing dev build
+
+```shell
+$ make install
+```
+
+```hcl
+provider_installation {
+    dev_overrides {
+        "CleverCloud/clevercloud" = "/home/[USER]/.terraform.d/plugins/registry.terraform.io/CleverCloud/clevercloud/dev/linux_amd64"
+    }
+    
+    direct{}
+}
+```
+

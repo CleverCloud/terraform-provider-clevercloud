@@ -46,8 +46,8 @@ type AddonProvider struct {
 
 type PostgreSQL struct {
 	// app_id:addon_5abaf3ea-d53f-4021-9711-cd294d50c662
-	// creation_date:2022-04-20T08:24:07.28Z[UTC]
-	Database string `json:"database" example:"bwf32ifhr5cofspgzrbb"`
+	CreationDate string `json:"creation_date" example:"2024-03-12T13:38:33.313Z[UTC]"`
+	Database     string `json:"database" example:"bwf32ifhr5cofspgzrbb"`
 	// features:[map[enabled:false name:encryption]]
 	Host string `json:"host" example:"bwf32ifhr5cofspgzrbb-postgresql.services.clever-cloud.com"`
 	// id:ea97919f-983b-4699-a673-2ed0668bf196

@@ -2,6 +2,8 @@ package pkg
 
 import (
 	"context"
+	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -22,6 +24,17 @@ func FromStr(str string) types.String {
 // Convert a native int64 into a tfsdk one
 func FromI(i int64) types.Int64 {
 	return types.Int64Value(i)
+}
+
+func FromISO8601(d string, diags *diag.Diagnostics) types.Int64 {
+	d = strings.SplitN(d, "[", 2)[0]
+
+	t, err := time.Parse(time.RFC3339, d)
+	if err != nil {
+		diags.AddError("failed to parse ISO8601 date", "expect: RFC3339, got: "+d)
+		return types.Int64Null()
+	}
+	return types.Int64Value(t.Unix())
 }
 
 // Convert a native bool into a tfsdk one

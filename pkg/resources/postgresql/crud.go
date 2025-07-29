@@ -142,16 +142,36 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "PostgreSQL READ", map[string]any{"request": req})
 
+	// State
 	pg := helper.StateFrom[PostgreSQL](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// IDs
 	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, pg.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
+
+	realID, err := tmp.AddonIDToRealID(ctx, r.cc, r.org, pg.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	// Objects
+	addonRes := tmp.GetAddon(ctx, r.cc, r.org, addonId)
+	if addonRes.IsNotFoundError() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to get Postgres resource", addonRes.Error().Error())
+		return
+	}
+	addon := addonRes.Payload()
 
 	addonPGRes := tmp.GetPostgreSQL(ctx, r.cc, addonId)
 	if addonPGRes.IsNotFoundError() {
@@ -170,18 +190,13 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	realID, err := tmp.AddonIDToRealID(ctx, r.cc, r.org, pg.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
-		return
-	}
-
 	tflog.Debug(ctx, "STATE", map[string]any{"pg": pg})
 	tflog.Debug(ctx, "API", map[string]any{"pg": addonPG})
 	pg.ID = pkg.FromStr(realID)
+	pg.Name = pkg.FromStr(addon.Name)
 	pg.Plan = pkg.FromStr(addonPG.Plan)
 	pg.Region = pkg.FromStr(addonPG.Zone)
-	//pg.Name = types.String{Value: addonPG.}
+	pg.CreationDate = pkg.FromI(addon.CreationDate)
 	pg.Host = pkg.FromStr(addonPG.Host)
 	pg.Port = pkg.FromI(int64(addonPG.Port))
 	pg.Database = pkg.FromStr(addonPG.Database)
@@ -196,8 +211,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 		}
 	}
 
-	diags := resp.State.Set(ctx, pg)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
