@@ -9,19 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
+	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
-var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
-	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
-}
+
 
 func TestAccScala_basic(t *testing.T) {
 	ctx := context.Background()
@@ -48,7 +44,7 @@ func TestAccScala_basic(t *testing.T) {
 				t.Fatalf("missing ORGANISATION env var")
 			}
 		},
-		ProtoV6ProviderFactories: protoV6Provider,
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		Steps: []resource.TestStep{{
 			Destroy:      false,
 			ResourceName: rName,
