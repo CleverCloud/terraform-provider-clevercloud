@@ -1,16 +1,12 @@
-package impl
+package impl_test
 
 import (
-	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
-	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"regexp"
 	"testing"
-)
 
-var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
-	"clevercloud": providerserver.NewProtocol6WithError(New("test")()),
-}
+	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"go.clever-cloud.com/terraform-provider/pkg/tests"
+)
 
 func TestProvider_ConfigureEmptyOrganisation(t *testing.T) {
 	providerBlock := `
@@ -25,7 +21,7 @@ resource "clevercloud_cellar" "test" {
 
 	resource.Test(t, resource.TestCase{
 		IsUnitTest:               true,
-		ProtoV6ProviderFactories: protoV6Provider,
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		Steps: []resource.TestStep{{
 			Config: providerBlock,
 			SkipFunc: func() (bool, error) {

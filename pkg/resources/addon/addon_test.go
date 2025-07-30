@@ -9,19 +9,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework/providerserver"
-	"github.com/hashicorp/terraform-plugin-go/tfprotov6"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider/impl"
+	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
-var protoV6Provider = map[string]func() (tfprotov6.ProviderServer, error){
-	"clevercloud": providerserver.NewProtocol6WithError(impl.New("test")()),
-}
+
 
 func TestAccAddon_basic(t *testing.T) {
 	rName := fmt.Sprintf("tf-test-mp-%d", time.Now().UnixMilli())
@@ -45,7 +41,7 @@ func TestAccAddon_basic(t *testing.T) {
 				t.Fatalf("missing ORGANISATION env var")
 			}
 		},
-		ProtoV6ProviderFactories: protoV6Provider,
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
 				res := tmp.GetAddon(context.Background(), cc, org, resource.Primary.ID)
