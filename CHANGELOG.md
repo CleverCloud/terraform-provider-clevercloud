@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.0.0...v1.0.1) (2025-07-31)
+
+
+### Bug Fixes
+
+* **postgres:** fill name and creation date during import ([7c03568](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/7c035682b0d98a4d98dd5eeb566de2474c67eaa1)), closes [#189](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/189)
+
 ## [1.0.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v0.11.1...v1.0.0) (2025-07-29)
 
 
