@@ -10,6 +10,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/s3"
@@ -69,13 +70,9 @@ func TestAccCellarBucket_basic(t *testing.T) {
 		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		Steps: []resource.TestStep{{
-			ResourceName: "cellar_bucket_" + rName,
-			Config:       providerBlock.Append(cellarBucketBlock).String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				func(*terraform.State) error {
-					return nil
-				},
-			),
+			ResourceName:      "cellar_bucket_" + rName,
+			Config:            providerBlock.Append(cellarBucketBlock).String(),
+			ConfigStateChecks: []statecheck.StateCheck{},
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for resourceName, resourceState := range state.RootModule().Resources {

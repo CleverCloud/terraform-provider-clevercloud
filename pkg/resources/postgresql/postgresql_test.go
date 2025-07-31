@@ -11,7 +11,10 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -73,16 +76,16 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(postgresqlBlock).String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^postgresql_.*`)),
-				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`)),
-				resource.TestCheckResourceAttrSet(fullName, "port"),
-				resource.TestMatchResourceAttr(fullName, "database", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
-				resource.TestMatchResourceAttr(fullName, "user", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
-				resource.TestMatchResourceAttr(fullName, "password", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
-				resource.TestCheckResourceAttr(fullName, "plan", "dev"),
-				resource.TestCheckResourceAttr(fullName, "backup", "true"),
-			),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^postgresql_.*`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("port"), knownvalue.NotNull()),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("database"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("user"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("password"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.StringExact("dev")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("backup"), knownvalue.Bool(true)),
+			},
 		}, {
 			ResourceName: rName2,
 			Config: providerBlock.Append(helper.NewRessource(
@@ -95,17 +98,17 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 					"version": "17",
 					"backup":  true,
 				}))).String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestMatchResourceAttr(fullName2, "id", regexp.MustCompile(`^postgresql_.*`)),
-				resource.TestMatchResourceAttr(fullName2, "host", regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`)),
-				resource.TestCheckResourceAttrSet(fullName2, "port"),
-				resource.TestMatchResourceAttr(fullName2, "database", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
-				resource.TestMatchResourceAttr(fullName2, "user", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
-				resource.TestMatchResourceAttr(fullName2, "password", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
-				resource.TestCheckResourceAttr(fullName2, "plan", "xs_sml"),
-				resource.TestCheckResourceAttr(fullName2, "version", "17"),
-				resource.TestCheckResourceAttr(fullName2, "backup", "true"),
-			),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName2, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^postgresql_.*`))),
+				statecheck.ExpectKnownValue(fullName2, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`))),
+				statecheck.ExpectKnownValue(fullName2, tfjsonpath.New("port"), knownvalue.NotNull()),
+				statecheck.ExpectKnownValue(fullName2, tfjsonpath.New("database"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+				statecheck.ExpectKnownValue(fullName2, tfjsonpath.New("user"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+				statecheck.ExpectKnownValue(fullName2, tfjsonpath.New("password"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+				statecheck.ExpectKnownValue(fullName2, tfjsonpath.New("plan"), knownvalue.StringExact("xs_sml")),
+				statecheck.ExpectKnownValue(fullName2, tfjsonpath.New("version"), knownvalue.StringExact("17")),
+				statecheck.ExpectKnownValue(fullName2, tfjsonpath.New("backup"), knownvalue.Bool(true)),
+			},
 		}, /*{
 			ResourceName: rName3,
 			Config: providerBlock.Append(helper.NewRessource(

@@ -9,16 +9,18 @@ import (
 	"testing"
 	"time"
 
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
-
-
 
 func TestAccGo_basic(t *testing.T) {
 	ctx := context.Background()
@@ -73,91 +75,88 @@ func TestAccGo_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(goBlock).String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				// Test the state for provider's populated values
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
-				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
-				resource.TestCheckResourceAttr(fullName, "region", "par"),
-				resource.TestCheckResourceAttr(fullName, "build_flavor", "M"),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("build_flavor"), knownvalue.StringExact("M")),
+				tests.NewCheckRemoteResource(
+					fullName,
+					func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
+						appRes := tmp.GetApp(ctx, cc, org, id)
+						if appRes.HasError() {
+							return nil, appRes.Error()
+						}
+						return appRes.Payload(), nil
+					},
+					func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
+						if app.Name != rName {
+							return assertError("invalid name", app.Name, rName)
+						}
 
-				// Test CleverCloud API for configured applications
-				func(state *terraform.State) error {
-					id := state.RootModule().Resources[fullName].Primary.ID
+						if app.Instance.MinInstances != 1 {
+							return assertError("invalid min instance count", app.Instance.MinInstances, "1")
+						}
 
-					appRes := tmp.GetApp(ctx, cc, org, id)
-					if appRes.HasError() {
-						return fmt.Errorf("failed to get application: %w", appRes.Error())
-					}
-					app := appRes.Payload()
+						if app.Instance.MaxInstances != 2 {
+							return assertError("invalid name", app.Name, rName)
+						}
 
-					if app.Name != rName {
-						return assertError("invalid name", app.Name, rName)
-					}
+						if app.Instance.MinFlavor.Name != "XS" {
+							return assertError("invalid name", app.Name, rName)
+						}
 
-					if app.Instance.MinInstances != 1 {
-						return assertError("invalid min instance count", app.Instance.MinInstances, "1")
-					}
+						if app.Instance.MaxFlavor.Name != "M" {
+							return assertError("invalid name", app.Name, rName)
+						}
 
-					if app.Instance.MaxInstances != 2 {
-						return assertError("invalid name", app.Name, rName)
-					}
+						if app.ForceHTTPS != "ENABLED" {
+							return assertError("expect option to be set", "redirect_https", app.ForceHTTPS)
+						}
 
-					if app.Instance.MinFlavor.Name != "XS" {
-						return assertError("invalid name", app.Name, rName)
-					}
+						if !app.StickySessions {
+							return assertError("expect option to be set", "sticky_sessions", app.StickySessions)
+						}
+						if app.Zone != "par" {
+							return assertError("expect region to be 'par'", "region", app.Zone)
+						}
 
-					if app.Instance.MaxFlavor.Name != "M" {
-						return assertError("invalid name", app.Name, rName)
-					}
+						appEnvRes := tmp.GetAppEnv(ctx, cc, org, id)
+						if appEnvRes.HasError() {
+							return fmt.Errorf("failed to get application: %w", appEnvRes.Error())
+						}
 
-					if app.ForceHTTPS != "ENABLED" {
-						return assertError("expect option to be set", "redirect_https", app.ForceHTTPS)
-					}
+						env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
+							acc[e.Name] = e.Value
+							return acc
+						})
 
-					if !app.StickySessions {
-						return assertError("expect option to be set", "sticky_sessions", app.StickySessions)
-					}
-					if app.Zone != "par" {
-						return assertError("expect region to be 'par'", "region", app.Zone)
-					}
+						v := env["MY_KEY"]
+						if v != "myval" {
+							return assertError("bad env var value MY_KEY", "myval3", v)
+						}
 
-					appEnvRes := tmp.GetAppEnv(ctx, cc, org, id)
-					if appEnvRes.HasError() {
-						return fmt.Errorf("failed to get application: %w", appEnvRes.Error())
-					}
+						v2 := env["APP_FOLDER"]
+						if v2 != "./app" {
+							return assertError("bad env var value APP_FOLER", "./app", v2)
+						}
 
-					env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
-						acc[e.Name] = e.Value
-						return acc
-					})
-
-					v := env["MY_KEY"]
-					if v != "myval" {
-						return assertError("bad env var value MY_KEY", "myval3", v)
-					}
-
-					v2 := env["APP_FOLDER"]
-					if v2 != "./app" {
-						return assertError("bad env var value APP_FOLER", "./app", v2)
-					}
-
-					v3 := env["CC_POST_BUILD_HOOK"]
-					if v3 != "echo \"build is OK!\"" {
-						return assertError("bad env var value CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
-					}
-
-					return nil
-				},
-			),
+						v3 := env["CC_POST_BUILD_HOOK"]
+						if v3 != "echo \"build is OK!\"" {
+							return assertError("bad env var value CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
+						}
+						return nil
+					}),
+			},
 		}, {
 			ResourceName: rName,
 			Config: providerBlock.Append(
 				goBlock.SetOneValue("min_instance_count", 2).SetOneValue("max_instance_count", 6),
 			).String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(fullName, "min_instance_count", "2"),
-				resource.TestCheckResourceAttr(fullName, "max_instance_count", "6"),
-			),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("max_instance_count"), knownvalue.Int64Exact(6)),
+			},
 		}},
 	})
 }

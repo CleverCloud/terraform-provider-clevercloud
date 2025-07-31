@@ -10,7 +10,10 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -50,22 +53,22 @@ func TestAccRust_basic(t *testing.T) {
 		CheckDestroy:             testAccCheckRustDestroy(cc, org),
 		Steps: []resource.TestStep{{
 			Config: providerBlock.String() + rustBlock.String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(fullName, "name", rName),
-				resource.TestCheckResourceAttr(fullName, "region", "par"),
-				resource.TestCheckResourceAttr(fullName, "min_instance_count", "1"),
-				resource.TestCheckResourceAttr(fullName, "max_instance_count", "2"),
-				resource.TestCheckResourceAttr(fullName, "smallest_flavor", "XS"),
-				resource.TestCheckResourceAttr(fullName, "biggest_flavor", "M"),
-				resource.TestCheckResourceAttr(fullName, "build_flavor", "M"),
-				resource.TestCheckResourceAttr(fullName, "redirect_https", "true"),
-				resource.TestCheckResourceAttr(fullName, "sticky_sessions", "true"),
-				resource.TestCheckResourceAttr(fullName, "app_folder", "./app"),
-				resource.TestCheckResourceAttr(fullName, "environment.MY_KEY", "myval"),
-				resource.TestCheckResourceAttr(fullName, "dependencies.#", "0"),
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`app_.*`)),
-				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`git\+ssh://.*`)),
-			),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(1)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("max_instance_count"), knownvalue.Int64Exact(2)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("smallest_flavor"), knownvalue.StringExact("XS")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("biggest_flavor"), knownvalue.StringExact("M")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("build_flavor"), knownvalue.StringExact("M")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("redirect_https"), knownvalue.Bool(true)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("sticky_sessions"), knownvalue.Bool(true)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("app_folder"), knownvalue.StringExact("./app")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("environment").AtMapKey("MY_KEY"), knownvalue.StringExact("myval")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dependencies"), knownvalue.ListSizeExact(0)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`app_.*`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`git\+ssh://.*`))),
+			},
 		}, {
 			Config: providerBlock.String() + helper.NewRessource(
 				"clevercloud_rust",
@@ -85,23 +88,23 @@ func TestAccRust_basic(t *testing.T) {
 					"dependencies":       []string{},
 				}),
 			).String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(fullName, "name", rName),
-				resource.TestCheckResourceAttr(fullName, "region", "par"),
-				resource.TestCheckResourceAttr(fullName, "min_instance_count", "2"),
-				resource.TestCheckResourceAttr(fullName, "max_instance_count", "3"),
-				resource.TestCheckResourceAttr(fullName, "smallest_flavor", "S"),
-				resource.TestCheckResourceAttr(fullName, "biggest_flavor", "L"),
-				resource.TestCheckResourceAttr(fullName, "build_flavor", "L"),
-				resource.TestCheckResourceAttr(fullName, "redirect_https", "false"),
-				resource.TestCheckResourceAttr(fullName, "sticky_sessions", "false"),
-				resource.TestCheckResourceAttr(fullName, "app_folder", "./src"),
-				resource.TestCheckResourceAttr(fullName, "environment.MY_KEY", "myval2"),
-				resource.TestCheckResourceAttr(fullName, "environment.ANOTHER_KEY", "anotherval"),
-				resource.TestCheckResourceAttr(fullName, "dependencies.#", "0"),
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`app_.*`)),
-				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`git\+ssh://.*`)),
-			),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("max_instance_count"), knownvalue.Int64Exact(3)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("smallest_flavor"), knownvalue.StringExact("S")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("biggest_flavor"), knownvalue.StringExact("L")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("build_flavor"), knownvalue.StringExact("L")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("redirect_https"), knownvalue.Bool(false)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("sticky_sessions"), knownvalue.Bool(false)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("app_folder"), knownvalue.StringExact("./src")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("environment").AtMapKey("MY_KEY"), knownvalue.StringExact("myval2")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("environment").AtMapKey("ANOTHER_KEY"), knownvalue.StringExact("anotherval")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dependencies"), knownvalue.ListSizeExact(0)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`app_.*`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`git\+ssh://.*`))),
+			},
 		},
 		// Delete testing automatically occurs in TestCase
 		},
