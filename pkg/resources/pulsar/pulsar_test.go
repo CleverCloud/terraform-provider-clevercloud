@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -20,14 +19,11 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-
-
 func TestAccPulsar_basic(t *testing.T) {
 	rName := fmt.Sprintf("tf-test-pulsar-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_pulsar.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	pulsarBlock := helper.NewRessource(
 		"clevercloud_pulsar",
 		rName,
@@ -35,15 +31,11 @@ func TestAccPulsar_basic(t *testing.T) {
 	)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetAddon(context.Background(), cc, org, resource.Primary.ID)
+				res := tmp.GetAddon(context.Background(), cc, tests.ORGANISATION, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}
@@ -64,7 +56,7 @@ func TestAccPulsar_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("binary_url"), knownvalue.StringRegexp(regexp.MustCompile(`^pulsar\+ssl:\/\/.*$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("http_url"), knownvalue.StringRegexp(regexp.MustCompile(`^https:\/\/.*$`))),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tenant"), knownvalue.StringExact(org)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tenant"), knownvalue.StringExact(tests.ORGANISATION)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("namespace"), knownvalue.NotNull()),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("token"), knownvalue.NotNull()),
 			},

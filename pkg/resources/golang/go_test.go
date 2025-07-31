@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -27,8 +26,7 @@ func TestAccGo_basic(t *testing.T) {
 	rName := fmt.Sprintf("tf-test-go-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_go.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	goBlock := helper.NewRessource(
 		"clevercloud_go",
 		rName,
@@ -49,15 +47,11 @@ func TestAccGo_basic(t *testing.T) {
 		helper.SetBlockValues("hooks", map[string]any{"post_build": "echo \"build is OK!\""}),
 	)
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, org, resource.Primary.ID)
+				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}
@@ -83,7 +77,7 @@ func TestAccGo_basic(t *testing.T) {
 				tests.NewCheckRemoteResource(
 					fullName,
 					func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
-						appRes := tmp.GetApp(ctx, cc, org, id)
+						appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 						if appRes.HasError() {
 							return nil, appRes.Error()
 						}
@@ -121,7 +115,7 @@ func TestAccGo_basic(t *testing.T) {
 							return assertError("expect region to be 'par'", "region", app.Zone)
 						}
 
-						appEnvRes := tmp.GetAppEnv(ctx, cc, org, id)
+						appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
 						if appEnvRes.HasError() {
 							return fmt.Errorf("failed to get application: %w", appEnvRes.Error())
 						}

@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -20,15 +19,12 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-
-
 func TestAccStatic_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := fmt.Sprintf("tf-static-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_static.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	staticBlock := helper.NewRessource(
 		"clevercloud_static",
 		rName,
@@ -42,12 +38,8 @@ func TestAccStatic_basic(t *testing.T) {
 		}))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
 		Steps: []resource.TestStep{{
 			Destroy:      false,
 			ResourceName: rName,
@@ -68,7 +60,7 @@ func TestAccStatic_basic(t *testing.T) {
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, org, resource.Primary.ID)
+				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}

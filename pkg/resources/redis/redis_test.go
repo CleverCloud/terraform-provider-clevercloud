@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -20,15 +19,12 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-
-
 func TestAccRedis_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := fmt.Sprintf("tf-test-redis-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_redis.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	materiakvBlock := helper.NewRessource("clevercloud_redis", rName, helper.SetKeyValues(map[string]any{
 		"name":   rName,
 		"region": "par",
@@ -36,15 +32,11 @@ func TestAccRedis_basic(t *testing.T) {
 	}))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetAddon(ctx, cc, org, resource.Primary.ID)
+				res := tmp.GetAddon(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}

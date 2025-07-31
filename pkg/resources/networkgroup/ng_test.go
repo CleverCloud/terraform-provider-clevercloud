@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -24,10 +23,7 @@ func TestAccNG_basic(t *testing.T) {
 	rName := fmt.Sprintf("tf-test-ng-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_networkgroup.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.
-		NewProvider("clevercloud").
-		SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	addonBlock := helper.NewRessource(
 		"clevercloud_networkgroup",
 		rName,
@@ -39,15 +35,11 @@ func TestAccNG_basic(t *testing.T) {
 	)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetNetworkgroup(context.Background(), cc, org, resource.Primary.ID)
+				res := tmp.GetNetworkgroup(context.Background(), cc, tests.ORGANISATION, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}

@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -20,16 +19,13 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-
-
 func TestAccCellar_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := fmt.Sprintf("tf-test-cellar-%d", time.Now().UnixMilli())
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_cellar.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	cellarBlock := helper.NewRessource(
 		"clevercloud_cellar",
 		rName,
@@ -39,11 +35,7 @@ func TestAccCellar_basic(t *testing.T) {
 		}))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
+		PreCheck:                 tests.ExpectOrganisation(t),
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		Steps: []resource.TestStep{{
 			ResourceName: "cellar_" + rName,
@@ -68,7 +60,7 @@ func TestAccCellar_basic(t *testing.T) {
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for resourceName, resourceState := range state.RootModule().Resources {
-				res := tmp.GetAddon(ctx, cc, org, resourceState.Primary.ID)
+				res := tmp.GetAddon(ctx, cc, tests.ORGANISATION, resourceState.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}

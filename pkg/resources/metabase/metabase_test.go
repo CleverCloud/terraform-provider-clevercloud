@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -21,15 +20,12 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-
-
 func TestAccMetabase_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := fmt.Sprintf("tf-test-mb-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_metabase.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	metabaseBlock := helper.NewRessource(
 		"clevercloud_metabase",
 		rName,
@@ -37,15 +33,11 @@ func TestAccMetabase_basic(t *testing.T) {
 	)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				addonId, err := tmp.RealIDToAddonID(ctx, cc, org, resource.Primary.ID)
+				addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
 				if err != nil {
 					if strings.Contains(err.Error(), "not found") {
 						continue

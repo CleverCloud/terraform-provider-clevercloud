@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"fmt"
 	"net/http"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -32,8 +31,7 @@ func TestAccPython_basic(t *testing.T) {
 	fullName2 := fmt.Sprintf("clevercloud_python.%s", rName2)
 	vhost := "bubhbfbnriubielrbeuvieuv.com"
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	pythonBlock := helper.NewRessource(
 		"clevercloud_python",
 		rName,
@@ -57,15 +55,11 @@ func TestAccPython_basic(t *testing.T) {
 	)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
+		PreCheck:                 tests.ExpectOrganisation(t),
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, org, resource.Primary.ID)
+				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}
@@ -88,7 +82,7 @@ func TestAccPython_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
-					appRes := tmp.GetApp(ctx, cc, org, id)
+					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
@@ -126,7 +120,7 @@ func TestAccPython_basic(t *testing.T) {
 						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), "1 cleverapps.io domain")
 					}
 
-					appEnvRes := tmp.GetAppEnv(ctx, cc, org, id)
+					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
 					if appEnvRes.HasError() {
 						return fmt.Errorf("failed to get application: %w", appEnvRes.Error())
 					}
@@ -169,7 +163,7 @@ func TestAccPython_basic(t *testing.T) {
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("biggest_flavor"), knownvalue.StringExact("XS")),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
-					appRes := tmp.GetApp(ctx, cc, org, id)
+					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
@@ -203,7 +197,7 @@ func TestAccPython_basic(t *testing.T) {
 			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				tests.NewCheckRemoteResource(fullName2, func(ctx context.Context, id string) (*tmp.VHosts, error) {
-					appRes := tmp.GetAppVhosts(ctx, cc, org, id)
+					appRes := tmp.GetAppVhosts(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}

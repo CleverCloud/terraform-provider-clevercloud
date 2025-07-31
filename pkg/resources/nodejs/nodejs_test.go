@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"fmt"
 	"net/http"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -30,8 +29,7 @@ func TestAccNodejs_basic(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_nodejs.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_nodejs.%s", rName2)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	nodejsBlock := helper.NewRessource(
 		"clevercloud_nodejs",
 		rName,
@@ -68,15 +66,11 @@ func TestAccNodejs_basic(t *testing.T) {
 		}))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, org, resource.Primary.ID)
+				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}
@@ -100,7 +94,7 @@ func TestAccNodejs_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("build_flavor"), knownvalue.StringExact("XL")),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
-					appRes := tmp.GetApp(ctx, cc, org, id)
+					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
@@ -140,8 +134,7 @@ func TestAccNodejs_basic(t *testing.T) {
 					if app.Zone != "par" {
 						return assertError("expect region to be 'par'", "region", app.Zone)
 					}
-
-					appEnvRes := tmp.GetAppEnv(ctx, cc, org, id)
+					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
 					if appEnvRes.HasError() {
 						return fmt.Errorf("failed to get application: %w", appEnvRes.Error())
 					}
@@ -182,13 +175,13 @@ func TestAccNodejs_basic(t *testing.T) {
 			Config:       providerBlock.Append(nodejsBlock2).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				tests.NewCheckRemoteResource(fullName2, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
-					appRes := tmp.GetApp(ctx, cc, org, id)
+					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
-					vhostsRes := tmp.GetAppVhosts(ctx, cc, org, id)
+					vhostsRes := tmp.GetAppVhosts(ctx, cc, tests.ORGANISATION, id)
 					if vhostsRes.HasError() {
 						return fmt.Errorf("failed to get application vhosts: %w", vhostsRes.Error())
 					}
