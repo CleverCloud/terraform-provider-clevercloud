@@ -333,3 +333,19 @@ func RestartApp(ctx context.Context, cc *client.Client, organisationID, applicat
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/instances", organisationID, applicationID)
 	return client.Post[RestartAppRes](ctx, cc, path, nil)
 }
+
+// Get exposed configuration
+// GET https://api.clever-cloud.com/v2/organisations/{organisationID}/applications/{applicationID}/exposed_env
+// {"a": "b"}
+func GetAppExposedEnv(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[map[string]string] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/exposed_env", organisationID, applicationID)
+	return client.Get[map[string]string](ctx, cc, path)
+}
+
+// Set exposed configuration
+// PUT https://api.clever-cloud.com/v2/organisations/{organisationID}/applications/{applicationID}/exposed_env
+// {"id":328,"message":"Application environment successfully updated","type":"success"}
+func SetAppExposedEnv(ctx context.Context, cc *client.Client, organisationID, applicationID string, env map[string]string) client.Response[map[string]string] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/exposed_env", organisationID, applicationID)
+	return client.Put[map[string]string](ctx, cc, path, env)
+}

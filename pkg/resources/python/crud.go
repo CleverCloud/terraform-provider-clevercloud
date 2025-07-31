@@ -78,10 +78,11 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 		},
-		Environment:  environment,
-		VHosts:       vhosts,
-		Deployment:   plan.toDeployment(r.gitAuth),
-		Dependencies: dependencies,
+		Environment:        environment,
+		ExposedEnvironment: plan.ExposedEnvironmentAsStrings(ctx, &resp.Diagnostics),
+		VHosts:             vhosts,
+		Deployment:         plan.toDeployment(r.gitAuth),
+		Dependencies:       dependencies,
 	}
 
 	createRes, diags := application.CreateApp(ctx, createReq)
@@ -205,10 +206,11 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
-		Environment:    planEnvironment,
-		VHosts:         vhosts,
-		Deployment:     plan.toDeployment(r.gitAuth),
-		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
+		Environment:        planEnvironment,
+		ExposedEnvironment: plan.ExposedEnvironmentAsStrings(ctx, &res.Diagnostics),
+		VHosts:             vhosts,
+		Deployment:         plan.toDeployment(r.gitAuth),
+		TriggerRestart:     !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
 	// Correctly named: update the app (via PUT Method)

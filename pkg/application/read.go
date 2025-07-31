@@ -14,6 +14,7 @@ type ReadAppRes struct {
 	App          tmp.CreatAppResponse
 	AppIsDeleted bool
 	Env          []tmp.Env
+	ExposedEnv   map[string]string
 }
 
 func (res *ReadAppRes) GetBuildFlavor() types.String {
@@ -50,6 +51,13 @@ func ReadApp(ctx context.Context, cc *client.Client, orgId, appId string) (*Read
 	}
 
 	r.Env = *envRes.Payload()
+
+	exposedEnvRes := tmp.GetAppExposedEnv(ctx, cc, orgId, appId)
+	if exposedEnvRes.HasError() {
+		diags.AddWarning("failed to get app exposed environment", exposedEnvRes.Error().Error())
+	} else {
+		r.ExposedEnv = *exposedEnvRes.Payload()
+	}
 
 	return r, diags
 }

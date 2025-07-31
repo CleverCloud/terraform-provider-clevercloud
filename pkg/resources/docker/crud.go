@@ -50,7 +50,7 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
 
-	environment := plan.toEnv(ctx, resp.Diagnostics)
+	environment := plan.toEnv(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -81,10 +81,11 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
-		Environment:  environment,
-		VHosts:       vhosts,
-		Deployment:   plan.toDeployment(r.gitAuth),
-		Dependencies: dependencies,
+		Environment:        environment,
+		ExposedEnvironment: plan.ExposedEnvironmentAsStrings(ctx, &resp.Diagnostics),
+		VHosts:             vhosts,
+		Deployment:         plan.toDeployment(r.gitAuth),
+		Dependencies:       dependencies,
 	}
 
 	createAppRes, diags := application.CreateApp(ctx, createAppReq)
@@ -151,6 +152,7 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 	state.Region = pkg.FromStr(app.App.Zone)
 	state.DeployURL = pkg.FromStr(app.App.DeployURL)
 	state.BuildFlavor = app.GetBuildFlavor()
+	state.ExposedEnvironment = pkg.FromMapStringString(app.ExposedEnv)
 
 	vhosts := app.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
@@ -179,11 +181,11 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Retriev all env values by extracting ctx env viriables and merge it with the app env variables
-	planEnvironment := plan.toEnv(ctx, res.Diagnostics)
+	planEnvironment := plan.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	stateEnvironment := state.toEnv(ctx, res.Diagnostics)
+	stateEnvironment := state.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -213,10 +215,11 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
-		Environment:    planEnvironment,
-		VHosts:         vhosts,
-		Deployment:     plan.toDeployment(r.gitAuth),
-		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
+		Environment:        planEnvironment,
+		ExposedEnvironment: plan.ExposedEnvironmentAsStrings(ctx, &res.Diagnostics),
+		VHosts:             vhosts,
+		Deployment:         plan.toDeployment(r.gitAuth),
+		TriggerRestart:     !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
 	// Correctly named: update the app (via PUT Method)
