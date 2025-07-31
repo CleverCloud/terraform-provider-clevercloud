@@ -4,10 +4,11 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 	"time"
+
+	"go.clever-cloud.com/terraform-provider/pkg/tests"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
@@ -15,20 +16,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
-
-
 
 func TestAccScala_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := fmt.Sprintf("tf-scala-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_scala.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	scalaBlock := helper.NewRessource(
 		"clevercloud_scala",
 		rName,
@@ -42,12 +39,8 @@ func TestAccScala_basic(t *testing.T) {
 		}))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
 		Steps: []resource.TestStep{{
 			Destroy:      false,
 			ResourceName: rName,
@@ -68,7 +61,7 @@ func TestAccScala_basic(t *testing.T) {
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, org, resource.Primary.ID)
+				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}

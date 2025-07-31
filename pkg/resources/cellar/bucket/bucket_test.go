@@ -25,12 +25,11 @@ func TestAccCellarBucket_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := fmt.Sprintf("my-bucket-%d", time.Now().UnixMilli())
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
 	cellar := &tmp.AddonResponse{}
 	if os.Getenv("TF_ACC") == "1" {
-		res := tmp.CreateAddon(ctx, cc, org, tmp.AddonRequest{
+		res := tmp.CreateAddon(ctx, cc, tests.ORGANISATION, tmp.AddonRequest{
 			Name:       fmt.Sprintf("tf-cellar-%d-forbucket", time.Now().UnixMilli()),
 			ProviderID: "cellar-addon",
 			Plan:       "plan_84c85ee3-5fdb-4aca-a727-298ddc14b766",
@@ -44,7 +43,7 @@ func TestAccCellarBucket_basic(t *testing.T) {
 		cellar = res.Payload()
 
 		defer func() {
-			rmRes := tmp.DeleteAddon(ctx, cc, org, cellar.ID)
+			rmRes := tmp.DeleteAddon(ctx, cc, tests.ORGANISATION, cellar.ID)
 			if rmRes.HasError() && !rmRes.IsNotFoundError() {
 				t.Fatalf("failed to destroy deps %s: %s", cellar.RealID, rmRes.Error().Error())
 			}
@@ -61,7 +60,7 @@ func TestAccCellarBucket_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
-			if org == "" {
+			if tests.ORGANISATION == "" {
 				t.Fatalf("missing ORGANISATION env var")
 			}
 			if cellar.RealID == "" {
@@ -77,7 +76,7 @@ func TestAccCellarBucket_basic(t *testing.T) {
 		CheckDestroy: func(state *terraform.State) error {
 			for resourceName, resourceState := range state.RootModule().Resources {
 				tflog.Debug(ctx, "TEST DESTROY", map[string]any{"bucket": resourceState})
-				res := tmp.GetAddonEnv(context.Background(), cc, org, cellar.ID) // TODO: resourceState.Primary.ID)
+				res := tmp.GetAddonEnv(context.Background(), cc, tests.ORGANISATION, cellar.ID) // TODO: resourceState.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}

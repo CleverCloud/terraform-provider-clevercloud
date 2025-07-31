@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -20,14 +19,11 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-
-
 func TestAccRust_basic(t *testing.T) {
 	rName := fmt.Sprintf("tf-test-rust-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_rust.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	rustBlock := helper.NewRessource(
 		"clevercloud_rust",
 		rName,
@@ -50,7 +46,8 @@ func TestAccRust_basic(t *testing.T) {
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
-		CheckDestroy:             testAccCheckRustDestroy(cc, org),
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             testAccCheckRustDestroy(cc, tests.ORGANISATION),
 		Steps: []resource.TestStep{{
 			Config: providerBlock.String() + rustBlock.String(),
 			ConfigStateChecks: []statecheck.StateCheck{

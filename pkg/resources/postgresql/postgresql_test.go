@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -21,16 +20,13 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-
-
 func TestAccPostgreSQL_basic(t *testing.T) {
 	rName := fmt.Sprintf("tf-test-pg-%d", time.Now().UnixMilli())
 	rName2 := fmt.Sprintf("tf-test2-pg-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_postgresql.%s", rName2)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	postgresqlBlock := helper.NewRessource(
 		"clevercloud_postgresql",
 		rName,
@@ -42,15 +38,11 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 		}))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				addonId, err := tmp.RealIDToAddonID(context.Background(), cc, org, resource.Primary.ID)
+				addonId, err := tmp.RealIDToAddonID(context.Background(), cc, tests.ORGANISATION, resource.Primary.ID)
 				if err != nil {
 					if strings.Contains(err.Error(), "not found") {
 						continue
@@ -130,8 +122,7 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 	rName := fmt.Sprintf("tf-test-pg-%d", time.Now().UnixMilli())
 	//fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	postgresqlBlock := helper.NewRessource(
 		"clevercloud_postgresql",
 		rName,
@@ -142,15 +133,11 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 		}))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				addonId, err := tmp.RealIDToAddonID(context.Background(), cc, org, resource.Primary.ID)
+				addonId, err := tmp.RealIDToAddonID(context.Background(), cc, tests.ORGANISATION, resource.Primary.ID)
 				if err != nil {
 					if strings.Contains(err.Error(), "not found") {
 						continue
@@ -183,7 +170,7 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 				ResourceName: rName,
 				PreConfig: func() {
 					// delete the database using an api call
-					tmp.DeleteAddon(context.Background(), cc, org, rName)
+					tmp.DeleteAddon(context.Background(), cc, tests.ORGANISATION, rName)
 				},
 				// refreshing state
 				RefreshState: true,

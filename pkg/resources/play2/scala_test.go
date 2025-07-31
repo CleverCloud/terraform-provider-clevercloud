@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -20,15 +19,12 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-
-
 func TestAccPlay2_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := fmt.Sprintf("tf-play2-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_play2.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	play2Block := helper.NewRessource(
 		"clevercloud_play2",
 		rName,
@@ -42,12 +38,8 @@ func TestAccPlay2_basic(t *testing.T) {
 		}))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
 		Steps: []resource.TestStep{{
 			Destroy:      false,
 			ResourceName: rName,
@@ -68,7 +60,7 @@ func TestAccPlay2_basic(t *testing.T) {
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, org, resource.Primary.ID)
+				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}

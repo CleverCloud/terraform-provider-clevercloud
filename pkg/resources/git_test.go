@@ -23,16 +23,13 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-
-
 // This is a test for local Git repositories, we don't care about the runtime
 func TestAccPython_localGit(t *testing.T) {
 	ctx := context.Background()
 	rName := fmt.Sprintf("tf-test-python-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
 	repoDir := path.Join(os.TempDir(), "tfsamplerepo")
 	os.RemoveAll(repoDir)       // clean old instance before test
@@ -87,15 +84,11 @@ func TestAccPython_localGit(t *testing.T) {
 	)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, org, resource.Primary.ID)
+				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}

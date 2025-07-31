@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -20,16 +19,13 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-
-
 func TestAccFSBucket_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := fmt.Sprintf("tf-test-fsbucket-%d", time.Now().UnixMilli())
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_fsbucket.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
-	org := os.Getenv("ORGANISATION")
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(org)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	fsbucketBlock := helper.NewRessource(
 		"clevercloud_fsbucket",
 		rName,
@@ -37,12 +33,8 @@ func TestAccFSBucket_basic(t *testing.T) {
 	)
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if org == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-		},
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
 		Steps: []resource.TestStep{{
 			ResourceName: "fsbucket_" + rName,
 			Config:       providerBlock.Append(fsbucketBlock).String(),
@@ -66,7 +58,7 @@ func TestAccFSBucket_basic(t *testing.T) {
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for resourceName, resourceState := range state.RootModule().Resources {
-				res := tmp.GetAddon(ctx, cc, org, resourceState.Primary.ID)
+				res := tmp.GetAddon(ctx, cc, tests.ORGANISATION, resourceState.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}
