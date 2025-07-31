@@ -10,16 +10,18 @@ import (
 	"testing"
 	"time"
 
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
-
-
 
 func TestAccNodejs_basic(t *testing.T) {
 	ctx := context.Background()
@@ -92,23 +94,18 @@ func TestAccNodejs_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(nodejsBlock).String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				// Test the state for provider's populated values
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
-				resource.TestMatchResourceAttr(fullName, "deploy_url", regexp.MustCompile(`^git\+ssh.*\.git$`)),
-				resource.TestCheckResourceAttr(fullName, "region", "par"),
-				resource.TestCheckResourceAttr(fullName, "build_flavor", "XL"),
-
-				// Test CleverCloud API for configured applications
-				func(state *terraform.State) error {
-					id := state.RootModule().Resources[fullName].Primary.ID
-
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("build_flavor"), knownvalue.StringExact("XL")),
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
 					appRes := tmp.GetApp(ctx, cc, org, id)
 					if appRes.HasError() {
-						return fmt.Errorf("failed to get application: %w", appRes.Error())
+						return nil, appRes.Error()
 					}
-					app := appRes.Payload()
-
+					return appRes.Payload(), nil
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
 					if app.Name != rName {
 						return assertError("invalid name", app.Name, rName)
 					}
@@ -168,44 +165,48 @@ func TestAccNodejs_basic(t *testing.T) {
 					if v3 != "echo \"build is OK!\"" {
 						return assertError("bad env var value CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
 					}
-
 					return nil
-				},
-			),
+				}),
+			},
 		}, {
 			ResourceName: rName,
 			Config: providerBlock.Append(
 				nodejsBlock.SetOneValue("min_instance_count", 2).SetOneValue("max_instance_count", 6),
 			).String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(fullName, "min_instance_count", "2"),
-				resource.TestCheckResourceAttr(fullName, "max_instance_count", "6"),
-			),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("max_instance_count"), knownvalue.Int64Exact(6)),
+			},
 		}, {
 			ResourceName: rName2,
 			Config:       providerBlock.Append(nodejsBlock2).String(),
-			Check: func(state *terraform.State) error {
-				id := state.RootModule().Resources[fullName2].Primary.ID
+			ConfigStateChecks: []statecheck.StateCheck{
+				tests.NewCheckRemoteResource(fullName2, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
+					appRes := tmp.GetApp(ctx, cc, org, id)
+					if appRes.HasError() {
+						return nil, appRes.Error()
+					}
+					return appRes.Payload(), nil
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
+					vhostsRes := tmp.GetAppVhosts(ctx, cc, org, id)
+					if vhostsRes.HasError() {
+						return fmt.Errorf("failed to get application vhosts: %w", vhostsRes.Error())
+					}
+					vhosts := vhostsRes.Payload()
 
-				vhostsRes := tmp.GetAppVhosts(ctx, cc, org, id)
-				if vhostsRes.HasError() {
-					return fmt.Errorf("failed to get application vhosts: %w", vhostsRes.Error())
-				}
-				vhosts := vhostsRes.Payload()
+					if len(*vhosts) == 0 {
+						return fmt.Errorf("there is no vhost for app: %s", id)
+					}
 
-				if len(*vhosts) == 0 {
-					return fmt.Errorf("there is no vhost for app: %s", id)
-				}
-
-				// Test deployed app
-				t := time.NewTimer(2 * time.Minute)
-				select {
-				case <-healthCheck(vhosts.CleverAppsFQDN(id).Fqdn):
-					return nil
-				case <-t.C:
-					return fmt.Errorf("application did not respond in the allowed time")
-				}
-
+					// Test deployed app
+					t := time.NewTimer(2 * time.Minute)
+					select {
+					case <-healthCheck(vhosts.CleverAppsFQDN(id).Fqdn):
+						return nil
+					case <-t.C:
+						return fmt.Errorf("application did not respond in the allowed time")
+					}
+				}),
 			},
 		}},
 	})

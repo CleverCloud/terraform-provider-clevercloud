@@ -13,7 +13,10 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -110,21 +113,10 @@ func TestAccPython_localGit(t *testing.T) {
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(pythonBlock).String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
+			ConfigStateChecks: []statecheck.StateCheck{
 				// Test the state for provider's populated values
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^app_.*$`)),
-				// Test CleverCloud API for configured applications
-				func(state *terraform.State) error {
-					//id := state.RootModule().Resources[fullName].Primary.ID
-
-					/*appRes := tmp.GetApp(ctx, cc, org, id)
-					if appRes.HasError() {
-						return fmt.Errorf("failed to get application: %w", appRes.Error())
-					}
-					app := appRes.Payload()*/
-					return nil
-				},
-			),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+			},
 		}},
 	})
 }

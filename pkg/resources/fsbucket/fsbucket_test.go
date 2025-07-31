@@ -10,7 +10,10 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -43,23 +46,23 @@ func TestAccFSBucket_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			ResourceName: "fsbucket_" + rName,
 			Config:       providerBlock.Append(fsbucketBlock).String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(fullName, "name", rName),
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^bucket_.*`)),
-				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*fsbucket.services.clever-cloud.com$`)),
-				resource.TestCheckResourceAttrSet(fullName, "ftp_username"),
-				resource.TestCheckResourceAttrSet(fullName, "ftp_password"),
-			),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^bucket_.*`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*fsbucket.services.clever-cloud.com$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("ftp_username"), knownvalue.NotNull()),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("ftp_password"), knownvalue.NotNull()),
+			},
 		}, {
 			ResourceName: "fsbucket_" + rName,
 			Config:       providerBlock.Append(fsbucketBlock.SetOneValue("name", rNameEdited)).String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(fullName, "name", rNameEdited),
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^bucket_.*`)),
-				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*fsbucket.services.clever-cloud.com$`)),
-				resource.TestCheckResourceAttrSet(fullName, "ftp_username"),
-				resource.TestCheckResourceAttrSet(fullName, "ftp_password"),
-			),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rNameEdited)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^bucket_.*`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*fsbucket.services.clever-cloud.com$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("ftp_username"), knownvalue.NotNull()),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("ftp_password"), knownvalue.NotNull()),
+			},
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for resourceName, resourceState := range state.RootModule().Resources {

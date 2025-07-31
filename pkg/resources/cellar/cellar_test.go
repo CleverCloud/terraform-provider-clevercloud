@@ -10,7 +10,10 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -45,23 +48,23 @@ func TestAccCellar_basic(t *testing.T) {
 		Steps: []resource.TestStep{{
 			ResourceName: "cellar_" + rName,
 			Config:       providerBlock.Append(cellarBlock).String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(fullName, "name", rName),
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^cellar_.*`)),
-				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*\.services.clever-cloud.com$`)),
-				resource.TestMatchResourceAttr(fullName, "key_id", regexp.MustCompile(`^[A-Z0-9]{20}$`)),
-				resource.TestMatchResourceAttr(fullName, "key_secret", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
-			),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^cellar_.*`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*\.services.clever-cloud.com$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("key_id"), knownvalue.StringRegexp(regexp.MustCompile(`^[A-Z0-9]{20}$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("key_secret"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+			},
 		}, {
 			ResourceName: "cellar_" + rName,
 			Config:       providerBlock.Append(cellarBlock.SetOneValue("name", rNameEdited)).String(),
-			Check: resource.ComposeAggregateTestCheckFunc(
-				resource.TestCheckResourceAttr(fullName, "name", rNameEdited),
-				resource.TestMatchResourceAttr(fullName, "id", regexp.MustCompile(`^cellar_.*`)),
-				resource.TestMatchResourceAttr(fullName, "host", regexp.MustCompile(`^.*\.services.clever-cloud.com$`)),
-				resource.TestMatchResourceAttr(fullName, "key_id", regexp.MustCompile(`^[A-Z0-9]{20}$`)),
-				resource.TestMatchResourceAttr(fullName, "key_secret", regexp.MustCompile(`^[a-zA-Z0-9]+$`)),
-			),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rNameEdited)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^cellar_.*`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*\.services.clever-cloud.com$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("key_id"), knownvalue.StringRegexp(regexp.MustCompile(`^[A-Z0-9]{20}$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("key_secret"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+			},
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for resourceName, resourceState := range state.RootModule().Resources {
