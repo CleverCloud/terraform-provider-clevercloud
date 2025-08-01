@@ -22,8 +22,8 @@ func FromStr(str string) types.String {
 }
 
 // Convert a native int64 into a tfsdk one
-func FromI(i int64) types.Int64 {
-	return types.Int64Value(i)
+func FromI[T ~int | ~int64](i T) types.Int64 {
+	return types.Int64Value(int64(i))
 }
 
 func FromISO8601(d string, diags *diag.Diagnostics) types.Int64 {

@@ -19,11 +19,11 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemote string) diag.Diagnostics {
+func GitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemote string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	for range 5 {
-		diags = _gitDeploy(ctx, d, cc, cleverRemote)
+		diags = gitDeploy(ctx, d, cc, cleverRemote)
 		if !diags.HasError() {
 			break
 		}
@@ -33,7 +33,7 @@ func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemot
 	return diags
 }
 
-func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemote string) diag.Diagnostics {
+func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemote string) diag.Diagnostics {
 	cleverRemote = strings.Replace(cleverRemote, "git+ssh", "https", 1) // switch protocol
 
 	repo, diags := OpenOrClone(ctx, d.Repository, d.Commit)
