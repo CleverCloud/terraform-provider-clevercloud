@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
+	v2 "go.clever-cloud.com/terraform-provider/pkg/application/v2"
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -36,6 +38,7 @@ func (r *ResourceGo) Configure(ctx context.Context, req resource.ConfigureReques
 
 // Create a new resource
 func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
+	// act as some validation
 	plan := helper.PlanFrom[Go](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
@@ -59,7 +62,75 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 		return
 	}
 
-	createReq := application.CreateReq{
+	app, diags := v2.CreateApplication(ctx, r.cc, r.org, tmp.CreateAppRequest{
+		Name:            plan.Name.ValueString(),
+		Deploy:          "git",
+		Description:     plan.Description.ValueString(),
+		InstanceType:    instance.Type,
+		InstanceVariant: instance.Variant.ID,
+		InstanceVersion: instance.Version,
+		MinFlavor:       plan.SmallestFlavor.ValueString(),
+		MaxFlavor:       plan.BiggestFlavor.ValueString(),
+		MinInstances:    plan.MinInstanceCount.ValueInt64(),
+		MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
+		BuildFlavor:     plan.BuildFlavor.ValueString(),
+		StickySessions:  plan.StickySessions.ValueBool(),
+		ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+		Zone:            plan.Region.ValueString(),
+	})
+	res.Diagnostics.Append(diags...)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	// after that, the resource exists, we need to take care of the state
+
+	state := Go{
+		Runtime: attributes.Runtime{
+			ID:               pkg.FromStr(app.ID),
+			Name:             pkg.FromStr(app.Name),
+			DeployURL:        pkg.FromStr(app.DeployURL),
+			BuildFlavor:      v2.GetBuildFlavor(app),
+			Description:      pkg.FromStr(app.Description),
+			Region:           pkg.FromStr(app.Zone),
+			SmallestFlavor:   pkg.FromStr(app.Instance.MinFlavor.Name),
+			BiggestFlavor:    pkg.FromStr(app.Instance.MaxFlavor.Name),
+			MinInstanceCount: pkg.FromI(app.Instance.MinInstances),
+			MaxInstanceCount: pkg.FromI(app.Instance.MaxInstances),
+			StickySessions:   pkg.FromBool(app.StickySessions),
+			RedirectHTTPS:    pkg.FromBool(application.ToForceHTTPS(app.ForceHTTPS)),
+			VHosts:           pkg.FromSetString(app.Vhosts.AsString(), &res.Diagnostics),
+		},
+	}
+	res.Diagnostics.Append(res.State.Set(ctx, state)...)
+
+	if diags := v2.UpsertEnvironment(ctx, r.cc, r.org, app.ID, environment); diags.HasError() {
+		res.Diagnostics.Append(diags...)
+	} else {
+		state.Runtime.Environment = plan.Environment
+	}
+	res.Diagnostics.Append(res.State.Set(ctx, state)...)
+
+	if diags := v2.UpsertDependencies(ctx, r.cc, r.org, app.ID, dependencies); diags.HasError() {
+		res.Diagnostics.Append(diags...)
+	} else {
+		state.Runtime.Dependencies = plan.Dependencies
+	}
+	res.Diagnostics.Append(res.State.Set(ctx, state)...)
+
+	if diags := v2.UpsertVHosts(ctx, r.cc, r.org, app.ID, vhosts); diags.HasError() {
+		res.Diagnostics.Append(diags...)
+	} else {
+		state.Runtime.VHosts = plan.VHosts
+	}
+	res.Diagnostics.Append(res.State.Set(ctx, state)...)
+
+	if diags := v2.Deploy(ctx, r.cc, r.org, app.ID, plan.toDeployment(r.gitAuth)); diags.HasError() {
+		res.Diagnostics.Append(diags...)
+	}
+	res.Diagnostics.Append(res.State.Set(ctx, state)...)
+
+	/*createReq := application.CreateReq{
 		Client:       r.cc,
 		Organization: r.org,
 		Application: tmp.CreateAppRequest{
@@ -117,7 +188,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {
 		return
-	}
+	}*/
 }
 
 // Read resource information
