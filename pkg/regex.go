@@ -12,7 +12,7 @@ var (
 	)
 
 	ServiceRegExp = regexp.MustCompile(
-		`^(postgresql|redis|cellar|config|matomo|mysql|pulsar|bucket)_[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$`,
+		`^(postgresql|redis|cellar|config|matomo|mysql|pulsar|bucket|mongodb)_[0-9a-fA-F]{8}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{4}\-[0-9a-fA-F]{12}$`,
 	)
 
 	VhostCleverAppsRegExp = regexp.MustCompile(`^app-.*\.cleverapps\.io$`)
