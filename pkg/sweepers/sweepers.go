@@ -157,3 +157,57 @@ func SweepAddons(region string) error {
 	}
 	return nil
 }
+
+// sweepKubernetes removes all test Kubernetes clusters
+func SweepKubernetes(region string) error {
+	ctx := context.Background()
+	cc := client.New(client.WithAutoOauthConfig())
+
+	if tests.ORGANISATION == "" {
+		return fmt.Errorf("ORGANISATION environment variable not set")
+	}
+
+	log.Printf("[INFO] Sweeping Kubernetes clusters in organization: %s", tests.ORGANISATION)
+
+	// List all Kubernetes clusters
+	clustersRes := tmp.ListKubernetesClusters(ctx, cc, tests.ORGANISATION)
+	if clustersRes.HasError() {
+		return fmt.Errorf("failed to list Kubernetes clusters: %w", clustersRes.Error())
+	}
+
+	clusters := *clustersRes.Payload()
+	swept := 0
+	errors := 0
+
+	for _, cluster := range clusters {
+		// Only delete test resources (those starting with tf-test)
+		if !strings.HasPrefix(cluster.Name, "tf-test") {
+			continue
+		}
+
+		// Skip clusters already marked for deletion
+		if cluster.Status == "DELETED" || cluster.Status == "DELETING" {
+			log.Printf("[INFO] Skipping Kubernetes cluster already marked for deletion: %s (%s) - Status: %s", cluster.Name, cluster.ID, cluster.Status)
+			continue
+		}
+
+		log.Printf("[INFO] Deleting Kubernetes cluster: %s (%s) - Status: %s", cluster.Name, cluster.ID, cluster.Status)
+		delRes := tmp.DeleteKubernetes(ctx, cc, tests.ORGANISATION, cluster.ID)
+		if delRes.IsNotFoundError() {
+			log.Printf("[INFO] Kubernetes cluster %s already deleted", cluster.ID)
+			continue
+		}
+		if delRes.HasError() {
+			log.Printf("[ERROR] Failed to delete Kubernetes cluster %s: %v", cluster.ID, delRes.Error())
+			errors++
+			continue
+		}
+		swept++
+	}
+
+	log.Printf("[INFO] Swept %d Kubernetes clusters (errors: %d)", swept, errors)
+	if errors > 0 {
+		return fmt.Errorf("encountered %d errors while sweeping Kubernetes clusters", errors)
+	}
+	return nil
+}

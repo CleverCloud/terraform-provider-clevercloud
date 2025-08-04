@@ -27,6 +27,7 @@ jobs:
           - elasticsearch
           - networkgroup
           - software
+          - kubernetes
     steps:
     - uses: actions/checkout@v4
     - name: Set up Go
