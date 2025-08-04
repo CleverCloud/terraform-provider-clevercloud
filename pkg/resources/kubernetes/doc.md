@@ -1,0 +1,44 @@
+# Kubernetes Resource
+
+Provides a Kubernetes cluster managed by Clever Cloud.
+
+## Example Usage
+
+```hcl
+resource "clevercloud_kubernetes" "my_cluster" {
+  name       = "my-kubernetes-cluster"
+  region     = "par"
+  version    = "1.25"
+  node_type  = "standard"
+  node_count = 3
+}
+
+# Link the Kubernetes cluster to an application
+resource "clevercloud_app_dependency" "kubernetes_dependency" {
+  app_id       = clevercloud_golang.app.id
+  dependency_id = clevercloud_kubernetes.my_cluster.id
+}
+```
+
+## Argument Reference
+
+* `name` - (Required) Name of the Kubernetes cluster.
+* `region` - (Optional) Region where the cluster will be deployed. Default to `par`.
+* `version` - (Optional) Kubernetes version to deploy. Default to latest stable version.
+* `node_type` - (Optional) Type of nodes to use for the cluster. Default to `standard`.
+* `node_count` - (Optional) Number of nodes in the cluster. Default to the provider's default value.
+
+## Attribute Reference
+
+* `id` - Unique identifier for the Kubernetes cluster.
+* `kubeconfig` - Kubernetes configuration file content for accessing the cluster.
+* `api_server_url` - URL of the Kubernetes API server.
+* `dashboard_url` - URL of the Kubernetes dashboard.
+
+## Import
+
+Kubernetes clusters can be imported using the ID, e.g.,
+
+```
+$ terraform import clevercloud_kubernetes.my_cluster addon_12345
+```
