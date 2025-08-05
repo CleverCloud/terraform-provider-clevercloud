@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
-	"time"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -20,7 +20,7 @@ import (
 )
 
 func TestAccPulsar_basic(t *testing.T) {
-	rName := fmt.Sprintf("tf-test-pulsar-%d", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("tf-test-pulsar")
 	fullName := fmt.Sprintf("clevercloud_pulsar.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)

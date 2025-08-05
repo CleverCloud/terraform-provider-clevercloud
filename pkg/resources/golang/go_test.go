@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
-	"time"
 
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -23,7 +23,7 @@ import (
 
 func TestAccGo_basic(t *testing.T) {
 	ctx := context.Background()
-	rName := fmt.Sprintf("tf-test-go-%d", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("tf-test-go")
 	fullName := fmt.Sprintf("clevercloud_go.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)

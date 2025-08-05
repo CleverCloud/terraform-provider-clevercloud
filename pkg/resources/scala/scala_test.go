@@ -6,15 +6,16 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
-	"time"
 
-	"go.clever-cloud.com/terraform-provider/pkg/tests"
-
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+	"go.clever-cloud.com/terraform-provider/pkg/tests"
+
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
@@ -22,7 +23,7 @@ import (
 
 func TestAccScala_basic(t *testing.T) {
 	ctx := context.Background()
-	rName := fmt.Sprintf("tf-scala-%d", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("tf-scala")
 	fullName := fmt.Sprintf("clevercloud_scala.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)

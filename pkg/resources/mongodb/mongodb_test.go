@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-	"time"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -21,7 +21,7 @@ import (
 )
 
 func TestAccMongoDB_basic(t *testing.T) {
-	rName := fmt.Sprintf("tf-test-mg-%d", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("tf-test-mg")
 	fullName := fmt.Sprintf("clevercloud_mongodb.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
@@ -66,7 +66,7 @@ func TestAccMongoDB_basic(t *testing.T) {
 }
 
 func TestAccMongoDB_RefreshDeleted(t *testing.T) {
-	rName := fmt.Sprintf("tf-test-mg-%d", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("tf-test-mg")
 	//fullName := fmt.Sprintf("clevercloud_mongodb.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)

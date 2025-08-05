@@ -8,10 +8,10 @@ import (
 	"path"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -26,7 +26,7 @@ import (
 // This is a test for local Git repositories, we don't care about the runtime
 func TestAccPython_localGit(t *testing.T) {
 	ctx := context.Background()
-	rName := fmt.Sprintf("tf-test-python-%d", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("tf-test-python")
 	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -24,8 +25,8 @@ import (
 
 func TestAccNodejs_basic(t *testing.T) {
 	ctx := context.Background()
-	rName := fmt.Sprintf("tf-test-node-%d", time.Now().UnixMilli())
-	rName2 := fmt.Sprintf("tf-test-node-%d-2", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("tf-test-node")
+	rName2 := acctest.RandomWithPrefix("tf-test-node-2")
 	fullName := fmt.Sprintf("clevercloud_nodejs.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_nodejs.%s", rName2)
 	cc := client.New(client.WithAutoOauthConfig())

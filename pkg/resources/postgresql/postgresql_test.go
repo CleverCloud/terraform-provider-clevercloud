@@ -7,8 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-	"time"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -21,8 +21,8 @@ import (
 )
 
 func TestAccPostgreSQL_basic(t *testing.T) {
-	rName := fmt.Sprintf("tf-test-pg-%d", time.Now().UnixMilli())
-	rName2 := fmt.Sprintf("tf-test2-pg-%d", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("tf-test-pg")
+	rName2 := acctest.RandomWithPrefix("tf-test2-pg")
 	fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_postgresql.%s", rName2)
 	cc := client.New(client.WithAutoOauthConfig())
@@ -119,7 +119,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 }
 
 func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
-	rName := fmt.Sprintf("tf-test-pg-%d", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("tf-test-pg")
 	//fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
