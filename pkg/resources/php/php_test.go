@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
-	"time"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -22,7 +22,7 @@ import (
 func TestAccPHP_basic(t *testing.T) {
 	t.Logf("starting....")
 	ctx := context.Background()
-	rName := fmt.Sprintf("tf-test-php-%d", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("tf-test-php")
 	fullName := fmt.Sprintf("clevercloud_php.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)

@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
-	"time"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -21,7 +21,7 @@ import (
 
 func TestAccRedis_basic(t *testing.T) {
 	ctx := context.Background()
-	rName := fmt.Sprintf("tf-test-redis-%d", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("tf-test-redis")
 	fullName := fmt.Sprintf("clevercloud_redis.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)

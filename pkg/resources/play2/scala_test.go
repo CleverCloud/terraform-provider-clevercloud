@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
-	"time"
 
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -21,7 +21,7 @@ import (
 
 func TestAccPlay2_basic(t *testing.T) {
 	ctx := context.Background()
-	rName := fmt.Sprintf("tf-play2-%d", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("tf-play2")
 	fullName := fmt.Sprintf("clevercloud_play2.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)

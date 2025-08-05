@@ -11,6 +11,7 @@ import (
 	"time"
 
 	tfjson "github.com/hashicorp/terraform-json"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -25,8 +26,8 @@ import (
 
 func TestAccPython_basic(t *testing.T) {
 	ctx := context.Background()
-	rName := fmt.Sprintf("tf-test-python-%d", time.Now().UnixMilli())
-	rName2 := fmt.Sprintf("tf-test-python-%d-2", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("tf-test-python")
+	rName2 := acctest.RandomWithPrefix("tf-test-python-2")
 	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_python.%s", rName2)
 	vhost := "bubhbfbnriubielrbeuvieuv.com"

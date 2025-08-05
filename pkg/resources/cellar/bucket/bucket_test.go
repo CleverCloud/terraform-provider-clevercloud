@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
@@ -19,18 +19,16 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-
-
 func TestAccCellarBucket_basic(t *testing.T) {
 	ctx := context.Background()
-	rName := fmt.Sprintf("my-bucket-%d", time.Now().UnixMilli())
+	rName := acctest.RandomWithPrefix("my-bucket")
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
 	cellar := &tmp.AddonResponse{}
 	if os.Getenv("TF_ACC") == "1" {
 		res := tmp.CreateAddon(ctx, cc, tests.ORGANISATION, tmp.AddonRequest{
-			Name:       fmt.Sprintf("tf-cellar-%d-forbucket", time.Now().UnixMilli()),
+			Name:       acctest.RandomWithPrefix("tf-cellar-forbucket"),
 			ProviderID: "cellar-addon",
 			Plan:       "plan_84c85ee3-5fdb-4aca-a727-298ddc14b766",
 			Region:     "par",
