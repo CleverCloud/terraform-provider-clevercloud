@@ -27,7 +27,6 @@ See [PHP product](https://www.clever-cloud.com/doc/getting-started/by-language/p
 
 ### Optional
 
-- `additional_vhosts` (List of String, Deprecated) Add custom hostname in addition to the default one, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build step
 - `dependencies` (Set of String) A list of application or addons requires to run this application.

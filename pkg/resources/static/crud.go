@@ -55,8 +55,7 @@ func (r *ResourceStatic) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	dependencies := []string{}
-	resp.Diagnostics.Append(plan.Dependencies.ElementsAs(ctx, &dependencies, false)...)
+	dependencies := plan.DependenciesAsString(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

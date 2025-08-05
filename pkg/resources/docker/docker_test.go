@@ -35,7 +35,6 @@ func TestAccDocker_basic(t *testing.T) {
 			"max_instance_count": 2,
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
-			"additional_vhosts":  [1]string{"toto-tf5283457829345.com"},
 		}))
 
 	resource.Test(t, resource.TestCase{

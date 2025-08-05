@@ -26,8 +26,6 @@ resource "clevercloud_docker" "docker_instance" {
   # vertical scaling
   smallest_flavor = "XS"
   biggest_flavor  = "M"
-
-  additional_vhosts = ["example.com"]
 }
 ```
 
@@ -44,7 +42,6 @@ resource "clevercloud_docker" "docker_instance" {
 
 ### Optional
 
-- `additional_vhosts` (List of String, Deprecated) Add custom hostname in addition to the default one, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build step
 - `container_port` (Number) Set to custom HTTP port if your Docker container runs on custom port

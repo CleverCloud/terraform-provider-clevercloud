@@ -1,4 +1,4 @@
-package php_test
+package frankenphp_test
 
 import (
 	"context"
@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
-	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -19,15 +19,15 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-func TestAccPHP_basic(t *testing.T) {
+func TestAccFrankenPHP_basic(t *testing.T) {
 	t.Logf("starting....")
 	ctx := context.Background()
-	rName := fmt.Sprintf("tf-test-php-%d", time.Now().UnixMilli())
-	fullName := fmt.Sprintf("clevercloud_php.%s", rName)
+	rName := acctest.RandomWithPrefix("tf-test-frankenphp")
+	fullName := fmt.Sprintf("clevercloud_frankenphp.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
-	phpBlock := helper.NewRessource(
-		"clevercloud_php",
+	frankenphpBlock := helper.NewRessource(
+		"clevercloud_frankenphp",
 		rName,
 		helper.SetKeyValues(map[string]any{
 			"name":               rName,
@@ -36,7 +36,8 @@ func TestAccPHP_basic(t *testing.T) {
 			"max_instance_count": 2,
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
-			"php_version":        "8",
+			"dev_dependencies":   false,
+			"vhosts":             []string{"toto-tf5283457829345.com"},
 		}))
 
 	resource.Test(t, resource.TestCase{
@@ -44,20 +45,22 @@ func TestAccPHP_basic(t *testing.T) {
 		PreCheck:                 tests.ExpectOrganisation(t),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       providerBlock.Append(phpBlock).String(),
+			Config:       providerBlock.Append(frankenphpBlock).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(false)),
 			},
 		}, {
 			ResourceName: rName,
 			Config: providerBlock.Append(
-				phpBlock.SetOneValue("min_instance_count", 2).SetOneValue("max_instance_count", 6),
+				frankenphpBlock.SetOneValue("min_instance_count", 2).SetOneValue("max_instance_count", 6).SetOneValue("dev_dependencies", true),
 			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("max_instance_count"), knownvalue.Int64Exact(6)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(true)),
 			},
 		}},
 		CheckDestroy: func(state *terraform.State) error {

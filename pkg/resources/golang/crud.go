@@ -53,8 +53,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 		return
 	}
 
-	dependencies := []string{}
-	res.Diagnostics.Append(plan.Dependencies.ElementsAs(ctx, &dependencies, false)...)
+	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

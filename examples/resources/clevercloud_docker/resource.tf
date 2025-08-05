@@ -9,6 +9,4 @@ resource "clevercloud_docker" "docker_instance" {
   # vertical scaling
   smallest_flavor = "XS"
   biggest_flavor  = "M"
-
-  additional_vhosts = ["example.com"]
 }
