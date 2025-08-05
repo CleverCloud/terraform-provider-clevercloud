@@ -54,8 +54,7 @@ func (r *ResourceRust) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	dependencies := []string{}
-	res.Diagnostics.Append(plan.Dependencies.ElementsAs(ctx, &dependencies, false)...)
+	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

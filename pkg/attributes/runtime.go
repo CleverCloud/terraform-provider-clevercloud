@@ -28,7 +28,6 @@ type Runtime struct {
 	StickySessions   types.Bool   `tfsdk:"sticky_sessions"`
 	RedirectHTTPS    types.Bool   `tfsdk:"redirect_https"`
 	VHosts           types.Set    `tfsdk:"vhosts"`
-	AdditionalVHosts types.List   `tfsdk:"additional_vhosts"`
 	DeployURL        types.String `tfsdk:"deploy_url"`
 	Dependencies     types.Set    `tfsdk:"dependencies"`
 	Deployment       *Deployment  `tfsdk:"deployment"`
@@ -37,6 +36,12 @@ type Runtime struct {
 	// Env
 	AppFolder   types.String `tfsdk:"app_folder"`
 	Environment types.Map    `tfsdk:"environment"`
+}
+
+func (r Runtime) DependenciesAsString(ctx context.Context, diags *diag.Diagnostics) []string {
+	dependencies := []string{}
+	diags.Append(r.Dependencies.ElementsAs(ctx, &dependencies, false)...)
+	return dependencies
 }
 
 func (r Runtime) VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) []string {
@@ -91,12 +96,6 @@ var runtimeCommon = map[string]schema.Attribute{
 	"redirect_https": schema.BoolAttribute{
 		Optional:            true,
 		MarkdownDescription: "Redirect client from plain to TLS port",
-	},
-	"additional_vhosts": schema.ListAttribute{
-		ElementType:         types.StringType,
-		Optional:            true,
-		MarkdownDescription: "Add custom hostname in addition to the default one, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)",
-		DeprecationMessage:  "Use vhosts instead (if you provide any vhost, no cleverapps.io domain will be returned)",
 	},
 	"vhosts": schema.SetAttribute{
 		ElementType:         types.StringType,

@@ -1,8 +1,7 @@
-package php
+package frankenphp
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -16,8 +15,8 @@ import (
 
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
 // So we need to handle the case there is no ProviderData
-func (r *ResourcePHP) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourcePHP.Configure()")
+func (r *ResourceFrankenPHP) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
+	tflog.Debug(ctx, "ResourceFrankenPHP.Configure()")
 
 	// Prevent panic if the provider has not been configured.
 	if req.ProviderData == nil {
@@ -35,19 +34,22 @@ func (r *ResourcePHP) Configure(ctx context.Context, req resource.ConfigureReque
 }
 
 // Create a new resource
-func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	tflog.Debug(ctx, "ResourcePHP.Create()")
-	plan := helper.PlanFrom[PHP](ctx, req.Plan, &resp.Diagnostics)
+func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceFrankenPHP.Create()")
+	plan := helper.PlanFrom[FrankenPHP](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "php", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "frankenphp", resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	environment := plan.toEnv(ctx, resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -69,7 +71,6 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 			InstanceType:    instance.Type,
 			InstanceVariant: instance.Variant.ID,
 			InstanceVersion: instance.Version,
-			BuildFlavor:     plan.BuildFlavor.ValueString(),
 			MinFlavor:       plan.SmallestFlavor.ValueString(),
 			MaxFlavor:       plan.BiggestFlavor.ValueString(),
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
@@ -91,7 +92,6 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	tflog.Debug(ctx, "BUILD FLAVOR RES", map[string]any{"flavor": createAppRes.Application.BuildFlavor.Name})
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
 
@@ -109,7 +109,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 				vhost,
 			)
 			if deleteVhostRes.HasError() {
-				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
+				resp.Diagnostics.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
 				return
 			}
 		}
@@ -117,69 +117,61 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information
-func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "ResourcePHP.Read()")
-	state := helper.StateFrom[PHP](ctx, req.State, &resp.Diagnostics)
+func (r *ResourceFrankenPHP) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	tflog.Debug(ctx, "ResourceFrankenPHP.Read()")
+	state := helper.StateFrom[FrankenPHP](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	appPHP, diags := application.ReadApp(ctx, r.cc, r.org, state.ID.ValueString())
+	appFrankenPHP, diags := application.ReadApp(ctx, r.cc, r.org, state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if appPHP.AppIsDeleted {
+	if appFrankenPHP.AppIsDeleted {
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
-	state.Name = pkg.FromStr(appPHP.App.Name)
-	state.Description = pkg.FromStr(appPHP.App.Description)
-	state.MinInstanceCount = pkg.FromI(int64(appPHP.App.Instance.MinInstances))
-	state.MaxInstanceCount = pkg.FromI(int64(appPHP.App.Instance.MaxInstances))
-	state.SmallestFlavor = pkg.FromStr(appPHP.App.Instance.MinFlavor.Name)
-	state.BiggestFlavor = pkg.FromStr(appPHP.App.Instance.MaxFlavor.Name)
-	state.Region = pkg.FromStr(appPHP.App.Zone)
-	state.DeployURL = pkg.FromStr(appPHP.App.DeployURL)
-	state.BuildFlavor = appPHP.GetBuildFlavor()
+	state.Name = pkg.FromStr(appFrankenPHP.App.Name)
+	state.Description = pkg.FromStr(appFrankenPHP.App.Description)
+	state.MinInstanceCount = pkg.FromI(int64(appFrankenPHP.App.Instance.MinInstances))
+	state.MaxInstanceCount = pkg.FromI(int64(appFrankenPHP.App.Instance.MaxInstances))
+	state.SmallestFlavor = pkg.FromStr(appFrankenPHP.App.Instance.MinFlavor.Name)
+	state.BiggestFlavor = pkg.FromStr(appFrankenPHP.App.Instance.MaxFlavor.Name)
+	state.Region = pkg.FromStr(appFrankenPHP.App.Zone)
+	state.DeployURL = pkg.FromStr(appFrankenPHP.App.DeployURL)
 
-	vhosts := appPHP.App.Vhosts.AsString()
+	vhosts := appFrankenPHP.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Update resource
-func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
-	tflog.Debug(ctx, "ResourcePHP.Update()")
+func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceFrankenPHP.Update()")
 
-	plan := helper.PlanFrom[PHP](ctx, req.Plan, &res.Diagnostics)
+	plan := helper.PlanFrom[FrankenPHP](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	state := helper.StateFrom[PHP](ctx, req.State, &res.Diagnostics)
+	state := helper.StateFrom[FrankenPHP](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "php", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "frankenphp", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
 	planEnvironment := plan.toEnv(ctx, res.Diagnostics)
-	if res.Diagnostics.HasError() {
-		return
-	}
-	stateEnvironment := state.toEnv(ctx, res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -197,7 +189,6 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 			InstanceType:    instance.Type,
 			InstanceVariant: instance.Variant.ID,
 			InstanceVersion: instance.Version,
-			BuildFlavor:     plan.BuildFlavor.ValueString(),
 			MinFlavor:       plan.SmallestFlavor.ValueString(),
 			MaxFlavor:       plan.BiggestFlavor.ValueString(),
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
@@ -207,55 +198,39 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
-		Environment:    planEnvironment,
-		VHosts:         vhosts,
-		Deployment:     plan.toDeployment(r.gitAuth),
-		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
+		Environment: planEnvironment,
+		VHosts:      vhosts,
+		Deployment:  plan.toDeployment(r.gitAuth),
 	}
 
-	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
+	updateAppRes, diags := application.UpdateApp(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+	plan.ID = pkg.FromStr(updateAppRes.Application.ID)
+	plan.DeployURL = pkg.FromStr(updateAppRes.Application.DeployURL)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource
-func (r *ResourcePHP) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	tflog.Debug(ctx, "ResourcePHP.Delete()")
-	var state PHP
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+func (r *ResourceFrankenPHP) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	tflog.Debug(ctx, "ResourceFrankenPHP.Delete()")
+	state := helper.StateFrom[FrankenPHP](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "PHP DELETE", map[string]any{"state": state})
 
-	res := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
-	if res.IsNotFoundError() {
-		resp.State.RemoveResource(ctx)
-		return
+	deleteAppRes := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
+	if deleteAppRes.HasError() {
+		resp.Diagnostics.AddError("failed to delete app", deleteAppRes.Error().Error())
 	}
-	if res.HasError() {
-		resp.Diagnostics.AddError("failed to delete app", res.Error().Error())
-		return
-	}
-
-	resp.State.RemoveResource(ctx)
 }
 
 // Import resource
-func (r *ResourcePHP) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	tflog.Debug(ctx, "ResourcePHP.ImportState()")
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
+func (r *ResourceFrankenPHP) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
+	tflog.Debug(ctx, "ResourceFrankenPHP.ImportState()")
+	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
