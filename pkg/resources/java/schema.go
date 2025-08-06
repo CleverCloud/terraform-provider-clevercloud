@@ -31,7 +31,7 @@ func (r ResourceJava) Schema(ctx context.Context, req resource.SchemaRequest, re
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
 			"java_version": schema.StringAttribute{
 				Optional:    true,
-				Description: "Choose the JVM version between 7 to 17 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).",
+				Description: "Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).",
 			},
 		}),
 		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
