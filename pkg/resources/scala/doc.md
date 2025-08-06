@@ -1,6 +1,6 @@
 # Manage [Scala](https://www.scala-lang.org/) applications.
 
-See [Scala product](https://www.clever-cloud.com/scala-hosting/) specification.
+See [Scala product specification](https://www.clever.cloud/developers/doc/applications/scala/).
 
 ## Example usage
 

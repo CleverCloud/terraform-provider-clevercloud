@@ -64,27 +64,27 @@ var blocks = map[string]schema.Block{
 			"pre_build": schema.StringAttribute{
 				Optional:            true,
 				Description:         "This hook is ran before the dependencies are fetched. If it fails, the deployment fails",
-				MarkdownDescription: "[CC_PRE_BUILD_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#pre-build-cc_pre_build_hook)",
+				MarkdownDescription: "[CC_PRE_BUILD_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#pre-build)",
 			},
 			"post_build": schema.StringAttribute{
 				Optional:            true,
 				Description:         "This hook is ran after the project is built, and before the cache archive is generated. If it fails, the deployment fails",
-				MarkdownDescription: "[CC_POST_BUILD_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#post-build-cc_post_build_hook)",
+				MarkdownDescription: "[CC_POST_BUILD_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#post-build)",
 			},
 			"pre_run": schema.StringAttribute{
 				Optional:            true,
 				Description:         "This hook is ran before the application is started, but after the cache archive has been generated. If it fails, the deployment fails.",
-				MarkdownDescription: "[CC_PRE_RUN_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#pre-run-cc_pre_run_hook)",
+				MarkdownDescription: "[CC_PRE_RUN_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#pre-run)",
 			},
 			"run_succeed": schema.StringAttribute{
 				Optional:            true,
 				Description:         "This hook are ran once the application has started. Their failure doesn't cause the deployment to fail.",
-				MarkdownDescription: "[CC_RUN_SUCCEEDED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)",
+				MarkdownDescription: "[CC_RUN_SUCCEEDED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)",
 			},
 			"run_failed": schema.StringAttribute{
 				Optional:            true,
 				Description:         "This hook are ran once the application has failed starting.",
-				MarkdownDescription: "[CC_RUN_FAILED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)",
+				MarkdownDescription: "[CC_RUN_FAILED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)",
 			},
 		},
 	},

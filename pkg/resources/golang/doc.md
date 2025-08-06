@@ -1,5 +1,7 @@
 Manage [Go](https://go.dev/) applications.
 
+See [Go product specification](https://www.clever.cloud/developers/doc/applications/golang).
+
 ## Example usage
 
 ### Basic

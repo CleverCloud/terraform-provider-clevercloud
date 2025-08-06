@@ -1,5 +1,7 @@
 Manage [Rust](https://www.rust-lang.org/) applications.
 
+See [Rust product specification](https://www.clever.cloud/developers/doc/applications/rust/).
+
 ## Example usage
 
 ### Basic

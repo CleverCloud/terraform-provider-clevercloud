@@ -1,3 +1,3 @@
-Manage [Cellar Bucket](https://www.clever-cloud.com/doc/deploy/addon/cellar/) product.
+Manage [Cellar Buckets](https://www.clever.cloud/developers/doc/addons/cellar/).
 
-See [product specification](https://www.clever-cloud.com/doc/deploy/addon/cellar/).
+See [Cellar product specification](https://www.clever.cloud/developers/doc/addons/cellar/).

@@ -101,7 +101,7 @@ var runtimeCommon = map[string]schema.Attribute{
 		ElementType:         types.StringType,
 		Optional:            true,
 		Computed:            true,
-		MarkdownDescription: "Add custom hostname, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)",
+		MarkdownDescription: "Add custom hostname, see [documentation](https://www.clever.cloud/developers/doc/administrate/domain-names/)",
 	},
 	// APP_FOLDER
 	"app_folder": schema.StringAttribute{

@@ -1,6 +1,6 @@
 # Manage [Java](https://www.java.com/en/) applications.
 
-See [Java product](https://www.clever-cloud.com/doc/getting-started/by-language/java/) specification.
+See [Java product specification](https://www.clever.cloud/developers/doc/applications/java/).
 
 ## Example usage
 

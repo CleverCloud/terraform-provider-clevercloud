@@ -5,4 +5,4 @@ FrankenPHP is a modern PHP application server, written in Go. It gives superpowe
 ## Links
 
 - [FrankenPHP Official Website](https://frankenphp.dev/)
-- [CleverCloud FrankenPHP Documentation](https://www.clever-cloud.com/doc/applications/frankenphp/)
+- [CleverCloud FrankenPHP Documentation](https://www.clever.cloud/developers/doc/applications/frankenphp/)
