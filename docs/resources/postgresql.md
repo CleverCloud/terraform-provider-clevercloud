@@ -3,14 +3,14 @@
 page_title: "clevercloud_postgresql Resource - terraform-provider-clevercloud"
 description: |-
   Manage PostgreSQL https://www.postgresql.org/ product.
-  See product specification https://www.clever-cloud.com/postgresql-hosting/.
+  See product specification https://www.clever.cloud/developers/doc/addons/postgresql/.
 ---
 
 # clevercloud_postgresql (Resource)
 
 Manage [PostgreSQL](https://www.postgresql.org/) product.
 
-See [product specification](https://www.clever-cloud.com/postgresql-hosting/).
+See [product specification](https://www.clever.cloud/developers/doc/addons/postgresql/).
 
 ## Example Usage
 
@@ -32,7 +32,7 @@ resource "clevercloud_postgresql" "postgresql_database" {
 
 ### Optional
 
-- `backup` (Boolean) Enable or disable backups for this PostgreSQL addon. Since backups are included in the addon price, disabling it has no impact on your billing.
+- `backup` (Boolean) Enable or disable backups for this PostgreSQL add-on. Since backups are included in the add-on price, disabling it has no impact on your billing.
 - `region` (String) Geographical region where the data will be stored
 - `version` (String) PostgreSQL version
 

@@ -3,11 +3,14 @@
 page_title: "clevercloud_metabase Resource - terraform-provider-clevercloud"
 description: |-
   Manage Metabase https://www.metabase.com/ product.
+  See Metabase product specification https://www.clever.cloud/developers/doc/addons/metabase/.
 ---
 
 # clevercloud_metabase (Resource)
 
 Manage [Metabase](https://www.metabase.com/) product.
+
+See [Metabase product specification](https://www.clever.cloud/developers/doc/addons/metabase/).
 
 
 

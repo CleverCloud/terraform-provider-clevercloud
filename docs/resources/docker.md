@@ -3,14 +3,14 @@
 page_title: "clevercloud_docker Resource - terraform-provider-clevercloud"
 description: |-
   Manage Docker https://www.docker.com/ applications.
-  See Docker product https://www.clever-cloud.com/doc/getting-started/by-language/docker/ specification.
+  See Docker product specification https://www.clever.cloud/developers/doc/applications/docker.
 ---
 
 # clevercloud_docker (Resource)
 
 Manage [Docker](https://www.docker.com/) applications.
 
-See [Docker product](https://www.clever-cloud.com/doc/getting-started/by-language/docker/) specification.
+See [Docker product specification](https://www.clever.cloud/developers/doc/applications/docker).
 
 ## Example Usage
 
@@ -34,8 +34,8 @@ resource "clevercloud_docker" "docker_instance" {
 
 ### Required
 
-- `biggest_flavor` (String) Biggest intance flavor, if different from smallest, enable autoscaling
-- `max_instance_count` (Number) Maximum instance count, if different from min value, enable autoscaling
+- `biggest_flavor` (String) Biggest instance flavor, if different from smallest, enable auto-scaling
+- `max_instance_count` (Number) Maximum instance count, if different from min value, enable auto-scaling
 - `min_instance_count` (Number) Minimum instance count
 - `name` (String) Application name
 - `smallest_flavor` (String) Smallest instance flavor
@@ -43,11 +43,11 @@ resource "clevercloud_docker" "docker_instance" {
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
-- `build_flavor` (String) Use dedicated instance with given flavor for build step
+- `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `container_port` (Number) Set to custom HTTP port if your Docker container runs on custom port
 - `container_port_tcp` (Number) Set to custom TCP port if your Docker container runs on custom port.
 - `daemon_socket_mount` (Boolean) Set to true to access the host Docker socket from inside your container
-- `dependencies` (Set of String) A list of application or addons requires to run this application.
+- `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
@@ -62,7 +62,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `registry_url` (String) The server of your private registry (optional).	Docker’s public registry
 - `registry_user` (String) The username to login to a private registry
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
-- `vhosts` (Set of String) Add custom hostname, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
+- `vhosts` (Set of String) Add custom hostname, see [documentation](https://www.clever.cloud/developers/doc/administrate/domain-names/)
 
 ### Read-Only
 
@@ -83,8 +83,8 @@ Optional:
 
 Optional:
 
-- `post_build` (String) [CC_POST_BUILD_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#post-build-cc_post_build_hook)
-- `pre_build` (String) [CC_PRE_BUILD_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#pre-build-cc_pre_build_hook)
-- `pre_run` (String) [CC_PRE_RUN_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#pre-run-cc_pre_run_hook)
-- `run_failed` (String) [CC_RUN_FAILED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)
-- `run_succeed` (String) [CC_RUN_SUCCEEDED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)
+- `post_build` (String) [CC_POST_BUILD_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#post-build)
+- `pre_build` (String) [CC_PRE_BUILD_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#pre-build)
+- `pre_run` (String) [CC_PRE_RUN_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#pre-run)
+- `run_failed` (String) [CC_RUN_FAILED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)
+- `run_succeed` (String) [CC_RUN_SUCCEEDED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)
