@@ -1,6 +1,6 @@
 Manage [NodeJS](https://nodejs.org/) applications.
 
-See [NodeJS product](https://www.clever-cloud.com/nodejs-hosting/) specification.
+See [Node.js & Bun product specification](https://www.clever.cloud/developers/doc/applications/nodejs/).
 
 ## Example usage
 

@@ -1,6 +1,6 @@
 # Manage Static applications.
 
-See [Static product](https://www.clever-cloud.com/doc/deploy/application/static/static/) specification.
+See [Static with Apache product specification](https://www.clever.cloud/developers/doc/deploy/application/static/).
 
 ## Example usage
 

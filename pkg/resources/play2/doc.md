@@ -1,6 +1,6 @@
 # Manage [Play2](https://www.playframework.com/) applications.
 
-See [Play2 product](https://www.clever-cloud.com/developers/guides/play-framework-2/) specification.
+See [Play2 product specification](https://www.clever.cloud/developers/guides/play-framework-2/).
 
 ## Example usage
 

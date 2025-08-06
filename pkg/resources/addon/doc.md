@@ -1,6 +1,6 @@
-Manage any addon through the [addon-provider API](https://developers.clever-cloud.com/doc/extend/add-ons-api/#add-on-provider-api)
+Manage any add-on through the [addon-provider API](https://www.clever.cloud/developers/doc/marketplace/#add-on-provider-requests)
 
 
 List of available providers:
 
-* [Mailpace](https://mailpace.com/)
+* [Mailpace](https://www.clever.cloud/developers/doc/addons/mailpace/)

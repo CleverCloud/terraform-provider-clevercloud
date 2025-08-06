@@ -4,6 +4,8 @@ This resource allows you to create and manage an FSBucket on Clever Cloud.
 
 FSBucket is a managed object storage solution that provides S3-compatible storage.
 
+See [FS Bucket product specification](https://www.clever.cloud/developers/doc/addons/fs-bucket/).
+
 ## Example Usage
 
 ```terraform

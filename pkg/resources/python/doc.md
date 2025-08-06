@@ -1,6 +1,6 @@
 Manage [Python](https://python.org/) applications.
 
-See [Python product](https://www.clever-cloud.com/python-hosting/) specification.
+See [Python product](https://www.clever.cloud/developers/doc/applications/python/) specification.
 
 ## Example usage
 
