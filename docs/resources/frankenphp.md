@@ -5,7 +5,7 @@ description: |-
   FrankenPHP
   FrankenPHP is a modern PHP application server, written in Go. It gives superpowers to your PHP apps thanks to its stunning features: Early Hints, worker mode, real-time capabilities, automatic HTTPS, HTTP/2, and HTTP/3 support...
   Links
-  FrankenPHP Official Website https://frankenphp.dev/CleverCloud FrankenPHP Documentation https://www.clever-cloud.com/doc/applications/frankenphp/
+  FrankenPHP Official Website https://frankenphp.dev/CleverCloud FrankenPHP Documentation https://www.clever.cloud/developers/doc/applications/frankenphp/
 ---
 
 # clevercloud_frankenphp (Resource)
@@ -17,7 +17,7 @@ FrankenPHP is a modern PHP application server, written in Go. It gives superpowe
 ## Links
 
 - [FrankenPHP Official Website](https://frankenphp.dev/)
-- [CleverCloud FrankenPHP Documentation](https://www.clever-cloud.com/doc/applications/frankenphp/)
+- [CleverCloud FrankenPHP Documentation](https://www.clever.cloud/developers/doc/applications/frankenphp/)
 
 
 
@@ -26,8 +26,8 @@ FrankenPHP is a modern PHP application server, written in Go. It gives superpowe
 
 ### Required
 
-- `biggest_flavor` (String) Biggest intance flavor, if different from smallest, enable autoscaling
-- `max_instance_count` (Number) Maximum instance count, if different from min value, enable autoscaling
+- `biggest_flavor` (String) Biggest instance flavor, if different from smallest, enable auto-scaling
+- `max_instance_count` (Number) Maximum instance count, if different from min value, enable auto-scaling
 - `min_instance_count` (Number) Minimum instance count
 - `name` (String) Application name
 - `smallest_flavor` (String) Smallest instance flavor
@@ -35,8 +35,8 @@ FrankenPHP is a modern PHP application server, written in Go. It gives superpowe
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
-- `build_flavor` (String) Use dedicated instance with given flavor for build step
-- `dependencies` (Set of String) A list of application or addons requires to run this application.
+- `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
@@ -46,7 +46,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
-- `vhosts` (Set of String) Add custom hostname, see [documentation](https://www.clever-cloud.com/doc/administrate/domain-names/)
+- `vhosts` (Set of String) Add custom hostname, see [documentation](https://www.clever.cloud/developers/doc/administrate/domain-names/)
 
 ### Read-Only
 
@@ -67,8 +67,8 @@ Optional:
 
 Optional:
 
-- `post_build` (String) [CC_POST_BUILD_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#post-build-cc_post_build_hook)
-- `pre_build` (String) [CC_PRE_BUILD_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#pre-build-cc_pre_build_hook)
-- `pre_run` (String) [CC_PRE_RUN_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#pre-run-cc_pre_run_hook)
-- `run_failed` (String) [CC_RUN_FAILED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)
-- `run_succeed` (String) [CC_RUN_SUCCEEDED_HOOK](https://www.clever-cloud.com/doc/develop/build-hooks/#run-succeeded-cc_run_succeeded_hook-or-failed-cc_run_failed_hook)
+- `post_build` (String) [CC_POST_BUILD_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#post-build)
+- `pre_build` (String) [CC_PRE_BUILD_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#pre-build)
+- `pre_run` (String) [CC_PRE_RUN_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#pre-run)
+- `run_failed` (String) [CC_RUN_FAILED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)
+- `run_succeed` (String) [CC_RUN_SUCCEEDED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)

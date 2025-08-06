@@ -54,9 +54,9 @@ Gérer les add-ons de mes organisations
 
 ### Optional
 
-- `consumer_key` (String) CleverCloud OAuth1 consumer key. Allows using a dedicated OAuth consumer.
+- `consumer_key` (String) Clever Cloud OAuth1 consumer key. Allows using a dedicated OAuth consumer.
 - `consumer_secret` (String, Sensitive) CleverCloud OAuth1 consumer secret. Allows using a dedicated OAuth consumer.
-- `endpoint` (String) CleverCloud API endpoint, default to https://api.clever-cloud.com
-- `organisation` (String, Sensitive) CleverCloud organisation, can be either orga_xxx, or user_xxx for personal spaces. This parameter can also be provided via CC_ORGANISATION environment variable.
-- `secret` (String, Sensitive) CleverCloud OAuth1 secret, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_SECRET environment variable.
-- `token` (String, Sensitive) CleverCloud OAuth1 token, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_TOKEN environment variable.
+- `endpoint` (String) Clever Cloud API endpoint, default to https://api.clever-cloud.com
+- `organisation` (String, Sensitive) Clever Cloud organisation, can be either orga_xxx, or user_xxx for personal spaces. This parameter can also be provided via CC_ORGANISATION environment variable.
+- `secret` (String, Sensitive) Clever Cloud OAuth1 secret, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_SECRET environment variable.
+- `token` (String, Sensitive) Clever Cloud OAuth1 token, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_TOKEN environment variable.

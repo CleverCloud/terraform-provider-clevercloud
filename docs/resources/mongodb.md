@@ -3,14 +3,14 @@
 page_title: "clevercloud_mongodb Resource - terraform-provider-clevercloud"
 description: |-
   Manage MongoDB https://www.mongodb.com/ product.
-  See product specification https://www.clever-cloud.com/fr/product/mongodb/.
+  See product specification https://www.clever.cloud/developers/doc/addons/mongodb/.
 ---
 
 # clevercloud_mongodb (Resource)
 
 Manage [MongoDB](https://www.mongodb.com/) product.
 
-See [product specification](https://www.clever-cloud.com/fr/product/mongodb/).
+See [product specification](https://www.clever.cloud/developers/doc/addons/mongodb/).
 
 
 
