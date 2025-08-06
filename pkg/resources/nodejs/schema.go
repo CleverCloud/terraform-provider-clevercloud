@@ -45,7 +45,7 @@ func (r ResourceNodeJS) Schema(ctx context.Context, req resource.SchemaRequest, 
 			// CC_NODE_BUILD_TOOL / CC_CUSTOM_BUILD_TOOL
 			"package_manager": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Either npm, npm-ci, yarn, yarn2 or custom",
+				MarkdownDescription: "Either npm, npm-ci, bun, pnpm, yarn-berry or custom",
 			},
 			// CC_NPM_REGISTRY
 			"registry": schema.StringAttribute{
