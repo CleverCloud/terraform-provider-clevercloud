@@ -29,7 +29,7 @@ func (r ResourceAddon) Schema(_ context.Context, req resource.SchemaRequest, res
 			"configurations": schema.MapAttribute{
 				Computed:            true,
 				Sensitive:           true,
-				MarkdownDescription: "Any configuration exposed by the addon",
+				MarkdownDescription: "Any configuration exposed by the add-on",
 				ElementType:         types.StringType,
 			},
 		}),

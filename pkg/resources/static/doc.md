@@ -1,4 +1,4 @@
-# Manage Static applications.
+Manage Static with Apache applications.
 
 See [Static with Apache product specification](https://www.clever.cloud/developers/doc/deploy/application/static/).
 

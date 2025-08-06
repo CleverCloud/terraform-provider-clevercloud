@@ -46,7 +46,7 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 
 	prov := pkg.LookupAddonProvider(*addonsProviders, "cellar-addon")
 	if prov == nil {
-		resp.Diagnostics.AddError("failed to find cellar provider", "")
+		resp.Diagnostics.AddError("failed to find Cellar provider", "")
 		return
 	}
 	plan := prov.Plans[0]
@@ -60,15 +60,15 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 
 	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
 	if res.HasError() {
-		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
+		resp.Diagnostics.AddError("failed to create add-on", res.Error().Error())
 		return
 	}
 	addonRes := res.Payload()
 
-	tflog.Debug(ctx, "get addon env vars", map[string]any{"cellar": addonRes.RealID})
+	tflog.Debug(ctx, "get add-on env vars", map[string]any{"cellar": addonRes.RealID})
 	envRes := tmp.GetAddonEnv(ctx, r.cc, r.org, addonRes.RealID)
 	if envRes.HasError() {
-		resp.Diagnostics.AddError("failed to get addon env vars", envRes.Error().Error())
+		resp.Diagnostics.AddError("failed to get add-on env vars", envRes.Error().Error())
 		return
 	}
 
@@ -105,7 +105,7 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 
 	addonEnvRes := tmp.GetAddonEnv(ctx, r.cc, r.org, cellar.ID.ValueString())
 	if addonEnvRes.HasError() {
-		resp.Diagnostics.AddError("failed to get addon env", addonEnvRes.Error().Error())
+		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
 	}
 	addonEnv := addonEnvRes.Payload()
@@ -171,11 +171,11 @@ func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest,
 		resp.State.RemoveResource(ctx)
 	}
 	if addonRes.HasError() {
-		resp.Diagnostics.AddError("failed to get Addon", addonRes.Error().Error())
+		resp.Diagnostics.AddError("failed to get Add-on", addonRes.Error().Error())
 		return
 	}
 
-	// TODO: Use real ID when API support it
+	// TODO: Use real ID when API supports it
 	// res := tmp.DeleteAddon(ctx, r.cc, r.org, cellar.ID.ValueString())
 	res := tmp.DeleteAddon(ctx, r.cc, r.org, addonRes.Payload().ID)
 	if res.IsNotFoundError() {
@@ -183,7 +183,7 @@ func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 	if res.HasError() {
-		resp.Diagnostics.AddError("failed to delete addon", res.Error().Error())
+		resp.Diagnostics.AddError("failed to delete add-on", res.Error().Error())
 		return
 	}
 

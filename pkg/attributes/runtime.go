@@ -69,7 +69,7 @@ var runtimeCommon = map[string]schema.Attribute{
 	},
 	"max_instance_count": schema.Int64Attribute{
 		Required:            true,
-		MarkdownDescription: "Maximum instance count, if different from min value, enable autoscaling",
+		MarkdownDescription: "Maximum instance count, if different from min value, enable auto-scaling",
 	},
 	"smallest_flavor": schema.StringAttribute{
 		Required:            true,
@@ -77,11 +77,11 @@ var runtimeCommon = map[string]schema.Attribute{
 	},
 	"biggest_flavor": schema.StringAttribute{
 		Required:            true,
-		MarkdownDescription: "Biggest intance flavor, if different from smallest, enable autoscaling",
+		MarkdownDescription: "Biggest instance flavor, if different from smallest, enable auto-scaling",
 	},
 	"build_flavor": schema.StringAttribute{
 		Optional:            true,
-		MarkdownDescription: "Use dedicated instance with given flavor for build step",
+		MarkdownDescription: "Use dedicated instance with given flavor for build phase",
 	},
 	"region": schema.StringAttribute{
 		Optional:            true,
@@ -129,7 +129,7 @@ var runtimeCommon = map[string]schema.Attribute{
 
 	"dependencies": schema.SetAttribute{
 		Optional:            true,
-		MarkdownDescription: "A list of application or addons requires to run this application.\nCan be either app_xxx or postgres_yyy ID format",
+		MarkdownDescription: "A list of application or add-ons required to run this application.\nCan be either app_xxx or postgres_yyy ID format",
 		ElementType:         types.StringType,
 		Validators: []validator.Set{
 			pkg.NewSetValidator("Check ID format", func(ctx context.Context, req validator.SetRequest, res *validator.SetResponse) {
@@ -150,7 +150,7 @@ var runtimeCommon = map[string]schema.Attribute{
 					if !pkg.AddonRegExp.MatchString(item) &&
 						!pkg.AppRegExp.MatchString(item) &&
 						!pkg.ServiceRegExp.MatchString(item) {
-						res.Diagnostics.AddError("This dependecy don't have a valid format", fmt.Sprintf("'%s' is neither an App ID or an addon ID", item))
+						res.Diagnostics.AddError("This dependency doesn't have a valid format", fmt.Sprintf("'%s' is neither an App ID or a Real ID", item))
 					}
 				}
 			}),

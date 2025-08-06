@@ -43,7 +43,7 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 
 	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
 	if addonsProvidersRes.HasError() {
-		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
+		resp.Diagnostics.AddError("failed to get add-on providers", addonsProvidersRes.Error().Error())
 		return
 	}
 
@@ -51,13 +51,13 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 
 	provider := pkg.LookupAddonProvider(*addonsProviders, ad.ThirdPartyProvider.ValueString())
 	if provider == nil {
-		resp.Diagnostics.AddError("This provider does not exists", fmt.Sprintf("available providers are: %s", strings.Join(pkg.AddonProvidersAsList(*addonsProviders), ", ")))
+		resp.Diagnostics.AddError("This provider doesn't exist", fmt.Sprintf("available providers are: %s", strings.Join(pkg.AddonProvidersAsList(*addonsProviders), ", ")))
 		return
 	}
 
 	plan := pkg.LookupProviderPlan(provider, ad.Plan.ValueString())
 	if plan == nil {
-		resp.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
+		resp.Diagnostics.AddError("This plan doesn't exist", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
 		return
 	}
 
@@ -70,7 +70,7 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 
 	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
 	if res.HasError() {
-		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
+		resp.Diagnostics.AddError("failed to create add-on", res.Error().Error())
 		return
 	}
 
@@ -79,7 +79,7 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 
 	envRes := tmp.GetAddonEnv(ctx, r.cc, r.org, res.Payload().ID)
 	if res.HasError() {
-		resp.Diagnostics.AddError("failed to get addon env", res.Error().Error())
+		resp.Diagnostics.AddError("failed to get add-on env", res.Error().Error())
 		return
 	}
 
@@ -97,7 +97,7 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 
 // Read resource information
 func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Addon READ", map[string]any{"request": req})
+	tflog.Debug(ctx, "Add-on READ", map[string]any{"request": req})
 
 	var ad Addon
 	diags := req.State.Get(ctx, &ad)
@@ -112,13 +112,13 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 	if addonRes.HasError() {
-		resp.Diagnostics.AddError("failed to get addon", addonRes.Error().Error())
+		resp.Diagnostics.AddError("failed to get add-on", addonRes.Error().Error())
 		return
 	}
 
 	addonEnvRes := tmp.GetAddonEnv(ctx, r.cc, r.org, ad.ID.ValueString())
 	if addonEnvRes.HasError() {
-		resp.Diagnostics.AddError("failed to get addon env", addonEnvRes.Error().Error())
+		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
 	}
 
@@ -156,7 +156,7 @@ func (r *ResourceAddon) Delete(ctx context.Context, req resource.DeleteRequest, 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Addon DELETE", map[string]any{"addon": ad})
+	tflog.Debug(ctx, "Add-on DELETE", map[string]any{"addon": ad})
 
 	res := tmp.DeleteAddon(ctx, r.cc, r.org, ad.ID.ValueString())
 	if res.IsNotFoundError() {
@@ -164,7 +164,7 @@ func (r *ResourceAddon) Delete(ctx context.Context, req resource.DeleteRequest, 
 		return
 	}
 	if res.HasError() {
-		resp.Diagnostics.AddError("failed to delete addon", res.Error().Error())
+		resp.Diagnostics.AddError("failed to delete add-on", res.Error().Error())
 		return
 	}
 

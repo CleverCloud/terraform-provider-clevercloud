@@ -1,4 +1,4 @@
-Manage [NodeJS](https://nodejs.org/) applications.
+Manage [Node.js](https://nodejs.org/) & [Bun](https://bun.sh/) applications.
 
 See [Node.js & Bun product specification](https://www.clever.cloud/developers/doc/applications/nodejs/).
 

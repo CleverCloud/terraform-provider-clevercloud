@@ -34,7 +34,7 @@ func (r ResourceFSBucket) Schema(_ context.Context, req resource.SchemaRequest, 
 			// customer provided
 			"name": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "Name of the FSBucket",
+				MarkdownDescription: "Name of the FS Bucket",
 			},
 			"region": schema.StringAttribute{
 				Optional:            true,

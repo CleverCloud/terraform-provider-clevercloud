@@ -56,7 +56,7 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
-				MarkdownDescription: "Enable or disable backups for this PostgreSQL addon. Since backups are included in the addon price, disabling it has no impact on your billing.",
+				MarkdownDescription: "Enable or disable backups for this PostgreSQL add-on. Since backups are included in the add-on price, disabling it has no impact on your billing.",
 			},
 		}),
 	}
