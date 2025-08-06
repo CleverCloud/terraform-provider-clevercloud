@@ -100,7 +100,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	// Dependencies
 	dependenciesWithAddonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, req.Dependencies...)
 	if err != nil {
-		diags.AddError("failed to get dependencies addon IDs", err.Error())
+		diags.AddError("failed to get dependencies add-on IDs", err.Error())
 		return nil, diags
 	}
 	tflog.Debug(ctx, "[create] dependencies to link", map[string]any{"dependencies": req.Dependencies, "addonIds": dependenciesWithAddonIDs})
@@ -156,7 +156,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	// Dependencies
 	dependenciesWithAddonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, req.Dependencies...)
 	if err != nil {
-		diags.AddError("failed to get dependencies addon IDs", err.Error())
+		diags.AddError("failed to get dependencies add-on IDs", err.Error())
 		return nil, diags
 	}
 

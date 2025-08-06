@@ -42,7 +42,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 
 	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
 	if addonsProvidersRes.HasError() {
-		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
+		resp.Diagnostics.AddError("failed to get add-on providers", addonsProvidersRes.Error().Error())
 		return
 	}
 
@@ -63,7 +63,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 
 	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
 	if res.HasError() {
-		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
+		resp.Diagnostics.AddError("failed to create add-on", res.Error().Error())
 		return
 	}
 	addon := res.Payload()
@@ -77,14 +77,14 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 
 	pulsarRes := tmp.GetPulsar(ctx, r.cc, r.org, addon.RealID)
 	if pulsarRes.HasError() {
-		resp.Diagnostics.AddError("failed to get pulsar", pulsarRes.Error().Error())
+		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())
 		return
 	}
 	pulsar := pulsarRes.Payload()
 
 	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.cc, pulsar.ClusterID)
 	if pulsarClusterRes.HasError() {
-		resp.Diagnostics.AddError("failed to get pulsar env", pulsarClusterRes.Error().Error())
+		resp.Diagnostics.AddError("failed to get Pulsar env", pulsarClusterRes.Error().Error())
 		return
 	}
 	pulsarCluster := pulsarClusterRes.Payload()
@@ -105,7 +105,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 
 // Read resource information
 func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "PostgreSQL READ", map[string]any{"request": req})
+	tflog.Debug(ctx, "Pulsar READ", map[string]any{"request": req})
 
 	state := helper.StateFrom[Pulsar](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -114,14 +114,14 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 
 	pulsarRes := tmp.GetPulsar(ctx, r.cc, r.org, state.ID.ValueString())
 	if pulsarRes.HasError() {
-		resp.Diagnostics.AddError("failed to get pulsar", pulsarRes.Error().Error())
+		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())
 		return
 	}
 	pulsar := pulsarRes.Payload()
 
 	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.cc, pulsar.ClusterID)
 	if pulsarClusterRes.HasError() {
-		resp.Diagnostics.AddError("failed to get pulsar env", pulsarClusterRes.Error().Error())
+		resp.Diagnostics.AddError("failed to get Pulsar env", pulsarClusterRes.Error().Error())
 		return
 	}
 	pulsarCluster := pulsarClusterRes.Payload()
@@ -154,7 +154,7 @@ func (r *ResourcePulsar) Delete(ctx context.Context, req resource.DeleteRequest,
 		return
 	}
 	if res.HasError() {
-		resp.Diagnostics.AddError("failed to delete addon", res.Error().Error())
+		resp.Diagnostics.AddError("failed to delete add-on", res.Error().Error())
 		return
 	}
 

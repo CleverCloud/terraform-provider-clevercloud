@@ -14,11 +14,11 @@ import (
 
 // ProviderData is struct implementation of Provider.GetSchema()
 type ProviderData struct {
-	Endpoint     types.String `tfsdk:"endpoint"`
-	Token        types.String `tfsdk:"token"`
-	Secret       types.String `tfsdk:"secret"`
-	Organisation types.String `tfsdk:"organisation"`
-	ConsumerKey  types.String `tfsdk:"consumer_key"`
+	Endpoint       types.String `tfsdk:"endpoint"`
+	Token          types.String `tfsdk:"token"`
+	Secret         types.String `tfsdk:"secret"`
+	Organisation   types.String `tfsdk:"organisation"`
+	ConsumerKey    types.String `tfsdk:"consumer_key"`
 	ConsumerSecret types.String `tfsdk:"consumer_secret"`
 }
 
@@ -32,29 +32,29 @@ func (p *Provider) Schema(_ context.Context, req provider.SchemaRequest, res *pr
 		Attributes: map[string]schema.Attribute{
 			"endpoint": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "CleverCloud API endpoint, default to https://api.clever-cloud.com",
+				MarkdownDescription: "Clever Cloud API endpoint, default to https://api.clever-cloud.com",
 			},
 			"token": schema.StringAttribute{
 				Optional:            true, // can be read from ~/.config by client
 				Sensitive:           true,
-				MarkdownDescription: "CleverCloud OAuth1 token, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_TOKEN environment variable.",
+				MarkdownDescription: "Clever Cloud OAuth1 token, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_TOKEN environment variable.",
 			},
 			"secret": schema.StringAttribute{
 				Optional:            true, // // can be read from ~/.config by client
 				Sensitive:           true,
-				MarkdownDescription: "CleverCloud OAuth1 secret, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_SECRET environment variable.",
+				MarkdownDescription: "Clever Cloud OAuth1 secret, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_SECRET environment variable.",
 			},
 			"organisation": schema.StringAttribute{
 				Sensitive:           true,
 				Optional:            true, // can be read from environment variable
-				MarkdownDescription: "CleverCloud organisation, can be either orga_xxx, or user_xxx for personal spaces. This parameter can also be provided via CC_ORGANISATION environment variable.",
+				MarkdownDescription: "Clever Cloud organisation, can be either orga_xxx, or user_xxx for personal spaces. This parameter can also be provided via CC_ORGANISATION environment variable.",
 				Validators: []validator.String{
 					pkg.NewValidatorRegex("valid owner name", regexp.MustCompile(`^(user|orga)_.{36}`)),
 				},
 			},
 			"consumer_key": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "CleverCloud OAuth1 consumer key. Allows using a dedicated OAuth consumer.",
+				MarkdownDescription: "Clever Cloud OAuth1 consumer key. Allows using a dedicated OAuth consumer.",
 			},
 			"consumer_secret": schema.StringAttribute{
 				Optional:            true,
