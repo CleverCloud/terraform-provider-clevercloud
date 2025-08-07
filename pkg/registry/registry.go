@@ -12,6 +12,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/golang"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/java"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/keycloak"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/kubernetes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/materiakv"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/metabase"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/mongodb"
@@ -47,6 +48,7 @@ var Resources = []func() resource.Resource{
 	static.NewResourceStatic(),
 	docker.NewResourceDocker,
 	keycloak.NewResourceKeycloak,
+	kubernetes.NewResourceKubernetes,
 	redis.NewResourceRedis,
 	golang.NewResourceGo,
 	frankenphp.NewResourceFrankenPHP,

@@ -294,3 +294,34 @@ func AddonIDToRealID(ctx context.Context, client *client.Client, organisation st
 
 	return "", fmt.Errorf("addon %s not found", addonID)
 }
+
+type Kubernetes struct {
+	ID                string             `json:"id"`
+	ResourceID        string             `json:"resourceId"`
+	AddonID           string             `json:"addonId"`
+	Name              string             `json:"name"`
+	OwnerID           string             `json:"ownerId"`
+	Plan              string             `json:"plan"`
+	Version           string             `json:"version"`
+	AvailableVersions []string           `json:"availableVersions"`
+	Resources         KubernetesResource `json:"resources"`
+	EnvVars           map[string]string  `json:"envVars"`
+}
+
+type KubernetesResource struct {
+	ClusterID            string  `json:"clusterId"`
+	ExternalApiServerUrl *string `json:"externalApiServerUrl"`
+	NetworkGroupId       string  `json:"networkGroupId"`
+	ClusterDns           string  `json:"clusterDns"`
+	Status               *string `json:"status"`
+}
+
+func GetKubernetes(ctx context.Context, cc *client.Client, organisation string, kubernetesID string) client.Response[Kubernetes] {
+	path := fmt.Sprintf("/v4/addon-providers/addon-kubernetes/addons/%s", kubernetesID)
+	return client.Get[Kubernetes](ctx, cc, path)
+}
+
+func GetKubeconfig(ctx context.Context, cc *client.Client, organisation string, kubernetesID string) client.Response[client.Raw] {
+	path := fmt.Sprintf("/v4/addon-providers/addon-kubernetes/addons/%s/kubeconfig.yaml", kubernetesID)
+	return client.Get[client.Raw](ctx, cc, path)
+}
