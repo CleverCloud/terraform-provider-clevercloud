@@ -4,12 +4,41 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.dev/client"
 )
+
+// detectCredentialIssue analyzes the credential context and returns an appropriate error message
+func detectCredentialIssue() string {
+	// Check environment variables first (highest priority)
+	ccToken := os.Getenv("CC_OAUTH_TOKEN")
+	ccSecret := os.Getenv("CC_OAUTH_SECRET")
+
+	if ccToken == "" && ccSecret == "" {
+		// Check if clever-tools config exists
+		homeDir, err := os.UserHomeDir()
+		if err == nil {
+			configPath := filepath.Join(homeDir, ".config", "clever-cloud", "clever-tools.json")
+			if _, err := os.Stat(configPath); os.IsNotExist(err) {
+				return "No CleverCloud credentials found"
+			}
+			return ""
+		}
+
+		// Fallback message
+		return "Cannot access home directory to check credentials"
+	}
+
+	if ccToken == "" || ccSecret == "" {
+		return "CC_OAUTH_TOKEN and CC_OAUTH_SECRET environment variables must both be set"
+	}
+
+	return ""
+}
 
 func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var config ProviderData
@@ -56,7 +85,24 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 		clientOptions = append(clientOptions, client.WithAutoOauthConfig())
 
 		tmpClient := client.New()
+		if err := detectCredentialIssue(); err != "" {
+			resp.Diagnostics.AddError(
+				"Invalid CleverCloud authentication configuration",
+				err,
+			)
+			return
+		}
 		c := tmpClient.GuessOauth1Config()
+
+		// Check if GuessOauth1Config returned nil (invalid/missing credentials)
+		if c == nil {
+			resp.Diagnostics.AddError(
+				"CleverCloud authentication empty",
+				"Something went wrong while trying to guess OAuth1 credentials",
+			)
+			return
+		}
+
 		p.gitAuth = &http.BasicAuth{Username: c.AccessToken, Password: c.AccessSecret}
 
 	} else {
@@ -74,8 +120,13 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 	if selfRes.HasError() {
 		endpoint := config.Endpoint.ValueString()
 		tflog.Debug(ctx, fmt.Sprintf("CleverCloud client endpoint=%q", endpoint))
+
 		if selfRes.StatusCode() == 401 || selfRes.StatusCode() == 403 {
-			resp.Diagnostics.AddError("invalid CleverCloud Client configuration", selfRes.Error().Error())
+			resp.Diagnostics.AddError(
+				"CleverCloud authentication failed",
+				fmt.Sprintf("Status %d.\n\nCredential priority order:\n1. CC_OAUTH_TOKEN/CC_OAUTH_SECRET environment variables\n2. clever-tools configuration (~/.config/clever-cloud/clever-tools.json)\n3. Terraform provider token/secret parameters\n\nOriginal error: %s",
+					selfRes.StatusCode(), selfRes.Error().Error()),
+			)
 		} else {
 			resp.Diagnostics.AddError(
 				"Unknown error from Clever Cloud",
