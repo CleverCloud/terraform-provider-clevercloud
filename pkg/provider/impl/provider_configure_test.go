@@ -33,17 +33,20 @@ func fileBackup(t *testing.T, filePath string) func() {
 	// Backup original file content if it exists
 	var originalContent []byte
 	var fileExisted bool
-	
+
 	if content, err := os.ReadFile(filePath); err == nil {
 		originalContent = content
 		fileExisted = true
 	}
-	
+
 	return func() {
 		if fileExisted {
 			// Ensure directory exists
 			dir := filepath.Dir(filePath)
-			os.MkdirAll(dir, 0755)
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				t.Errorf("Failed to create directory %s: %v", dir, err)
+				return
+			}
 			// Restore original file
 			if err := os.WriteFile(filePath, originalContent, 0644); err != nil {
 				t.Errorf("Failed to restore file %s: %v", filePath, err)
@@ -87,7 +90,7 @@ func TestProvider_ConfigureInvalidEnvironmentVariables(t *testing.T) {
 	os.Setenv("CC_OAUTH_SECRET", "invalid_secret")
 
 	// Create provider and resource using helpers with valid organisation
-	provider := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	provider := helper.NewProvider("clevercloud").SetOrganisation("orga_00000000-0000-0000-0000-000000000000")
 	cellar := helper.NewRessource("clevercloud_cellar", "test",
 		helper.SetKeyValues(map[string]any{"name": "test"}))
 
@@ -112,7 +115,7 @@ func TestProvider_ConfigureIncompleteEnvironmentVariables(t *testing.T) {
 	os.Unsetenv("CC_OAUTH_SECRET")
 
 	// Create provider and resource using helpers with valid organisation
-	provider := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	provider := helper.NewProvider("clevercloud").SetOrganisation("orga_00000000-0000-0000-0000-000000000000")
 	cellar := helper.NewRessource("clevercloud_cellar", "test",
 		helper.SetKeyValues(map[string]any{"name": "test"}))
 
@@ -129,14 +132,17 @@ func TestProvider_ConfigureIncompleteEnvironmentVariables(t *testing.T) {
 	})
 }
 
+// TestProvider_ConfigureNoCredentials must not run in parallel with other tests
+// as it temporarily removes the clever-tools.json file which affects other tests.
+// When running tests that include this one, use: go test -p 1 -run "TestProvider_Configure"
 func TestProvider_ConfigureNoCredentials(t *testing.T) {
 	defer envBackup("CC_OAUTH_TOKEN", "CC_OAUTH_SECRET")()
-	
+
 	// Backup clever-tools config file
 	homeDir, _ := os.UserHomeDir()
 	configPath := filepath.Join(homeDir, ".config", "clever-cloud", "clever-tools.json")
 	defer fileBackup(t, configPath)()
-	
+
 	// Remove clever-tools config to ensure "No credentials found" error
 	os.Remove(configPath)
 
@@ -145,7 +151,7 @@ func TestProvider_ConfigureNoCredentials(t *testing.T) {
 	os.Unsetenv("CC_OAUTH_SECRET")
 
 	// Create provider and resource using helpers with valid organisation
-	provider := helper.NewProvider("clevercloud").SetOrganisation("orga_12345678-1234-1234-1234-123456789012")
+	provider := helper.NewProvider("clevercloud").SetOrganisation("orga_00000000-0000-0000-0000-000000000000")
 	cellar := helper.NewRessource("clevercloud_cellar", "test",
 		helper.SetKeyValues(map[string]any{"name": "test"}))
 
