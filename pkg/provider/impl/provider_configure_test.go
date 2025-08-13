@@ -19,8 +19,8 @@ func envBackup(vars ...string) func() {
 	}
 	return func() {
 		for _, v := range vars {
-			if original, exists := backup[v]; exists && original != "" {
-				os.Setenv(v, original)
+			if envKey, exists := backup[v]; exists && envKey != "" {
+				os.Setenv(v, envKey)
 			} else {
 				os.Unsetenv(v)
 			}
@@ -30,12 +30,14 @@ func envBackup(vars ...string) func() {
 
 // fileBackup handles backup and restoration of files for tests
 func fileBackup(t *testing.T, filePath string) func() {
-	// Backup original file content if it exists
-	var originalContent []byte
+	backupPath := filePath + ".backup"
 	var fileExisted bool
 
-	if content, err := os.ReadFile(filePath); err == nil {
-		originalContent = content
+	// Backup original file content if it exists
+	if _, err := os.Stat(filePath); err == nil {
+		if err := os.Rename(filePath, backupPath); err != nil {
+			t.Errorf("Failed to create backup file %s: %v", backupPath, err)
+		}
 		fileExisted = true
 	}
 
@@ -47,13 +49,15 @@ func fileBackup(t *testing.T, filePath string) func() {
 				t.Errorf("Failed to create directory %s: %v", dir, err)
 				return
 			}
-			// Restore original file
-			if err := os.WriteFile(filePath, originalContent, 0644); err != nil {
-				t.Errorf("Failed to restore file %s: %v", filePath, err)
+			// Restore original file from backup
+			if err := os.Rename(backupPath, filePath); err != nil {
+				t.Errorf("Failed to restore file %s from backup: %v", filePath, err)
 			}
 		} else {
 			// Remove file if it didn't exist originally
 			os.Remove(filePath)
+			// Clean up any backup file that might exist
+			os.Remove(backupPath)
 		}
 	}
 }
