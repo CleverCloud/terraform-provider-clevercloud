@@ -107,31 +107,6 @@ func TestProvider_ConfigureInvalidEnvironmentVariables(t *testing.T) {
 	})
 }
 
-func TestProvider_ConfigureIncompleteEnvironmentVariables(t *testing.T) {
-	defer envBackup("CC_OAUTH_TOKEN", "CC_OAUTH_SECRET")()
-
-	// Set only token but not secret, and valid organisation
-	os.Setenv("CC_OAUTH_TOKEN", "some_token")
-	os.Unsetenv("CC_OAUTH_SECRET")
-
-	// Create provider and resource using helpers with valid organisation
-	provider := helper.NewProvider("clevercloud").SetOrganisation("orga_00000000-0000-0000-0000-000000000000")
-	cellar := helper.NewRessource("clevercloud_cellar", "test",
-		helper.SetKeyValues(map[string]any{"name": "test"}))
-
-	config := provider.Append(cellar).String()
-	expectedError := regexp.MustCompile(`CC_OAUTH_TOKEN and CC_OAUTH_SECRET environment variables must both be set`)
-
-	resource.Test(t, resource.TestCase{
-		IsUnitTest:               true,
-		ProtoV6ProviderFactories: tests.ProtoV6Provider,
-		Steps: []resource.TestStep{{
-			Config:      config,
-			ExpectError: expectedError,
-		}},
-	})
-}
-
 // TestProvider_ConfigureNoCredentials must not run in parallel with other tests
 // as it temporarily removes the clever-tools.json file which affects other tests.
 // When running tests that include this one, use: go test -p 1 -run "TestProvider_Configure"
@@ -156,7 +131,7 @@ func TestProvider_ConfigureNoCredentials(t *testing.T) {
 		helper.SetKeyValues(map[string]any{"name": "test"}))
 
 	config := provider.Append(cellar).String()
-	expectedError := regexp.MustCompile(`No CleverCloud credentials found`)
+	expectedError := regexp.MustCompile(`CleverCloud authentication empty`)
 
 	resource.Test(t, resource.TestCase{
 		IsUnitTest:               true,
