@@ -94,7 +94,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 
 	// Git Deployment
 	if req.Deployment != nil {
-		diags.Append(gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
+		diags.Append(GitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
 	}
 
 	// Dependencies
@@ -176,7 +176,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 
 	// Git Deployment (when commit change)
 	if req.Deployment != nil {
-		diags.Append(gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
+		diags.Append(GitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
 		if diags.HasError() {
 			return nil, diags
 		}
