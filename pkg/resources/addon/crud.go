@@ -144,7 +144,57 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 
 // Update resource
 func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// TODO
+	var plan, state Addon
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if plan.ID != state.ID {
+		resp.Diagnostics.AddError("addon cannot be updated", "mismatched IDs")
+		return
+	}
+
+	// Only name can be edited
+	if !plan.Name.Equal(state.Name) {
+		res := tmp.UpdateAddon(ctx, r.cc, r.org, state.ID.ValueString(), map[string]string{
+			"name": plan.Name.ValueString(),
+		})
+		if res.HasError() {
+			resp.Diagnostics.AddError("failed to update add-on", res.Error().Error())
+			return
+		}
+	}
+
+	// Refresh the addon data after update
+	addonRes := tmp.GetAddon(ctx, r.cc, r.org, state.ID.ValueString())
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to get updated add-on", addonRes.Error().Error())
+		return
+	}
+
+	envRes := tmp.GetAddonEnv(ctx, r.cc, r.org, state.ID.ValueString())
+	if envRes.HasError() {
+		resp.Diagnostics.AddError("failed to get add-on env", envRes.Error().Error())
+		return
+	}
+
+	envAsMap := pkg.Reduce(*envRes.Payload(), map[string]attr.Value{}, func(acc map[string]attr.Value, v tmp.EnvVar) map[string]attr.Value {
+		acc[v.Name] = pkg.FromStr(v.Value)
+		return acc
+	})
+
+	a := addonRes.Payload()
+	plan.Name = pkg.FromStr(a.Name)
+	plan.Plan = pkg.FromStr(a.Plan.Slug)
+	plan.Region = pkg.FromStr(a.Region)
+	plan.ThirdPartyProvider = pkg.FromStr(a.Provider.ID)
+	plan.CreationDate = pkg.FromI(a.CreationDate)
+	plan.Configurations = types.MapValueMust(types.StringType, envAsMap)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 // Delete resource

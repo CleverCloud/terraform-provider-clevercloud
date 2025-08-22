@@ -20,7 +20,9 @@ import (
 )
 
 func TestAccAddon_basic(t *testing.T) {
+	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-mp")
+	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_addon.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
@@ -37,9 +39,24 @@ func TestAccAddon_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 tests.ExpectOrganisation(t),
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(addonBlock).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^addon_.*`))),
+			},
+		}, {
+			ResourceName: rName,
+			Config:       providerBlock.Append(addonBlock.SetOneValue("name", rNameEdited)).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rNameEdited)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^addon_.*`))),
+			},
+		}},
 		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetAddon(context.Background(), cc, tests.ORGANISATION, resource.Primary.ID)
+			for resourceName, resourceState := range state.RootModule().Resources {
+				res := tmp.GetAddon(ctx, cc, tests.ORGANISATION, resourceState.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}
@@ -47,17 +64,9 @@ func TestAccAddon_basic(t *testing.T) {
 					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
 				}
 
-				return fmt.Errorf("expect resource '%s' to be deleted", resource.Primary.ID)
+				return fmt.Errorf("expect addon resource '%s' to be deleted: %+v", resourceName, res.Payload())
 			}
 			return nil
 		},
-		Steps: []resource.TestStep{{
-			ResourceName: rName,
-			Config:       providerBlock.Append(addonBlock).String(),
-			ConfigStateChecks: []statecheck.StateCheck{
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^addon_.*`))),
-				// TODO test env var existance
-			},
-		}},
 	})
 }
