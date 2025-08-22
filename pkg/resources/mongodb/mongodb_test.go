@@ -21,7 +21,9 @@ import (
 )
 
 func TestAccMongoDB_basic(t *testing.T) {
+	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-mg")
+	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_mongodb.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
@@ -30,9 +32,24 @@ func TestAccMongoDB_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck:                 tests.ExpectOrganisation(t),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(mongodbBlock).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^mongodb_.*`))),
+			},
+		}, {
+			ResourceName: rName,
+			Config:       providerBlock.Append(mongodbBlock.SetOneValue("name", rNameEdited)).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rNameEdited)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^mongodb_.*`))),
+			},
+		}},
 		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				addonId, err := tmp.RealIDToAddonID(context.Background(), cc, tests.ORGANISATION, resource.Primary.ID)
+			for resourceName, resourceState := range state.RootModule().Resources {
+				addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, resourceState.Primary.ID)
 				if err != nil {
 					if strings.Contains(err.Error(), "not found") {
 						continue
@@ -40,7 +57,7 @@ func TestAccMongoDB_basic(t *testing.T) {
 					return fmt.Errorf("failed to get addon ID: %s", err.Error())
 				}
 
-				res := tmp.GetMongoDB(context.Background(), cc, addonId)
+				res := tmp.GetMongoDB(ctx, cc, addonId)
 				if res.IsNotFoundError() {
 					continue
 				}
@@ -51,17 +68,10 @@ func TestAccMongoDB_basic(t *testing.T) {
 					continue
 				}
 
-				return fmt.Errorf("expect resource '%s' to be deleted", resource.Primary.ID)
+				return fmt.Errorf("expect mongodb resource '%s' to be deleted: %+v", resourceName, res.Payload())
 			}
 			return nil
 		},
-		Steps: []resource.TestStep{{
-			ResourceName: rName,
-			Config:       providerBlock.Append(mongodbBlock).String(),
-			ConfigStateChecks: []statecheck.StateCheck{
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^mongodb_.*`))),
-			},
-		}},
 	})
 }
 

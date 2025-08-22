@@ -146,7 +146,56 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 
 // Update resource
 func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// TODO
+	var plan, state MongoDB
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if plan.ID != state.ID {
+		resp.Diagnostics.AddError("mongodb cannot be updated", "mismatched IDs")
+		return
+	}
+
+	// Only name can be edited
+	if !plan.Name.Equal(state.Name) {
+		addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, state.ID.ValueString())
+		if err != nil {
+			resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+			return
+		}
+
+		res := tmp.UpdateAddon(ctx, r.cc, r.org, addonId, map[string]string{
+			"name": plan.Name.ValueString(),
+		})
+		if res.HasError() {
+			resp.Diagnostics.AddError("failed to update MongoDB", res.Error().Error())
+			return
+		}
+	}
+
+	// Refresh the addon data after update
+	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	mgInfoRes := tmp.GetMongoDB(ctx, r.cc, addonId)
+	if mgInfoRes.HasError() {
+		resp.Diagnostics.AddError("failed to get updated MongoDB connection infos", mgInfoRes.Error().Error())
+		return
+	}
+
+	addonMG := mgInfoRes.Payload()
+	plan.Host = pkg.FromStr(addonMG.Host)
+	plan.Port = pkg.FromI(int64(addonMG.Port))
+	plan.User = pkg.FromStr(addonMG.User)
+	plan.Password = pkg.FromStr(addonMG.Password)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 // Delete resource
