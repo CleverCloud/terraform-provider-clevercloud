@@ -80,12 +80,12 @@ func (node NodeJS) toEnv(ctx context.Context, diags diag.Diagnostics) map[string
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSet(node.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetStr(node.AppFolder, func(s string) { env["APP_FOLDER"] = s })
 	pkg.IfIsSetB(node.DevDependencies, func(s bool) { env["CC_NODE_DEV_DEPENDENCIES"] = "install" })
-	pkg.IfIsSet(node.StartScript, func(s string) { env["CC_RUN_COMMAND"] = s })
-	pkg.IfIsSet(node.PackageManager, func(s string) { env["CC_NODE_BUILD_TOOL"] = s })
-	pkg.IfIsSet(node.Registry, func(s string) { env["CC_NPM_REGISTRY"] = s })
-	pkg.IfIsSet(node.RegistryToken, func(s string) { env["NPM_TOKEN"] = s })
+	pkg.IfIsSetStr(node.StartScript, func(s string) { env["CC_RUN_COMMAND"] = s })
+	pkg.IfIsSetStr(node.PackageManager, func(s string) { env["CC_NODE_BUILD_TOOL"] = s })
+	pkg.IfIsSetStr(node.Registry, func(s string) { env["CC_NPM_REGISTRY"] = s })
+	pkg.IfIsSetStr(node.RegistryToken, func(s string) { env["NPM_TOKEN"] = s })
 	env = pkg.Merge(env, node.Hooks.ToEnv())
 
 	return env

@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+	"golang.org/x/exp/constraints"
 )
 
 // Convert a native string into a tfsdk one
@@ -22,8 +23,8 @@ func FromStr(str string) types.String {
 }
 
 // Convert a native int64 into a tfsdk one
-func FromI(i int64) types.Int64 {
-	return types.Int64Value(i)
+func FromI[I constraints.Integer](i I) types.Int64 {
+	return types.Int64Value(int64(i))
 }
 
 func FromISO8601(d string, diags *diag.Diagnostics) types.Int64 {
