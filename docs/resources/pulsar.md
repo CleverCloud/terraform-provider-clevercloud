@@ -24,6 +24,8 @@ See [Pulsar product specification](https://www.clever.cloud/developers/doc/addon
 ### Optional
 
 - `region` (String) Geographical region where the data will be stored
+- `retention_period` (Number) Pulsar namespace retention policy in minutes
+- `retention_size` (Number) Pulsar namespace retention policy in bytes
 
 ### Read-Only
 
