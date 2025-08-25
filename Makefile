@@ -40,17 +40,13 @@ install: build
 	mv ${BINARY} ~/.terraform.d/plugins/${HOSTNAME}/${NAMESPACE}/${NAME}/dev/${OS_ARCH}
 
 test:
-	go test -i $(TEST) || exit 1
-	go test -p 1 -v ./pkg/provider/impl/ $(TESTARGS) -timeout=30s
-	echo $(TEST) | xargs -t -n4 go test $(TESTARGS) -skip "TestProvider_.*" -timeout=30s -parallel=4
+	go test $(TESTARGS) -timeout=30s -parallel=1 ./...
 
 lint:
 	golangci-lint run
 
 testacc:
-	TF_ACC=1 go test -p 1 -v ./pkg/provider/impl/ $(TESTARGS) -timeout 120m
-	TF_ACC=1 go test ./... -v $(TESTARGS) -skip "TestProvider_.*" -timeout 120m
-
+	TF_ACC=1 go test -p 1 ./... -v $(TESTARGS) -timeout 120m ./...
 
 .PHONY: docs
 docs:
