@@ -86,11 +86,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	pulsarCluster := pulsarClusterRes.Payload()
 
-	plan.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar+ssl://%s:%d", pulsarCluster.URL, pulsarCluster.PulsarTLSPort))
-	plan.HTTPUrl = pkg.FromStr(fmt.Sprintf("https://%s:%d", pulsarCluster.URL, pulsarCluster.WebTLSPort))
-	plan.Tenant = pkg.FromStr(pulsar.Tenant)
-	plan.Namespace = pkg.FromStr(pulsar.Namespace)
-	plan.Token = pkg.FromStr(pulsar.Token)
+	read(&plan, pulsar, pulsarCluster)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
@@ -123,13 +119,38 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 	pulsarCluster := pulsarClusterRes.Payload()
 
-	state.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar+ssl://%s:%d", pulsarCluster.URL, pulsarCluster.PulsarTLSPort))
-	state.HTTPUrl = pkg.FromStr(fmt.Sprintf("https://%s:%d", pulsarCluster.URL, pulsarCluster.WebTLSPort))
-	state.Tenant = pkg.FromStr(pulsar.Tenant)
-	state.Namespace = pkg.FromStr(pulsar.Namespace)
-	state.Token = pkg.FromStr(pulsar.Token)
+	read(&state, pulsar, pulsarCluster)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+}
+
+func read(state *Pulsar, addon *tmp.Pulsar, cluster *tmp.PulsarCluster) {
+	if addon != nil {
+		state.Tenant = pkg.FromStr(addon.Tenant)
+		state.Namespace = pkg.FromStr(addon.Namespace)
+		state.Token = pkg.FromStr(addon.Token)
+
+		// TODO: get addon from ccapi to get the name
+		//state.Name = pkg.FromStr(addon.???)
+	}
+
+	if cluster == nil {
+		return
+	}
+
+	state.Region = pkg.FromStr(strings.ToLower(cluster.Zone))
+
+	if cluster.PulsarTLSPort != 0 {
+		state.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar+ssl://%s:%d", cluster.URL, cluster.PulsarTLSPort))
+	} else {
+		state.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar://%s:%d", cluster.URL, cluster.PulsarPort))
+	}
+
+	if cluster.WebTLSPort != 0 {
+		state.HTTPUrl = pkg.FromStr(fmt.Sprintf("https://%s:%d", cluster.URL, cluster.WebTLSPort))
+	} else {
+		state.HTTPUrl = pkg.FromStr(fmt.Sprintf("http://%s:%d", cluster.URL, cluster.WebPort))
+	}
 }
 
 // Update resource
