@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -59,6 +61,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 	pulsar := pulsarRes.Payload()
+	readAddon(&plan, pulsar, &resp.Diagnostics)
 
 	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.Client(), pulsar.ClusterID)
 	if pulsarClusterRes.HasError() {
@@ -66,15 +69,16 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 	pulsarCluster := pulsarClusterRes.Payload()
+	readCluster(&plan, pulsarCluster, &resp.Diagnostics)
 
-	read(&plan, pulsar, pulsarCluster)
+	setRetention(ctx, &plan, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// TODO: handle namespace retention (backlog + offload)
+	// TODO: handle namespace retention (offload)
 }
 
 // Read resource information
@@ -92,6 +96,7 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 	pulsar := pulsarRes.Payload()
+	readAddon(&state, pulsar, &resp.Diagnostics)
 
 	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.Client(), pulsar.ClusterID)
 	if pulsarClusterRes.HasError() {
@@ -99,27 +104,44 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 	pulsarCluster := pulsarClusterRes.Payload()
+	readCluster(&state, pulsarCluster, &resp.Diagnostics)
 
-	read(&state, pulsar, pulsarCluster)
+	addonRes := tmp.GetAddon(ctx, r.cc, r.org, state.ID.ValueString())
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to get add-on", addonRes.Error().Error())
+		return
+	}
+	addon := addonRes.Payload()
+	readOldAddon(&state, addon, &resp.Diagnostics)
+
+	readRetention(ctx, &state, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
-func read(state *Pulsar, addon *tmp.Pulsar, cluster *tmp.PulsarCluster) {
-	if addon != nil {
-		state.Tenant = pkg.FromStr(addon.Tenant)
-		state.Namespace = pkg.FromStr(addon.Namespace)
-		state.Token = pkg.FromStr(addon.Token)
-
-		// TODO: get addon from ccapi to get the name
-		//state.Name = pkg.FromStr(addon.???)
-	}
-
-	if cluster == nil {
+func readAddon(state *Pulsar, addon *tmp.Pulsar, diags *diag.Diagnostics) {
+	if addon == nil {
 		return
 	}
 
-	state.Region = pkg.FromStr(strings.ToLower(cluster.Zone))
+	state.Tenant = pkg.FromStr(addon.Tenant)
+	state.Namespace = pkg.FromStr(addon.Namespace)
+	state.Token = pkg.FromStr(addon.Token)
+}
+
+func readOldAddon(state *Pulsar, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
+	if addon == nil {
+		return
+	}
+
+	state.Name = pkg.FromStr(addon.Name)
+	state.Region = pkg.FromStr(addon.Region)
+}
+
+func readCluster(state *Pulsar, cluster *tmp.PulsarCluster, diags *diag.Diagnostics) {
+	if cluster == nil {
+		return
+	}
 
 	if cluster.PulsarTLSPort != 0 {
 		state.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar+ssl://%s:%d", cluster.URL, cluster.PulsarTLSPort))
@@ -134,20 +156,80 @@ func read(state *Pulsar, addon *tmp.Pulsar, cluster *tmp.PulsarCluster) {
 	}
 }
 
+func readRetention(ctx context.Context, state *Pulsar, diags *diag.Diagnostics) {
+	period, size := state.RetentionPeriod, state.RetentionSize
+
+	tflog.Warn(ctx, "ReadRetention", map[string]any{"period": period, "size": size})
+
+	admin, err := state.AdminClient()
+	if err != nil {
+		diags.AddError("failed to create Pulsar admin client", err.Error())
+		return
+	}
+
+	if !pkg.AtLeastOneSet(period, size) {
+		return
+	}
+
+	retention, err := admin.Namespaces().GetRetention(state.TenantAndNamespace())
+	fmt.Printf("retention: %v\n", retention)
+	if err != nil {
+		diags.AddError("failed to get Pulsar namespace retention", err.Error())
+		return
+	}
+
+	pkg.IfIsSetI(period, func(i int64) {
+		state.RetentionPeriod = pkg.FromI(retention.RetentionTimeInMinutes)
+	})
+	pkg.IfIsSetI(size, func(i int64) {
+		state.RetentionSize = pkg.FromI(retention.RetentionSizeInMB)
+	})
+}
+
+// https://pulsar.apache.org/docs/next/cookbooks-retention-expiry/#retention-policies
+func setRetention(ctx context.Context, plan *Pulsar, diags *diag.Diagnostics) {
+	size := plan.RetentionSize
+	period := plan.RetentionPeriod
+
+	tflog.Warn(ctx, "SetRetention", map[string]any{"period": period, "size": size, "tenantNs": plan.TenantAndNamespace()})
+
+	if !pkg.AtLeastOneSet(size, period) {
+		return // none of the attributs set
+	}
+
+	admin, err := plan.AdminClient()
+	if err != nil {
+		diags.AddError("failed to create Pulsar admin client", err.Error())
+		return
+	}
+
+	// we know at least 1 param is set, so we can relax the other to prevent invalid cases
+	policy := utils.RetentionPolicies{RetentionTimeInMinutes: -1, RetentionSizeInMB: -1}
+
+	pkg.IfIsSetI(period, func(i int64) {
+		policy.RetentionTimeInMinutes = int(period.ValueInt64())
+	})
+
+	pkg.IfIsSetI(size, func(i int64) {
+		policy.RetentionSizeInMB = size.ValueInt64()
+	})
+
+	err = admin.Namespaces().SetRetention(plan.TenantAndNamespace(), policy)
+	if err != nil {
+		diags.AddError("failed to set Pulsar retention", err.Error())
+		return
+	}
+}
+
 // Update resource
 func (r *ResourcePulsar) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	plan := helper.PlanFrom[Pulsar](ctx, req.Plan, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	state := helper.StateFrom[Pulsar](ctx, req.State, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	if plan.ID.ValueString() != state.ID.ValueString() {
 		resp.Diagnostics.AddError("pulsar cannot be updated", "mismatched IDs")
+	}
+
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
@@ -157,11 +239,19 @@ func (r *ResourcePulsar) Update(ctx context.Context, req resource.UpdateRequest,
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Pulsar", addonRes.Error().Error())
-		return
+	} else {
+		state.Name = plan.Name
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 	}
-	state.Name = plan.Name
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	state.RetentionPeriod = plan.RetentionPeriod
+	state.RetentionSize = plan.RetentionSize
+	setRetention(ctx, &state, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	} else {
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)
+	}
 }
 
 // Delete resource
