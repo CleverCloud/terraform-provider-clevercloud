@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.1.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.0.1...v1.1.0) (2025-08-25)
+
+
+### Features
+
+* credentials configuration detection ([3da1f6b](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/3da1f6b68150063f9a22dc4e4a944dfcb22c5ba4))
+* frankenphp ([0ee6fd4](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/0ee6fd45eb13a062e7ba92ee11fc5e4c647866e0)), closes [#127](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/127)
+* upgrade README ([37c6df0](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/37c6df06d93a8f636502d77d3ae2e135887f6f30))
+
+
+### Bug Fixes
+
+* backup file to prevent panic ([2ea9c1a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/2ea9c1a3649a4f5d66e15ed797d9c064e1319f5b))
+* isolate test with no credentials ([5377312](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5377312f38c52114489706331c820d6eff84c718))
+* remove credential config detection ([5ed7b02](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5ed7b02c09a035d23cc4f0d17e5e225d3fae477b))
+
 ## [1.0.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.0.0...v1.0.1) (2025-08-04)
 
 
