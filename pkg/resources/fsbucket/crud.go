@@ -65,6 +65,12 @@ func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateReques
 	}
 	addonRes := res.Payload()
 
+	fsbucket.ID = pkg.FromStr(addonRes.RealID)
+	fsbucket.Name = pkg.FromStr(addonRes.Name)
+	fsbucket.Region = pkg.FromStr(addonRes.Region)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, fsbucket)...)
+
 	tflog.Debug(ctx, "get addon env vars", map[string]any{"fsbucket": addonRes.RealID})
 	envRes := tmp.GetAddonEnv(ctx, r.cc, r.org, addonRes.RealID)
 	if envRes.HasError() {
@@ -78,9 +84,6 @@ func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateReques
 		return m
 	})
 
-	fsbucket.ID = pkg.FromStr(addonRes.RealID)
-	fsbucket.Name = pkg.FromStr(addonRes.Name)
-	fsbucket.Region = pkg.FromStr(addonRes.Region)
 	fsbucket.Host = envMap["BUCKET_HOST"]
 	fsbucket.FTPUsername = envMap["BUCKET_FTP_USERNAME"]
 	fsbucket.FTPPassword = envMap["BUCKET_FTP_PASSWORD"]

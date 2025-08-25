@@ -72,9 +72,6 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 	rd.CreationDate = pkg.FromI(res.Payload().CreationDate)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, rd)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	envRes := tmp.GetAddonEnv(ctx, r.cc, r.org, rd.ID.ValueString())
 	if envRes.HasError() {

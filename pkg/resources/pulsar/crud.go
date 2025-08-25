@@ -45,8 +45,8 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 		resp.Diagnostics.AddError("failed to get add-on providers", addonsProvidersRes.Error().Error())
 		return
 	}
-
 	addonsProviders := addonsProvidersRes.Payload()
+
 	prov := pkg.LookupAddonProvider(*addonsProviders, "addon-pulsar")
 	addonPlan := pkg.LookupProviderPlan(prov, "beta")
 	if addonPlan == nil {
@@ -71,9 +71,6 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 	plan.ID = pkg.FromStr(addon.RealID)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	pulsarRes := tmp.GetPulsar(ctx, r.cc, r.org, addon.RealID)
 	if pulsarRes.HasError() {

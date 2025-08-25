@@ -70,8 +70,8 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
 	}
-
 	addonsProviders := addonsProvidersRes.Payload()
+
 	prov := pkg.LookupAddonProvider(*addonsProviders, "postgresql-addon")
 	plan := pkg.LookupProviderPlan(prov, pg.Plan.ValueString())
 	if plan == nil {
@@ -110,9 +110,6 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	pg.Plan = pkg.FromStr(createdPg.Plan.Slug)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	pgInfoRes := tmp.GetPostgreSQL(ctx, r.cc, createdPg.ID)
 	if pgInfoRes.HasError() {
