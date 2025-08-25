@@ -21,7 +21,7 @@ func main() {
 
 	ctx := context.Background()
 	opts := providerserver.ServeOpts{
-		Address:         "registry.terraform.io/hashicorp/clevercloud",
+		Address:         "registry.terraform.io/CleverCloud/clevercloud",
 		Debug:           debug,
 		ProtocolVersion: 6,
 	}

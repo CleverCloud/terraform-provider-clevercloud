@@ -11,26 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
-
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
-func (r *ResourceMateriaKV) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceMateriaKV.Configure()")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
-	}
-}
 
 // Create a new resource
 func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -41,7 +23,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
+	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
@@ -63,7 +45,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 		Region:     kv.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
+	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
@@ -74,7 +56,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
 
-	kvInfoRes := tmp.GetMateriaKV(ctx, r.cc, r.org, kv.ID.ValueString())
+	kvInfoRes := tmp.GetMateriaKV(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
 	if kvInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get materia kv connection infos", kvInfoRes.Error().Error())
 		return
@@ -102,7 +84,7 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	addonKVRes := tmp.GetMateriaKV(ctx, r.cc, r.org, kv.ID.ValueString())
+	addonKVRes := tmp.GetMateriaKV(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
 	if addonKVRes.IsNotFoundError() {
 		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
 		resp.Diagnostics.Append(diags...)
@@ -146,7 +128,7 @@ func (r *ResourceMateriaKV) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, state.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString(), map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -168,7 +150,7 @@ func (r *ResourceMateriaKV) Delete(ctx context.Context, req resource.DeleteReque
 	}
 	tflog.Debug(ctx, "MateriaKV DELETE", map[string]any{"kv": kv})
 
-	res := tmp.DeleteAddon(ctx, r.cc, r.org, kv.ID.ValueString())
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -182,9 +164,3 @@ func (r *ResourceMateriaKV) Delete(ctx context.Context, req resource.DeleteReque
 }
 
 // Import resource
-func (r *ResourceMateriaKV) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
-}

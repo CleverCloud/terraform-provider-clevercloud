@@ -3,35 +3,13 @@ package frankenphp
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
-
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
-func (r *ResourceFrankenPHP) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceFrankenPHP.Configure()")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
-		r.gitAuth = provider.GitAuth()
-	}
-
-	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
-}
 
 // Create a new resource
 func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -41,7 +19,7 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "frankenphp", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "frankenphp", resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -62,8 +40,8 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	createAppReq := application.CreateReq{
-		Client:       r.cc,
-		Organization: r.org,
+		Client:       r.Client(),
+		Organization: r.Organization(),
 		Application: tmp.CreateAppRequest{
 			Name:            plan.Name.ValueString(),
 			Deploy:          "git",
@@ -82,7 +60,7 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 		},
 		Environment:  environment,
 		VHosts:       vhosts,
-		Deployment:   plan.toDeployment(r.gitAuth),
+		Deployment:   plan.toDeployment(r.GitAuth()),
 		Dependencies: dependencies,
 	}
 
@@ -105,8 +83,8 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
 			deleteVhostRes := tmp.DeleteAppVHost(
 				ctx,
-				r.cc,
-				r.org,
+				r.Client(),
+				r.Organization(),
 				plan.ID.ValueString(),
 				vhost,
 			)
@@ -129,7 +107,7 @@ func (r *ResourceFrankenPHP) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	appFrankenPHP, diags := application.ReadApp(ctx, r.cc, r.org, state.ID.ValueString())
+	appFrankenPHP, diags := application.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -168,7 +146,7 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "frankenphp", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "frankenphp", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -183,8 +161,8 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 
 	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
-		Client:       r.cc,
-		Organization: r.org,
+		Client:       r.Client(),
+		Organization: r.Organization(),
 		Application: tmp.UpdateAppReq{
 			Name:            plan.Name.ValueString(),
 			Deploy:          "git",
@@ -204,7 +182,7 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 		Environment:  planEnvironment,
 		VHosts:       vhosts,
 		Dependencies: dependencies,
-		Deployment:   plan.toDeployment(r.gitAuth),
+		Deployment:   plan.toDeployment(r.GitAuth()),
 	}
 
 	updateAppRes, diags := application.UpdateApp(ctx, updateAppReq)
@@ -227,14 +205,10 @@ func (r *ResourceFrankenPHP) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	deleteAppRes := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
+	deleteAppRes := tmp.DeleteApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if deleteAppRes.HasError() {
 		resp.Diagnostics.AddError("failed to delete app", deleteAppRes.Error().Error())
 	}
 }
 
 // Import resource
-func (r *ResourceFrankenPHP) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	tflog.Debug(ctx, "ResourceFrankenPHP.ImportState()")
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-}
