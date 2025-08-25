@@ -5,31 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
-
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
-func (r *ResourcePulsar) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourcePulsar.Configure()")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
-	}
-}
 
 // Create a new resource
 func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -40,7 +21,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
+	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on providers", addonsProvidersRes.Error().Error())
 		return
@@ -61,7 +42,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 		Region:     plan.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
+	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create add-on", res.Error().Error())
 		return
@@ -72,14 +53,14 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
-	pulsarRes := tmp.GetPulsar(ctx, r.cc, r.org, addon.RealID)
+	pulsarRes := tmp.GetPulsar(ctx, r.Client(), r.Organization(), addon.RealID)
 	if pulsarRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())
 		return
 	}
 	pulsar := pulsarRes.Payload()
 
-	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.cc, pulsar.ClusterID)
+	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.Client(), pulsar.ClusterID)
 	if pulsarClusterRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar env", pulsarClusterRes.Error().Error())
 		return
@@ -105,14 +86,14 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	pulsarRes := tmp.GetPulsar(ctx, r.cc, r.org, state.ID.ValueString())
+	pulsarRes := tmp.GetPulsar(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if pulsarRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())
 		return
 	}
 	pulsar := pulsarRes.Payload()
 
-	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.cc, pulsar.ClusterID)
+	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.Client(), pulsar.ClusterID)
 	if pulsarClusterRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar env", pulsarClusterRes.Error().Error())
 		return
@@ -171,7 +152,7 @@ func (r *ResourcePulsar) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -194,7 +175,7 @@ func (r *ResourcePulsar) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 	tflog.Debug(ctx, "Pulsar DELETE", map[string]any{"pulsar": state})
 
-	res := tmp.DeleteAddon(ctx, r.cc, r.org, state.ID.ValueString())
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -205,12 +186,4 @@ func (r *ResourcePulsar) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	resp.State.RemoveResource(ctx)
-}
-
-// Import resource
-func (r *ResourcePulsar) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
 }

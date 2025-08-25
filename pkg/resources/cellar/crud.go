@@ -3,32 +3,14 @@ package cellar
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/s3"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
-func (r *ResourceCellar) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceCellar.Configure()")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
-	}
-}
 
 // Create a new resource
 func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -37,7 +19,7 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
+	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
@@ -58,7 +40,7 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 		Region:     cellar.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
+	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create add-on", res.Error().Error())
 		return
@@ -68,9 +50,7 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 
 	cellar.ID = pkg.FromStr(addonRes.RealID)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
-
-	envRes := tmp.GetAddonEnv(ctx, r.cc, r.org, addonRes.RealID)
+	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), addonRes.RealID)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env vars", envRes.Error().Error())
 		return
@@ -94,7 +74,7 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.cc, r.org, cellar.ID.ValueString())
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -105,7 +85,7 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 	addon := addonRes.Payload()
 
-	addonEnvRes := tmp.GetAddonEnv(ctx, r.cc, r.org, cellar.ID.ValueString())
+	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
@@ -143,7 +123,7 @@ func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -168,7 +148,7 @@ func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 	tflog.Debug(ctx, "CELLAR DELETE", map[string]any{"cellar": cellar})
 
-	addonRes := tmp.GetAddon(ctx, r.cc, r.org, cellar.ID.ValueString())
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 	}
@@ -178,8 +158,8 @@ func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// TODO: Use real ID when API supports it
-	// res := tmp.DeleteAddon(ctx, r.cc, r.org, cellar.ID.ValueString())
-	res := tmp.DeleteAddon(ctx, r.cc, r.org, addonRes.Payload().ID)
+	// res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonRes.Payload().ID)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -193,9 +173,3 @@ func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest,
 }
 
 // Import resource
-func (r *ResourceCellar) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
-}

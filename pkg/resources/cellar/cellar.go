@@ -4,12 +4,11 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"go.clever-cloud.dev/client"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
 type ResourceCellar struct {
-	cc  *client.Client
-	org string
+	helper.Configurer
 }
 
 func NewResourceCellar() resource.Resource {

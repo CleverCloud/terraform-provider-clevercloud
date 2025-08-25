@@ -3,16 +3,13 @@ package docker
 import (
 	"context"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"go.clever-cloud.dev/client"
 )
 
 type ResourceDocker struct {
-	cc      *client.Client
-	org     string
-	gitAuth *http.BasicAuth
+	helper.Configurer
 }
 
 func NewResourceDocker() resource.Resource {

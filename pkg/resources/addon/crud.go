@@ -6,32 +6,13 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
-
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
-func (r *ResourceAddon) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceAddon.Configure()")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
-	}
-}
 
 // Create a new resource
 func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -40,7 +21,7 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
+	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on providers", addonsProvidersRes.Error().Error())
 		return
@@ -66,7 +47,7 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 		Region:     ad.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
+	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create add-on", res.Error().Error())
 		return
@@ -75,9 +56,7 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 	ad.ID = pkg.FromStr(res.Payload().ID)
 	ad.CreationDate = pkg.FromI(res.Payload().CreationDate)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, ad)...)
-
-	envRes := tmp.GetAddonEnv(ctx, r.cc, r.org, res.Payload().ID)
+	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), res.Payload().ID)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", res.Error().Error())
 		return
@@ -106,7 +85,7 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.cc, r.org, ad.ID.ValueString())
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), ad.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		req.State.RemoveResource(ctx)
 		return
@@ -116,7 +95,7 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	addonEnvRes := tmp.GetAddonEnv(ctx, r.cc, r.org, ad.ID.ValueString())
+	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), ad.ID.ValueString())
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
@@ -160,7 +139,7 @@ func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -186,7 +165,7 @@ func (r *ResourceAddon) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 	tflog.Debug(ctx, "Add-on DELETE", map[string]any{"addon": ad})
 
-	res := tmp.DeleteAddon(ctx, r.cc, r.org, ad.ID.ValueString())
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), ad.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -200,9 +179,3 @@ func (r *ResourceAddon) Delete(ctx context.Context, req resource.DeleteRequest, 
 }
 
 // Import resource
-func (r *ResourceAddon) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
-}

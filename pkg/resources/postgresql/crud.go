@@ -6,35 +6,13 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
-
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
-func (r *ResourcePostgreSQL) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourcePostgreSQL.Configure()")
-
-	r.FetchPostgresInfos(ctx, &resp.Diagnostics)
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData != nil {
-
-		provider, ok := req.ProviderData.(provider.Provider)
-		if ok {
-			r.cc = provider.Client()
-			r.org = provider.Organization()
-		}
-
-		tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
-	}
-}
 
 func (r *ResourcePostgreSQL) FetchPostgresInfos(ctx context.Context, diags *diag.Diagnostics) {
 	cc := client.New()
@@ -65,7 +43,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
+	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
@@ -98,7 +76,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		addonReq.Options["do-backup"] = "true"
 	}
 
-	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
+	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
@@ -111,7 +89,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 
-	pgInfoRes := tmp.GetPostgreSQL(ctx, r.cc, createdPg.ID)
+	pgInfoRes := tmp.GetPostgreSQL(ctx, r.Client(), createdPg.ID)
 	if pgInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get postgres connection infos", pgInfoRes.Error().Error())
 		return
@@ -146,20 +124,20 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	// IDs
-	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, pg.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), pg.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	realID, err := tmp.AddonIDToRealID(ctx, r.cc, r.org, pg.ID.ValueString())
+	realID, err := tmp.AddonIDToRealID(ctx, r.Client(), r.Organization(), pg.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
 	// Objects
-	addonRes := tmp.GetAddon(ctx, r.cc, r.org, addonId)
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -170,7 +148,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	}
 	addon := addonRes.Payload()
 
-	addonPGRes := tmp.GetPostgreSQL(ctx, r.cc, addonId)
+	addonPGRes := tmp.GetPostgreSQL(ctx, r.Client(), addonId)
 	if addonPGRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -232,7 +210,7 @@ func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -255,13 +233,13 @@ func (r *ResourcePostgreSQL) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 	tflog.Debug(ctx, "PostgreSQL DELETE", map[string]any{"pg": pg})
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, pg.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), pg.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.cc, r.org, addonId)
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -275,9 +253,3 @@ func (r *ResourcePostgreSQL) Delete(ctx context.Context, req resource.DeleteRequ
 }
 
 // Import resource
-func (r *ResourcePostgreSQL) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
-}

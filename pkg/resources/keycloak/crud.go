@@ -5,33 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
-
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
-func (r *ResourceKeycloak) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceKeycloak.Configure()")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
-	}
-
-	tflog.Warn(ctx, "Keycloak product is still in beta, use it with care")
-}
 
 // Create a new resource
 func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
@@ -41,7 +20,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
+	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		res.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
@@ -63,7 +42,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		Region:     kc.Region.ValueString(),
 	}
 
-	createAddonRes := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
+	createAddonRes := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if createAddonRes.HasError() {
 		res.Diagnostics.AddError("failed to create Keycloak", createAddonRes.Error().Error())
 		return
@@ -74,7 +53,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 
 	res.Diagnostics.Append(res.State.Set(ctx, kc)...)
 
-	kcEnvRes := tmp.GetAddonEnv(ctx, r.cc, r.org, kc.ID.ValueString())
+	kcEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), kc.ID.ValueString())
 	if kcEnvRes.HasError() {
 		res.Diagnostics.AddError("failed to get Keycloak connection infos", kcEnvRes.Error().Error())
 		return
@@ -139,7 +118,7 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -165,7 +144,7 @@ func (r *ResourceKeycloak) Delete(ctx context.Context, req resource.DeleteReques
 	}
 	tflog.Debug(ctx, "Keycloak DELETE", map[string]any{"keycloak": kc})
 
-	res := tmp.DeleteAddon(ctx, r.cc, r.org, kc.ID.ValueString())
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), kc.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -179,9 +158,3 @@ func (r *ResourceKeycloak) Delete(ctx context.Context, req resource.DeleteReques
 }
 
 // Import resource
-func (r *ResourceKeycloak) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
-}

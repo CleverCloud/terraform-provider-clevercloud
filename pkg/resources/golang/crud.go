@@ -4,35 +4,13 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
-
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
-func (r *ResourceGo) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceGo.Configure()")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
-		r.gitAuth = provider.GitAuth()
-	}
-
-	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
-}
 
 // Create a new resource
 func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
@@ -43,7 +21,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 
 	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "go", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "go", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -59,8 +37,8 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 	}
 
 	createReq := application.CreateReq{
-		Client:       r.cc,
-		Organization: r.org,
+		Client:       r.Client(),
+		Organization: r.Organization(),
 		Application: tmp.CreateAppRequest{
 			Name:            plan.Name.ValueString(),
 			Deploy:          "git",
@@ -79,7 +57,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 		},
 		Environment:  environment,
 		VHosts:       vhosts,
-		Deployment:   plan.toDeployment(r.gitAuth),
+		Deployment:   plan.toDeployment(r.GitAuth()),
 		Dependencies: dependencies,
 	}
 
@@ -103,8 +81,8 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
 			deleteVhostRes := tmp.DeleteAppVHost(
 				ctx,
-				r.cc,
-				r.org,
+				r.Client(),
+				r.Organization(),
 				plan.ID.ValueString(),
 				vhost,
 			)
@@ -130,7 +108,7 @@ func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *re
 		return
 	}
 
-	appRes, diags := application.ReadApp(ctx, r.cc, r.org, state.ID.ValueString())
+	appRes, diags := application.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
@@ -177,7 +155,7 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "go", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "go", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -199,8 +177,8 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 	// Get the updated values from plan and instance
 	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
-		Client:       r.cc,
-		Organization: r.org,
+		Client:       r.Client(),
+		Organization: r.Organization(),
 		Application: tmp.UpdateAppReq{
 			Name:            plan.Name.ValueString(),
 			Deploy:          "git",
@@ -221,7 +199,7 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
 		Dependencies:   dependencies,
-		Deployment:     plan.toDeployment(r.gitAuth),
+		Deployment:     plan.toDeployment(r.GitAuth()),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
@@ -249,7 +227,7 @@ func (r *ResourceGo) Delete(ctx context.Context, req resource.DeleteRequest, res
 
 	tflog.Debug(ctx, "Go DELETE", map[string]any{"state": state})
 
-	deleteRes := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
+	deleteRes := tmp.DeleteApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if deleteRes.IsNotFoundError() {
 		res.State.RemoveResource(ctx)
 		return
@@ -263,9 +241,3 @@ func (r *ResourceGo) Delete(ctx context.Context, req resource.DeleteRequest, res
 }
 
 // Import resource
-func (r *ResourceGo) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
-}

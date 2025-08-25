@@ -3,16 +3,12 @@ package play2
 import (
 	"context"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
-
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"go.clever-cloud.dev/client"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
 type ResourcePlay2 struct {
-	cc      *client.Client
-	org     string
-	gitAuth *http.BasicAuth
+	helper.Configurer
 }
 
 func NewResourcePlay2() func() resource.Resource {
