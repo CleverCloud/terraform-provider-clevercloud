@@ -36,9 +36,7 @@ func (r *ResourceStatic) Configure(ctx context.Context, req resource.ConfigureRe
 
 // Create a new resource
 func (r *ResourceStatic) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	plan := Static{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	plan := helper.PlanFrom[Static](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -95,6 +93,8 @@ func (r *ResourceStatic) Create(ctx context.Context, req resource.CreateRequest,
 	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]any{})
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
 	createdVhosts := createAppRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one

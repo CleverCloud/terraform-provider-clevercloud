@@ -64,18 +64,20 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 	addonRes := res.Payload()
-
 	tflog.Debug(ctx, "get add-on env vars", map[string]any{"cellar": addonRes.RealID})
+
+	cellar.ID = pkg.FromStr(addonRes.RealID)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
+
 	envRes := tmp.GetAddonEnv(ctx, r.cc, r.org, addonRes.RealID)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env vars", envRes.Error().Error())
 		return
 	}
-
 	envVars := envRes.Payload()
-	creds := s3.FromEnvVars(*envVars)
 
-	cellar.ID = pkg.FromStr(addonRes.RealID)
+	creds := s3.FromEnvVars(*envVars)
 	cellar.Host = pkg.FromStr(creds.Host)
 	cellar.KeyID = pkg.FromStr(creds.KeyID)
 	cellar.KeySecret = pkg.FromStr(creds.KeySecret)

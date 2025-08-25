@@ -40,8 +40,8 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
 	}
-
 	addonsProviders := addonsProvidersRes.Payload()
+
 	prov := pkg.LookupAddonProvider(*addonsProviders, "mongodb-addon")
 	plan := pkg.LookupProviderPlan(prov, mg.Plan.ValueString())
 	if plan == nil {
@@ -67,9 +67,6 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 	mg.Plan = pkg.FromStr(res.Payload().Plan.Slug)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	mgInfoRes := tmp.GetMongoDB(ctx, r.cc, res.Payload().ID)
 	if mgInfoRes.HasError() {

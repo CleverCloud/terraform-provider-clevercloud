@@ -93,6 +93,8 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
 	plan.BuildFlavor = createRes.GetBuildFlavor()
 
+	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
+
 	createdVhosts := createRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
 		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &res.Diagnostics)

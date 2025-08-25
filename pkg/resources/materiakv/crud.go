@@ -72,9 +72,6 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 	kv.CreationDate = pkg.FromI(res.Payload().CreationDate)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	kvInfoRes := tmp.GetMateriaKV(ctx, r.cc, r.org, kv.ID.ValueString())
 	if kvInfoRes.HasError() {

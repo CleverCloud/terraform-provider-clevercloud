@@ -73,9 +73,6 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 	kc.CreationDate = pkg.FromI(createAddonRes.Payload().CreationDate)
 
 	res.Diagnostics.Append(res.State.Set(ctx, kc)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 
 	kcEnvRes := tmp.GetAddonEnv(ctx, r.cc, r.org, kc.ID.ValueString())
 	if kcEnvRes.HasError() {

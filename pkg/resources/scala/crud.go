@@ -96,6 +96,8 @@ func (r *ResourceScala) Create(ctx context.Context, req resource.CreateRequest, 
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
 
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+
 	createdVhosts := createAppRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
 		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)

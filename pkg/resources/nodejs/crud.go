@@ -94,6 +94,8 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 	plan.ID = pkg.FromStr(createRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
 
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+
 	createdVhosts := createRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
 		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)

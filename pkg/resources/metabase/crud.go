@@ -2,7 +2,6 @@ package metabase
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -64,26 +63,20 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
 	}
+	addon := res.Payload()
 
-	mb.ID = pkg.FromStr(res.Payload().RealID)
-	mb.CreationDate = pkg.FromI(res.Payload().CreationDate)
-	// mb.Plan = pkg.FromStr(res.Payload().Plan.Slug)
+	mb.ID = pkg.FromStr(addon.RealID)
+	mb.CreationDate = pkg.FromI(addon.CreationDate)
+	// mb.Plan = pkg.FromStr(addon).Plan.Slug)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
-	mbInfoRes := tmp.GetAddonEnv(ctx, r.cc, r.org, res.Payload().ID)
+	mbInfoRes := tmp.GetAddonEnv(ctx, r.cc, r.org, addon.ID)
 	if mbInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Metabase connection infos", mbInfoRes.Error().Error())
 		return
 	}
-
 	addonMB := *mbInfoRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]any{
-		"payload": fmt.Sprintf("%+v", addonMB),
-	})
 
 	hostEnvVar := pkg.First(addonMB, func(v tmp.EnvVar) bool {
 		return v.Name == "METABASE_URL"
