@@ -70,9 +70,9 @@ func (p *PHP) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]stri
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSet(p.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-	pkg.IfIsSet(p.WebRoot, func(webroot string) { env["CC_WEBROOT"] = webroot })
-	pkg.IfIsSet(p.PHPVersion, func(version string) { env["CC_PHP_VERSION"] = version })
+	pkg.IfIsSetStr(p.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetStr(p.WebRoot, func(webroot string) { env["CC_WEBROOT"] = webroot })
+	pkg.IfIsSetStr(p.PHPVersion, func(version string) { env["CC_PHP_VERSION"] = version })
 	pkg.IfIsSetB(p.DevDependencies, func(devDeps bool) {
 		if devDeps {
 			env["CC_PHP_DEV_DEPENDENCIES"] = "install"

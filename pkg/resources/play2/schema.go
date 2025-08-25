@@ -48,7 +48,7 @@ func (plan *Play2) toEnv(ctx context.Context, diags diag.Diagnostics) map[string
 		env[k] = v
 	}
 
-	pkg.IfIsSet(plan.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetStr(plan.AppFolder, func(s string) { env["APP_FOLDER"] = s })
 	return env
 }
 
