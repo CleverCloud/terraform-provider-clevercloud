@@ -66,7 +66,7 @@ func (r Rust) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSet(r.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetStr(r.AppFolder, func(s string) { env["APP_FOLDER"] = s })
 	env = pkg.Merge(env, r.Hooks.ToEnv())
 
 	// Handle Rust features

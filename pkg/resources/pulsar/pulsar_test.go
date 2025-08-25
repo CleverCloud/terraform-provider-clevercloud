@@ -60,6 +60,21 @@ func TestAccPulsar_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("namespace"), knownvalue.NotNull()),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("token"), knownvalue.NotNull()),
 			},
+		}, {
+			ResourceName: rName,
+			Config:       providerBlock.Append(pulsarBlock.SetOneValue("retention_period", 120).SetOneValue("retention_size", 1024)).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^pulsar_.*`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("binary_url"), knownvalue.StringRegexp(regexp.MustCompile(`^pulsar\+ssl:\/\/.*$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("http_url"), knownvalue.StringRegexp(regexp.MustCompile(`^https:\/\/.*$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tenant"), knownvalue.StringExact(tests.ORGANISATION)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("namespace"), knownvalue.NotNull()),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("token"), knownvalue.NotNull()),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("retention_period"), knownvalue.Int64Exact(120)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("retention_size"), knownvalue.Int64Exact(1024)),
+			},
 		}},
 	})
 }
