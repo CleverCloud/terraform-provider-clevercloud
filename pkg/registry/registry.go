@@ -7,6 +7,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar/bucket"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/docker"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/drain"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/frankenphp"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/fsbucket"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/golang"
@@ -46,6 +47,13 @@ var Resources = []func() resource.Resource{
 	scala.NewResourceScala(),
 	static.NewResourceStatic(),
 	docker.NewResourceDocker,
+	drain.NewDatadogDrain,
+	drain.NewNewRelicDrain,
+	drain.NewElasticsearchDrain,
+	drain.NewSyslogUDPDrain,
+	drain.NewSyslogTCPDrain,
+	drain.NewHTTPDrain,
+	drain.NewOVHDrain,
 	keycloak.NewResourceKeycloak,
 	redis.NewResourceRedis,
 	golang.NewResourceGo,
