@@ -4,34 +4,15 @@ import (
 	"context"
 	"time"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
-func (r *ResourceNG) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceNG.Configure()")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
-		r.gitAuth = provider.GitAuth()
-	}
-}
 
 // Create a new resource
 func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -43,7 +24,7 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 	id := tmp.GenID()
 	plan.ID = basetypes.NewStringValue(id)
 
-	ngRes := tmp.CreateNetworkgroup(ctx, r.cc, r.org, tmp.NetworkgroupCreation{
+	ngRes := tmp.CreateNetworkgroup(ctx, r.Client(), r.Organization(), tmp.NetworkgroupCreation{
 		ID:          id,
 		Label:       plan.Name.ValueString(),
 		Description: plan.Description.ValueString(),
@@ -54,7 +35,7 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 		return
 	}
 
-	ng, err := r.WaitForNG(ctx, r.cc, r.org, id)
+	ng, err := r.WaitForNG(ctx, r.Client(), r.Organization(), id)
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get created networkgroup", err.Error())
 		return
@@ -77,7 +58,7 @@ func (r *ResourceNG) Read(ctx context.Context, req resource.ReadRequest, resp *r
 		return
 	}
 
-	ngRes := tmp.GetNetworkgroup(ctx, r.cc, r.org, state.ID.ValueString())
+	ngRes := tmp.GetNetworkgroup(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if ngRes.HasError() {
 		resp.Diagnostics.AddError("failed to get networkgroup", ngRes.Error().Error())
 		return
@@ -106,7 +87,7 @@ func (r *ResourceNG) Delete(ctx context.Context, req resource.DeleteRequest, res
 		return
 	}
 
-	res := tmp.DeleteNetworkgroup(ctx, r.cc, r.org, state.ID.ValueString())
+	res := tmp.DeleteNetworkgroup(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete networkgroup", res.Error().Error())
 		return
@@ -116,12 +97,6 @@ func (r *ResourceNG) Delete(ctx context.Context, req resource.DeleteRequest, res
 }
 
 // Import resource
-func (r *ResourceNG) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
-}
 
 func (r *ResourceNG) WaitForNG(ctx context.Context, cc *client.Client, organisationID, ngId string) (*tmp.Networkgroup, error) {
 	var lastErr error

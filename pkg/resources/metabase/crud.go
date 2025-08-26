@@ -5,31 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
-func (r *ResourceMetabase) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceMetabase.Configure()")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
-	}
-}
 
 // Create a new resource
 func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -38,7 +20,7 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
+	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
@@ -59,7 +41,7 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 		Region:     mb.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
+	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
@@ -74,7 +56,7 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	mbInfoRes := tmp.GetAddonEnv(ctx, r.cc, r.org, res.Payload().ID)
+	mbInfoRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), res.Payload().ID)
 	if mbInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Metabase connection infos", mbInfoRes.Error().Error())
 		return
@@ -110,7 +92,7 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonMBRes := tmp.GetMetabase(ctx, r.cc, mb.ID.ValueString())
+	addonMBRes := tmp.GetMetabase(ctx, r.Client(), mb.ID.ValueString())
 	if addonMBRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -127,7 +109,7 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	realID, err := tmp.AddonIDToRealID(ctx, r.cc, r.org, mb.ID.ValueString())
+	realID, err := tmp.AddonIDToRealID(ctx, r.Client(), r.Organization(), mb.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
@@ -159,13 +141,13 @@ func (r *ResourceMetabase) Delete(ctx context.Context, req resource.DeleteReques
 
 	tflog.Debug(ctx, "Metabase DELETE", map[string]any{"mb": mb})
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, mb.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), mb.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.cc, r.org, addonId)
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -179,9 +161,3 @@ func (r *ResourceMetabase) Delete(ctx context.Context, req resource.DeleteReques
 }
 
 // Import resource
-func (r *ResourceMetabase) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
-}
