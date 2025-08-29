@@ -146,7 +146,35 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 
 // Update resource
 func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// TODO
+	plan := helper.PlanFrom[MongoDB](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	state := helper.StateFrom[MongoDB](ctx, req.State, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if plan.ID.ValueString() != state.ID.ValueString() {
+		resp.Diagnostics.AddError("mongodb cannot be updated", "mismatched IDs")
+		return
+	}
+
+	// Only name can be edited
+	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+		"name": plan.Name.ValueString(),
+	})
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to update MongoDB", addonRes.Error().Error())
+		return
+	}
+	state.Name = plan.Name
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete resource
