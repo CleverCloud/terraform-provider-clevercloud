@@ -22,6 +22,7 @@ import (
 
 func TestAccMongoDB_basic(t *testing.T) {
 	rName := acctest.RandomWithPrefix("tf-test-mg")
+	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_mongodb.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
@@ -59,6 +60,14 @@ func TestAccMongoDB_basic(t *testing.T) {
 			ResourceName: rName,
 			Config:       providerBlock.Append(mongodbBlock).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^mongodb_.*`))),
+			},
+		}, {
+			ResourceName: rName,
+			Config:       providerBlock.Append(mongodbBlock.SetOneValue("name", rNameEdited)).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rNameEdited)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^mongodb_.*`))),
 			},
 		}},
