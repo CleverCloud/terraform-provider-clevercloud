@@ -21,6 +21,7 @@ import (
 
 func TestAccAddon_basic(t *testing.T) {
 	rName := acctest.RandomWithPrefix("tf-test-mp")
+	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_addon.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
@@ -55,8 +56,16 @@ func TestAccAddon_basic(t *testing.T) {
 			ResourceName: rName,
 			Config:       providerBlock.Append(addonBlock).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^addon_.*`))),
 				// TODO test env var existance
+			},
+		}, {
+			ResourceName: rName,
+			Config:       providerBlock.Append(addonBlock.SetOneValue("name", rNameEdited)).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rNameEdited)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^addon_.*`))),
 			},
 		}},
 	})
