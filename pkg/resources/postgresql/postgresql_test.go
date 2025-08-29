@@ -22,6 +22,7 @@ import (
 
 func TestAccPostgreSQL_basic(t *testing.T) {
 	rName := acctest.RandomWithPrefix("tf-test-pg")
+	rNameEdited := rName + "-edit"
 	rName2 := acctest.RandomWithPrefix("tf-test2-pg")
 	fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_postgresql.%s", rName2)
@@ -77,6 +78,12 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("password"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.StringExact("dev")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("backup"), knownvalue.Bool(true)),
+			},
+		}, {
+			ResourceName: rName,
+			Config:       providerBlock.Append(postgresqlBlock.SetOneValue("name", rNameEdited)).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rNameEdited)),
 			},
 		}, {
 			ResourceName: rName2,
