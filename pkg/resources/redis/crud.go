@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -166,7 +167,35 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 
 // Update resource
 func (r *ResourceRedis) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// TODO
+	plan := helper.PlanFrom[Redis](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	state := helper.StateFrom[Redis](ctx, req.State, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if plan.ID.ValueString() != state.ID.ValueString() {
+		resp.Diagnostics.AddError("redis cannot be updated", "mismatched IDs")
+		return
+	}
+
+	// Only name can be edited
+	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+		"name": plan.Name.ValueString(),
+	})
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to update Redis", addonRes.Error().Error())
+		return
+	}
+	state.Name = plan.Name
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete resource
