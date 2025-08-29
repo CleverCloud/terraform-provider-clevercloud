@@ -80,7 +80,37 @@ func (r *ResourceCellarBucket) Read(ctx context.Context, req resource.ReadReques
 
 // Update resource
 func (r *ResourceCellarBucket) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// nothing to update yet (rename ?)
+	var plan, state CellarBucket
+
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Validate that immutable fields haven't changed
+	if plan.Name.ValueString() != state.Name.ValueString() {
+		resp.Diagnostics.AddError(
+			"Bucket name cannot be changed",
+			"Bucket names are immutable and cannot be changed after creation. To use a different name, you must destroy and recreate the bucket.",
+		)
+		return
+	}
+
+	if plan.CellarID.ValueString() != state.CellarID.ValueString() {
+		resp.Diagnostics.AddError(
+			"Cellar ID cannot be changed",
+			"The cellar_id is immutable and cannot be changed after creation. To use a different cellar, you must destroy and recreate the bucket.",
+		)
+		return
+	}
+
+	// No updateable attributes in current schema, just maintain current state
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Delete resource
