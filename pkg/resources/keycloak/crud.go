@@ -123,7 +123,35 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 
 // Update resource
 func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// TODO
+	plan := helper.PlanFrom[Keycloak](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	state := helper.StateFrom[Keycloak](ctx, req.State, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if plan.ID.ValueString() != state.ID.ValueString() {
+		resp.Diagnostics.AddError("keycloak cannot be updated", "mismatched IDs")
+		return
+	}
+
+	// Only name can be edited
+	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+		"name": plan.Name.ValueString(),
+	})
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to update Keycloak", addonRes.Error().Error())
+		return
+	}
+	state.Name = plan.Name
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete resource
