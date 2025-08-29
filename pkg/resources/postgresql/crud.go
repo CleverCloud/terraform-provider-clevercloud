@@ -219,7 +219,35 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 
 // Update resource
 func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// TODO
+	plan := helper.PlanFrom[PostgreSQL](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	state := helper.StateFrom[PostgreSQL](ctx, req.State, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if plan.ID.ValueString() != state.ID.ValueString() {
+		resp.Diagnostics.AddError("postgresql cannot be updated", "mismatched IDs")
+		return
+	}
+
+	// Only name can be edited
+	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+		"name": plan.Name.ValueString(),
+	})
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to update PostgreSQL", addonRes.Error().Error())
+		return
+	}
+	state.Name = plan.Name
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete resource
