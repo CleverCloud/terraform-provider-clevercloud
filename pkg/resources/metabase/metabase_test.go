@@ -23,6 +23,7 @@ import (
 func TestAccMetabase_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-mb")
+	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_metabase.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
@@ -64,6 +65,14 @@ func TestAccMetabase_basic(t *testing.T) {
 			ResourceName: rName,
 			Config:       providerBlock.Append(metabaseBlock).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^metabase_.*`))),
+			},
+		}, {
+			ResourceName: rName,
+			Config:       providerBlock.Append(metabaseBlock.SetOneValue("name", rNameEdited)).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rNameEdited)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^metabase_.*`))),
 			},
 		}},
