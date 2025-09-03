@@ -3,16 +3,12 @@ package frankenphp
 import (
 	"context"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
-
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"go.clever-cloud.dev/client"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
 type ResourceFrankenPHP struct {
-	cc      *client.Client
-	org     string
-	gitAuth *http.BasicAuth
+	helper.Configurer
 }
 
 func NewResourceFrankenPHP() resource.Resource {
