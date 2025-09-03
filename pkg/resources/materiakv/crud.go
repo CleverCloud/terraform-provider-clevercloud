@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -72,9 +73,6 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 	kv.CreationDate = pkg.FromI(res.Payload().CreationDate)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	kvInfoRes := tmp.GetMateriaKV(ctx, r.cc, r.org, kv.ID.ValueString())
 	if kvInfoRes.HasError() {
@@ -145,7 +143,27 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 
 // Update resource
 func (r *ResourceMateriaKV) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// TODO
+	plan := helper.PlanFrom[MateriaKV](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state := helper.StateFrom[MateriaKV](ctx, req.State, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// Only name can be edited
+	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, state.ID.ValueString(), map[string]string{
+		"name": plan.Name.ValueString(),
+	})
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to update MateriaKV", addonRes.Error().Error())
+		return
+	}
+	state.Name = plan.Name
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete resource

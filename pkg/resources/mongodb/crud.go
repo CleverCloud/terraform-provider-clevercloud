@@ -40,8 +40,8 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
 	}
-
 	addonsProviders := addonsProvidersRes.Payload()
+
 	prov := pkg.LookupAddonProvider(*addonsProviders, "mongodb-addon")
 	plan := pkg.LookupProviderPlan(prov, mg.Plan.ValueString())
 	if plan == nil {
@@ -67,9 +67,6 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 	mg.Plan = pkg.FromStr(res.Payload().Plan.Slug)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 
 	mgInfoRes := tmp.GetMongoDB(ctx, r.cc, res.Payload().ID)
 	if mgInfoRes.HasError() {
@@ -146,7 +143,35 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 
 // Update resource
 func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// TODO
+	plan := helper.PlanFrom[MongoDB](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	state := helper.StateFrom[MongoDB](ctx, req.State, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if plan.ID.ValueString() != state.ID.ValueString() {
+		resp.Diagnostics.AddError("mongodb cannot be updated", "mismatched IDs")
+		return
+	}
+
+	// Only name can be edited
+	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+		"name": plan.Name.ValueString(),
+	})
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to update MongoDB", addonRes.Error().Error())
+		return
+	}
+	state.Name = plan.Name
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete resource

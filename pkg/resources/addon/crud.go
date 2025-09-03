@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -34,9 +35,7 @@ func (r *ResourceAddon) Configure(ctx context.Context, req resource.ConfigureReq
 
 // Create a new resource
 func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	ad := Addon{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &ad)...)
+	ad := helper.PlanFrom[Addon](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -46,7 +45,6 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 		resp.Diagnostics.AddError("failed to get add-on providers", addonsProvidersRes.Error().Error())
 		return
 	}
-
 	addonsProviders := addonsProvidersRes.Payload()
 
 	provider := pkg.LookupAddonProvider(*addonsProviders, ad.ThirdPartyProvider.ValueString())
@@ -76,6 +74,8 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 
 	ad.ID = pkg.FromStr(res.Payload().ID)
 	ad.CreationDate = pkg.FromI(res.Payload().CreationDate)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, ad)...)
 
 	envRes := tmp.GetAddonEnv(ctx, r.cc, r.org, res.Payload().ID)
 	if res.HasError() {
@@ -144,7 +144,35 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 
 // Update resource
 func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	// TODO
+	plan := helper.PlanFrom[Addon](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	state := helper.StateFrom[Addon](ctx, req.State, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if plan.ID.ValueString() != state.ID.ValueString() {
+		resp.Diagnostics.AddError("addon cannot be updated", "mismatched IDs")
+		return
+	}
+
+	// Only name can be edited
+	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+		"name": plan.Name.ValueString(),
+	})
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to update Addon", addonRes.Error().Error())
+		return
+	}
+	state.Name = plan.Name
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 }
 
 // Delete resource
