@@ -1,5 +1,32 @@
 # Changelog
 
+## [1.1.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.0.1...v1.1.0) (2025-09-03)
+
+
+### Features
+
+* addon update ([fc8d6a0](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/fc8d6a0466dbe046142cd19c8c5975b557ee3484))
+* bucket cannot be update ([5168d9b](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5168d9be1c5f19ed6e07e333dafbd2eef9003567))
+* credentials configuration detection ([3da1f6b](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/3da1f6b68150063f9a22dc4e4a944dfcb22c5ba4))
+* frankenphp ([0ee6fd4](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/0ee6fd45eb13a062e7ba92ee11fc5e4c647866e0)), closes [#127](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/127)
+* keycloak update ([2a95a83](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/2a95a8307b89c355c13734f11a38950655a325e5))
+* materiakv update ([3f9e8ea](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/3f9e8ea0c0547c8e445cb9392b97d110caa01338))
+* metabase update ([6be8d8c](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/6be8d8c59743f7053ce25823d8cf16ac913f9482))
+* mongodb update ([919fee9](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/919fee94efa88a0bc00e6ad199ad8376788fa94a))
+* psql update ([652d225](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/652d22571ab8c02ff29eb3f1a4e58ea70df2a064))
+* pulsar update ([3cd75a4](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/3cd75a40e41e0b1e0a279437499010b23b428e39))
+* redis update ([432ddd2](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/432ddd2d0a0e101a8a71fcd5709ba7bd53d0b35a))
+* upgrade README ([37c6df0](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/37c6df06d93a8f636502d77d3ae2e135887f6f30))
+
+
+### Bug Fixes
+
+* backup file to prevent panic ([2ea9c1a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/2ea9c1a3649a4f5d66e15ed797d9c064e1319f5b))
+* isolate test with no credentials ([5377312](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5377312f38c52114489706331c820d6eff84c718))
+* **pulsar:** handle non-tls clusters ([5a0206e](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5a0206ed19100229e5ba0b81446e02fb7a19d364))
+* remove credential config detection ([5ed7b02](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5ed7b02c09a035d23cc4f0d17e5e225d3fae477b))
+* save ID as soon as available ([34e7d9c](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/34e7d9ca32dc039257da0d88f74abe6e158b4458))
+
 ## [1.0.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.0.0...v1.0.1) (2025-08-04)
 
 
