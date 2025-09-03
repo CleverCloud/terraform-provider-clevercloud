@@ -106,7 +106,7 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 	pulsarCluster := pulsarClusterRes.Payload()
 	readCluster(&state, pulsarCluster, &resp.Diagnostics)
 
-	addonRes := tmp.GetAddon(ctx, r.cc, r.org, state.ID.ValueString())
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on", addonRes.Error().Error())
 		return
@@ -250,7 +250,7 @@ func (r *ResourcePulsar) Update(ctx context.Context, req resource.UpdateRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	} else {
-		resp.Diagnostics.Append(resp.State.Set(ctx, state)
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 	}
 }
 

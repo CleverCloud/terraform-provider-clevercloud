@@ -34,9 +34,3 @@ func IfIsSet[T attr.Value](v T, fn func(v T)) {
 		fn(v)
 	}
 }
-
-func IfIsSetV2[T attr.Value](v T, fn func(v T)) {
-	if !v.IsNull() && !v.IsUnknown() {
-		fn(v)
-	}
-}
