@@ -111,11 +111,11 @@ func (hooks *Hooks) ToEnv() map[string]string {
 		return m
 	}
 
-	pkg.IfIsSet(hooks.PreBuild, func(script string) { m["CC_PRE_BUILD_HOOK"] = script })
-	pkg.IfIsSet(hooks.PostBuild, func(script string) { m["CC_POST_BUILD_HOOK"] = script })
-	pkg.IfIsSet(hooks.PreRun, func(script string) { m["CC_PRE_RUN_HOOK"] = script })
-	pkg.IfIsSet(hooks.RunFailed, func(script string) { m["CC_RUN_FAILED_HOOK"] = script })
-	pkg.IfIsSet(hooks.RunSucceed, func(script string) { m["CC_RUN_SUCCEEDED_HOOK"] = script })
+	pkg.IfIsSetStr(hooks.PreBuild, func(script string) { m["CC_PRE_BUILD_HOOK"] = script })
+	pkg.IfIsSetStr(hooks.PostBuild, func(script string) { m["CC_POST_BUILD_HOOK"] = script })
+	pkg.IfIsSetStr(hooks.PreRun, func(script string) { m["CC_PRE_RUN_HOOK"] = script })
+	pkg.IfIsSetStr(hooks.RunFailed, func(script string) { m["CC_RUN_FAILED_HOOK"] = script })
+	pkg.IfIsSetStr(hooks.RunSucceed, func(script string) { m["CC_RUN_SUCCEEDED_HOOK"] = script })
 
 	return m
 }
