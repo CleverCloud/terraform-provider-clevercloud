@@ -4,7 +4,7 @@ page_title: "clevercloud_otoroshi Resource - terraform-provider-clevercloud"
 description: |-
   Manage Otoroshi addon through the addon-provider API https://www.clever.cloud/developers/doc/marketplace/#add-on-provider-requests
   Otoroshi is a lightweight API gateway and management solution that provides:
-  API gateway with dynamic service management LLM extension supporting multiple AI providers (OpenAI, Mistral, Anthropic, etc.) Integrated Coraza Web Application Firewall API key management and fine-grained access controls Comprehensive audit logging and monitoring
+  API gateway with dynamic service managementLLM extension supporting multiple AI providers (OpenAI, Mistral, Anthropic, etc.)Integrated Coraza Web Application FirewallAPI key management and fine-grained access controlsComprehensive audit logging and monitoring
   Learn more about Otoroshi with LLM https://www.clever.cloud/developers/doc/addons/otoroshi/ on Clever Cloud.
 ---
 
@@ -29,8 +29,7 @@ Learn more about [Otoroshi with LLM](https://www.clever.cloud/developers/doc/add
 
 ### Required
 
-- `name` (String) Name of the service
-- `plan` (String) Database size and spec
+- `name` (String) Name of the Otoroshi
 
 ### Optional
 
@@ -39,6 +38,11 @@ Learn more about [Otoroshi with LLM](https://www.clever.cloud/developers/doc/add
 
 ### Read-Only
 
-- `configurations` (Map of String, Sensitive) Configuration variables exposed by Otoroshi addon
-- `creation_date` (Number) Date of database creation
+- `api_client_id` (String) API client ID
+- `api_client_secret` (String) API client secret
+- `api_url` (String) API URL
+- `creation_date` (Number) Date of Otoroshi creation
 - `id` (String) Generated unique identifier
+- `initial_admin_login` (String) Initial admin login
+- `initial_admin_password` (String) Initial admin password
+- `url` (String) URL
