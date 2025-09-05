@@ -72,6 +72,35 @@ type PostgreSQLFeature struct {
 	Enabled bool   `json:"enabled"`
 }
 
+
+type MySQL struct {
+	// app_id:addon_5abaf3ea-d53f-4021-9711-cd294d50c662
+	CreationDate string `json:"creation_date" example:"2024-03-12T13:38:33.313Z[UTC]"`
+	Database     string `json:"database" example:"bwf32ifhr5cofspgzrbb"`
+	// features:[map[enabled:false name:encryption]]
+	Host string `json:"host" example:"bwf32ifhr5cofspgzrbb-postgresql.services.clever-cloud.com"`
+	// id:ea97919f-983b-4699-a673-2ed0668bf196
+	// owner_id:user_32114ae3-1716-4aa7-8d16-e664ca6ccd1f
+	Password string `json:"password" example:"omEbGQw628gIxHK9Bp8d"`
+	Plan     string `json:"plan" example:"xs_med"`
+	Port     int    `json:"port" example:"6388"`
+	// read_only_users:[]
+	Status   string              `json:"status" example:"ACTIVE"`
+	User     string              `json:"user" example:"uxw1ikwnp6gflbgp5iun"`
+	Version  string              `json:"version"` // 14
+	Zone     string              `json:"zone" example:"par"`
+	Features []MySQLFeature `json:"features"`
+}
+
+func (p MySQL) Uri() string {
+	return fmt.Sprintf("mysql://%s:%d/%s", p.Host, p.Port, p.Database)
+}
+
+type MySQLFeature struct {
+	Name    string `json:"name"`
+	Enabled bool   `json:"enabled"`
+}
+
 func GetAddonsProviders(ctx context.Context, cc *client.Client) client.Response[[]AddonProvider] {
 	return client.Get[[]AddonProvider](ctx, cc, "/v2/products/addonproviders")
 }
@@ -85,6 +114,12 @@ func CreateAddon(ctx context.Context, cc *client.Client, organisation string, ad
 func GetPostgreSQL(ctx context.Context, cc *client.Client, postgresqlID string) client.Response[PostgreSQL] {
 	path := fmt.Sprintf("/v4/addon-providers/postgresql-addon/addons/%s", postgresqlID)
 	return client.Get[PostgreSQL](ctx, cc, path)
+}
+
+// Use Addon ID
+func GetMySQL(ctx context.Context, cc *client.Client, mysqlID string) client.Response[MySQL] {
+	path := fmt.Sprintf("/v4/addon-providers/mysql-addon/addons/%s", mysqlID)
+	return client.Get[MySQL](ctx, cc, path)
 }
 
 type MateriaKV struct {
@@ -222,6 +257,27 @@ type PostgresCluster struct {
 func GetPostgresInfos(ctx context.Context, cc *client.Client) client.Response[PostgresInfos] {
 	path := "/v4/addon-providers/postgresql-addon"
 	return client.Get[PostgresInfos](ctx, cc, path)
+}
+
+
+type MysqlInfos struct {
+	DefaultDedicatedVersion string            `json:"defaultDedicatedVersion"`
+	ProviderID              string            `json:"providerId"`
+	Clusters                []MysqlCluster    `json:"clusters"`
+	Dedicated               map[string]any    `json:"dedicated"`
+}
+
+type MysqlCluster struct {
+	ID       string `json:"id"`
+	Label    string `json:"label"`
+	Region   string `json:"zone"`
+	Version  string `json:"version"`
+	Features []any  `json:"features"`
+}
+
+func GetMysqlInfos(ctx context.Context, cc *client.Client) client.Response[MysqlInfos] {
+	path := "/v4/addon-providers/mysql-addon"
+	return client.Get[MysqlInfos](ctx, cc, path)
 }
 
 func RealIDsToAddonIDs(ctx context.Context, client *client.Client, organisation string, realID ...string) ([]string, error) {
