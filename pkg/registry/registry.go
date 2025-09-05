@@ -15,6 +15,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/materiakv"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/metabase"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/mongodb"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/mysql"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/networkgroup"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/nodejs"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/php"
@@ -39,6 +40,7 @@ var Resources = []func() resource.Resource{
 	materiakv.NewResourceMateriaKV,
 	metabase.NewResourceMetabase,
 	mongodb.NewResourceMongoDB,
+	mysql.NewResourceMySQL,
 	nodejs.NewResourceNodeJS,
 	php.NewResourcePHP,
 	postgresql.NewResourcePostgreSQL,
