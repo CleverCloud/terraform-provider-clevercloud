@@ -2,6 +2,8 @@ package networkgroup
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -13,6 +15,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk"
+	"go.clever-cloud.dev/sdk/services/networkgroup"
 )
 
 // Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
@@ -43,16 +47,29 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 	id := tmp.GenID()
 	plan.ID = basetypes.NewStringValue(id)
 
-	ngRes := tmp.CreateNetworkgroup(ctx, r.cc, r.org, tmp.NetworkgroupCreation{
+	/*ngRes := tmp.CreateNetworkgroup(ctx, r.cc, r.org, tmp.NetworkgroupCreation{
 		ID:          id,
 		Label:       plan.Name.ValueString(),
 		Description: plan.Description.ValueString(),
 		Tags:        pkg.SetToStringSlice(ctx, plan.Tags, &resp.Diagnostics),
-	})
-	if ngRes.HasError() {
-		resp.Diagnostics.AddError("failed to create networkgroup", ngRes.Error().Error())
+	})*/
+	createRes, err := sdk.
+		NewSDK(sdk.WithClient(r.cc)).
+		V4.
+		NetworkGroups.
+		Organisations(r.org).
+		NetworkGroups().
+		Create(ctx, networkgroup.CreateNetworkGroupRequest{
+			ID:          id,
+			Label:       plan.Name.ValueString(),
+			Description: plan.Description.ValueString(),
+			Tags:        pkg.SetToStringSlice(ctx, plan.Tags, &resp.Diagnostics),
+		})
+	if err != nil && !strings.Contains(err.Error(), "cannot parse response body") { // Known issue #577
+		resp.Diagnostics.AddError("failed to create networkgroup", err.Error())
 		return
 	}
+	tflog.Info(ctx, "created networkgroup", map[string]any{"id": fmt.Sprintf("%+v", createRes)})
 
 	ng, err := r.WaitForNG(ctx, r.cc, r.org, id)
 	if err != nil {
@@ -77,12 +94,24 @@ func (r *ResourceNG) Read(ctx context.Context, req resource.ReadRequest, resp *r
 		return
 	}
 
-	ngRes := tmp.GetNetworkgroup(ctx, r.cc, r.org, state.ID.ValueString())
+	/*ngRes := tmp.GetNetworkgroup(ctx, r.cc, r.org, state.ID.ValueString())
 	if ngRes.HasError() {
 		resp.Diagnostics.AddError("failed to get networkgroup", ngRes.Error().Error())
 		return
 	}
-	ng := ngRes.Payload()
+	ng := ngRes.Payload()*/
+	ng, err := sdk.
+		NewSDK(sdk.WithClient(r.cc)).
+		V4.
+		NetworkGroups.
+		Organisations(r.org).
+		NetworkGroups().
+		NetworkGroup(state.ID.ValueString()).
+		Get(ctx)
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get networkgroup", err.Error())
+		return
+	}
 
 	state.Name = basetypes.NewStringValue(ng.Label)
 	state.Description = basetypes.NewStringPointerValue(ng.Description)

@@ -1,8 +1,10 @@
 module go.clever-cloud.com/terraform-provider
 
-go 1.23.7
+go 1.24.0
 
-toolchain go1.24.5
+toolchain go1.24.6
+
+replace go.clever-cloud.dev/sdk => ../clevercloud-sdk
 
 require (
 	github.com/apache/pulsar-client-go v0.16.0
@@ -19,6 +21,7 @@ require (
 	github.com/hashicorp/terraform-plugin-testing v1.13.2
 	github.com/minio/minio-go/v7 v7.0.95
 	go.clever-cloud.dev/client v0.1.1
+	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
 )
 
 require (
@@ -113,13 +116,13 @@ require (
 	github.com/yuin/goldmark-meta v1.1.0 // indirect
 	github.com/zclconf/go-cty v1.16.3 // indirect
 	go.abhg.dev/goldmark/frontmatter v0.2.0 // indirect
+	go.clever-cloud.dev/sdk v0.0.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.46.1 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
 	golang.org/x/crypto v0.39.0 // indirect
-	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56 // indirect
 	golang.org/x/mod v0.25.0 // indirect
 	golang.org/x/net v0.41.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
