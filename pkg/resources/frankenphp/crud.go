@@ -179,6 +179,7 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
+	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 
 	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
@@ -200,9 +201,10 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
-		Environment: planEnvironment,
-		VHosts:      vhosts,
-		Deployment:  plan.toDeployment(r.gitAuth),
+		Environment:  planEnvironment,
+		VHosts:       vhosts,
+		Dependencies: dependencies,
+		Deployment:   plan.toDeployment(r.gitAuth),
 	}
 
 	updateAppRes, diags := application.UpdateApp(ctx, updateAppReq)
