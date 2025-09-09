@@ -23,6 +23,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/pulsar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/python"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/redis"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/ruby"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/rust"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/scala"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/static"
@@ -43,6 +44,7 @@ var Resources = []func() resource.Resource{
 	php.NewResourcePHP,
 	postgresql.NewResourcePostgreSQL,
 	python.NewResourcePython,
+	ruby.NewResourceRuby,
 	scala.NewResourceScala(),
 	static.NewResourceStatic(),
 	docker.NewResourceDocker,

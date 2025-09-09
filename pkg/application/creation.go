@@ -21,6 +21,7 @@ type CreateReq struct {
 	Application  tmp.CreateAppRequest
 	Environment  map[string]string
 	VHosts       []string
+	UseDefaultDomain bool
 	Deployment   *Deployment
 	Dependencies []string
 }
@@ -32,6 +33,7 @@ type UpdateReq struct {
 	Application    tmp.UpdateAppReq
 	Environment    map[string]string
 	VHosts         []string
+	UseDefaultDomain bool
 	Deployment     *Deployment
 	Dependencies   []string
 	TriggerRestart bool // when env vars change for example
@@ -82,7 +84,10 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	}
 
 	// VHosts
-	UpdateVhosts(ctx, req.Client, req.Organization, req.VHosts, &diags, res.Application.ID)
+	updateSuccess := UpdateVHosts(ctx, req.Client, req.Organization, res.Application.ID, req.VHosts, req.UseDefaultDomain, &diags)
+	if !updateSuccess {
+		return nil, diags
+	}
 
 	// This is dirty, but we need a refresh
 	vhostsRes := tmp.GetAppVhosts(ctx, req.Client, req.Organization, res.Application.ID)
@@ -140,7 +145,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	}
 
 	// VHosts
-	updateSuccess := UpdateVhosts(ctx, req.Client, req.Organization, req.VHosts, &diags, res.Application.ID)
+	updateSuccess := UpdateVHosts(ctx, req.Client, req.Organization, res.Application.ID, req.VHosts, req.UseDefaultDomain, &diags)
 	if !updateSuccess {
 		return nil, diags
 	}
@@ -209,23 +214,47 @@ func ToForceHTTPS(force string) bool {
 }
 
 // does not touch cleverapps.io domain
-func UpdateVhosts(ctx context.Context, client *client.Client, organization string, reqVhosts []string, diags *diag.Diagnostics, applicationID string) bool {
-
+func UpdateVHosts(ctx context.Context, client *client.Client, organization, applicationID string, reqVhosts []string, useDefaultDomain bool, diags *diag.Diagnostics) bool {
 	// Get current vhosts from remote
 	vhostsRes := tmp.GetAppVhosts(ctx, client, organization, applicationID)
 	if vhostsRes.HasError() {
 		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
 		return false
 	}
-	remoteVHosts := vhostsRes.Payload().WithoutCleverApps(applicationID)
 
-	tflog.Debug(ctx, "Config vhosts:", map[string]any{"vhosts": reqVhosts})
+	// Get the default domain for this application
+	defaultDomain := fmt.Sprintf("%s.cleverapps.io", strings.ReplaceAll(applicationID, "_", "-"))
+	
+	// Create a list of vhosts to process
+	processedVhosts := make([]string, len(reqVhosts))
+	copy(processedVhosts, reqVhosts)
+	
+	// If useDefaultDomain is true or no custom domains are specified, add the default domain
+	if useDefaultDomain || len(reqVhosts) == 0 {
+		// Check if the default domain is already in the list
+		hasDefaultDomain := false
+		for _, vhost := range processedVhosts {
+			if vhost == defaultDomain {
+				hasDefaultDomain = true
+				break
+			}
+		}
+		
+		// Add the default domain if it's not already in the list
+		if !hasDefaultDomain {
+			processedVhosts = append(processedVhosts, defaultDomain)
+		}
+	}
+
+	remoteVHosts := *vhostsRes.Payload()
+
+	tflog.Debug(ctx, "Config vhosts:", map[string]any{"vhosts": processedVhosts})
 	tflog.Debug(ctx, "Remote vhosts:", map[string]any{"vhosts": remoteVHosts})
 
 	// Get vhosts defined in config
 	vhostsToAdd := []string{}
 
-	for _, vhost := range reqVhosts { // we cannot add a cleverapps domain with the app_ prefix
+	for _, vhost := range processedVhosts {
 		if !slices.Contains(remoteVHosts.AsString(), vhost) {
 			vhostsToAdd = append(vhostsToAdd, vhost)
 		}
@@ -235,7 +264,7 @@ func UpdateVhosts(ctx context.Context, client *client.Client, organization strin
 
 	vhostsToRemove := []string{}
 	for _, vhost := range remoteVHosts {
-		if !slices.Contains(reqVhosts, vhost.Fqdn) {
+		if !slices.Contains(processedVhosts, vhost.Fqdn) {
 			vhostsToRemove = append(vhostsToRemove, vhost.Fqdn)
 		}
 	}
