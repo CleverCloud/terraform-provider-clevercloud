@@ -187,6 +187,7 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 	}
 
 	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
+	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 
 	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
@@ -211,6 +212,7 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 		},
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
+		Dependencies:   dependencies,
 		Deployment:     plan.toDeployment(r.gitAuth),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}

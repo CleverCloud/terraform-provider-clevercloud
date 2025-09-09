@@ -191,6 +191,7 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 
 	// Same as env but with vhosts
 	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
+	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 
 	// Get the updated values from plan and instance
 	updateAppReq := application.UpdateReq{
@@ -216,6 +217,7 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 		},
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
+		Dependencies:   dependencies,
 		Deployment:     plan.toDeployment(r.gitAuth),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
