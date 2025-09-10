@@ -37,7 +37,7 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
 			"dev_dependencies":   false,
-			"vhosts":             []string{"toto-tf5283457829345.com"},
+			"vhosts":             []string{"toto-tf5283457829345.com/"},
 		}))
 
 	resource.Test(t, resource.TestCase{
