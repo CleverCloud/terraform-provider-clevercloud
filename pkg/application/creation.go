@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
@@ -208,7 +209,9 @@ func ToForceHTTPS(force string) bool {
 	return force == "ENABLED"
 }
 
-// does not touch cleverapps.io domain
+// UpdateVhosts manages vhosts according to the specification:
+// - Empty vhosts list: keep cleverapps domain only
+// - Non-empty vhosts list: remove cleverapps domain and set custom vhosts
 func UpdateVhosts(ctx context.Context, client *client.Client, organization string, reqVhosts []string, diags *diag.Diagnostics, applicationID string) bool {
 
 	// Get current vhosts from remote
@@ -217,27 +220,40 @@ func UpdateVhosts(ctx context.Context, client *client.Client, organization strin
 		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
 		return false
 	}
-	remoteVHosts := vhostsRes.Payload().WithoutCleverApps(applicationID)
+	allRemoteVHosts := *vhostsRes.Payload()
+	remoteVHosts := allRemoteVHosts.WithoutCleverApps(applicationID)
+
+	// Normalize remote vhosts from API (remove trailing slash for comparison)
+	remoteVhostsNormalized := attributes.NormalizeVhostsFromAPI(remoteVHosts.AsString())
 
 	tflog.Debug(ctx, "Config vhosts:", map[string]any{"vhosts": reqVhosts})
-	tflog.Debug(ctx, "Remote vhosts:", map[string]any{"vhosts": remoteVHosts})
+	tflog.Debug(ctx, "Remote vhosts (normalized):", map[string]any{"vhosts": remoteVhostsNormalized})
 
-	// Get vhosts defined in config
+	// Determine vhosts to add and remove
 	vhostsToAdd := []string{}
-
-	for _, vhost := range reqVhosts { // we cannot add a cleverapps domain with the app_ prefix
-		if !slices.Contains(remoteVHosts.AsString(), vhost) {
+	for _, vhost := range reqVhosts {
+		if !slices.Contains(remoteVhostsNormalized, vhost) {
 			vhostsToAdd = append(vhostsToAdd, vhost)
 		}
 	}
 
-	tflog.Debug(ctx, "Vhosts to add:", map[string]any{"vhostsToAdd": vhostsToAdd})
-
 	vhostsToRemove := []string{}
-	for _, vhost := range remoteVHosts {
-		if !slices.Contains(reqVhosts, vhost.Fqdn) {
-			vhostsToRemove = append(vhostsToRemove, vhost.Fqdn)
+	for _, normalizedVhost := range remoteVhostsNormalized {
+		if !slices.Contains(reqVhosts, normalizedVhost) {
+			// Find the original vhost with "/" to send to API for deletion
+			for _, vhost := range remoteVHosts {
+				if attributes.NormalizeVhostsFromAPI([]string{vhost.Fqdn})[0] == normalizedVhost {
+					vhostsToRemove = append(vhostsToRemove, vhost.Fqdn)
+					break
+				}
+			}
 		}
+	}
+
+	// If user wants custom vhosts, also remove cleverapps domain
+	cleverappsVhost := allRemoteVHosts.CleverAppsFQDN(applicationID)
+	if len(reqVhosts) > 0 && cleverappsVhost != nil {
+		vhostsToRemove = append(vhostsToRemove, cleverappsVhost.Fqdn)
 	}
 
 	tflog.Debug(ctx, "UPDATE VHOSTS", map[string]any{"toRemove": vhostsToRemove, "toAdd": vhostsToAdd})
@@ -251,8 +267,9 @@ func UpdateVhosts(ctx context.Context, client *client.Client, organization strin
 		}
 	}
 
-	// Add new vhosts
-	for _, vhost := range vhostsToAdd {
+	// Add new vhosts - normalize for API (add trailing slash)
+	vhostsToAddNormalized := attributes.NormalizeVhostsForAPI(vhostsToAdd)
+	for _, vhost := range vhostsToAddNormalized {
 		addVhostRes := tmp.AddAppVHost(ctx, client, organization, applicationID, url.QueryEscape(vhost))
 		if addVhostRes.HasError() {
 			diags.AddError(fmt.Sprintf("failed to add vhost \"%s\"", vhost), addVhostRes.Error().Error())

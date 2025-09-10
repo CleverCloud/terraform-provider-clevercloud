@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -93,27 +94,9 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
 	plan.BuildFlavor = createRes.GetBuildFlavor()
 
-	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
-
-	createdVhosts := createRes.Application.Vhosts
-	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &res.Diagnostics)
-	} else { // practitionner give it's own vhost, remove cleverapps one
-
-		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
-			deleteVhostRes := tmp.DeleteAppVHost(
-				ctx,
-				r.cc,
-				r.org,
-				plan.ID.ValueString(),
-				vhost,
-			)
-			if deleteVhostRes.HasError() {
-				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-				return
-			}
-		}
-	}
+	// Process vhosts according to specification using centralized logic
+	vhostsFromAPI := createRes.Application.Vhosts.AsString()
+	plan.VHosts = attributes.ProcessVhostsForState(plan.VHosts, vhostsFromAPI, plan.ID.ValueString())
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {
@@ -153,7 +136,8 @@ func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *re
 	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 
 	vhosts := appRes.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &res.Diagnostics)
+	normalizedVhosts := attributes.NormalizeVhostsFromAPI(vhosts)
+	state.VHosts = pkg.FromSetString(normalizedVhosts, &res.Diagnostics)
 
 	diags = res.State.Set(ctx, state)
 	res.Diagnostics.Append(diags...)
@@ -232,7 +216,9 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 		return
 	}
 
-	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+	// Process vhosts according to specification using centralized logic
+	vhostsFromAPI := updatedApp.Application.Vhosts.AsString()
+	plan.VHosts = attributes.ProcessVhostsForState(plan.VHosts, vhostsFromAPI, plan.ID.ValueString())
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {

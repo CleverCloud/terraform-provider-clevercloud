@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -96,27 +97,9 @@ func (r *ResourceScala) Create(ctx context.Context, req resource.CreateRequest, 
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-
-	createdVhosts := createAppRes.Application.Vhosts
-	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
-	} else { // practitionner give it's own vhost, remove cleverapps one
-
-		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
-			deleteVhostRes := tmp.DeleteAppVHost(
-				ctx,
-				r.cc,
-				r.org,
-				plan.ID.ValueString(),
-				vhost,
-			)
-			if deleteVhostRes.HasError() {
-				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-				return
-			}
-		}
-	}
+	// Process vhosts according to specification using centralized logic
+	vhostsFromAPI := createAppRes.Application.Vhosts.AsString()
+	plan.VHosts = attributes.ProcessVhostsForState(plan.VHosts, vhostsFromAPI, plan.ID.ValueString())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
@@ -155,7 +138,8 @@ func (r *ResourceScala) Read(ctx context.Context, req resource.ReadRequest, resp
 	state.BuildFlavor = readRes.GetBuildFlavor()
 
 	vhosts := readRes.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	normalizedVhosts := attributes.NormalizeVhostsFromAPI(vhosts)
+	state.VHosts = pkg.FromSetString(normalizedVhosts, &resp.Diagnostics)
 
 	for envName, envValue := range readRes.EnvAsMap() {
 		switch envName {
@@ -239,7 +223,9 @@ func (r *ResourceScala) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+	// Process vhosts according to specification using centralized logic
+	vhostsFromAPI := updatedApp.Application.Vhosts.AsString()
+	plan.VHosts = attributes.ProcessVhostsForState(plan.VHosts, vhostsFromAPI, plan.ID.ValueString())
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {

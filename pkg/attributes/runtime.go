@@ -3,16 +3,17 @@ package attributes
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/planmodifiers"
 )
 
 type Runtime struct {
@@ -48,6 +49,45 @@ func (r Runtime) VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) [
 	vhosts := []string{}
 	diags.Append(r.VHosts.ElementsAs(ctx, &vhosts, true)...)
 	return vhosts
+}
+
+// NormalizeVhostsForAPI adds trailing slash to vhosts when sending to Clever Cloud API
+func NormalizeVhostsForAPI(vhosts []string) []string {
+	normalized := make([]string, len(vhosts))
+	for i, vhost := range vhosts {
+		if !strings.HasSuffix(vhost, "/") {
+			normalized[i] = vhost + "/"
+		} else {
+			normalized[i] = vhost
+		}
+	}
+	return normalized
+}
+
+// NormalizeVhostsFromAPI removes trailing slash from vhosts when reading from Clever Cloud API
+func NormalizeVhostsFromAPI(vhosts []string) []string {
+	normalized := make([]string, len(vhosts))
+	for i, vhost := range vhosts {
+		normalized[i] = strings.TrimSuffix(vhost, "/")
+	}
+	return normalized
+}
+
+// ProcessVhostsForState handles the vhost logic according to the specification:
+// - No vhosts specified → cleverapps present
+// - Vhosts specified → no cleverapps + specified vhosts present
+// - Update to remove vhosts → no vhosts specified + cleverapps present
+func ProcessVhostsForState(planVhosts types.Set, apiVhosts []string, appID string) types.Set {
+	// If no vhosts are specified in plan, return all vhosts from API (including cleverapps)
+	if planVhosts.IsNull() || planVhosts.IsUnknown() {
+		normalized := NormalizeVhostsFromAPI(apiVhosts)
+		vhostSet, _ := types.SetValueFrom(context.Background(), types.StringType, normalized)
+		return vhostSet
+	}
+	
+	// If vhosts are specified, return only the user-specified vhosts (no cleverapps)
+	// The plan modifier already normalized these values
+	return planVhosts
 }
 
 // This attributes are used on several runtimes
@@ -101,7 +141,8 @@ var runtimeCommon = map[string]schema.Attribute{
 		ElementType:         types.StringType,
 		Optional:            true,
 		Computed:            true,
-		MarkdownDescription: "Add custom hostname, see [documentation](https://www.clever.cloud/developers/doc/administrate/domain-names/)",
+		MarkdownDescription: "Add custom hostname, see [documentation](https://www.clever.cloud/developers/doc/administrate/domain-names/). Trailing slashes are automatically normalized.",
+		PlanModifiers:       []planmodifier.Set{planmodifiers.VhostNormalizer()},
 	},
 	// APP_FOLDER
 	"app_folder": schema.StringAttribute{

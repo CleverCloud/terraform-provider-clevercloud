@@ -170,8 +170,9 @@ func TestAccPython_basic(t *testing.T) {
 					}
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
-					if len(app.Vhosts) != 1 || app.Vhosts[0].Fqdn != vhost {
-						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), vhost)
+					expectedVhost := vhost + "/"  // API always returns with trailing slash
+					if len(app.Vhosts) != 1 || app.Vhosts[0].Fqdn != expectedVhost {
+						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), expectedVhost)
 					}
 					return nil
 				}),
