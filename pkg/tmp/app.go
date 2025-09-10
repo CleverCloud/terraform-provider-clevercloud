@@ -164,7 +164,7 @@ func (vhosts VHosts) AllAsString() iter.Seq[string] {
 // remove default domain (cleverapps one)
 // Ex: app-7a1f2c81-bb18-4682-95fc-b7187a056150.cleverapps.io
 func (vhosts VHosts) WithoutCleverApps(appId string) VHosts {
-	cleverapps := fmt.Sprintf("%s.cleverapps.io/", strings.ReplaceAll(appId, "_", "-"))
+	cleverapps := fmt.Sprintf("%s.cleverapps.io", strings.ReplaceAll(appId, "_", "-"))
 	result := []VHost{}
 
 	for _, vhost := range vhosts {
@@ -179,7 +179,7 @@ func (vhosts VHosts) WithoutCleverApps(appId string) VHosts {
 }
 
 func (vhosts VHosts) CleverAppsFQDN(appId string) *VHost {
-	cleverapps := fmt.Sprintf("%s.cleverapps.io/", strings.ReplaceAll(appId, "_", "-"))
+	cleverapps := fmt.Sprintf("%s.cleverapps.io", strings.ReplaceAll(appId, "_", "-"))
 
 	for _, vhost := range vhosts {
 		if vhost.Fqdn == cleverapps {
