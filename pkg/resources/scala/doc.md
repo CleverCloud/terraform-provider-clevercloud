@@ -1,3 +1,5 @@
+# Scala
+
 Manage [Scala](https://www.scala-lang.org/) applications.
 
 See [Scala product specification](https://www.clever.cloud/developers/doc/applications/scala/).

@@ -1,3 +1,5 @@
+# Play2
+
 Manage [Play2](https://www.playframework.com/) applications.
 
 See [Play2 product specification](https://www.clever.cloud/developers/guides/play-framework-2/).
@@ -8,12 +10,12 @@ See [Play2 product specification](https://www.clever.cloud/developers/guides/pla
 
 ```terraform
 resource "clevercloud_play2" "myapp" {
-	name = "tf-myapp"
-	region = "par"
-	min_instance_count = 1
-	max_instance_count = 2
-	smallest_flavor = "XS"
-	biggest_flavor = "M"
+    name = "tf-myapp"
+    region = "par"
+    min_instance_count = 1
+    max_instance_count = 2
+    smallest_flavor = "XS"
+    biggest_flavor = "M"
 }
 ```
 
@@ -22,6 +24,7 @@ resource "clevercloud_play2" "myapp" {
 ```terraform
 resource "clevercloud_play2" "myapp" {
     name = "tf-myapp"
+    description = "My play2 website for example.com"
     region = "par"
     min_instance_count = 1
     max_instance_count = 2
@@ -33,5 +36,9 @@ resource "clevercloud_play2" "myapp" {
     deployment {
         repository = "https://github.com/..."
     }
+    vhosts = [
+        "example.com",
+        "www.example.com",
+    ]
 }
 ```

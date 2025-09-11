@@ -1,3 +1,5 @@
+# Static
+
 Manage Static with Apache applications.
 
 See [Static with Apache product specification](https://www.clever.cloud/developers/doc/deploy/application/static/).
@@ -8,12 +10,12 @@ See [Static with Apache product specification](https://www.clever.cloud/develope
 
 ```terraform
 resource "clevercloud_static" "myapp" {
-	name = "tf-myapp"
-	region = "par"
-	min_instance_count = 1
-	max_instance_count = 2
-	smallest_flavor = "XS"
-	biggest_flavor = "M"
+    name = "tf-myapp"
+    region = "par"
+    min_instance_count = 1
+    max_instance_count = 2
+    smallest_flavor = "XS"
+    biggest_flavor = "M"
 }
 ```
 
