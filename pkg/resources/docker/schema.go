@@ -45,7 +45,7 @@ func (r ResourceDocker) Schema(ctx context.Context, req resource.SchemaRequest, 
 			},
 			"container_port": schema.Int64Attribute{
 				Optional:            true,
-				MarkdownDescription: "Set to custom HTTP port if your Docker container runs on custom port",
+				MarkdownDescription: "Set to custom HTTP port if your Docker container runs on custom port.",
 			},
 			"container_port_tcp": schema.Int64Attribute{
 				Optional:            true,
@@ -53,11 +53,11 @@ func (r ResourceDocker) Schema(ctx context.Context, req resource.SchemaRequest, 
 			},
 			"enable_ipv6": schema.BoolAttribute{
 				Optional:           true,
-				DeprecationMessage: "never works, please use `ipv6_cidr`",
+				DeprecationMessage: "never works, please use `ipv6_cidr`.",
 			},
 			"ipv6_cidr": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Activate the support of IPv6 with an IPv6 subnet int the docker daemon",
+				MarkdownDescription: "Activate the support of IPv6 with an IPv6 subnet in the docker daemon.",
 				Validators: []validator.String{
 					pkg.NewValidator("IPv6 CIDR 🍾", func(_ context.Context, req validator.StringRequest, res *validator.StringResponse) {
 						if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
@@ -67,11 +67,11 @@ func (r ResourceDocker) Schema(ctx context.Context, req resource.SchemaRequest, 
 						str := req.ConfigValue.ValueString()
 						ip, _, err := net.ParseCIDR(str)
 						if err != nil {
-							res.Diagnostics.AddAttributeError(req.Path, "invalid IPv6 CIDR provided", err.Error())
+							res.Diagnostics.AddAttributeError(req.Path, "invalid IPv6 CIDR provided.", err.Error())
 						}
 
 						if len(ip) != net.IPv6len {
-							res.Diagnostics.AddAttributeError(req.Path, "invalid IPv6 CIDR provided", "expect an IPv6 before the mask")
+							res.Diagnostics.AddAttributeError(req.Path, "invalid IPv6 CIDR provided", "expect an IPv6 before the mask.")
 						}
 					}),
 				},
@@ -82,15 +82,15 @@ func (r ResourceDocker) Schema(ctx context.Context, req resource.SchemaRequest, 
 			},
 			"registry_user": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "The username to login to a private registry",
+				MarkdownDescription: "The username to login to a private registry.",
 			},
 			"registry_password": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "The password of your username",
+				MarkdownDescription: "The password of your username.",
 			},
 			"daemon_socket_mount": schema.BoolAttribute{
 				Optional:            true,
-				MarkdownDescription: "Set to true to access the host Docker socket from inside your container",
+				MarkdownDescription: "Set to true to access the host Docker socket from inside your container.",
 			},
 		}),
 		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),

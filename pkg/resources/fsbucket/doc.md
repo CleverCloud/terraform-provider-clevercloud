@@ -23,6 +23,7 @@ resource "clevercloud_fsbucket" "my_fsbucket" {
 ## Attribute Reference
 
 * `id` - Generated unique identifier.
+* `name` - Name of the instance.
 * `host` - FS Bucket FTP endpoint.
 * `ftp_username` - FTP username used to authenticate.
 * `ftp_password` - FTP password used to authenticate.
