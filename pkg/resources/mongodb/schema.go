@@ -16,6 +16,7 @@ type MongoDB struct {
 	Port     types.Int64  `tfsdk:"port"`
 	User     types.String `tfsdk:"user"`
 	Password types.String `tfsdk:"password"`
+	Database types.String `tfsdk:"database"`
 }
 
 //go:embed doc.md
@@ -31,6 +32,7 @@ func (r ResourceMongoDB) Schema(_ context.Context, req resource.SchemaRequest, r
 			"port":     schema.Int64Attribute{Computed: true, MarkdownDescription: "Database port"},
 			"user":     schema.StringAttribute{Computed: true, MarkdownDescription: "Login username"},
 			"password": schema.StringAttribute{Computed: true, MarkdownDescription: "Login password"},
+			"database": schema.StringAttribute{Computed: true, MarkdownDescription: "Database name"},
 		}),
 	}
 }
