@@ -16,3 +16,14 @@ resource "clevercloud_keycloak" "my_keycloak" {
 }
 ```
 
+## Argument Reference
+
+* `name` - (Required) Name of the Keycloak.
+* `region` - (Optional) Geographical region where the data will be stored. Defaults to `par`.
+* `plan` - (Optional) The plan size. Defaults to `base`.
+
+## Attribute Reference
+
+* `id` - Generated unique identifier.
+* `name` - Name of the instance.
+* `host` - Keycloak endpoint.

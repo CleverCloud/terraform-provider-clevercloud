@@ -19,3 +19,15 @@ resource "clevercloud_fsbucket" "my_fsbucket" {
 }
 ```
 
+## Argument Reference
+
+* `name` - (Required) Name of the FS Bucket.
+* `region` - (Optional) Geographical region where the data will be stored. Defaults to `par`.
+
+## Attribute Reference
+
+* `id` - Generated unique identifier.
+* `name` - Name of the instance.
+* `host` - FS Bucket FTP endpoint.
+* `ftp_username` - FTP username used to authenticate.
+* `ftp_password` - FTP password used to authenticate.

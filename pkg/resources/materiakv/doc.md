@@ -15,3 +15,16 @@ resource "clevercloud_materia_kv" "my_materiakv" {
   plan = "base"
 }
 ```
+
+## Argument Reference
+
+* `name` - (Required) Name of the Materia KV instance.
+* `region` - (Optional) Geographical region where the data will be stored. Defaults to `par`.
+
+## Attribute Reference
+
+* `id` - Generated unique identifier.
+* `name` - Name of the instance.
+* `host` - Materia KV endpoint.
+* `port` - Materia KV port.
+* `token` - Materia KV authentication token.

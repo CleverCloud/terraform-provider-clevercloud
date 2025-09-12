@@ -13,3 +13,18 @@ List of available providers:
 
 ### Advanced
 
+## Argument Reference
+
+### Generic arguments
+
+* `name` - (Required) Name of the addon.
+* `region` - (Optional) Geographical region where the data will be stored. Defaults to `par`.
+
+### Specific arguments
+
+* `third_party_provider` - (Required) Name of a provider
+
+## Attribute Reference
+
+* `id` - Generated unique identifier.
+* `name` - Name of the instance.
