@@ -108,9 +108,6 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	pg.Uri = pkg.FromStr(addonPG.Uri())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information
@@ -187,9 +184,6 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Update resource
@@ -220,9 +214,6 @@ func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequ
 	state.Name = plan.Name
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource

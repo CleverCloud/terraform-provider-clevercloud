@@ -162,9 +162,6 @@ func (r *ResourcePulsar) Update(ctx context.Context, req resource.UpdateRequest,
 	state.Name = plan.Name
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource

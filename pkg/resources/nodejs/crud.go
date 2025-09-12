@@ -95,9 +95,6 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information
@@ -133,9 +130,6 @@ func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, res
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Update resource

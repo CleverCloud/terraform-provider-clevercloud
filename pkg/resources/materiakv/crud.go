@@ -71,9 +71,6 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 	kv.Token = pkg.FromStr(kvInfo.Token)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information
@@ -118,9 +115,6 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 
 	diags = resp.State.Set(ctx, kv)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Update resource
@@ -143,9 +137,6 @@ func (r *ResourceMateriaKV) Update(ctx context.Context, req resource.UpdateReque
 	}
 	state.Name = plan.Name
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource

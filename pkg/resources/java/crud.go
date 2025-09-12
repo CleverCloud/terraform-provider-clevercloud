@@ -95,9 +95,6 @@ func (r *ResourceJava) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information

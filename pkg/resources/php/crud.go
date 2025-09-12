@@ -97,9 +97,6 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information

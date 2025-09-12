@@ -69,9 +69,6 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 	ad.Configurations = types.MapValueMust(types.StringType, envAsMap)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, ad)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information
@@ -116,9 +113,6 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	diags = resp.State.Set(ctx, ad)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Update resource
@@ -149,9 +143,6 @@ func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, 
 	state.Name = plan.Name
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource
