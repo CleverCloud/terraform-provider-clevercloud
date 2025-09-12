@@ -129,16 +129,16 @@ None.
 
 ### Required
 
-- `biggest_flavor` (String) Biggest instance flavor, if different from smallest, enable auto-scaling
+- `biggest_flavor` (String) Biggest instance flavor, if different from smallest, enable auto-scaling. See [Application types and zones](https://www.clever.cloud/developers/doc/reference/cli/#application-types-and-zones)
 - `max_instance_count` (Number) Maximum instance count, if different from min value, enable auto-scaling
 - `min_instance_count` (Number) Minimum instance count
 - `name` (String) Application name
-- `smallest_flavor` (String) Smallest instance flavor
+- `smallest_flavor` (String) Smallest instance flavor. See [Application types and zones](https://www.clever.cloud/developers/doc/reference/cli/#application-types-and-zones])
 
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
-- `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `build_flavor` (String) Use dedicated instance with given flavor for build phase. See [Application types and zones](https://www.clever.cloud/developers/doc/reference/cli/#application-types-and-zones)
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
@@ -148,7 +148,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `package_manager` (String) Either npm, npm-ci, bun, pnpm, yarn-berry or custom
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
-- `region` (String) Geographical region where the database will be deployed
+- `region` (String) Geographical region where the database will be deployed. See [Application types and zones](https://www.clever.cloud/developers/doc/reference/cli/#application-types-and-zones)
 - `registry` (String) The host of your private repository, available values: github or the registry host
 - `registry_token` (String, Sensitive) Private repository token
 - `start_script` (String) Set custom start script, instead of `npm start`

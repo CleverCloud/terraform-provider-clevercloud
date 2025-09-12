@@ -98,12 +98,12 @@ None.
 ### Required
 
 - `name` (String) Name of the service
-- `plan` (String) Database size and spec
+- `plan` (String) Database size and spec. See (Add-on providers, plans and zones (region))[https://www.clever.cloud/developers/doc/reference/cli/#add-on-providers-plans-and-zones-region]
 
 ### Optional
 
 - `backup` (Boolean) Enable or disable backups for this MySQL add-on. Since backups are included in the add-on price, disabling it has no impact on your billing.
-- `region` (String) Geographical region where the data will be stored
+- `region` (String) Geographical region where the data will be stored. See (Add-on providers, plans and zones (region))[https://www.clever.cloud/developers/doc/reference/cli/#add-on-providers-plans-and-zones-region]
 - `version` (String) MySQL version
 
 ### Read-Only

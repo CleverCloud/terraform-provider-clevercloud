@@ -59,12 +59,12 @@ List of available providers:
 ### Required
 
 - `name` (String) Name of the service
-- `plan` (String) Database size and spec
+- `plan` (String) Database size and spec. See (Add-on providers, plans and zones (region))[https://www.clever.cloud/developers/doc/reference/cli/#add-on-providers-plans-and-zones-region]
 - `third_party_provider` (String) Provider ID
 
 ### Optional
 
-- `region` (String) Geographical region where the data will be stored
+- `region` (String) Geographical region where the data will be stored. See (Add-on providers, plans and zones (region))[https://www.clever.cloud/developers/doc/reference/cli/#add-on-providers-plans-and-zones-region]
 
 ### Read-Only
 

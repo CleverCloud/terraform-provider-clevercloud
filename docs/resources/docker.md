@@ -150,16 +150,16 @@ resource "clevercloud_docker" "docker_instance" {
 
 ### Required
 
-- `biggest_flavor` (String) Biggest instance flavor, if different from smallest, enable auto-scaling
+- `biggest_flavor` (String) Biggest instance flavor, if different from smallest, enable auto-scaling. See [Application types and zones](https://www.clever.cloud/developers/doc/reference/cli/#application-types-and-zones)
 - `max_instance_count` (Number) Maximum instance count, if different from min value, enable auto-scaling
 - `min_instance_count` (Number) Minimum instance count
 - `name` (String) Application name
-- `smallest_flavor` (String) Smallest instance flavor
+- `smallest_flavor` (String) Smallest instance flavor. See [Application types and zones](https://www.clever.cloud/developers/doc/reference/cli/#application-types-and-zones])
 
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
-- `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `build_flavor` (String) Use dedicated instance with given flavor for build phase. See [Application types and zones](https://www.clever.cloud/developers/doc/reference/cli/#application-types-and-zones)
 - `container_port` (Number) Set to custom HTTP port if your Docker container runs on custom port.
 - `container_port_tcp` (Number) Set to custom TCP port if your Docker container runs on custom port.
 - `daemon_socket_mount` (Boolean) Set to true to access the host Docker socket from inside your container.
@@ -173,7 +173,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `ipv6_cidr` (String) Activate the support of IPv6 with an IPv6 subnet in the docker daemon.
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
-- `region` (String) Geographical region where the database will be deployed
+- `region` (String) Geographical region where the database will be deployed. See [Application types and zones](https://www.clever.cloud/developers/doc/reference/cli/#application-types-and-zones)
 - `registry_password` (String) The password of your username.
 - `registry_url` (String) The server of your private registry (optional).	Docker’s public registry
 - `registry_user` (String) The username to login to a private registry.
