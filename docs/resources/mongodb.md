@@ -29,6 +29,7 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mongo
 ### Read-Only
 
 - `creation_date` (Number) Date of database creation
+- `database` (String) Database name
 - `host` (String) Database host, used to connect to
 - `id` (String) Generated unique identifier
 - `password` (String) Login password
