@@ -173,6 +173,7 @@ type MongoDB struct {
 	Status   string `json:"status" example:"ACTIVE"`
 	User     string `tfsdk:"user"`
 	Password string `tfsdk:"password"`
+	Database string `tfsdk:"database"`
 }
 
 // Use Addon ID
