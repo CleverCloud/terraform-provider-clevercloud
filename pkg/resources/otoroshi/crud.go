@@ -69,14 +69,16 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 	}
 	addonRes := res.Payload()
 
+	otoroshi.ID = pkg.FromStr(addonRes.RealID)
+	otoroshi.CreationDate = pkg.FromI(addonRes.CreationDate)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, otoroshi)...)
+
 	envRes := tmp.GetAddonEnv(ctx, r.cc, r.org, addonRes.ID)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", envRes.Error().Error())
 		return
 	}
-
-	otoroshi.ID = pkg.FromStr(addonRes.RealID)
-	otoroshi.CreationDate = pkg.FromI(addonRes.CreationDate)
 
 	envVars := *envRes.Payload()
 	tflog.Debug(ctx, "API response", map[string]any{

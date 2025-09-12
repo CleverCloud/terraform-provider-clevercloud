@@ -116,9 +116,6 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 
 	diags = resp.State.Set(ctx, kc)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Update resource
@@ -149,9 +146,6 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 	state.Name = plan.Name
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource
