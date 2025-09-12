@@ -129,9 +129,6 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 	fsbucket.FTPPassword = addonMap["BUCKET_FTP_PASSWORD"]
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, fsbucket)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Update resource
@@ -162,9 +159,6 @@ func (r *ResourceFSBucket) Update(ctx context.Context, req resource.UpdateReques
 	state.Name = plan.Name
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource

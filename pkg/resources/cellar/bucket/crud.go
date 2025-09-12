@@ -74,9 +74,6 @@ func (r *ResourceCellarBucket) Read(ctx context.Context, req resource.ReadReques
 	// nothing to update yet
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Update resource
