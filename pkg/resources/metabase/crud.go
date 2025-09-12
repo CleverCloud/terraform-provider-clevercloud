@@ -89,9 +89,6 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 	mb.Host = pkg.FromStr(hostEnvVar.Value)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information
@@ -166,9 +163,6 @@ func (r *ResourceMetabase) Update(ctx context.Context, req resource.UpdateReques
 	state.Name = plan.Name
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource

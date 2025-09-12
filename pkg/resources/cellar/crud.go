@@ -120,9 +120,6 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 	cellar.KeySecret = pkg.FromStr(creds.KeySecret)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Update resource
@@ -153,9 +150,6 @@ func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest,
 	state.Name = plan.Name
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource

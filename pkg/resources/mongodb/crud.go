@@ -84,9 +84,6 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 	mg.Password = pkg.FromStr(addonMG.Password)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information
@@ -136,9 +133,6 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 
 	diags := resp.State.Set(ctx, mg)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Update resource
@@ -169,9 +163,6 @@ func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest
 	state.Name = plan.Name
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource
