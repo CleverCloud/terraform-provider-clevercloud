@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -83,6 +85,21 @@ type stringValidator struct {
 
 func NewStringValidator(description string, fn func(context.Context, validator.StringRequest, *validator.StringResponse)) validator.String {
 	return &stringValidator{description, fn}
+}
+
+func NewStringEnumValidator(description string, values ...string) validator.String {
+	return &stringValidator{
+		description,
+		func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
+			if !slices.Contains(values, req.ConfigValue.ValueString()) {
+				res.Diagnostics.AddAttributeError(
+					req.Path,
+					"invalid enum value",
+					fmt.Sprintf("value must be one of %s", strings.Join(values, ", ")),
+				)
+			}
+		},
+	}
 }
 
 func (sv *stringValidator) Description(context.Context) string {
