@@ -30,7 +30,7 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	environment := plan.toEnv(ctx, resp.Diagnostics)
+	environment := plan.toEnv(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -94,7 +94,6 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 				return
 			}
 		}
-
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -152,11 +151,11 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	planEnvironment := plan.toEnv(ctx, res.Diagnostics)
+	planEnvironment := plan.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	stateEnvironment := state.toEnv(ctx, res.Diagnostics)
+	stateEnvironment := state.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -218,5 +217,3 @@ func (r *ResourceFrankenPHP) Delete(ctx context.Context, req resource.DeleteRequ
 		resp.Diagnostics.AddError("failed to delete app", deleteAppRes.Error().Error())
 	}
 }
-
-// Import resource
