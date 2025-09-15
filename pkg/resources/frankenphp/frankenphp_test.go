@@ -5,8 +5,10 @@ import (
 	_ "embed"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
@@ -20,7 +22,6 @@ import (
 )
 
 func TestAccFrankenPHP_basic(t *testing.T) {
-	t.Logf("starting....")
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-frankenphp")
 	fullName := fmt.Sprintf("clevercloud_frankenphp.%s", rName)
@@ -51,16 +52,88 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(false)),
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
+					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+					if appRes.HasError() {
+						return nil, appRes.Error()
+					}
+					return appRes.Payload(), nil
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
+					if len(app.Vhosts) != 1 || !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io/") {
+						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), "1 cleverapps.io domain")
+					}
+					return nil
+				}),
 			},
 		}, {
 			ResourceName: rName,
 			Config: providerBlock.Append(
-				frankenphpBlock.SetOneValue("min_instance_count", 2).SetOneValue("max_instance_count", 6).SetOneValue("dev_dependencies", true),
+				frankenphpBlock.
+					SetOneValue("min_instance_count", 2).
+					SetOneValue("max_instance_count", 6).
+					SetOneValue("dev_dependencies", true).
+					SetOneValue("vhosts", []string{"test-frankenphp-1.com", "test-frankenphp-2.com"}),
 			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("max_instance_count"), knownvalue.Int64Exact(6)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(true)),
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
+					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+					if appRes.HasError() {
+						return nil, appRes.Error()
+					}
+					return appRes.Payload(), nil
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
+					expectedVhosts := []string{"test-frankenphp-1.com/", "test-frankenphp-2.com/"}
+					if len(app.Vhosts) != 2 {
+						return assertError("invalid vhost count", "vhosts", len(app.Vhosts), 2)
+					}
+
+					for _, expectedVhost := range expectedVhosts {
+						found := false
+						for _, vhost := range app.Vhosts {
+							if vhost.Fqdn == expectedVhost {
+								found = true
+								break
+							}
+						}
+						if !found {
+							return assertError("missing expected vhost", "vhosts", app.Vhosts.AsString(), expectedVhost)
+						}
+					}
+
+					for _, vhost := range app.Vhosts {
+						if strings.HasSuffix(vhost.Fqdn, ".cleverapps.io/") {
+							return assertError("cleverapps.io should not be present with custom vhosts", "vhosts", app.Vhosts.AsString(), "no cleverapps.io domain")
+						}
+					}
+
+					return nil
+				}),
+			},
+		}, {
+			ResourceName: rName,
+			Config: providerBlock.Append(
+				frankenphpBlock.
+					SetOneValue("min_instance_count", 2).
+					SetOneValue("max_instance_count", 6).
+					SetOneValue("dev_dependencies", true).
+					UnsetOneValue("vhosts"),
+			).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
+					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+					if appRes.HasError() {
+						return nil, appRes.Error()
+					}
+					return appRes.Payload(), nil
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
+					if len(app.Vhosts) != 1 || !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io/") {
+						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), "1 cleverapps.io domain")
+					}
+					return nil
+				}),
 			},
 		}},
 		CheckDestroy: func(state *terraform.State) error {
@@ -81,4 +154,8 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 			return nil
 		},
 	})
+}
+
+func assertError(msg, param string, got, expect any) error {
+	return fmt.Errorf("%s, %s = '%v', expect: '%v'", msg, param, got, expect)
 }
