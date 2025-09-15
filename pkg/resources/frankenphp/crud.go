@@ -2,6 +2,7 @@ package frankenphp
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -155,6 +156,10 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 	if res.Diagnostics.HasError() {
 		return
 	}
+	stateEnvironment := state.toEnv(ctx, res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
 
 	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
 	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
@@ -179,10 +184,11 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
-		Environment:  planEnvironment,
-		VHosts:       vhosts,
-		Dependencies: dependencies,
-		Deployment:   plan.toDeployment(r.GitAuth()),
+		Environment:    planEnvironment,
+		VHosts:         vhosts,
+		Dependencies:   dependencies,
+		Deployment:     plan.toDeployment(r.GitAuth()),
+		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
 	updateAppRes, diags := application.UpdateApp(ctx, updateAppReq)
@@ -190,6 +196,8 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 	if res.Diagnostics.HasError() {
 		return
 	}
+
+	plan.VHosts = pkg.FromSetString(updateAppRes.Application.Vhosts.AsString(), &res.Diagnostics)
 
 	plan.ID = pkg.FromStr(updateAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(updateAppRes.Application.DeployURL)
