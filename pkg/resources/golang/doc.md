@@ -1,3 +1,5 @@
+# Go / Golang
+
 Manage [Go](https://go.dev/) applications.
 
 See [Go product specification](https://www.clever.cloud/developers/doc/applications/golang).
@@ -8,12 +10,12 @@ See [Go product specification](https://www.clever.cloud/developers/doc/applicati
 
 ```terraform
 resource "clevercloud_go" "myapp" {
-	name = "tf-myapp"
-	region = "par"
-	min_instance_count = 1
-	max_instance_count = 2
-	smallest_flavor = "XS"
-	biggest_flavor = "M"
+    name = "tf-myapp"
+    region = "par"
+    min_instance_count = 1
+    max_instance_count = 2
+    smallest_flavor = "XS"
+    biggest_flavor = "M"
 }
 ```
 

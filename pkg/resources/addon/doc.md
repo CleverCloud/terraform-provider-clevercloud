@@ -1,3 +1,5 @@
+# Addon
+
 Manage any add-on through the [addon-provider API](https://www.clever.cloud/developers/doc/marketplace/#add-on-provider-requests)
 
 
