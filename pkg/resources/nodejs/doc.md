@@ -1,3 +1,5 @@
+# Node / Nodejs
+
 Manage [Node.js](https://nodejs.org/) & [Bun](https://bun.sh/) applications.
 
 See [Node.js & Bun product specification](https://www.clever.cloud/developers/doc/applications/nodejs/).
@@ -8,12 +10,12 @@ See [Node.js & Bun product specification](https://www.clever.cloud/developers/do
 
 ```terraform
 resource "clevercloud_nodejs" "myapp" {
-	name = "tf-myapp"
-	region = "par"
-	min_instance_count = 1
-	max_instance_count = 2
-	smallest_flavor = "XS"
-	biggest_flavor = "M"
+    name = "tf-myapp"
+    region = "par"
+    min_instance_count = 1
+    max_instance_count = 2
+    smallest_flavor = "XS"
+    biggest_flavor = "M"
 }
 ```
 

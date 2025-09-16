@@ -1,3 +1,5 @@
+# Python
+
 Manage [Python](https://python.org/) applications.
 
 See [Python product](https://www.clever.cloud/developers/doc/applications/python/) specification.
@@ -8,12 +10,12 @@ See [Python product](https://www.clever.cloud/developers/doc/applications/python
 
 ```terraform
 resource "clevercloud_python" "myapp" {
-	name = "tf-myapp"
-	region = "par"
-	min_instance_count = 1
-	max_instance_count = 2
-	smallest_flavor = "XS"
-	biggest_flavor = "M"
+    name = "tf-myapp"
+    region = "par"
+    min_instance_count = 1
+    max_instance_count = 2
+    smallest_flavor = "XS"
+    biggest_flavor = "M"
 }
 ```
 

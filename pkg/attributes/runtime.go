@@ -73,21 +73,21 @@ var runtimeCommon = map[string]schema.Attribute{
 	},
 	"smallest_flavor": schema.StringAttribute{
 		Required:            true,
-		MarkdownDescription: "Smallest instance flavor",
+		MarkdownDescription: "Smallest instance flavor. See [Application types and zones](https://www.clever.cloud/developers/doc/reference/cli/#application-types-and-zones])",
 	},
 	"biggest_flavor": schema.StringAttribute{
 		Required:            true,
-		MarkdownDescription: "Biggest instance flavor, if different from smallest, enable auto-scaling",
+		MarkdownDescription: "Biggest instance flavor, if different from smallest, enable auto-scaling. See [Application types and zones](https://www.clever.cloud/developers/doc/reference/cli/#application-types-and-zones])",
 	},
 	"build_flavor": schema.StringAttribute{
 		Optional:            true,
-		MarkdownDescription: "Use dedicated instance with given flavor for build phase",
+		MarkdownDescription: "Use dedicated instance with given flavor for build phase. See [Application types and zones](https://www.clever.cloud/developers/doc/reference/cli/#application-types-and-zones)",
 	},
 	"region": schema.StringAttribute{
 		Optional:            true,
 		Computed:            true,
 		Default:             stringdefault.StaticString("par"),
-		MarkdownDescription: "Geographical region where the database will be deployed",
+		MarkdownDescription: "Geographical region where the database will be deployed. See [Application types and zones](https://www.clever.cloud/developers/doc/reference/cli/#application-types-and-zones)",
 	},
 	"sticky_sessions": schema.BoolAttribute{
 		Optional:            true,

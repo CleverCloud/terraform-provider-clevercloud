@@ -1,3 +1,5 @@
+# Rust
+
 Manage [Rust](https://www.rust-lang.org/) applications.
 
 See [Rust product specification](https://www.clever.cloud/developers/doc/applications/rust/).
@@ -8,12 +10,12 @@ See [Rust product specification](https://www.clever.cloud/developers/doc/applica
 
 ```terraform
 resource "clevercloud_rust" "myapp" {
-	name = "tf-myapp"
-	region = "par"
-	min_instance_count = 1
-	max_instance_count = 2
-	smallest_flavor = "XS"
-	biggest_flavor = "M"
+    name = "tf-myapp"
+    region = "par"
+    min_instance_count = 1
+    max_instance_count = 2
+    smallest_flavor = "XS"
+    biggest_flavor = "M"
 }
 ```
 
