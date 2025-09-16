@@ -27,7 +27,7 @@ func (r ResourceRedis) Schema(_ context.Context, req resource.SchemaRequest, res
 		Attributes: attributes.WithAddonCommons(map[string]schema.Attribute{
 			"host":  schema.StringAttribute{Computed: true, MarkdownDescription: "Database host, used to connect to"},
 			"port":  schema.Int64Attribute{Computed: true, MarkdownDescription: "Database port"},
-			"token": schema.StringAttribute{Computed: true, MarkdownDescription: "Token to authenticate"},
+			"token": schema.StringAttribute{Computed: true, MarkdownDescription: "Token to authenticate", Sensitive: true},
 		}),
 	}
 }
