@@ -4,10 +4,8 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"net/http"
 	"regexp"
 	"testing"
-	"time"
 
 	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -288,25 +286,4 @@ func TestAccRuby_basic(t *testing.T) {
 // assertError helper function for cleaner error assertions
 func assertError(message string, got, want any) error {
 	return fmt.Errorf("%s: got %v, want %v", message, got, want)
-}
-
-// healthCheck performs a basic HTTP health check
-func healthCheck(fqdn string) <-chan struct{} {
-	ch := make(chan struct{})
-	go func() {
-		defer close(ch)
-		url := fmt.Sprintf("https://%s", fqdn)
-		for i := 0; i < 30; i++ { // Try for ~2 minutes (30 * 4s)
-			resp, err := http.Get(url)
-			if err == nil && resp.StatusCode < 500 {
-				resp.Body.Close()
-				return
-			}
-			if resp != nil {
-				resp.Body.Close()
-			}
-			time.Sleep(4 * time.Second)
-		}
-	}()
-	return ch
 }

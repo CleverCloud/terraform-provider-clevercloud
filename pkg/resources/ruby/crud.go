@@ -115,9 +115,6 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information
@@ -248,16 +245,13 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 
 // Delete resource
 func (r *ResourceRuby) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var app Ruby
-
-	diags := req.State.Get(ctx, &app)
-	resp.Diagnostics.Append(diags...)
+	state := helper.StateFrom[Ruby](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Ruby DELETE", map[string]any{"app": app})
+	tflog.Debug(ctx, "Ruby DELETE", map[string]any{"app": state.ID.ValueString()})
 
-	res := tmp.DeleteApp(ctx, r.cc, r.org, app.ID.ValueString())
+	res := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
