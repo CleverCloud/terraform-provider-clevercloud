@@ -21,12 +21,12 @@ type Addon struct {
 var addonCommon = map[string]schema.Attribute{
 	"id":   schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 	"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
-	"plan": schema.StringAttribute{Required: true, MarkdownDescription: "Database size and spec"},
+	"plan": schema.StringAttribute{Required: true, MarkdownDescription: "Database size and spec. See (Add-on providers, plans and zones (region))[https://www.clever.cloud/developers/doc/reference/cli/#add-on-providers-plans-and-zones-region]"},
 	"region": schema.StringAttribute{
 		Optional:            true,
 		Computed:            true,
 		Default:             stringdefault.StaticString("par"),
-		MarkdownDescription: "Geographical region where the data will be stored",
+		MarkdownDescription: "Geographical region where the data will be stored. See (Add-on providers, plans and zones (region))[https://www.clever.cloud/developers/doc/reference/cli/#add-on-providers-plans-and-zones-region]",
 	},
 	"creation_date": schema.Int64Attribute{Computed: true, MarkdownDescription: "Date of database creation", PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()}},
 }
