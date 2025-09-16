@@ -34,4 +34,4 @@ See [Pulsar product specification](https://www.clever.cloud/developers/doc/addon
 - `id` (String) Generated unique identifier
 - `namespace` (String) Pulsar namespace
 - `tenant` (String) Pulsar tenant
-- `token` (String) Pulsar authentication token
+- `token` (String, Sensitive) Pulsar authentication token
