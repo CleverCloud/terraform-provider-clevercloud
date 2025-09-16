@@ -6,7 +6,7 @@ description: |-
   This resource allows you to create and manage an FS Bucket on Clever Cloud.
   FS Bucket is a managed object storage solution that provides S3-compatible storage.
   See FS Bucket product specification https://www.clever.cloud/developers/doc/addons/fs-bucket/.
-  Example Usage
+  Example usage
   
   resource "clevercloud_fsbucket" "my_fsbucket" {
     name = "my-fsbucket"
@@ -21,7 +21,7 @@ description: |-
 
 # clevercloud_fsbucket (Resource)
 
-## FS Bucket Resource
+# FS Bucket Resource
 
 This resource allows you to create and manage an FS Bucket on Clever Cloud.
 
@@ -29,7 +29,7 @@ FS Bucket is a managed object storage solution that provides S3-compatible stora
 
 See [FS Bucket product specification](https://www.clever.cloud/developers/doc/addons/fs-bucket/).
 
-## Example Usage
+## Example usage
 
 ```terraform
 resource "clevercloud_fsbucket" "my_fsbucket" {
