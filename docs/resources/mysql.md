@@ -36,5 +36,5 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 - `id` (String) Generated unique identifier
 - `password` (String) Login password
 - `port` (Number) Database port
-- `uri` (String) Database connection string (without credentials)
+- `uri` (String, Sensitive) Database connection string
 - `user` (String) Login username
