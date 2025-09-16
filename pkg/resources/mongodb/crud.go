@@ -64,6 +64,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 	mg.User = pkg.FromStr(addonMG.User)
 	mg.Password = pkg.FromStr(addonMG.Password)
 	mg.Database = pkg.FromStr(addonMG.Database)
+	mg.Uri = pkg.FromStr(addonMG.Uri())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 }
@@ -113,6 +114,7 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 	mg.User = pkg.FromStr(addonMG.User)
 	mg.Password = pkg.FromStr(addonMG.Password)
 	mg.Database = pkg.FromStr(addonMG.Database)
+	mg.Uri = pkg.FromStr(addonMG.Uri())
 
 	diags := resp.State.Set(ctx, mg)
 	resp.Diagnostics.Append(diags...)
