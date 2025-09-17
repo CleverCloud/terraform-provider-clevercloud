@@ -3,6 +3,7 @@ package attributes
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -14,9 +15,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
-
-	"go.clever-cloud.com/terraform-provider/pkg/plan"
 )
+
+type VHost struct {
+	Vhost     types.String `tfsdk:"vhost"`
+	PathBegin types.String `tfsdk:"path_begin"`
+}
 
 type Runtime struct {
 	ID               types.String `tfsdk:"id"`
@@ -30,7 +34,7 @@ type Runtime struct {
 	Region           types.String `tfsdk:"region"`
 	StickySessions   types.Bool   `tfsdk:"sticky_sessions"`
 	RedirectHTTPS    types.Bool   `tfsdk:"redirect_https"`
-	VHosts           types.Set    `tfsdk:"vhosts"`
+	VHosts           types.List   `tfsdk:"vhosts"`
 	DeployURL        types.String `tfsdk:"deploy_url"`
 	Dependencies     types.Set    `tfsdk:"dependencies"`
 	Deployment       *Deployment  `tfsdk:"deployment"`
@@ -48,9 +52,37 @@ func (r Runtime) DependenciesAsString(ctx context.Context, diags *diag.Diagnosti
 }
 
 func (r Runtime) VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) []string {
-	vhosts := []string{}
-	diags.Append(r.VHosts.ElementsAs(ctx, &vhosts, true)...)
-	return vhosts
+	if r.VHosts.IsNull() || r.VHosts.IsUnknown() {
+		return []string{}
+	}
+
+	var vhosts []VHost
+	diags.Append(r.VHosts.ElementsAs(ctx, &vhosts, false)...)
+	if diags.HasError() {
+		return []string{}
+	}
+
+	result := make([]string, 0, len(vhosts))
+	for _, vh := range vhosts {
+		if vh.Vhost.IsNull() || vh.Vhost.IsUnknown() {
+			continue
+		}
+
+		vhostStr := vh.Vhost.ValueString()
+		pathBegin := "/"
+		if !vh.PathBegin.IsNull() && !vh.PathBegin.IsUnknown() {
+			pathBegin = vh.PathBegin.ValueString()
+		}
+
+		// Combine vhost with path_begin for API format
+		if pathBegin == "/" {
+			result = append(result, vhostStr)
+		} else {
+			result = append(result, vhostStr+pathBegin)
+		}
+	}
+
+	return result
 }
 
 // This attributes are used on several runtimes
@@ -104,12 +136,41 @@ var runtimeCommon = map[string]schema.Attribute{
 		Default:             booldefault.StaticBool(false),
 		Computed:            true,
 	},
-	"vhosts": schema.SetAttribute{
-		ElementType:         types.StringType,
+	"vhosts": schema.ListNestedAttribute{
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: map[string]schema.Attribute{
+				"vhost": schema.StringAttribute{
+					Required:            true,
+					MarkdownDescription: "VHost name",
+					Validators: []validator.String{
+						pkg.NewValidatorRegex("Valid hostname format", pkg.VhostValidRegExp),
+					},
+				},
+				"path_begin": schema.StringAttribute{
+					Optional:            true,
+					Computed:            true,
+					Default:             stringdefault.StaticString("/"),
+					MarkdownDescription: "Path extension",
+					Validators: []validator.String{
+						pkg.NewValidator("Path must start with /", func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
+							if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+								return
+							}
+							value := req.ConfigValue.ValueString()
+							if !strings.HasPrefix(value, "/") {
+								res.Diagnostics.AddAttributeError(
+									req.Path,
+									"Invalid path_begin format",
+									fmt.Sprintf("path_begin must start with '/' (got: '%s')", value),
+								)
+							}
+						}),
+					},
+				},
+			},
+		},
 		Optional:            true,
-		Computed:            true,
-		MarkdownDescription: "Add custom hostname, see [documentation](https://www.clever.cloud/developers/doc/administrate/domain-names/)",
-		PlanModifiers:       []planmodifier.Set{plan.NormalizeVHosts()},
+		MarkdownDescription: "List of virtual hosts",
 	},
 	// APP_FOLDER
 	"app_folder": schema.StringAttribute{
