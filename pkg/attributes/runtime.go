@@ -14,6 +14,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+
+	"go.clever-cloud.com/terraform-provider/pkg/plan"
 )
 
 type Runtime struct {
@@ -107,6 +109,7 @@ var runtimeCommon = map[string]schema.Attribute{
 		Optional:            true,
 		Computed:            true,
 		MarkdownDescription: "Add custom hostname, see [documentation](https://www.clever.cloud/developers/doc/administrate/domain-names/)",
+		PlanModifiers:       []planmodifier.Set{plan.NormalizeVHosts()},
 	},
 	// APP_FOLDER
 	"app_folder": schema.StringAttribute{
