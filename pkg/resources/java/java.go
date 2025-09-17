@@ -3,18 +3,13 @@ package java
 import (
 	"context"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
-
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"go.clever-cloud.dev/client"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
 type ResourceJava struct {
-	// war /
+	helper.Configurer
 	profile string
-	cc      *client.Client
-	org     string
-	gitAuth *http.BasicAuth
 }
 
 func NewResourceJava(profile string) func() resource.Resource {

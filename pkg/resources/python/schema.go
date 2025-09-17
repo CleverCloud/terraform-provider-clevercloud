@@ -61,9 +61,9 @@ func (py Python) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]s
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSet(py.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-	pkg.IfIsSet(py.PythonVersion, func(version string) { env["CC_PYTHON_VERSION"] = version })
-	pkg.IfIsSet(py.PipRequirements, func(pipReqFile string) { env["CC_PIP_REQUIREMENTS_FILE"] = pipReqFile })
+	pkg.IfIsSetStr(py.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetStr(py.PythonVersion, func(version string) { env["CC_PYTHON_VERSION"] = version })
+	pkg.IfIsSetStr(py.PipRequirements, func(pipReqFile string) { env["CC_PIP_REQUIREMENTS_FILE"] = pipReqFile })
 
 	env = pkg.Merge(env, py.Hooks.ToEnv())
 	return env

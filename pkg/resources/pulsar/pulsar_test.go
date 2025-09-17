@@ -63,7 +63,7 @@ func TestAccPulsar_basic(t *testing.T) {
 			},
 		}, {
 			ResourceName: rName,
-			Config:       providerBlock.Append(pulsarBlock.SetOneValue("name", rNameEdited)).String(),
+			Config:       providerBlock.Append(pulsarBlock.SetOneValue("name", rNameEdited).SetOneValue("retention_period", 120).SetOneValue("retention_size", 1024)).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^pulsar_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rNameEdited)),
@@ -73,6 +73,8 @@ func TestAccPulsar_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tenant"), knownvalue.StringExact(tests.ORGANISATION)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("namespace"), knownvalue.NotNull()),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("token"), knownvalue.NotNull()),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("retention_period"), knownvalue.Int64Exact(120)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("retention_size"), knownvalue.Int64Exact(1024)),
 			},
 		}},
 	})
