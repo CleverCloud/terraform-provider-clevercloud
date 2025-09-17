@@ -199,7 +199,7 @@ type KeycloakApplication struct {
 
 // Not working ?
 func GetKeycloak(ctx context.Context, cc *client.Client, organisationID, keycloakID string) client.Response[Keycloak] {
-	path := fmt.Sprintf("v4/keycloaks/organisations/%s/keycloaks/%s", organisationID, keycloakID)
+	path := fmt.Sprintf("/v4/keycloaks/organisations/%s/keycloaks/%s", organisationID, keycloakID)
 	return client.Get[Keycloak](ctx, cc, path)
 }
 
@@ -217,7 +217,7 @@ type OtoroshiInfo struct {
 	Features              map[string]any    `json:"features"`
 	EnvVars               map[string]string `json:"envVars"`
 	APIClientID           string            // Extracted from envVars
-	APIClientSecret       string            // Extracted from envVars  
+	APIClientSecret       string            // Extracted from envVars
 	APIURL                string            // Extracted from envVars
 	InitialAdminLogin     string            // Extracted from envVars
 	InitialAdminPassword  string            // Extracted from envVars
@@ -232,20 +232,20 @@ type OtoroshiAPI struct {
 func GetOtoroshi(ctx context.Context, cc *client.Client, otoroshiID string) client.Response[OtoroshiInfo] {
 	path := fmt.Sprintf("/v4/addon-providers/addon-otoroshi/addons/%s", otoroshiID)
 	resp := client.Get[OtoroshiInfo](ctx, cc, path)
-	
+
 	// Extract specific env vars to dedicated fields if response is successful
 	if !resp.HasError() && resp.Payload() != nil {
 		info := resp.Payload()
 		if info.EnvVars != nil {
 			info.APIClientID = info.EnvVars["CC_OTOROSHI_API_CLIENT_ID"]
-			info.APIClientSecret = info.EnvVars["CC_OTOROSHI_API_CLIENT_SECRET"] 
+			info.APIClientSecret = info.EnvVars["CC_OTOROSHI_API_CLIENT_SECRET"]
 			info.APIURL = info.EnvVars["CC_OTOROSHI_API_URL"]
 			info.InitialAdminLogin = info.EnvVars["CC_OTOROSHI_INITIAL_ADMIN_LOGIN"]
 			info.InitialAdminPassword = info.EnvVars["CC_OTOROSHI_INITIAL_ADMIN_PASSWORD"]
 			info.URL = info.EnvVars["CC_OTOROSHI_URL"]
 		}
 	}
-	
+
 	return resp
 }
 
