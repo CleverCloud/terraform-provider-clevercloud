@@ -114,16 +114,16 @@ func (p *Docker) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]s
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSet(p.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetStr(p.AppFolder, func(s string) { env["APP_FOLDER"] = s })
 
 	// Docker specific
-	pkg.IfIsSet(p.Dockerfile, func(s string) { env["CC_DOCKERFILE"] = s })
+	pkg.IfIsSetStr(p.Dockerfile, func(s string) { env["CC_DOCKERFILE"] = s })
 	pkg.IfIsSetI(p.ContainerPort, func(i int64) { env["CC_DOCKER_EXPOSED_HTTP_PORT"] = fmt.Sprintf("%d", i) })
 	pkg.IfIsSetI(p.ContainerPortTCP, func(i int64) { env["CC_DOCKER_EXPOSED_TCP_PORT"] = fmt.Sprintf("%d", i) })
-	pkg.IfIsSet(p.IPv6Cidr, func(s string) { env["CC_DOCKER_FIXED_CIDR_V6"] = s })
-	pkg.IfIsSet(p.RegistryURL, func(s string) { env["CC_DOCKER_LOGIN_SERVER"] = s })
-	pkg.IfIsSet(p.RegistryUser, func(s string) { env["CC_DOCKER_LOGIN_USERNAME"] = s })
-	pkg.IfIsSet(p.RegistryPassword, func(s string) { env["CC_DOCKER_LOGIN_PASSWORD"] = s })
+	pkg.IfIsSetStr(p.IPv6Cidr, func(s string) { env["CC_DOCKER_FIXED_CIDR_V6"] = s })
+	pkg.IfIsSetStr(p.RegistryURL, func(s string) { env["CC_DOCKER_LOGIN_SERVER"] = s })
+	pkg.IfIsSetStr(p.RegistryUser, func(s string) { env["CC_DOCKER_LOGIN_USERNAME"] = s })
+	pkg.IfIsSetStr(p.RegistryPassword, func(s string) { env["CC_DOCKER_LOGIN_PASSWORD"] = s })
 	pkg.IfIsSetB(p.DaemonSocketMount, func(e bool) { env["CC_MOUNT_DOCKER_SOCKET"] = strconv.FormatBool(e) })
 
 	env = pkg.Merge(env, p.Hooks.ToEnv())

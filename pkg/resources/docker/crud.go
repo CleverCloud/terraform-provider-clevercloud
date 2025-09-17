@@ -4,35 +4,13 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
-
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
-func (r *ResourceDocker) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceDocker.Configure()")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
-		r.gitAuth = provider.GitAuth()
-	}
-
-	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
-}
 
 // Create a new resource
 func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -43,7 +21,7 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "docker", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "docker", resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -61,8 +39,8 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	createAppReq := application.CreateReq{
-		Client:       r.cc,
-		Organization: r.org,
+		Client:       r.Client(),
+		Organization: r.Organization(),
 		Application: tmp.CreateAppRequest{
 			Name:            plan.Name.ValueString(),
 			Deploy:          "git",
@@ -82,7 +60,7 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		},
 		Environment:  environment,
 		VHosts:       vhosts,
-		Deployment:   plan.toDeployment(r.gitAuth),
+		Deployment:   plan.toDeployment(r.GitAuth()),
 		Dependencies: dependencies,
 	}
 
@@ -106,8 +84,8 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
 			deleteVhostRes := tmp.DeleteAppVHost(
 				ctx,
-				r.cc,
-				r.org,
+				r.Client(),
+				r.Organization(),
 				plan.ID.ValueString(),
 				vhost,
 			)
@@ -119,9 +97,6 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information
@@ -133,7 +108,7 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	app, diags := application.ReadApp(ctx, r.cc, r.org, state.ID.ValueString())
+	app, diags := application.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -174,7 +149,7 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "docker", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "docker", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -196,8 +171,8 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 	// Get the updated values from plan and instance
 	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
-		Client:       r.cc,
-		Organization: r.org,
+		Client:       r.Client(),
+		Organization: r.Organization(),
 		Application: tmp.UpdateAppReq{
 			Name:            plan.Name.ValueString(),
 			Deploy:          "git",
@@ -218,7 +193,7 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
 		Dependencies:   dependencies,
-		Deployment:     plan.toDeployment(r.gitAuth),
+		Deployment:     plan.toDeployment(r.GitAuth()),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
@@ -247,7 +222,7 @@ func (r *ResourceDocker) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 	tflog.Debug(ctx, "DOCKER DELETE", map[string]any{"state": state})
 
-	res := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
+	res := tmp.DeleteApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -258,12 +233,4 @@ func (r *ResourceDocker) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	resp.State.RemoveResource(ctx)
-}
-
-// Import resource
-func (r *ResourceDocker) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
 }

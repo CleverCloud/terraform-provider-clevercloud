@@ -5,37 +5,18 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
-
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
-func (r *ResourceMongoDB) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceMongoDB.Configure()")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
-	}
-}
 
 // Create a new resource
 func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	mg := helper.PlanFrom[MongoDB](ctx, req.Plan, &resp.Diagnostics)
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
+	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
@@ -56,7 +37,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		Region:     mg.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
+	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
@@ -68,7 +49,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 
-	mgInfoRes := tmp.GetMongoDB(ctx, r.cc, res.Payload().ID)
+	mgInfoRes := tmp.GetMongoDB(ctx, r.Client(), res.Payload().ID)
 	if mgInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get MongoDB connection infos", mgInfoRes.Error().Error())
 		return
@@ -82,11 +63,9 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 	mg.Port = pkg.FromI(int64(addonMG.Port))
 	mg.User = pkg.FromStr(addonMG.User)
 	mg.Password = pkg.FromStr(addonMG.Password)
+	mg.Database = pkg.FromStr(addonMG.Database)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information
@@ -98,13 +77,13 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, mg.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), mg.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	addonMGRes := tmp.GetMongoDB(ctx, r.cc, addonId)
+	addonMGRes := tmp.GetMongoDB(ctx, r.Client(), addonId)
 	if addonMGRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -120,7 +99,7 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	realID, err := tmp.AddonIDToRealID(ctx, r.cc, r.org, mg.ID.ValueString())
+	realID, err := tmp.AddonIDToRealID(ctx, r.Client(), r.Organization(), mg.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
@@ -133,12 +112,10 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 	mg.Port = pkg.FromI(int64(addonMG.Port))
 	mg.User = pkg.FromStr(addonMG.User)
 	mg.Password = pkg.FromStr(addonMG.Password)
+	mg.Database = pkg.FromStr(addonMG.Database)
 
 	diags := resp.State.Set(ctx, mg)
 	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Update resource
@@ -159,7 +136,7 @@ func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -169,9 +146,6 @@ func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest
 	state.Name = plan.Name
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource
@@ -183,13 +157,13 @@ func (r *ResourceMongoDB) Delete(ctx context.Context, req resource.DeleteRequest
 
 	tflog.Debug(ctx, "MongoDB DELETE", map[string]any{"mg": mg})
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, mg.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), mg.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.cc, r.org, addonId)
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -203,9 +177,3 @@ func (r *ResourceMongoDB) Delete(ctx context.Context, req resource.DeleteRequest
 }
 
 // Import resource
-func (r *ResourceMongoDB) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
-}

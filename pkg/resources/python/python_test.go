@@ -117,7 +117,7 @@ func TestAccPython_basic(t *testing.T) {
 						return assertError("expect option to be set", "sticky_sessions", app.StickySessions, true)
 					}
 
-					if len(app.Vhosts) != 1 || !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io") {
+					if len(app.Vhosts) != 1 || !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io/") {
 						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), "1 cleverapps.io domain")
 					}
 

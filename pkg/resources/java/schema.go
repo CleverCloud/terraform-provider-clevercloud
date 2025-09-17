@@ -55,8 +55,8 @@ func (plan *Java) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]
 	}
 	maps.Copy(env, customEnv)
 
-	pkg.IfIsSet(plan.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-	pkg.IfIsSet(plan.JavaVersion, func(s string) { env["CC_JAVA_VERSION"] = s })
+	pkg.IfIsSetStr(plan.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetStr(plan.JavaVersion, func(s string) { env["CC_JAVA_VERSION"] = s })
 	return env
 }
 
