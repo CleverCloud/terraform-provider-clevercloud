@@ -84,3 +84,89 @@ func SetFromStrings(_ context.Context, xs []string) types.Set {
 	v, _ := types.SetValue(types.StringType, elems)
 	return v
 }
+
+// VHostsFromAPIHosts converts API format vhosts ([]string) to Terraform List of VHost structs
+func VHostsFromAPIHosts(raw []string, diags *diag.Diagnostics) types.List {
+	if len(raw) == 0 {
+		// Return empty list - the API will handle cleverapps.io automatically
+		return types.ListNull(types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"vhost":      types.StringType,
+				"path_begin": types.StringType,
+			},
+		})
+	}
+
+	hasOnlyCleverapps := true
+	vhosts := []attr.Value{}
+
+	for _, h := range raw {
+		h = strings.TrimSpace(h)
+		h = strings.TrimSuffix(h, "/")
+		h = strings.ToLower(h)
+		
+		if h == "" {
+			continue
+		}
+
+		// Check if this is a cleverapps.io domain (format: app-xxx.cleverapps.io)
+		if strings.HasSuffix(h, ".cleverapps.io") {
+			// Skip cleverapps domains - we don't include them in the terraform state
+			continue
+		} else {
+			hasOnlyCleverapps = false
+			
+			// Parse vhost and path_begin from API format
+			vhost := h
+			pathBegin := "/"
+			
+			// If the vhost contains a path, extract it
+			if idx := strings.Index(h, "/"); idx > 0 {
+				vhost = h[:idx]
+				pathBegin = h[idx:]
+			}
+			
+			vhostObj, d := types.ObjectValue(
+				map[string]attr.Type{
+					"vhost":      types.StringType,
+					"path_begin": types.StringType,
+				},
+				map[string]attr.Value{
+					"vhost":      types.StringValue(vhost),
+					"path_begin": types.StringValue(pathBegin),
+				},
+			)
+			diags.Append(d...)
+			if diags.HasError() {
+				return types.ListNull(types.ObjectType{
+					AttrTypes: map[string]attr.Type{
+						"vhost":      types.StringType,
+						"path_begin": types.StringType,
+					},
+				})
+			}
+			
+			vhosts = append(vhosts, vhostObj)
+		}
+	}
+
+	// If we only found cleverapps.io domains or no vhosts, return null list
+	if hasOnlyCleverapps || len(vhosts) == 0 {
+		return types.ListNull(types.ObjectType{
+			AttrTypes: map[string]attr.Type{
+				"vhost":      types.StringType,
+				"path_begin": types.StringType,
+			},
+		})
+	}
+
+	list, d := types.ListValue(types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"vhost":      types.StringType,
+			"path_begin": types.StringType,
+		},
+	}, vhosts)
+	diags.Append(d...)
+	
+	return list
+}
