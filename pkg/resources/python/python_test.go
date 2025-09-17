@@ -30,7 +30,7 @@ func TestAccPython_basic(t *testing.T) {
 	rName2 := acctest.RandomWithPrefix("tf-test-python-2")
 	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_python.%s", rName2)
-	vhost := "bubhbfbnriubielrbeuvieuv.com"
+	vhost := "bubhbfbnriubielrbeuvieuv.com/"
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	pythonBlock := helper.NewRessource(
