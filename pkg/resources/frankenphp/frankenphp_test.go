@@ -72,7 +72,7 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 					SetOneValue("min_instance_count", 2).
 					SetOneValue("max_instance_count", 6).
 					SetOneValue("dev_dependencies", true).
-					SetOneValue("vhosts", []string{"test-frankenphp-1.com", "test-frankenphp-2.com"}),
+					SetOneValue("vhosts", []string{"test-frankenphp-1.com", "test-frankenphp-2.com/"}),
 			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
