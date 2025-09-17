@@ -249,7 +249,7 @@ terraform import clevercloud_drain_datadog.example drain_12345678-abcd-1234-5678
 
 ### Optional
 
-- `kind` (String) either LOG, ACCESSLOGS or AUDITLOG
+- `kind` (String) either LOG, ACCESSLOG or AUDITLOG
 - `rfc5424_structured_data_parameters` (String) RFC5424 structured data parameters
 
 ### Read-Only
