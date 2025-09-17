@@ -33,7 +33,7 @@ func (r ResourceDrain[T]) Schema(_ context.Context, req resource.SchemaRequest, 
 			"kind": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "either LOG, ACCESSLOGS or AUDITLOG",
+				MarkdownDescription: "either LOG, ACCESSLOG or AUDITLOG",
 				Default:             stringdefault.StaticString(string(tmp.DRAIN_KIND_LOG)),
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
@@ -41,7 +41,7 @@ func (r ResourceDrain[T]) Schema(_ context.Context, req resource.SchemaRequest, 
 				Validators: []validator.String{
 					pkg.NewStringEnumValidator(
 						"Log kind",
-						string(tmp.DRAIN_KIND_ACCESSLOGS),
+						string(tmp.DRAIN_KIND_ACCESSLOG),
 						string(tmp.DRAIN_KIND_AUDITLOG),
 						string(tmp.DRAIN_KIND_LOG),
 					),
@@ -145,7 +145,7 @@ func (r NewRelicDrain) Attributes() map[string]schema.Attribute {
 
 func (r NewRelicDrain) ToRecipient() []byte {
 	v, err := json.Marshal(tmp.RecipientNewrelic{
-		Type:   "NewrelicRecipient",
+		Type:   "NewRelicRecipient",
 		URL:    r.URL.ValueString(),
 		APIKey: r.APIKey.ValueString(),
 	})
@@ -482,7 +482,7 @@ func (r OVHDrain) Attributes() map[string]schema.Attribute {
 
 func (r OVHDrain) ToRecipient() []byte {
 	v, err := json.Marshal(tmp.RecipientOVH{
-		Type:                        "OVHRecipient",
+		Type:                        "OVHTCPRecipient",
 		URL:                         r.URL.ValueString(),
 		Token:                       r.Token.ValueString(),
 		RFC5424StructuredDataParams: r.RFC5424StructuredDataParams.ValueString(),
