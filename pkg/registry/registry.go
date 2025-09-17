@@ -7,6 +7,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar/bucket"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/docker"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/drain"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/frankenphp"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/fsbucket"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/golang"
@@ -25,6 +26,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/pulsar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/python"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/redis"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/ruby"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/rust"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/scala"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/static"
@@ -47,9 +49,17 @@ var Resources = []func() resource.Resource{
 	php.NewResourcePHP,
 	postgresql.NewResourcePostgreSQL,
 	python.NewResourcePython,
+	ruby.NewResourceRuby,
 	scala.NewResourceScala(),
 	static.NewResourceStatic(),
 	docker.NewResourceDocker,
+	drain.NewDatadogDrain,
+	drain.NewNewRelicDrain,
+	drain.NewElasticsearchDrain,
+	drain.NewSyslogUDPDrain,
+	drain.NewSyslogTCPDrain,
+	drain.NewHTTPDrain,
+	drain.NewOVHDrain,
 	keycloak.NewResourceKeycloak,
 	redis.NewResourceRedis,
 	golang.NewResourceGo,
