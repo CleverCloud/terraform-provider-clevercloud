@@ -7,6 +7,7 @@ OS_ARCH=linux_amd64
 TAG_COMMIT := $(shell git rev-list --abbrev-commit --tags --max-count=1)
 TAG := $(shell git describe --abbrev=0 --tags ${TAG_COMMIT} 2>/dev/null || true)
 COMMIT := $(shell git rev-parse --short HEAD)
+LDFLAGS := -s -w
 
 ifndef VERSION
 	ifeq ($(COMMIT), $(TAG_COMMIT))
@@ -19,7 +20,7 @@ endif
 default: install
 
 build:
-	go build -o ${BINARY}
+	go build -ldflags "${LDFLAGS}" -o ${BINARY}
 
 release:
 	GOOS=darwin GOARCH=amd64 go build -o ./bin/${BINARY}_${VERSION}_darwin_amd64
