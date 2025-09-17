@@ -63,7 +63,7 @@ func TestAccNodejs_basic(t *testing.T) {
 		}),
 		helper.SetBlockValues("deployment", map[string]any{
 			"repository": "https://github.com/CleverCloud/nodejs-example.git",
-			"commit":     "a397296e135b24e682a011e31f8e15f2fa8a5a0e",
+			"commit":     "84cc90cc76abeda2a425ed23d1881f398a30857a",
 		}))
 
 	resource.Test(t, resource.TestCase{
