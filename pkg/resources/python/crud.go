@@ -74,7 +74,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 
 	createdVhosts := createRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
+		plan.VHosts = helper.VHostsFromAPIHosts(createdVhosts.AsString(), &resp.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
 		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
@@ -126,8 +126,7 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 	state.StickySessions = pkg.FromBool(appRes.App.StickySessions)
 	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 
-	vhosts := appRes.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(appRes.App.Vhosts.AsString(), &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -205,7 +204,7 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 
 	cleverAppsVhost := updatedApp.Application.Vhosts.CleverAppsFQDN(plan.ID.ValueString())
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+		plan.VHosts = helper.VHostsFromAPIHosts(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 		if cleverAppsVhost != nil {
 			deleteVhostRes := tmp.DeleteAppVHost(
@@ -220,7 +219,7 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 				return
 			}
 
-			plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &res.Diagnostics)
+			plan.VHosts = helper.VHostsFromAPIHosts(updatedApp.Application.Vhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &res.Diagnostics)
 		}
 	}
 
