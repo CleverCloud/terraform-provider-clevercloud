@@ -147,31 +147,31 @@ func (ruby Ruby) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]s
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSet(ruby.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-	pkg.IfIsSet(ruby.RubyVersion, func(s string) { env["CC_RUBY_VERSION"] = s })
+	pkg.IfIsSetStr(ruby.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetStr(ruby.RubyVersion, func(s string) { env["CC_RUBY_VERSION"] = s })
 	pkg.IfIsSetB(ruby.EnableSidekiq, func(b bool) { 
 		if b {
 			env["CC_ENABLE_SIDEKIQ"] = "true"
 		}
 	})
-	pkg.IfIsSet(ruby.RackupServer, func(s string) { env["CC_RACKUP_SERVER"] = s })
-	pkg.IfIsSet(ruby.RakeGoals, func(s string) { env["CC_RAKEGOALS"] = s })
-	pkg.IfIsSet(ruby.SidekiqFiles, func(s string) { env["CC_SIDEKIQ_FILES"] = s })
-	pkg.IfIsSet(ruby.HTTPBasicAuth, func(s string) { env["CC_HTTP_BASIC_AUTH"] = s })
-	pkg.IfIsSet(ruby.NginxProxyBuffers, func(s string) { env["CC_NGINX_PROXY_BUFFERS"] = s })
-	pkg.IfIsSet(ruby.NginxProxyBufferSize, func(s string) { env["CC_NGINX_PROXY_BUFFER_SIZE"] = s })
+	pkg.IfIsSetStr(ruby.RackupServer, func(s string) { env["CC_RACKUP_SERVER"] = s })
+	pkg.IfIsSetStr(ruby.RakeGoals, func(s string) { env["CC_RAKEGOALS"] = s })
+	pkg.IfIsSetStr(ruby.SidekiqFiles, func(s string) { env["CC_SIDEKIQ_FILES"] = s })
+	pkg.IfIsSetStr(ruby.HTTPBasicAuth, func(s string) { env["CC_HTTP_BASIC_AUTH"] = s })
+	pkg.IfIsSetStr(ruby.NginxProxyBuffers, func(s string) { env["CC_NGINX_PROXY_BUFFERS"] = s })
+	pkg.IfIsSetStr(ruby.NginxProxyBufferSize, func(s string) { env["CC_NGINX_PROXY_BUFFER_SIZE"] = s })
 	pkg.IfIsSetB(ruby.EnableGzipCompression, func(b bool) {
 		if b {
 			env["ENABLE_GZIP_COMPRESSION"] = "true"
 		}
 	})
-	pkg.IfIsSet(ruby.GzipTypes, func(s string) { env["GZIP_TYPES"] = s })
+	pkg.IfIsSetStr(ruby.GzipTypes, func(s string) { env["GZIP_TYPES"] = s })
 	pkg.IfIsSetI(ruby.NginxReadTimeout, func(i int64) { env["NGINX_READ_TIMEOUT"] = strconv.FormatInt(i, 10) })
-	pkg.IfIsSet(ruby.RackEnv, func(s string) { env["RACK_ENV"] = s })
-	pkg.IfIsSet(ruby.RailsEnv, func(s string) { env["RAILS_ENV"] = s })
-	pkg.IfIsSet(ruby.StaticFilesPath, func(s string) { env["STATIC_FILES_PATH"] = s })
-	pkg.IfIsSet(ruby.StaticURLPrefix, func(s string) { env["STATIC_URL_PREFIX"] = s })
-	pkg.IfIsSet(ruby.StaticWebroot, func(s string) { env["STATIC_WEBROOT"] = s })
+	pkg.IfIsSetStr(ruby.RackEnv, func(s string) { env["RACK_ENV"] = s })
+	pkg.IfIsSetStr(ruby.RailsEnv, func(s string) { env["RAILS_ENV"] = s })
+	pkg.IfIsSetStr(ruby.StaticFilesPath, func(s string) { env["STATIC_FILES_PATH"] = s })
+	pkg.IfIsSetStr(ruby.StaticURLPrefix, func(s string) { env["STATIC_URL_PREFIX"] = s })
+	pkg.IfIsSetStr(ruby.StaticWebroot, func(s string) { env["STATIC_WEBROOT"] = s })
 	env = pkg.Merge(env, ruby.Hooks.ToEnv())
 
 	return env
