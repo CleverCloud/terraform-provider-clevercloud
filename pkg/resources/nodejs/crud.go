@@ -76,7 +76,7 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 
 	createdVhosts := createRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
+		plan.VHosts = helper.VHostsFromAPIHosts(createdVhosts.AsString(), &resp.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
 		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
@@ -125,8 +125,7 @@ func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, res
 	state.SmallestFlavor = pkg.FromStr(appRes.App.Instance.MinFlavor.Name)
 	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
 
-	vhosts := appRes.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(appRes.App.Vhosts.AsString(), &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -202,7 +201,7 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+	plan.VHosts = helper.VHostsFromAPIHosts(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {
 		return

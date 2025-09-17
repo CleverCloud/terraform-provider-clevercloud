@@ -96,7 +96,7 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 
 	createdVhosts := createRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
+		plan.VHosts = helper.VHostsFromAPIHosts(createdVhosts.AsString(), &resp.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
 		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
@@ -138,8 +138,7 @@ func (r *ResourceRuby) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
 
-	vhosts := appRes.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(appRes.App.Vhosts.AsString(), &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -218,7 +217,7 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	cleverAppsVhost := updatedApp.Application.Vhosts.CleverAppsFQDN(plan.ID.ValueString())
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+		plan.VHosts = helper.VHostsFromAPIHosts(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 		if cleverAppsVhost != nil {
 			deleteVhostRes := tmp.DeleteAppVHost(
@@ -233,7 +232,7 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 				return
 			}
 
-			plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &res.Diagnostics)
+			plan.VHosts = helper.VHostsFromAPIHosts(updatedApp.Application.Vhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &res.Diagnostics)
 		}
 	}
 

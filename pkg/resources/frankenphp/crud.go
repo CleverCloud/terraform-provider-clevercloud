@@ -76,7 +76,7 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 
 	createdVhosts := createAppRes.Application.Vhosts
 	if plan.VHosts.IsNull() || plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(helper.FromAPIHosts(createdVhosts.AsString()), &resp.Diagnostics)
+		plan.VHosts = helper.VHostsFromAPIHosts(createdVhosts.AsString(), &resp.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
 		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
@@ -124,8 +124,7 @@ func (r *ResourceFrankenPHP) Read(ctx context.Context, req resource.ReadRequest,
 	state.Region = pkg.FromStr(appFrankenPHP.App.Zone)
 	state.DeployURL = pkg.FromStr(appFrankenPHP.App.DeployURL)
 
-	vhosts := helper.FromAPIHosts(appFrankenPHP.App.Vhosts.AsString())
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(appFrankenPHP.App.Vhosts.AsString(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
