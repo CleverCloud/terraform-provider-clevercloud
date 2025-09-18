@@ -42,7 +42,7 @@ func (r ResourceMySQL) Schema(_ context.Context, req resource.SchemaRequest, res
 			"port":     schema.Int64Attribute{Computed: true, MarkdownDescription: "Database port"},
 			"database": schema.StringAttribute{Computed: true, MarkdownDescription: "Database name on the MySQL server"},
 			"user":     schema.StringAttribute{Computed: true, MarkdownDescription: "Login username"},
-			"password": schema.StringAttribute{Computed: true, MarkdownDescription: "Login password"},
+			"password": schema.StringAttribute{Computed: true, MarkdownDescription: "Login password", Sensitive: true},
 			"uri":      schema.StringAttribute{Computed: true, MarkdownDescription: "Database connection string", Sensitive: true},
 			"version": schema.StringAttribute{
 				Computed:            true,

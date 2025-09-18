@@ -54,7 +54,7 @@ func (r ResourcePulsar) Schema(_ context.Context, req resource.SchemaRequest, re
 			"http_url":         schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar REST API address"},
 			"tenant":           schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar tenant"},
 			"namespace":        schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar namespace"},
-			"token":            schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar authentication token"},
+			"token":            schema.StringAttribute{Computed: true, MarkdownDescription: "Pulsar authentication token", Sensitive: true},
 			"retention_size":   schema.Int64Attribute{Optional: true, MarkdownDescription: "Pulsar namespace retention policy in bytes"},
 			"retention_period": schema.Int64Attribute{Optional: true, MarkdownDescription: "Pulsar namespace retention policy in minutes"},
 		},
