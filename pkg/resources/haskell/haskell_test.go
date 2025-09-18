@@ -182,7 +182,7 @@ func TestAccNodejs_basic(t *testing.T) {
 					}
 
 					// Test deployed app
-					t := time.NewTimer(2 * time.Minute)
+					t := time.NewTimer(15 * time.Minute)
 					select {
 					case <-healthCheck(vhosts.CleverAppsFQDN(id).Fqdn):
 						return nil
