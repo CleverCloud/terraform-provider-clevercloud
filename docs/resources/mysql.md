@@ -34,7 +34,7 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 - `database` (String) Database name on the MySQL server
 - `host` (String) Database host, used to connect to
 - `id` (String) Generated unique identifier
-- `password` (String) Login password
+- `password` (String, Sensitive) Login password
 - `port` (Number) Database port
 - `uri` (String) Database connection string (without credentials)
 - `user` (String) Login username

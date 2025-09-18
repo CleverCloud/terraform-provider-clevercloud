@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 )
@@ -43,14 +44,24 @@ func (r ResourceFrankenPHP) UpgradeState(ctx context.Context) map[int64]resource
 	return map[int64]resource.StateUpgrader{}
 }
 
-func (fp *FrankenPHP) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
-	env := make(map[string]string)
+func (fp *FrankenPHP) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+	env := map[string]string{}
 
-	if !fp.DevDependencies.IsNull() && !fp.DevDependencies.IsUnknown() {
-		if fp.DevDependencies.ValueBool() {
+	// do not use the real map since ElementAs can nullish it
+	// https://github.com/hashicorp/terraform-plugin-framework/issues/698
+	customEnv := map[string]string{}
+	diags.Append(fp.Environment.ElementsAs(ctx, &customEnv, false)...)
+	if diags.HasError() {
+		return env
+	}
+	env = pkg.Merge(env, customEnv)
+
+	pkg.IfIsSetB(fp.DevDependencies, func(devDeps bool) {
+		if devDeps {
 			env["CC_PHP_DEV_DEPENDENCIES"] = "install"
 		}
-	}
+	})
+	env = pkg.Merge(env, fp.Hooks.ToEnv())
 
 	return env
 }

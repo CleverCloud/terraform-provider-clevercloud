@@ -199,7 +199,7 @@ type KeycloakApplication struct {
 
 // Not working ?
 func GetKeycloak(ctx context.Context, cc *client.Client, organisationID, keycloakID string) client.Response[Keycloak] {
-	path := fmt.Sprintf("v4/keycloaks/organisations/%s/keycloaks/%s", organisationID, keycloakID)
+	path := fmt.Sprintf("/v4/keycloaks/organisations/%s/keycloaks/%s", organisationID, keycloakID)
 	return client.Get[Keycloak](ctx, cc, path)
 }
 
