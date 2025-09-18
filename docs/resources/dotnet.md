@@ -95,15 +95,10 @@ resource "clevercloud_dotnet" "myapp" {
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
-- `dev_dependencies` (Boolean) Install development dependencies specified in package.json
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
-- `package_manager` (String) Either npm, npm-ci, bun, pnpm, yarn-berry or custom
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
-- `registry` (String) The host of your private repository, available values: github or the registry host
-- `registry_token` (String, Sensitive) Private repository token
-- `start_script` (String) Set custom start script, instead of `npm start`
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `vhosts` (Set of String) Add custom hostname, see [documentation](https://www.clever.cloud/developers/doc/administrate/domain-names/)
 
