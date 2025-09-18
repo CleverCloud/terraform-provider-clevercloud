@@ -93,7 +93,7 @@ type MySQL struct {
 }
 
 func (p MySQL) Uri() string {
-	return fmt.Sprintf("mysql://%s:%d/%s", p.Host, p.Port, p.Database)
+	return fmt.Sprintf("mysql://%s:%s@%s:%d/%s", p.User, p.Password, p.Host, p.Port, p.Database)
 }
 
 type MySQLFeature struct {
