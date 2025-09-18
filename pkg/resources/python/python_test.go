@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"net/http"
 	"regexp"
 	"strings"
 	"testing"
@@ -159,7 +158,7 @@ func TestAccPython_basic(t *testing.T) {
 			Config: providerBlock.Append(
 				pythonBlock.
 					SetOneValue("biggest_flavor", "XS").
-					SetOneValue("vhosts", []string{"bubhbfbnriubielrbeuvieuv.com"}),
+					SetOneValue("vhosts", []string{vhost}),
 			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("biggest_flavor"), knownvalue.StringExact("XS")),
@@ -208,14 +207,12 @@ func TestAccPython_basic(t *testing.T) {
 						return fmt.Errorf("there is no vhost for app: %s", id)
 					}
 
-					// Test deployed app
-					t := time.NewTimer(2 * time.Minute)
-					select {
-					case <-healthCheck(vhosts.CleverAppsFQDN(id).Fqdn):
-						return nil
-					case <-t.C:
-						return fmt.Errorf("application did not respond in the allowed time")
+					err := tests.HealthCheck(ctx, vhosts.CleverAppsFQDN(id).Fqdn, 2*time.Minute)
+					if err != nil {
+						return fmt.Errorf("application did not respond in the allowed time: %w", err)
 					}
+
+					return nil
 				}),
 			},
 		}},
@@ -224,29 +221,4 @@ func TestAccPython_basic(t *testing.T) {
 
 func assertError(msg, param string, got, expect any) error {
 	return fmt.Errorf("%s, %s = '%v', expect: '%v'", msg, param, got, expect)
-}
-
-func healthCheck(vhost string) chan struct{} {
-	c := make(chan struct{})
-
-	fmt.Printf("Test on %s\n", vhost)
-
-	go func() {
-		for {
-			res, err := http.Get(fmt.Sprintf("https://%s", vhost))
-			if err != nil {
-				fmt.Printf("%s\n", err.Error())
-				continue
-			}
-
-			fmt.Printf("RESPONSE %d\n", res.StatusCode)
-			if res.StatusCode != 200 {
-				time.Sleep(1 * time.Second)
-				continue
-			}
-			c <- struct{}{}
-		}
-	}()
-
-	return c
 }
