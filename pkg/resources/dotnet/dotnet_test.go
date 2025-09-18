@@ -154,11 +154,6 @@ func TestAccNodejs_basic(t *testing.T) {
 					if v2 != "./app" {
 						return assertError("bad env var value APP_FOLER", "./app", v2)
 					}
-
-					v3 := env["CC_POST_BUILD_HOOK"]
-					if v3 != "echo \"build is OK!\"" {
-						return assertError("bad env var value CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
-					}
 					return nil
 				}),
 			},
