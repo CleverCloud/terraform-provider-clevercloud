@@ -2,8 +2,6 @@ package drain
 
 import (
 	"context"
-	"strings"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -98,52 +96,14 @@ func (r *ResourceDrain[T]) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	// First disable the drain
-	disableRes := tmp.DisableDrain(ctx, r.cc, r.org, state.GetDrain().ResourceID.ValueString(), state.GetDrain().ID.ValueString())
-	if disableRes.HasError() {
-		resp.Diagnostics.AddError("Failed to disable drain", disableRes.Error().Error())
+	deleteRes := tmp.DeleteDrain(ctx, r.cc, r.org, state.GetDrain().ResourceID.ValueString(), state.GetDrain().ID.ValueString())
+	if !deleteRes.HasError() {
+		resp.State.RemoveResource(ctx)
 		return
 	}
 
-	// Wait for consumers to disconnect and retry deletion
-	maxRetries := 50
-	retryInterval := 500 * time.Millisecond
+	resp.Diagnostics.AddError("Failed to delete drain", deleteRes.Error().Error())
 
-	for attempt := 1; attempt <= maxRetries; attempt++ {
-		tflog.Info(ctx, "Attempting to delete drain", map[string]any{
-			"attempt": attempt,
-			"drainId": state.GetDrain().ID.ValueString(),
-		})
-
-		deleteRes := tmp.DeleteDrain(ctx, r.cc, r.org, state.GetDrain().ResourceID.ValueString(), state.GetDrain().ID.ValueString())
-		if !deleteRes.HasError() {
-			resp.State.RemoveResource(ctx)
-			return
-		}
-
-		// Check if this is the "active connected consumers" error
-		if strings.Contains(deleteRes.Error().Error(), "Subscription has active connected consumers") {
-			if attempt < maxRetries {
-				tflog.Warn(ctx, "Drain still has active consumers, retrying", map[string]any{
-					"attempt":    attempt,
-					"maxRetries": maxRetries,
-					"retryAfter": retryInterval.String(),
-				})
-				time.Sleep(retryInterval)
-				continue
-			} else {
-				resp.Diagnostics.AddError(
-					"Failed to delete drain after maximum retries",
-					"The drain still has active connected consumers after waiting. This might be due to ongoing log processing. Please try deleting manually later.",
-				)
-				return
-			}
-		} else {
-			// Different error, don't retry
-			resp.Diagnostics.AddError("Failed to delete drain", deleteRes.Error().Error())
-			return
-		}
-	}
 }
 
 // ImportState allows importing by id
