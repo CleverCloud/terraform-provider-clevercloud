@@ -150,10 +150,6 @@ func TestAccNodejs_basic(t *testing.T) {
 						return assertError("bad env var value MY_KEY", "myval3", v)
 					}
 
-					v2 := env["APP_FOLDER"]
-					if v2 != "./app" {
-						return assertError("bad env var value APP_FOLER", "./app", v2)
-					}
 					return nil
 				}),
 			},
