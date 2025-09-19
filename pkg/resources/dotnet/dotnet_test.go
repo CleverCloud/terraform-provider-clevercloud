@@ -45,6 +45,10 @@ func TestAccNodejs_basic(t *testing.T) {
 			"sticky_sessions":    true,
 			"environment":        map[string]any{"MY_KEY": "myval"},
 			"dependencies":       []string{},
+			"dotnet_profile":     "dotnet-profile-1",
+			"dotnet_proj":        "dotnet-proj-name",
+			"dotnet_tfm":         "net42",
+			"dotnet_version":     "9.0",
 		}),
 		helper.SetBlockValues("hooks", map[string]any{"post_build": "echo \"build is OK!\""}),
 	)
@@ -58,10 +62,6 @@ func TestAccNodejs_basic(t *testing.T) {
 			"max_instance_count": 2,
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
-			"dotnet_profile":     "dotnet-profile-1",
-			"dotnet_proj":        "dotnet-proj-name",
-			"dotnet_tfm":         "net42",
-			"dotnet_version":     "9.0",
 		}),
 		helper.SetBlockValues("deployment", map[string]any{
 			"repository": "https://github.com/CleverCloud/cc-dotnet-example",
@@ -149,7 +149,7 @@ func TestAccNodejs_basic(t *testing.T) {
 
 					v := env["MY_KEY"]
 					if v != "myval" {
-						return assertError("bad env var value MY_KEY", v, "myval3")
+						return assertError("bad env var value MY_KEY", v, "myval")
 					}
 
 					v1 := env["CC_DOTNET_PROFILE"]
