@@ -154,9 +154,6 @@ func (r *ResourceRust) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
-	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
-
 	// Retrieve instance of the app from context
 	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "rust", res.Diagnostics)
 	if res.Diagnostics.HasError() {
@@ -173,6 +170,11 @@ func (r *ResourceRust) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
+	// Same as env but with vhosts
+	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
+	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
+
+	// Get the updated values from plan and instance
 	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
 		Client:       r.Client(),
@@ -208,7 +210,26 @@ func (r *ResourceRust) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+	cleverAppsVhost := updatedApp.Application.Vhosts.CleverAppsFQDN(plan.ID.ValueString())
+	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
+		plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+	} else { // practitionner give it's own vhost, remove cleverapps one
+		if cleverAppsVhost != nil {
+			deleteVhostRes := tmp.DeleteAppVHost(
+				ctx,
+				r.Client(),
+				r.Organization(),
+				plan.ID.ValueString(),
+				cleverAppsVhost.Fqdn,
+			)
+			if deleteVhostRes.HasError() {
+				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
+				return
+			}
+
+			plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &res.Diagnostics)
+		}
+	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {
