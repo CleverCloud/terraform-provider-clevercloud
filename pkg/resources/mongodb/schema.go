@@ -31,7 +31,7 @@ func (r ResourceMongoDB) Schema(_ context.Context, req resource.SchemaRequest, r
 			"host":     schema.StringAttribute{Computed: true, MarkdownDescription: "Database host, used to connect to"},
 			"port":     schema.Int64Attribute{Computed: true, MarkdownDescription: "Database port"},
 			"user":     schema.StringAttribute{Computed: true, MarkdownDescription: "Login username"},
-			"password": schema.StringAttribute{Computed: true, MarkdownDescription: "Login password"},
+			"password": schema.StringAttribute{Computed: true, MarkdownDescription: "Login password", Sensitive: true},
 			"database": schema.StringAttribute{Computed: true, MarkdownDescription: "Database name"},
 		}),
 	}

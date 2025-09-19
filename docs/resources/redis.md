@@ -32,4 +32,4 @@ See [Redis product specification](https://www.clever.cloud/developers/doc/addons
 - `host` (String) Database host, used to connect to
 - `id` (String) Generated unique identifier
 - `port` (Number) Database port
-- `token` (String) Token to authenticate
+- `token` (String, Sensitive) Token to authenticate

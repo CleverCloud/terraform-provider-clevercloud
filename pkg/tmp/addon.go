@@ -206,29 +206,29 @@ type KeycloakApplication struct {
 
 // Not working ?
 func GetKeycloak(ctx context.Context, cc *client.Client, organisationID, keycloakID string) client.Response[Keycloak] {
-	path := fmt.Sprintf("v4/keycloaks/organisations/%s/keycloaks/%s", organisationID, keycloakID)
+	path := fmt.Sprintf("/v4/keycloaks/organisations/%s/keycloaks/%s", organisationID, keycloakID)
 	return client.Get[Keycloak](ctx, cc, path)
 }
 
 type OtoroshiInfo struct {
-	ResourceID           string            `json:"resourceId"`
-	AddonID              string            `json:"addonId"`
-	Name                 string            `json:"name"`
-	OwnerID              string            `json:"ownerId"`
-	Plan                 string            `json:"plan"`
-	Version              string            `json:"version"`
-	AccessURL            string            `json:"accessUrl"`
-	API                  *OtoroshiAPI      `json:"api"`
-	AvailableVersions    []string          `json:"availableVersions"`
-	Resources            map[string]string `json:"resources"`
-	Features             map[string]any    `json:"features"`
-	EnvVars              map[string]string `json:"envVars"`
-	APIClientID          string            // Extracted from envVars
-	APIClientSecret      string            // Extracted from envVars
-	APIURL               string            // Extracted from envVars
-	InitialAdminLogin    string            // Extracted from envVars
-	InitialAdminPassword string            // Extracted from envVars
-	URL                  string            // Extracted from envVars
+	ResourceID            string            `json:"resourceId"`
+	AddonID               string            `json:"addonId"`
+	Name                  string            `json:"name"`
+	OwnerID               string            `json:"ownerId"`
+	Plan                  string            `json:"plan"`
+	Version               string            `json:"version"`
+	AccessURL             string            `json:"accessUrl"`
+	API                   *OtoroshiAPI      `json:"api"`
+	AvailableVersions     []string          `json:"availableVersions"`
+	Resources             map[string]string `json:"resources"`
+	Features              map[string]any    `json:"features"`
+	EnvVars               map[string]string `json:"envVars"`
+	APIClientID           string            // Extracted from envVars
+	APIClientSecret       string            // Extracted from envVars
+	APIURL                string            // Extracted from envVars
+	InitialAdminLogin     string            // Extracted from envVars
+	InitialAdminPassword  string            // Extracted from envVars
+	URL                   string            // Extracted from envVars
 }
 
 type OtoroshiAPI struct {

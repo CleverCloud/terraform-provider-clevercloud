@@ -16,7 +16,7 @@ Set the following environment variables:
 
 ```bash
 export CLEVER_TOKEN="your-clever-cloud-token"
-export CLEVER_SECRET="your-clever-cloud-secret" 
+export CLEVER_SECRET="your-clever-cloud-secret"
 export ORGANISATION="your-organization-id"  # Optional, for multi-org accounts
 ```
 
@@ -26,6 +26,20 @@ Run the following command to build the provider
 
 ```shell
 $ go build -o terraform-provider-clevercloud
+```
+
+## Build and install the provider
+
+Run the following command to build and install the provider in the current user's terraform plugin directory
+
+```shell
+$ make
+```
+
+To produce an unstripped binary (for debugging purpose), override `LDFLAGS` with an empty value:
+
+```shell
+$ make LDFLAGS=""
 ```
 
 ## Examples
@@ -72,7 +86,7 @@ provider_installation {
     dev_overrides {
         "CleverCloud/clevercloud" = "/home/[USER]/.terraform.d/plugins/registry.terraform.io/CleverCloud/clevercloud/dev/linux_amd64"
     }
-    
+
     direct{}
 }
 ```

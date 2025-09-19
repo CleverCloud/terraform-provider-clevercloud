@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"iter"
+	"net/url"
 	"strings"
 
 	"go.clever-cloud.dev/client"
@@ -303,11 +304,13 @@ func GetAppVhosts(ctx context.Context, cc *client.Client, organisationID, applic
 }
 
 func AddAppVHost(ctx context.Context, cc *client.Client, organisationID, applicationID, vhost string) client.Response[any] {
+	vhost = url.QueryEscape(vhost)
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/vhosts/%s", organisationID, applicationID, vhost)
 	return client.Put[any](ctx, cc, path, map[string]string{})
 }
 
 func DeleteAppVHost(ctx context.Context, cc *client.Client, organisationID, applicationID, vhost string) client.Response[any] {
+	vhost = url.QueryEscape(vhost)
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/vhosts/%s", organisationID, applicationID, vhost)
 	return client.Delete[any](ctx, cc, path)
 }

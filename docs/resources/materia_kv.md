@@ -31,4 +31,4 @@ See [Materia KV product specification](https://www.clever.cloud/developers/doc/a
 - `host` (String) Database host, used to connect to
 - `id` (String) Generated unique identifier
 - `port` (Number) Database port
-- `token` (String) Token to authenticate
+- `token` (String, Sensitive) Token to authenticate

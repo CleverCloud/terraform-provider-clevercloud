@@ -39,10 +39,10 @@ Learn more about [Otoroshi with LLM](https://www.clever.cloud/developers/doc/add
 ### Read-Only
 
 - `api_client_id` (String) API client ID
-- `api_client_secret` (String) API client secret
+- `api_client_secret` (String, Sensitive) API client secret
 - `api_url` (String) API URL
 - `creation_date` (Number) Date of Otoroshi creation
 - `id` (String) Generated unique identifier
 - `initial_admin_login` (String) Initial admin login
-- `initial_admin_password` (String) Initial admin password
+- `initial_admin_password` (String, Sensitive) Initial admin password
 - `url` (String) URL

@@ -86,6 +86,7 @@ func (r ResourceDocker) Schema(ctx context.Context, req resource.SchemaRequest, 
 			},
 			"registry_password": schema.StringAttribute{
 				Optional:            true,
+				Sensitive:           true,
 				MarkdownDescription: "The password of your username",
 			},
 			"daemon_socket_mount": schema.BoolAttribute{

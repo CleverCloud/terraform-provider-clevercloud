@@ -58,7 +58,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `ipv6_cidr` (String) Activate the support of IPv6 with an IPv6 subnet int the docker daemon
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
-- `registry_password` (String) The password of your username
+- `registry_password` (String, Sensitive) The password of your username
 - `registry_url` (String) The server of your private registry (optional).	Docker’s public registry
 - `registry_user` (String) The username to login to a private registry
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped

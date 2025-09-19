@@ -42,7 +42,7 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 			"port":     schema.Int64Attribute{Computed: true, MarkdownDescription: "Database port"},
 			"database": schema.StringAttribute{Computed: true, MarkdownDescription: "Database name on the PostgreSQL server"},
 			"user":     schema.StringAttribute{Computed: true, MarkdownDescription: "Login username"},
-			"password": schema.StringAttribute{Computed: true, MarkdownDescription: "Login password"},
+			"password": schema.StringAttribute{Computed: true, MarkdownDescription: "Login password", Sensitive: true},
 			"uri":      schema.StringAttribute{Computed: true, MarkdownDescription: "Database connection string (without credentials)"},
 			"version": schema.StringAttribute{
 				Computed:            true,

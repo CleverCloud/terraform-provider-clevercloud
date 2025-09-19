@@ -32,6 +32,6 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mongo
 - `database` (String) Database name
 - `host` (String) Database host, used to connect to
 - `id` (String) Generated unique identifier
-- `password` (String) Login password
+- `password` (String, Sensitive) Login password
 - `port` (Number) Database port
 - `user` (String) Login username

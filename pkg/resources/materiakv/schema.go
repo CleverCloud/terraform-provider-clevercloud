@@ -41,7 +41,7 @@ func (r ResourceMateriaKV) Schema(_ context.Context, req resource.SchemaRequest,
 			"creation_date": schema.Int64Attribute{Computed: true, MarkdownDescription: "Date of database creation"},
 			"host":          schema.StringAttribute{Computed: true, MarkdownDescription: "Database host, used to connect to"},
 			"port":          schema.Int64Attribute{Computed: true, MarkdownDescription: "Database port"},
-			"token":         schema.StringAttribute{Computed: true, MarkdownDescription: "Token to authenticate"},
+			"token":         schema.StringAttribute{Computed: true, MarkdownDescription: "Token to authenticate", Sensitive: true},
 		},
 	}
 }
