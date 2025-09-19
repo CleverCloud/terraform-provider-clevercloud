@@ -183,13 +183,12 @@ func TestAccNodejs_basic(t *testing.T) {
 					}
 
 					// Test deployed app
-					t := time.NewTimer(2 * time.Minute)
-					select {
-					case <-healthCheck(vhosts.CleverAppsFQDN(id).Fqdn):
-						return nil
-					case <-t.C:
-						return fmt.Errorf("application did not respond in the allowed time")
+					err := tests.HealthCheck(ctx, vhosts.CleverAppsFQDN(id).Fqdn, 2*time.Minute)
+					if err != nil {
+						return fmt.Errorf("application did not respond in the allowed time: %w", err)
 					}
+
+					return nil
 				}),
 			},
 		}},
@@ -198,29 +197,4 @@ func TestAccNodejs_basic(t *testing.T) {
 
 func assertError(msg string, a, b any) error {
 	return fmt.Errorf("%s, got: '%v', expect: '%v'", msg, a, b)
-}
-
-func healthCheck(vhost string) chan struct{} {
-	c := make(chan struct{})
-
-	fmt.Printf("Test on %s\n", vhost)
-
-	go func() {
-		for {
-			res, err := http.Get(fmt.Sprintf("https://%s", vhost))
-			if err != nil {
-				fmt.Printf("%s\n", err.Error())
-				continue
-			}
-
-			fmt.Printf("RESPONSE %d\n", res.StatusCode)
-			if res.StatusCode != 200 {
-				time.Sleep(1 * time.Second)
-				continue
-			}
-			c <- struct{}{}
-		}
-	}()
-
-	return c
 }
