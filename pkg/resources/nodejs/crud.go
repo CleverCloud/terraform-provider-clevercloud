@@ -146,13 +146,11 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	// Retrieve instance of the app from context
 	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "node", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	// Retriev all env values by extracting ctx env viriables and merge it with the app env variables
 	planEnvironment := plan.toEnv(ctx, res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
@@ -195,7 +193,6 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
-	// Correctly named: update the app (via PUT Method)
 	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
@@ -204,9 +201,6 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 
 	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource
@@ -232,5 +226,3 @@ func (r *ResourceNodeJS) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource
