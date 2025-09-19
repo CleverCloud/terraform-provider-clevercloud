@@ -153,22 +153,22 @@ func TestAccNodejs_basic(t *testing.T) {
 
 					v1 := env["CC_HASKELL_STACK_TARGET"]
 					if v1 != "default-target" {
-						return assertError("When providing 'haskell_stack_target': 'default-target', env['CC_HASKELL_STACK_TARGET'] didn't have the value 'default-target'")
+						return assertError("Bad value when providing 'haskell_stack_target': 'default-target'", "default-target", v1)
 					}
 
 					v2 := env["CC_HASKELL_STACK_SETUP_COMMAND"]
 					if v2 != "./setup" {
-						return assertError("When providing 'haskell_stack_setup_command': 'default-target', env['CC_HASKELL_STACK_SETUP_COMMAND'] didn't have the value './setup'")
+						return assertError("Bad value when providing 'haskell_stack_setup_command': './setup'", "./setup", v2)
 					}
 
 					v3 := env["CC_HASKELL_STACK_INSTALL_COMMAND"]
 					if v3 != "./install" {
-						return assertError("When providing 'haskell_stack_install_command': './install', env['CC_HASKELL_STACK_INSTALL_COMMAND'] didn't have the value './install'")
+						return assertError("Bad value when providing 'haskell_stack_install_command': './install'", "./install", v3)
 					}
 
 					v4 := env["CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND"]
 					if v4 != "./install-deps" {
-						return assertError("When providing 'haskell_stack_install_dependencies_command': './install-deps', env['CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND'] didn't have the value './install-deps'")
+						return assertError("Bad value when providing 'haskell_stack_install_dependencies_command': './install-deps'", "./install-deps", v4)
 					}
 
 					return nil
