@@ -75,9 +75,6 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 	kc.Host = pkg.FromStr(hostEnvVar.Value)
 
 	res.Diagnostics.Append(res.State.Set(ctx, kc)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information

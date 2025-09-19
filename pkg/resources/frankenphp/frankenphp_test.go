@@ -22,11 +22,14 @@ import (
 )
 
 func TestAccFrankenPHP_basic(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-frankenphp")
 	fullName := fmt.Sprintf("clevercloud_frankenphp.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	domain := fmt.Sprintf("%s.com", rName)
 	frankenphpBlock := helper.NewRessource(
 		"clevercloud_frankenphp",
 		rName,
@@ -38,8 +41,9 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
 			"dev_dependencies":   false,
-			"vhosts":             []string{fmt.Sprintf("toto-%s.com/", rName)},
-		}))
+			"vhosts":             []map[string]string{{"fqdn": domain}},
+		}),
+	)
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
@@ -59,7 +63,7 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 					}
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
-					if len(app.Vhosts) != 1 || !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io/") {
+					if len(app.Vhosts) != 1 || app.Vhosts[0].Fqdn != (domain+"/") {
 						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), "1 cleverapps.io domain")
 					}
 					return nil
@@ -72,7 +76,7 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 					SetOneValue("min_instance_count", 2).
 					SetOneValue("max_instance_count", 6).
 					SetOneValue("dev_dependencies", true).
-					SetOneValue("vhosts", []string{"test-frankenphp-1.com", "test-frankenphp-2.com/"}),
+					SetOneValue("vhosts", []map[string]string{{"fqdn": "test-frankenphp-1.com"}, {"fqdn": "test-frankenphp-2.com", "path_begin": "/test"}}),
 			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
@@ -85,9 +89,9 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 					}
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
-					expectedVhosts := []string{"test-frankenphp-1.com/", "test-frankenphp-2.com/"}
-					if len(app.Vhosts) != 2 {
-						return assertError("invalid vhost count", "vhosts", len(app.Vhosts), 2)
+					expectedVhosts := []string{"test-frankenphp-1.com/", "test-frankenphp-2.com/test"}
+					if len(app.Vhosts) != len(expectedVhosts) {
+						return assertError("invalid vhost count", "vhosts", len(app.Vhosts), len(expectedVhosts))
 					}
 
 					for _, expectedVhost := range expectedVhosts {
@@ -122,6 +126,9 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 					UnsetOneValue("vhosts"),
 			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("max_instance_count"), knownvalue.Int64Exact(6)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(true)),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
 					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
@@ -129,8 +136,8 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 					}
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
-					if len(app.Vhosts) != 1 || !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io/") {
-						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), "1 cleverapps.io domain")
+					if len(app.Vhosts) != 2 {
+						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), "2 custom domain")
 					}
 					return nil
 				}),
