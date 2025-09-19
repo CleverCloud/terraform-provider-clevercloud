@@ -412,9 +412,7 @@ func checkDrainDestroyed(state *terraform.State) error {
 	ctx := context.Background()
 	cc := client.New(client.WithAutoOauthConfig())
 
-	for name, resource := range state.RootModule().Resources {
-		fmt.Printf("Checking drain '%s'\n", name)
-
+	for _, resource := range state.RootModule().Resources {
 		res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
 		if res.IsNotFoundError() {
 			continue

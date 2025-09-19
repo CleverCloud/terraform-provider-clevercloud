@@ -17,23 +17,31 @@ type Go struct {
 	attributes.Runtime
 }
 
+type GoV0 struct {
+	attributes.RuntimeV0
+}
+
 //go:embed doc.md
 var goDoc string
 
 func (r ResourceGo) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-
-	res.Schema = schema.Schema{
-		Version:             0,
-		MarkdownDescription: goDoc,
-		Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
-		Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
-	}
+	res.Schema = schemaGo
 }
 
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourceGo) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
+var schemaGo = schema.Schema{
+	Version:             1,
+	MarkdownDescription: goDoc,
+	Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
+	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
+
+var schemaGoV0 = schema.Schema{
+	Version:             0,
+	MarkdownDescription: goDoc,
+	Attributes:          attributes.WithRuntimeCommonsV0(map[string]schema.Attribute{}),
+	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+}
+
 
 func (g Go) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
 	env := map[string]string{}

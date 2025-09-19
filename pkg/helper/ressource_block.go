@@ -111,6 +111,8 @@ func map_String(m map[string]any, s, tab, separator string) string {
 	// create keyValues block
 	s = pkg.Reduce(valuesKeys, s, func(acc, key string) string {
 		switch c_type := m[key].(type) {
+		case nil:
+			return acc + tab + key + " = null\n"
 		case string:
 			var_tmp := m[key].(string)
 			return acc + tab + key + ` = "` + strings.ReplaceAll(var_tmp, "\"", "\\\"") + `"
@@ -129,6 +131,15 @@ func map_String(m map[string]any, s, tab, separator string) string {
 		case []string:
 			strs := pkg.Map(c_type, func(s string) string {
 				return `"` + s + `"`
+			})
+			return acc + tab + key + separator + ` [ ` + strings.Join(strs, ", ") + " ]\n"
+		case []map[string]string:
+			strs := pkg.Map(c_type, func(m map[string]string) string {
+				fields := []string{}
+				for k, v := range m {
+					fields = append(fields, k+` = "`+v+`"`)
+				}
+				return "{ " + strings.Join(fields, ", ") + " }"
 			})
 			return acc + tab + key + separator + ` [ ` + strings.Join(strs, ", ") + " ]\n"
 		default:

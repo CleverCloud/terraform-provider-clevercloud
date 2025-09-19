@@ -75,24 +75,7 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
 
 	createdVhosts := createAppRes.Application.Vhosts
-	if plan.VHosts.IsNull() || plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = helper.VHostsFromAPIHosts(createdVhosts.AsString(), &resp.Diagnostics)
-	} else { // practitionner give it's own vhost, remove cleverapps one
-
-		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
-			deleteVhostRes := tmp.DeleteAppVHost(
-				ctx,
-				r.Client(),
-				r.Organization(),
-				plan.ID.ValueString(),
-				vhost,
-			)
-			if deleteVhostRes.HasError() {
-				resp.Diagnostics.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-				return
-			}
-		}
-	}
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -124,7 +107,7 @@ func (r *ResourceFrankenPHP) Read(ctx context.Context, req resource.ReadRequest,
 	state.Region = pkg.FromStr(appFrankenPHP.App.Zone)
 	state.DeployURL = pkg.FromStr(appFrankenPHP.App.DeployURL)
 
-	state.VHosts = helper.VHostsFromAPIHosts(appFrankenPHP.App.Vhosts.AsString(), &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(ctx, appFrankenPHP.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -193,7 +176,7 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	plan.VHosts = pkg.FromSetString(updateAppRes.Application.Vhosts.AsString(), &res.Diagnostics)
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updateAppRes.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
 
 	plan.ID = pkg.FromStr(updateAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(updateAppRes.Application.DeployURL)

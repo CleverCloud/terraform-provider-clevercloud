@@ -18,22 +18,32 @@ type Static struct {
 	// Static related
 }
 
+type StaticV0 struct {
+	attributes.RuntimeV0
+	// Static related
+}
+
 //go:embed doc.md
 var staticDoc string
 
 func (r ResourceStatic) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-	res.Schema = schema.Schema{
-		Version:             0,
-		MarkdownDescription: staticDoc,
-		Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
-		Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
-	}
+	res.Schema = schemaStatic
 }
 
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (plan *Static) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
+var schemaStatic = schema.Schema{
+	Version:             1,
+	MarkdownDescription: staticDoc,
+	Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
+	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
+
+var schemaStaticV0 = schema.Schema{
+	Version:             0,
+	MarkdownDescription: staticDoc,
+	Attributes:          attributes.WithRuntimeCommonsV0(map[string]schema.Attribute{}),
+	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+}
+
 
 func (plan *Static) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
 	env := map[string]string{}

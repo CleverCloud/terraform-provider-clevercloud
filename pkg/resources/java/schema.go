@@ -21,27 +21,42 @@ type Java struct {
 	JavaVersion types.String `tfsdk:"java_version"`
 }
 
+type JavaV0 struct {
+	attributes.RuntimeV0
+	JavaVersion types.String `tfsdk:"java_version"`
+}
+
 //go:embed doc.md
 var javaDoc string
 
 func (r ResourceJava) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-	res.Schema = schema.Schema{
-		Version:             0,
-		MarkdownDescription: javaDoc,
-		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
-			"java_version": schema.StringAttribute{
-				Optional:    true,
-				Description: "Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).",
-			},
-		}),
-		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
-	}
+	res.Schema = schemaJava
 }
 
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (plan *Java) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
+var schemaJava = schema.Schema{
+	Version:             1,
+	MarkdownDescription: javaDoc,
+	Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
+		"java_version": schema.StringAttribute{
+			Optional:    true,
+			Description: "Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).",
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
+
+var schemaJavaV0 = schema.Schema{
+	Version:             0,
+	MarkdownDescription: javaDoc,
+	Attributes: attributes.WithRuntimeCommonsV0(map[string]schema.Attribute{
+		"java_version": schema.StringAttribute{
+			Optional:    true,
+			Description: "Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).",
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+}
+
 
 func (plan *Java) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
 	env := map[string]string{}

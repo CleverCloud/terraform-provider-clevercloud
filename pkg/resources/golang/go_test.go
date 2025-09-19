@@ -5,6 +5,7 @@ import (
 	_ "embed"
 	"fmt"
 	"regexp"
+	"strings"
 	"testing"
 
 	tfjson "github.com/hashicorp/terraform-json"
@@ -74,6 +75,16 @@ func TestAccGo_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("build_flavor"), knownvalue.StringExact("M")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("vhosts"), knownvalue.SetExact(
+					[]knownvalue.Check{
+						knownvalue.ObjectExact(
+							map[string]knownvalue.Check{
+								"fqdn":       knownvalue.StringRegexp(regexp.MustCompile(`^app-.*\.cleverapps\.io$`)),
+								"path_begin": knownvalue.StringExact("/"),
+							},
+						),
+					},
+				)),
 				tests.NewCheckRemoteResource(
 					fullName,
 					func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
@@ -113,6 +124,14 @@ func TestAccGo_basic(t *testing.T) {
 						}
 						if app.Zone != "par" {
 							return assertError("expect region to be 'par'", "region", app.Zone)
+						}
+
+						if len(app.Vhosts) != 1 {
+							return assertError("expect one vhost", app.Vhosts, "<cleverapps>")
+						}
+
+						if !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io/") {
+							return assertError("expect a cleverapps fqdn", app.Vhosts[0].Fqdn, "<cleverapps>")
 						}
 
 						appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)

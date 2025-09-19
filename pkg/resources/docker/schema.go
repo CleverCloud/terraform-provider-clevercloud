@@ -31,76 +31,148 @@ type Docker struct {
 	DaemonSocketMount types.Bool   `tfsdk:"daemon_socket_mount"`
 }
 
+type DockerV0 struct {
+	attributes.RuntimeV0
+	Dockerfile        types.String `tfsdk:"dockerfile"`
+	ContainerPort     types.Int64  `tfsdk:"container_port"`
+	ContainerPortTCP  types.Int64  `tfsdk:"container_port_tcp"`
+	EnableIPv6        types.Bool   `tfsdk:"enable_ipv6"`
+	IPv6Cidr          types.String `tfsdk:"ipv6_cidr"`
+	RegistryURL       types.String `tfsdk:"registry_url"`
+	RegistryUser      types.String `tfsdk:"registry_user"`
+	RegistryPassword  types.String `tfsdk:"registry_password"`
+	DaemonSocketMount types.Bool   `tfsdk:"daemon_socket_mount"`
+}
+
 //go:embed doc.md
 var dockerDoc string
 
 func (r ResourceDocker) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-	res.Schema = schema.Schema{
-		Version:             0,
-		MarkdownDescription: dockerDoc,
-		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
-			"dockerfile": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "The name of the Dockerfile to build",
-			},
-			"container_port": schema.Int64Attribute{
-				Optional:            true,
-				MarkdownDescription: "Set to custom HTTP port if your Docker container runs on custom port",
-			},
-			"container_port_tcp": schema.Int64Attribute{
-				Optional:            true,
-				MarkdownDescription: "Set to custom TCP port if your Docker container runs on custom port.",
-			},
-			"enable_ipv6": schema.BoolAttribute{
-				Optional:           true,
-				DeprecationMessage: "never works, please use `ipv6_cidr`",
-			},
-			"ipv6_cidr": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "Activate the support of IPv6 with an IPv6 subnet int the docker daemon",
-				Validators: []validator.String{
-					pkg.NewValidator("IPv6 CIDR 🍾", func(_ context.Context, req validator.StringRequest, res *validator.StringResponse) {
-						if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-							return
-						}
-
-						str := req.ConfigValue.ValueString()
-						ip, _, err := net.ParseCIDR(str)
-						if err != nil {
-							res.Diagnostics.AddAttributeError(req.Path, "invalid IPv6 CIDR provided", err.Error())
-						}
-
-						if len(ip) != net.IPv6len {
-							res.Diagnostics.AddAttributeError(req.Path, "invalid IPv6 CIDR provided", "expect an IPv6 before the mask")
-						}
-					}),
-				},
-			},
-			"registry_url": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "The server of your private registry (optional).	Docker’s public registry",
-			},
-			"registry_user": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "The username to login to a private registry",
-			},
-			"registry_password": schema.StringAttribute{
-				Optional:            true,
-				Sensitive:           true,
-				MarkdownDescription: "The password of your username",
-			},
-			"daemon_socket_mount": schema.BoolAttribute{
-				Optional:            true,
-				MarkdownDescription: "Set to true to access the host Docker socket from inside your container",
-			},
-		}),
-		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
-	}
+	res.Schema = schemaDocker
 }
 
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (p *Docker) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
+var schemaDocker = schema.Schema{
+	Version:             1,
+	MarkdownDescription: dockerDoc,
+	Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
+		"dockerfile": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "The name of the Dockerfile to build",
+		},
+		"container_port": schema.Int64Attribute{
+			Optional:            true,
+			MarkdownDescription: "Set to custom HTTP port if your Docker container runs on custom port",
+		},
+		"container_port_tcp": schema.Int64Attribute{
+			Optional:            true,
+			MarkdownDescription: "Set to custom TCP port if your Docker container runs on custom port.",
+		},
+		"enable_ipv6": schema.BoolAttribute{
+			Optional:           true,
+			DeprecationMessage: "never works, please use `ipv6_cidr`",
+		},
+		"ipv6_cidr": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Activate the support of IPv6 with an IPv6 subnet int the docker daemon",
+			Validators: []validator.String{
+				pkg.NewValidator("IPv6 CIDR 🍾", func(_ context.Context, req validator.StringRequest, res *validator.StringResponse) {
+					if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+						return
+					}
+
+					str := req.ConfigValue.ValueString()
+					ip, _, err := net.ParseCIDR(str)
+					if err != nil {
+						res.Diagnostics.AddAttributeError(req.Path, "invalid IPv6 CIDR provided", err.Error())
+					}
+
+					if len(ip) != net.IPv6len {
+						res.Diagnostics.AddAttributeError(req.Path, "invalid IPv6 CIDR provided", "expect an IPv6 before the mask")
+					}
+				}),
+			},
+		},
+		"registry_url": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "The server of your private registry (optional).	Docker’s public registry",
+		},
+		"registry_user": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "The username to login to a private registry",
+		},
+		"registry_password": schema.StringAttribute{
+			Optional:            true,
+			Sensitive:           true,
+			MarkdownDescription: "The password of your username",
+		},
+		"daemon_socket_mount": schema.BoolAttribute{
+			Optional:            true,
+			MarkdownDescription: "Set to true to access the host Docker socket from inside your container",
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+}
+
+var schemaDockerV0 = schema.Schema{
+	Version:             0,
+	MarkdownDescription: dockerDoc,
+	Attributes: attributes.WithRuntimeCommonsV0(map[string]schema.Attribute{
+		"dockerfile": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "The name of the Dockerfile to build",
+		},
+		"container_port": schema.Int64Attribute{
+			Optional:            true,
+			MarkdownDescription: "Set to custom HTTP port if your Docker container runs on custom port",
+		},
+		"container_port_tcp": schema.Int64Attribute{
+			Optional:            true,
+			MarkdownDescription: "Set to custom TCP port if your Docker container runs on custom port.",
+		},
+		"enable_ipv6": schema.BoolAttribute{
+			Optional:           true,
+			DeprecationMessage: "never works, please use `ipv6_cidr`",
+		},
+		"ipv6_cidr": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Activate the support of IPv6 with an IPv6 subnet int the docker daemon",
+			Validators: []validator.String{
+				pkg.NewValidator("IPv6 CIDR 🍾", func(_ context.Context, req validator.StringRequest, res *validator.StringResponse) {
+					if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+						return
+					}
+
+					str := req.ConfigValue.ValueString()
+					ip, _, err := net.ParseCIDR(str)
+					if err != nil {
+						res.Diagnostics.AddAttributeError(req.Path, "invalid IPv6 CIDR provided", err.Error())
+					}
+
+					if len(ip) != net.IPv6len {
+						res.Diagnostics.AddAttributeError(req.Path, "invalid IPv6 CIDR provided", "expect an IPv6 before the mask")
+					}
+				}),
+			},
+		},
+		"registry_url": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "The server of your private registry (optional).	Docker’s public registry",
+		},
+		"registry_user": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "The username to login to a private registry",
+		},
+		"registry_password": schema.StringAttribute{
+			Optional:            true,
+			Sensitive:           true,
+			MarkdownDescription: "The password of your username",
+		},
+		"daemon_socket_mount": schema.BoolAttribute{
+			Optional:            true,
+			MarkdownDescription: "Set to true to access the host Docker socket from inside your container",
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 func (p *Docker) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
