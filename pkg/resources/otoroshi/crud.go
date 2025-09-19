@@ -5,28 +5,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
-
-func (r *ResourceOtoroshi) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceOtoroshi.Configure()")
-
-	if req.ProviderData == nil {
-		return
-	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
-	}
-}
 
 func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	otoroshi := helper.PlanFrom[Otoroshi](ctx, req.Plan, &resp.Diagnostics)
@@ -34,7 +18,7 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
+	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on providers", addonsProvidersRes.Error().Error())
 		return
@@ -62,7 +46,7 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 		}
 	}
 
-	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
+	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create Otoroshi add-on", res.Error().Error())
 		return
@@ -74,7 +58,7 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, otoroshi)...)
 
-	envRes := tmp.GetAddonEnv(ctx, r.cc, r.org, addonRes.ID)
+	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), addonRes.ID)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", envRes.Error().Error())
 		return
@@ -113,7 +97,7 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.cc, r.org, otoroshi.ID.ValueString())
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), otoroshi.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -124,7 +108,7 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 	addon := addonRes.Payload()
 
-	addonEnvRes := tmp.GetAddonEnv(ctx, r.cc, r.org, otoroshi.ID.ValueString())
+	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), otoroshi.ID.ValueString())
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
@@ -178,7 +162,7 @@ func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -199,7 +183,7 @@ func (r *ResourceOtoroshi) Delete(ctx context.Context, req resource.DeleteReques
 	}
 	tflog.Debug(ctx, "OTOROSHI DELETE", map[string]any{"otoroshi": otoroshi})
 
-	res := tmp.DeleteAddon(ctx, r.cc, r.org, otoroshi.ID.ValueString())
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), otoroshi.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -210,9 +194,4 @@ func (r *ResourceOtoroshi) Delete(ctx context.Context, req resource.DeleteReques
 	}
 
 	resp.State.RemoveResource(ctx)
-}
-
-func (r *ResourceOtoroshi) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
 }
