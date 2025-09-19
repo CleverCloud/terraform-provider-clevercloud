@@ -195,7 +195,6 @@ func (r *ResourceHaskell) Update(ctx context.Context, req resource.UpdateRequest
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
-	// Correctly named: update the app (via PUT Method)
 	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
@@ -204,23 +203,17 @@ func (r *ResourceHaskell) Update(ctx context.Context, req resource.UpdateRequest
 
 	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource
 func (r *ResourceHaskell) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var app Haskell
-
-	diags := req.State.Get(ctx, &app)
-	resp.Diagnostics.Append(diags...)
+	state := helper.StateFrom[Haskell](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Haskell DELETE", map[string]any{"app": app})
+	tflog.Debug(ctx, "Haskell DELETE", map[string]any{"app": state.ID.ValueString()})
 
-	res := tmp.DeleteApp(ctx, r.Client(), r.Organization(), app.ID.ValueString())
+	res := tmp.DeleteApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -232,5 +225,3 @@ func (r *ResourceHaskell) Delete(ctx context.Context, req resource.DeleteRequest
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource
