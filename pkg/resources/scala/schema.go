@@ -24,7 +24,7 @@ var scalaDoc string
 
 func (r ResourceScala) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 	res.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: scalaDoc,
 		Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
 		Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),

@@ -49,6 +49,15 @@ func (r *Ressource) SetOneValue(key string, value any) *Ressource {
 	return r
 }
 
+// unit keyValues unset:
+//   - desc: remove a key from keyValues field of a Ressource then return the Ressource
+//   - args: key to remove
+//   - return: pointer to Ressource
+func (r *Ressource) UnsetOneValue(key string) *Ressource {
+	delete(r.keyValues, key)
+	return r
+}
+
 // keyValues setter:
 //   - desc: set/add key: value to keyValues field of a Ressource then return the Ressource
 //   - args: map of string key + value

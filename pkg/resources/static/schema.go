@@ -23,7 +23,7 @@ var staticDoc string
 
 func (r ResourceStatic) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 	res.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: staticDoc,
 		Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
 		Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),

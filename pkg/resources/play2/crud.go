@@ -76,7 +76,7 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 
 	createdVhosts := createAppRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
+		plan.VHosts = helper.VHostsFromAPIHosts(createdVhosts.AsString(), &resp.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
 		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
@@ -125,8 +125,7 @@ func (r *ResourcePlay2) Read(ctx context.Context, req resource.ReadRequest, resp
 	state.DeployURL = pkg.FromStr(readRes.App.DeployURL)
 	state.BuildFlavor = readRes.GetBuildFlavor()
 
-	vhosts := readRes.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(readRes.App.Vhosts.AsString(), &resp.Diagnostics)
 
 	for envName, envValue := range readRes.EnvAsMap() {
 		switch envName {
@@ -211,7 +210,7 @@ func (r *ResourcePlay2) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
-	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+	plan.VHosts = helper.VHostsFromAPIHosts(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {

@@ -77,7 +77,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 
 	createdVhosts := createAppRes.Application.Vhosts
 	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
+		plan.VHosts = helper.VHostsFromAPIHosts(createdVhosts.AsString(), &resp.Diagnostics)
 	} else { // practitionner give it's own vhost, remove cleverapps one
 
 		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
@@ -127,8 +127,7 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 	state.DeployURL = pkg.FromStr(appPHP.App.DeployURL)
 	state.BuildFlavor = appPHP.GetBuildFlavor()
 
-	vhosts := appPHP.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(appPHP.App.Vhosts.AsString(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -198,7 +197,7 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+	plan.VHosts = helper.VHostsFromAPIHosts(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {

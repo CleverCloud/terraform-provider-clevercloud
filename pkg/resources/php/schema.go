@@ -27,7 +27,7 @@ var phpDoc string
 
 func (r ResourcePHP) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 	res.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: phpDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
 			// CC_WEBROOT

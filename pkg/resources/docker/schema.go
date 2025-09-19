@@ -16,6 +16,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
 type Docker struct {
@@ -36,7 +37,7 @@ var dockerDoc string
 
 func (r ResourceDocker) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 	res.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: dockerDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
 			"dockerfile": schema.StringAttribute{
@@ -100,7 +101,30 @@ func (r ResourceDocker) Schema(ctx context.Context, req resource.SchemaRequest, 
 
 // https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
 func (p *Docker) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
+	return map[int64]resource.StateUpgrader{
+		0: {
+			PriorSchema: &schema.Schema{
+				Attributes: map[string]schema.Attribute{
+					"vhosts": schema.ListAttribute{
+						ElementType: types.StringType,
+						Optional:    true,
+					},
+				},
+			},
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, res *resource.UpgradeStateResponse) {
+				type OldState struct {
+					Vhosts []types.String `tfsdk:"vhosts"`
+				}
+
+				oldState := helper.StateFrom[OldState](ctx, *req.State, &res.Diagnostics)
+				if res.Diagnostics.HasError() {
+					return
+				}
+
+				return res.State.Set(ctx, Docker{})
+			},
+		},
+	}
 }
 
 func (p *Docker) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {

@@ -26,7 +26,7 @@ var javaDoc string
 
 func (r ResourceJava) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 	res.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: javaDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
 			"java_version": schema.StringAttribute{

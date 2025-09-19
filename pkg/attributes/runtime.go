@@ -3,6 +3,7 @@ package attributes
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -14,6 +15,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
+
+type VHost struct {
+	FQDN      types.String `tfsdk:"fqdn"`
+	PathBegin types.String `tfsdk:"path_begin"`
+}
+
+func (vh VHost) String() string {
+	path := "/"
+	if !vh.PathBegin.IsNull() && !vh.PathBegin.IsUnknown() {
+		path = vh.PathBegin.ValueString()
+	}
+
+	return fmt.Sprintf("%s%s", vh.FQDN.ValueString(), path)
+}
 
 type Runtime struct {
 	ID               types.String `tfsdk:"id"`
@@ -45,9 +60,12 @@ func (r Runtime) DependenciesAsString(ctx context.Context, diags *diag.Diagnosti
 }
 
 func (r Runtime) VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) []string {
-	vhosts := []string{}
-	diags.Append(r.VHosts.ElementsAs(ctx, &vhosts, true)...)
-	return vhosts
+	vhosts := pkg.SetTo[VHost](ctx, r.VHosts, diags)
+	if diags.HasError() {
+		return []string{}
+	}
+
+	return pkg.Map(vhosts, func(vh VHost) string { return vh.String() })
 }
 
 // This attributes are used on several runtimes
@@ -97,11 +115,42 @@ var runtimeCommon = map[string]schema.Attribute{
 		Optional:            true,
 		MarkdownDescription: "Redirect client from plain to TLS port",
 	},
-	"vhosts": schema.SetAttribute{
-		ElementType:         types.StringType,
+	"vhosts": schema.SetNestedAttribute{
+		MarkdownDescription: "List of virtual hosts",
 		Optional:            true,
-		Computed:            true,
-		MarkdownDescription: "Add custom hostname, see [documentation](https://www.clever.cloud/developers/doc/administrate/domain-names/)",
+		Computed:            true, // needed to set cleverapps defautlt domains
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: map[string]schema.Attribute{
+				"fqdn": schema.StringAttribute{
+					Required:            true,
+					MarkdownDescription: "Fully qualified domain name",
+					Validators: []validator.String{
+						pkg.NewValidatorRegex("Valid hostname format", pkg.VhostValidRegExp),
+					},
+				},
+				"path_begin": schema.StringAttribute{
+					Optional:            true,
+					Computed:            true,
+					Default:             stringdefault.StaticString("/"),
+					MarkdownDescription: "Any HTTP request starting with this path will be sent to this application",
+					Validators: []validator.String{
+						pkg.NewValidator("Path must start with /", func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
+							if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+								return
+							}
+							value := req.ConfigValue.ValueString()
+							if !strings.HasPrefix(value, "/") {
+								res.Diagnostics.AddAttributeError(
+									req.Path,
+									"Invalid path_begin format",
+									fmt.Sprintf("path_begin must start with '/' (got: '%s')", value),
+								)
+							}
+						}),
+					},
+				},
+			},
+		},
 	},
 	// APP_FOLDER
 	"app_folder": schema.StringAttribute{
