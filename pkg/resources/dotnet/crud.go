@@ -195,7 +195,6 @@ func (r *ResourceDotnet) Update(ctx context.Context, req resource.UpdateRequest,
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
-	// Correctly named: update the app (via PUT Method)
 	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
@@ -204,23 +203,17 @@ func (r *ResourceDotnet) Update(ctx context.Context, req resource.UpdateRequest,
 
 	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource
 func (r *ResourceDotnet) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var app Dotnet
-
-	diags := req.State.Get(ctx, &app)
-	resp.Diagnostics.Append(diags...)
+	state := helper.StateFrom[Dotnet](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Dotnet DELETE", map[string]any{"app": app})
+	tflog.Debug(ctx, "Dotnet DELETE", map[string]any{"app": state.ID.ValueString()})
 
-	res := tmp.DeleteApp(ctx, r.Client(), r.Organization(), app.ID.ValueString())
+	res := tmp.DeleteApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -232,5 +225,3 @@ func (r *ResourceDotnet) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource
