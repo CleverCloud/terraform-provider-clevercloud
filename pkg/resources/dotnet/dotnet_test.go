@@ -157,13 +157,13 @@ func TestAccNodejs_basic(t *testing.T) {
 						assertError("When providing 'dotnet_profile': 'dotnet-profile-1'", "dotnet-profile-1", v1)
 					}
 
-					v1 := env["CC_DOTNET_PROJ"]
-					if v1 != "dotnet-proj-name" {
+					v2 := env["CC_DOTNET_PROJ"]
+					if v2 != "dotnet-proj-name" {
 						assertError("When providing 'dotnet_proj': 'dotnet-proj-name'", "dotnet-proj-name", v2)
 					}
 
-					v1 := env["CC_DOTNET_TFM"]
-					if v1 != "net42" {
+					v3 := env["CC_DOTNET_TFM"]
+					if v3 != "net42" {
 						assertError("When providing 'dotnet_tfm': 'dotnet-profile-1'", "net42", v3)
 					}
 
