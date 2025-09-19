@@ -17,22 +17,22 @@ import (
 
 type Ruby struct {
 	attributes.Runtime
-	RubyVersion         types.String `tfsdk:"ruby_version"`
-	EnableSidekiq       types.Bool   `tfsdk:"enable_sidekiq"`
-	RackupServer        types.String `tfsdk:"rackup_server"`
-	RakeGoals           types.String `tfsdk:"rake_goals"`
-	SidekiqFiles        types.String `tfsdk:"sidekiq_files"`
-	HTTPBasicAuth       types.String `tfsdk:"http_basic_auth"`
-	NginxProxyBuffers   types.String `tfsdk:"nginx_proxy_buffers"`
-	NginxProxyBufferSize types.String `tfsdk:"nginx_proxy_buffer_size"`
-	EnableGzipCompression types.Bool  `tfsdk:"enable_gzip_compression"`
-	GzipTypes           types.String `tfsdk:"gzip_types"`
-	NginxReadTimeout    types.Int64  `tfsdk:"nginx_read_timeout"`
-	RackEnv             types.String `tfsdk:"rack_env"`
-	RailsEnv            types.String `tfsdk:"rails_env"`
-	StaticFilesPath     types.String `tfsdk:"static_files_path"`
-	StaticURLPrefix     types.String `tfsdk:"static_url_prefix"`
-	StaticWebroot       types.String `tfsdk:"static_webroot"`
+	RubyVersion           types.String `tfsdk:"ruby_version"`
+	EnableSidekiq         types.Bool   `tfsdk:"enable_sidekiq"`
+	RackupServer          types.String `tfsdk:"rackup_server"`
+	RakeGoals             types.String `tfsdk:"rake_goals"`
+	SidekiqFiles          types.String `tfsdk:"sidekiq_files"`
+	HTTPBasicAuth         types.String `tfsdk:"http_basic_auth"`
+	NginxProxyBuffers     types.String `tfsdk:"nginx_proxy_buffers"`
+	NginxProxyBufferSize  types.String `tfsdk:"nginx_proxy_buffer_size"`
+	EnableGzipCompression types.Bool   `tfsdk:"enable_gzip_compression"`
+	GzipTypes             types.String `tfsdk:"gzip_types"`
+	NginxReadTimeout      types.Int64  `tfsdk:"nginx_read_timeout"`
+	RackEnv               types.String `tfsdk:"rack_env"`
+	RailsEnv              types.String `tfsdk:"rails_env"`
+	StaticFilesPath       types.String `tfsdk:"static_files_path"`
+	StaticURLPrefix       types.String `tfsdk:"static_url_prefix"`
+	StaticWebroot         types.String `tfsdk:"static_webroot"`
 }
 
 //go:embed doc.md
@@ -41,7 +41,7 @@ var rubyDoc string
 func (r ResourceRuby) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 
 	res.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: rubyDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
 			// CC_RUBY_VERSION
@@ -149,7 +149,7 @@ func (ruby Ruby) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]s
 
 	pkg.IfIsSetStr(ruby.AppFolder, func(s string) { env["APP_FOLDER"] = s })
 	pkg.IfIsSetStr(ruby.RubyVersion, func(s string) { env["CC_RUBY_VERSION"] = s })
-	pkg.IfIsSetB(ruby.EnableSidekiq, func(b bool) { 
+	pkg.IfIsSetB(ruby.EnableSidekiq, func(b bool) {
 		if b {
 			env["CC_ENABLE_SIDEKIQ"] = "true"
 		}

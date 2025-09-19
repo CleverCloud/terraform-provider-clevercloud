@@ -22,7 +22,7 @@ var play2Doc string
 
 func (r ResourcePlay2) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 	res.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: play2Doc,
 		Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
 		Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),

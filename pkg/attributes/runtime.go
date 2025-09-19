@@ -17,8 +17,17 @@ import (
 )
 
 type VHost struct {
-	Vhost     types.String `tfsdk:"vhost"`
+	FQDN      types.String `tfsdk:"fqdn"`
 	PathBegin types.String `tfsdk:"path_begin"`
+}
+
+func (vh VHost) String() string {
+	path := "/"
+	if !vh.PathBegin.IsNull() && !vh.PathBegin.IsUnknown() {
+		path = vh.PathBegin.ValueString()
+	}
+
+	return fmt.Sprintf("%s%s", vh.FQDN.ValueString(), path)
 }
 
 type Runtime struct {
@@ -33,7 +42,7 @@ type Runtime struct {
 	Region           types.String `tfsdk:"region"`
 	StickySessions   types.Bool   `tfsdk:"sticky_sessions"`
 	RedirectHTTPS    types.Bool   `tfsdk:"redirect_https"`
-	VHosts           types.List   `tfsdk:"vhosts"`
+	VHosts           types.Set    `tfsdk:"vhosts"`
 	DeployURL        types.String `tfsdk:"deploy_url"`
 	Dependencies     types.Set    `tfsdk:"dependencies"`
 	Deployment       *Deployment  `tfsdk:"deployment"`
@@ -51,37 +60,12 @@ func (r Runtime) DependenciesAsString(ctx context.Context, diags *diag.Diagnosti
 }
 
 func (r Runtime) VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) []string {
-	if r.VHosts.IsNull() || r.VHosts.IsUnknown() {
-		return []string{}
-	}
-
-	var vhosts []VHost
-	diags.Append(r.VHosts.ElementsAs(ctx, &vhosts, false)...)
+	vhosts := pkg.SetTo[VHost](ctx, r.VHosts, diags)
 	if diags.HasError() {
 		return []string{}
 	}
 
-	result := make([]string, 0, len(vhosts))
-	for _, vh := range vhosts {
-		if vh.Vhost.IsNull() || vh.Vhost.IsUnknown() {
-			continue
-		}
-
-		vhostStr := vh.Vhost.ValueString()
-		pathBegin := "/"
-		if !vh.PathBegin.IsNull() && !vh.PathBegin.IsUnknown() {
-			pathBegin = vh.PathBegin.ValueString()
-		}
-
-		// Combine vhost with path_begin for API format
-		if pathBegin == "/" {
-			result = append(result, vhostStr)
-		} else {
-			result = append(result, vhostStr+pathBegin)
-		}
-	}
-
-	return result
+	return pkg.Map(vhosts, func(vh VHost) string { return vh.String() })
 }
 
 // This attributes are used on several runtimes
@@ -131,12 +115,15 @@ var runtimeCommon = map[string]schema.Attribute{
 		Optional:            true,
 		MarkdownDescription: "Redirect client from plain to TLS port",
 	},
-	"vhosts": schema.ListNestedAttribute{
+	"vhosts": schema.SetNestedAttribute{
+		MarkdownDescription: "List of virtual hosts",
+		Optional:            true,
+		Computed:            true, // needed to set cleverapps defautlt domains
 		NestedObject: schema.NestedAttributeObject{
 			Attributes: map[string]schema.Attribute{
-				"vhost": schema.StringAttribute{
+				"fqdn": schema.StringAttribute{
 					Required:            true,
-					MarkdownDescription: "VHost name",
+					MarkdownDescription: "Fully qualified domain name",
 					Validators: []validator.String{
 						pkg.NewValidatorRegex("Valid hostname format", pkg.VhostValidRegExp),
 					},
@@ -145,7 +132,7 @@ var runtimeCommon = map[string]schema.Attribute{
 					Optional:            true,
 					Computed:            true,
 					Default:             stringdefault.StaticString("/"),
-					MarkdownDescription: "Path extension",
+					MarkdownDescription: "Any HTTP request starting with this path will be sent to this application",
 					Validators: []validator.String{
 						pkg.NewValidator("Path must start with /", func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
 							if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
@@ -164,8 +151,6 @@ var runtimeCommon = map[string]schema.Attribute{
 				},
 			},
 		},
-		Optional:            true,
-		MarkdownDescription: "List of virtual hosts",
 	},
 	// APP_FOLDER
 	"app_folder": schema.StringAttribute{

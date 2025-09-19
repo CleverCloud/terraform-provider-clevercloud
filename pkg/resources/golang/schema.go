@@ -23,7 +23,7 @@ var goDoc string
 func (r ResourceGo) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 
 	res.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: goDoc,
 		Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
 		Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
