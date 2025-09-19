@@ -146,13 +146,11 @@ func (r *ResourceV) Update(ctx context.Context, req resource.UpdateRequest, res 
 		return
 	}
 
-	// Retrieve instance of the app from context
 	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "v", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	// Retriev all env values by extracting ctx env viriables and merge it with the app env variables
 	planEnvironment := plan.toEnv(ctx, res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
@@ -195,7 +193,6 @@ func (r *ResourceV) Update(ctx context.Context, req resource.UpdateRequest, res 
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
-	// Correctly named: update the app (via PUT Method)
 	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
@@ -204,23 +201,17 @@ func (r *ResourceV) Update(ctx context.Context, req resource.UpdateRequest, res 
 
 	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource
 func (r *ResourceV) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var app V
-
-	diags := req.State.Get(ctx, &app)
-	resp.Diagnostics.Append(diags...)
+	state := helper.StateFrom[V](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "V DELETE", map[string]any{"app": app})
+	tflog.Debug(ctx, "V DELETE", map[string]any{"app": state.ID.ValueString()})
 
-	res := tmp.DeleteApp(ctx, r.Client(), r.Organization(), app.ID.ValueString())
+	res := tmp.DeleteApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -232,5 +223,3 @@ func (r *ResourceV) Delete(ctx context.Context, req resource.DeleteRequest, resp
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource
