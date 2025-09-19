@@ -45,10 +45,10 @@ func TestAccNodejs_basic(t *testing.T) {
 			"sticky_sessions":                            true,
 			"environment":                                map[string]any{"MY_KEY": "myval"},
 			"dependencies":                               []string{},
-			"haskell_stack_target":                       "default-target"
-			"haskell_stack_setup_command":                "./setup"
-			"haskell_stack_install_command":              "./install"
-			"haskell_stack_install_dependencies_command": "./install-deps"
+			"haskell_stack_target":                       "default-target",
+			"haskell_stack_setup_command":                "./setup",
+			"haskell_stack_install_command":              "./install",
+			"haskell_stack_install_dependencies_command": "./install-deps",
 		}),
 	)
 	haskellBlock2 := helper.NewRessource(
