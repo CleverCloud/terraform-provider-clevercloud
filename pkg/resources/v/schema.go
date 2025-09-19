@@ -15,6 +15,8 @@ import (
 
 type V struct {
 	attributes.Runtime
+	VBinary types.String `tfstk:"v_binary"`
+	VEnvironment types.String `tfsdk:"v_environment"`
 }
 
 //go:embed doc.md
@@ -25,7 +27,16 @@ func (r ResourceV) Schema(ctx context.Context, req resource.SchemaRequest, res *
 	res.Schema = schema.Schema{
 		Version:             0,
 		MarkdownDescription: vDoc,
-		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
+		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
+			"v_binary": schema.StringAttribute{
+				Optional: true,
+				MarkdownDescription: "The name of the output binary file. Default: `${APP_HOME}/v_bin_${APP_ID}`",
+			},
+			"v_environment": schema.StringAttribute{
+				Optional: true,
+				MarkdownDescription: "Set to `development` to compile without the `-prod` flag.",
+			},
+		}),
 		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 	}
 }
@@ -46,6 +57,9 @@ func (vapp V) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]stri
 		return env
 	}
 	env = pkg.Merge(env, customEnv)
+
+	pkg.IfIsSetStr(vapp.VBinary, func(s string) { env["CC_V_BINARY"] = s })
+	pkg.IfIsSetStr(vapp.VEnvironment, func(s string) { env["ENVIRONMENT"] = s })
 
 	env = pkg.Merge(env, vapp.Hooks.ToEnv())
 
