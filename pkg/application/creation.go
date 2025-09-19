@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"fmt"
-	"net/url"
 	"slices"
 	"strings"
 
@@ -63,9 +62,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	// Application
 	res := &CreateRes{}
 
-	if req.Application.BuildFlavor != "" {
-		req.Application.SeparateBuild = true
-	}
+	req.Application.SeparateBuild = req.Application.BuildFlavor != ""
 
 	appRes := tmp.CreateApp(ctx, req.Client, req.Organization, req.Application)
 	if appRes.HasError() {
@@ -122,6 +119,8 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 
 	// Application
 	res := &CreateRes{}
+
+	req.Application.SeparateBuild = req.Application.BuildFlavor != ""
 
 	appRes := tmp.UpdateApp(ctx, req.Client, req.Organization, req.ID, req.Application)
 	if appRes.HasError() {
@@ -244,7 +243,7 @@ func UpdateVhosts(ctx context.Context, client *client.Client, organization strin
 
 	// Delete vhosts that need to be removed
 	for _, vhost := range vhostsToRemove {
-		deleteVhostRes := tmp.DeleteAppVHost(ctx, client, organization, applicationID, url.QueryEscape(vhost))
+		deleteVhostRes := tmp.DeleteAppVHost(ctx, client, organization, applicationID, vhost)
 		if deleteVhostRes.HasError() {
 			diags.AddError(fmt.Sprintf("failed to remove vhost \"%s\"", vhost), deleteVhostRes.Error().Error())
 			return false
@@ -253,7 +252,7 @@ func UpdateVhosts(ctx context.Context, client *client.Client, organization strin
 
 	// Add new vhosts
 	for _, vhost := range vhostsToAdd {
-		addVhostRes := tmp.AddAppVHost(ctx, client, organization, applicationID, url.QueryEscape(vhost))
+		addVhostRes := tmp.AddAppVHost(ctx, client, organization, applicationID, vhost)
 		if addVhostRes.HasError() {
 			diags.AddError(fmt.Sprintf("failed to add vhost \"%s\"", vhost), addVhostRes.Error().Error())
 			return false
