@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
@@ -15,6 +16,10 @@ import (
 
 type Haskell struct {
 	attributes.Runtime
+	HaskellStackTarget types.String `tfsdk:"haskell_stack_target"`
+	HaskellStackSetupCommand types.String `tfsdk:"haskell_stack_setup_command"`
+	HaskellStackInstallCommand types.String `tfsdk:"haskell_stack_install_command"`
+	HaskellStackInstallDependenciesCommand types.String `tfsdk:"haskell_stack_install_dependencies_command"`
 }
 
 //go:embed doc.md
@@ -25,7 +30,24 @@ func (r ResourceHaskell) Schema(ctx context.Context, req resource.SchemaRequest,
 	res.Schema = schema.Schema{
 		Version:             0,
 		MarkdownDescription: haskellDoc,
-		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
+		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
+			"haskell_stack_target": schema.StringAttribute{
+				Optional: true,
+				MarkdownDescription: "Specify Stack package target.",
+			},
+			"haskell_stack_setup_command": schema.StringAttribute{
+				Optional: true,
+				MarkdownDescription: "Only use this variable to override the default `setup` Stack step command.",
+			},
+			"haskell_stack_install_command": schema.StringAttribute{
+				Optional: true,
+				MarkdownDescription: "Only use this variable to override the default `install` Stack step command.",
+			},
+			"haskell_stack_install_dependencies_command": schema.StringAttribute{
+				Optional: true,
+				MarkdownDescription: "Only use this variable to override the default `install --only-dependencies` Stack step command",
+			},
+		}),
 		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 	}
 }
@@ -47,7 +69,11 @@ func (haskellapp Haskell) toEnv(ctx context.Context, diags diag.Diagnostics) map
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(haskellapp.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetStr(haskellapp.HaskellStackTarget, func(s string) { env["CC_HASKELL_STACK_TARGET"] = s })
+	pkg.IfIsSetStr(haskellapp.HaskellStackSetupCommand, func(s string) { env["CC_HASKELL_STACK_SETUP_COMMAND"] = s })
+	pkg.IfIsSetStr(haskellapp.HaskellStackInstallCommand, func(s string) { env["CC_HASKELL_STACK_INSTALL_COMMAND"] = s })
+	pkg.IfIsSetStr(haskellapp.HaskellStackInstallDependenciesCommand, func(s string) { env["CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND"] = s })
+
 	env = pkg.Merge(env, haskellapp.Hooks.ToEnv())
 
 	return env
