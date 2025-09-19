@@ -11,6 +11,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/frankenphp"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/fsbucket"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/golang"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/haskell"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/java"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/keycloak"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/materiakv"
@@ -68,4 +69,5 @@ var Resources = []func() resource.Resource{
 	pulsar.NewResourcePulsar,
 	rust.NewResourceRust,
 	networkgroup.NewResourceNetworkgroup,
+	haskell.NewResourceHaskell,
 }
