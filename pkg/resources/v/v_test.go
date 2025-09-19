@@ -46,6 +46,8 @@ func TestAccNodejs_basic(t *testing.T) {
 			"app_folder":         "./app",
 			"environment":        map[string]any{"MY_KEY": "myval"},
 			"dependencies":       []string{},
+			"v_binary":           "a.out",
+			"v_environment":      "development",
 		}),
 	)
 	vBlock2 := helper.NewRessource(
@@ -145,7 +147,17 @@ func TestAccNodejs_basic(t *testing.T) {
 
 					v := env["MY_KEY"]
 					if v != "myval" {
-						return assertError("bad env var value MY_KEY", "myval3", v)
+						return assertError("bad env var value MY_KEY", v, "myval")
+					}
+
+					v1 := env["CC_V_BINARY"]
+					if v1 != "a.out" {
+						return assertError("When providing 'v_binary': 'a.out'", v1, "a.out")
+					}
+
+					v2 := env["ENVIRONMENT"]
+					if v2 != "development" {
+						return assertError("When providing 'v_environment': 'development'", v2, "development")
 					}
 
 					return nil
