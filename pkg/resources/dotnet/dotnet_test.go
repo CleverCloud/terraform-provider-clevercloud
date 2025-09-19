@@ -154,22 +154,22 @@ func TestAccNodejs_basic(t *testing.T) {
 
 					v1 := env["CC_DOTNET_PROFILE"]
 					if v1 != "dotnet-profile-1" {
-						assertError("When providing 'dotnet_profile': 'dotnet-profile-1', env['CC_DOTNET_PROFILE'] should return 'dotnet-profile-1'")
+						assertError("When providing 'dotnet_profile': 'dotnet-profile-1'", "dotnet-profile-1", v1)
 					}
 
 					v1 := env["CC_DOTNET_PROJ"]
 					if v1 != "dotnet-proj-name" {
-						assertError("When providing 'dotnet_proj': 'dotnet-proj-name', env['CC_DOTNET_PROJ'] should return 'dotnet-proj-name'")
+						assertError("When providing 'dotnet_proj': 'dotnet-proj-name'", "dotnet-proj-name", v2)
 					}
 
 					v1 := env["CC_DOTNET_TFM"]
 					if v1 != "net42" {
-						assertError("When providing 'dotnet_tfm': 'dotnet-profile-1', env['CC_DOTNET_TFM'] should return 'net42'")
+						assertError("When providing 'dotnet_tfm': 'dotnet-profile-1'", "net42", v3)
 					}
 
 					v4 := env["CC_DOTNET_VERSION"]
 					if v4 != "9.0" {
-						assertError("When providing 'dotnet_version': 'dotnet-profile-1', env['CC_DOTNET_VERSION'] should return '9.0'")
+						assertError("When providing 'dotnet_version': 'dotnet-profile-1'", "9.0", v4)
 					}
 
 					return nil
