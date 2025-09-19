@@ -62,9 +62,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	// Application
 	res := &CreateRes{}
 
-	if req.Application.BuildFlavor != "" {
-		req.Application.SeparateBuild = true
-	}
+	req.Application.SeparateBuild = req.Application.BuildFlavor != ""
 
 	appRes := tmp.CreateApp(ctx, req.Client, req.Organization, req.Application)
 	if appRes.HasError() {
@@ -121,6 +119,8 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 
 	// Application
 	res := &CreateRes{}
+
+	req.Application.SeparateBuild = req.Application.BuildFlavor != ""
 
 	appRes := tmp.UpdateApp(ctx, req.Client, req.Organization, req.ID, req.Application)
 	if appRes.HasError() {
