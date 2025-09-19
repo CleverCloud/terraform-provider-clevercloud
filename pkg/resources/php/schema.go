@@ -22,41 +22,73 @@ type PHP struct {
 	DevDependencies types.Bool   `tfsdk:"dev_dependencies"`
 }
 
+type PHPV0 struct {
+	attributes.RuntimeV0
+	PHPVersion      types.String `tfsdk:"php_version"`
+	WebRoot         types.String `tfsdk:"webroot"`
+	RedisSessions   types.Bool   `tfsdk:"redis_sessions"`
+	DevDependencies types.Bool   `tfsdk:"dev_dependencies"`
+}
+
 //go:embed doc.md
 var phpDoc string
 
 func (r ResourcePHP) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-	res.Schema = schema.Schema{
-		Version:             0,
-		MarkdownDescription: phpDoc,
-		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
-			// CC_WEBROOT
-			"php_version": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "PHP version (Default: 8)",
-			},
-			"webroot": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "Define the DocumentRoot of your project (default: \".\")",
-			},
-
-			"redis_sessions": schema.BoolAttribute{
-				Optional:            true,
-				MarkdownDescription: "Use a linked Redis instance to store sessions (Default: false)",
-			},
-			"dev_dependencies": schema.BoolAttribute{
-				Optional:            true,
-				MarkdownDescription: "Install development dependencies",
-			},
-		}),
-		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
-	}
+	res.Schema = schemaPHP
 }
 
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (p *PHP) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
+var schemaPHP = schema.Schema{
+	Version:             1,
+	MarkdownDescription: phpDoc,
+	Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
+		// CC_WEBROOT
+		"php_version": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "PHP version (Default: 8)",
+		},
+		"webroot": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Define the DocumentRoot of your project (default: \".\")",
+		},
+
+		"redis_sessions": schema.BoolAttribute{
+			Optional:            true,
+			MarkdownDescription: "Use a linked Redis instance to store sessions (Default: false)",
+		},
+		"dev_dependencies": schema.BoolAttribute{
+			Optional:            true,
+			MarkdownDescription: "Install development dependencies",
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
+
+var schemaPHPV0 = schema.Schema{
+	Version:             0,
+	MarkdownDescription: phpDoc,
+	Attributes: attributes.WithRuntimeCommonsV0(map[string]schema.Attribute{
+		// CC_WEBROOT
+		"php_version": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "PHP version (Default: 8)",
+		},
+		"webroot": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Define the DocumentRoot of your project (default: \".\")",
+		},
+
+		"redis_sessions": schema.BoolAttribute{
+			Optional:            true,
+			MarkdownDescription: "Use a linked Redis instance to store sessions (Default: false)",
+		},
+		"dev_dependencies": schema.BoolAttribute{
+			Optional:            true,
+			MarkdownDescription: "Install development dependencies",
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+}
+
 
 func (p *PHP) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
 	env := map[string]string{}
