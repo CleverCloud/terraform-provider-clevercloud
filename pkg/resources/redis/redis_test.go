@@ -57,7 +57,7 @@ func TestAccRedis_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^redis_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*.services.clever-cloud.com$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("port"), knownvalue.NotNull()),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("token"), knownvalue.NotNull()),
+				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("token")),
 			},
 		}, {
 			ResourceName: rName,
@@ -67,7 +67,7 @@ func TestAccRedis_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^redis_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*.services.clever-cloud.com$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("port"), knownvalue.NotNull()),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("token"), knownvalue.NotNull()),
+				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("token")),
 			},
 		}},
 	})

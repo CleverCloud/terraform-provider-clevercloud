@@ -75,12 +75,12 @@ func Merge[T comparable, U any](m1, m2 map[T]U) map[T]U {
 func Diff[T comparable](m1, m2 []T) []T {
 	diff := []T{}
 
-	for _, m2Item := range m2 {
-		if slices.Contains(m1, m2Item) {
+	for _, m1Item := range m1 {
+		if slices.Contains(m2, m1Item) {
 			continue
 		}
 
-		diff = append(diff, m2Item)
+		diff = append(diff, m1Item)
 	}
 
 	return diff

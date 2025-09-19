@@ -56,7 +56,7 @@ func TestAccMateriaKV_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^kv_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*clever-cloud.com$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("port"), knownvalue.NotNull()),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("token"), knownvalue.NotNull()),
+				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("token")),
 			},
 		}, {
 			ResourceName: rName,
@@ -66,7 +66,7 @@ func TestAccMateriaKV_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^kv_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*clever-cloud.com$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("port"), knownvalue.NotNull()),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("token"), knownvalue.NotNull()),
+				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("token")),
 			},
 		}},
 	})
