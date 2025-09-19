@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"net/http"
 	"regexp"
 	"testing"
 	"time"
