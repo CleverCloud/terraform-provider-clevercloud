@@ -34,18 +34,21 @@ func TestAccNodejs_basic(t *testing.T) {
 		"clevercloud_haskell",
 		rName,
 		helper.SetKeyValues(map[string]any{
-			"name":               rName,
-			"region":             "par",
-			"min_instance_count": 1,
-			"max_instance_count": 2,
-			"smallest_flavor":    "XS",
-			"biggest_flavor":     "M",
-			"build_flavor":       "XL",
-			"redirect_https":     true,
-			"sticky_sessions":    true,
-			"app_folder":         "./app",
-			"environment":        map[string]any{"MY_KEY": "myval"},
-			"dependencies":       []string{},
+			"name":                                       rName,
+			"region":                                     "par",
+			"min_instance_count":                         1,
+			"max_instance_count":                         2,
+			"smallest_flavor":                            "XS",
+			"biggest_flavor":                             "M",
+			"build_flavor":                               "XL",
+			"redirect_https":                             true,
+			"sticky_sessions":                            true,
+			"environment":                                map[string]any{"MY_KEY": "myval"},
+			"dependencies":                               []string{},
+			"haskell_stack_target":                       "default-target"
+			"haskell_stack_setup_command":                "./setup"
+			"haskell_stack_install_command":              "./install"
+			"haskell_stack_install_dependencies_command": "./install-deps"
 		}),
 	)
 	haskellBlock2 := helper.NewRessource(
@@ -147,6 +150,27 @@ func TestAccNodejs_basic(t *testing.T) {
 					if v != "myval" {
 						return assertError("bad env var value MY_KEY", "myval3", v)
 					}
+
+					v1 := env["CC_HASKELL_STACK_TARGET"]
+					if v1 != "default-target" {
+						return assertError("When providing 'haskell_stack_target': 'default-target', env['CC_HASKELL_STACK_TARGET'] didn't have the value 'default-target'")
+					}
+
+					v2 := env["CC_HASKELL_STACK_SETUP_COMMAND"]
+					if v2 != "./setup" {
+						return assertError("When providing 'haskell_stack_setup_command': 'default-target', env['CC_HASKELL_STACK_SETUP_COMMAND'] didn't have the value './setup'")
+					}
+
+					v3 := env["CC_HASKELL_STACK_INSTALL_COMMAND"]
+					if v3 != "./install" {
+						return assertError("When providing 'haskell_stack_install_command': './install', env['CC_HASKELL_STACK_INSTALL_COMMAND'] didn't have the value './install'")
+					}
+
+					v4 := env["CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND"]
+					if v4 != "./install-deps" {
+						return assertError("When providing 'haskell_stack_install_dependencies_command': './install-deps', env['CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND'] didn't have the value './install-deps'")
+					}
+
 					return nil
 				}),
 			},
