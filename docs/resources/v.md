@@ -100,6 +100,8 @@ Can be either app_xxx or postgres_yyy ID format
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
+- `v_binary` (String) The name of the output binary file. Default: `${APP_HOME}/v_bin_${APP_ID}`
+- `v_environment` (String) Set to `development` to compile without the `-prod` flag.
 - `vhosts` (Set of String) Add custom hostname, see [documentation](https://www.clever.cloud/developers/doc/administrate/domain-names/)
 
 ### Read-Only
