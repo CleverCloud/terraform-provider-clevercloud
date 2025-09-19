@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.dev/client"
 )
 
@@ -72,7 +74,6 @@ type PostgreSQLFeature struct {
 	Enabled bool   `json:"enabled"`
 }
 
-
 type MySQL struct {
 	// app_id:addon_5abaf3ea-d53f-4021-9711-cd294d50c662
 	CreationDate string `json:"creation_date" example:"2024-03-12T13:38:33.313Z[UTC]"`
@@ -85,11 +86,17 @@ type MySQL struct {
 	Plan     string `json:"plan" example:"xs_med"`
 	Port     int    `json:"port" example:"6388"`
 	// read_only_users:[]
-	Status   string              `json:"status" example:"ACTIVE"`
-	User     string              `json:"user" example:"uxw1ikwnp6gflbgp5iun"`
-	Version  string              `json:"version"` // 14
-	Zone     string              `json:"zone" example:"par"`
-	Features []MySQLFeature `json:"features"`
+	Status        string              `json:"status" example:"ACTIVE"`
+	User          string              `json:"user" example:"uxw1ikwnp6gflbgp5iun"`
+	Version       string              `json:"version"` // 14
+	Zone          string              `json:"zone" example:"par"`
+	Features      []MySQLFeature      `json:"features"`
+	ReadOnlyUsers []MySQLReadOnlyUser `json:"read_only_users"`
+}
+
+type MySQLReadOnlyUser struct {
+	User     string `json:"user"`
+	Password string `json:"password"`
 }
 
 func (p MySQL) Uri() string {
@@ -306,12 +313,11 @@ func GetPostgresInfos(ctx context.Context, cc *client.Client) client.Response[Po
 	return client.Get[PostgresInfos](ctx, cc, path)
 }
 
-
 type MysqlInfos struct {
-	DefaultDedicatedVersion string            `json:"defaultDedicatedVersion"`
-	ProviderID              string            `json:"providerId"`
-	Clusters                []MysqlCluster    `json:"clusters"`
-	Dedicated               map[string]any    `json:"dedicated"`
+	DefaultDedicatedVersion string         `json:"defaultDedicatedVersion"`
+	ProviderID              string         `json:"providerId"`
+	Clusters                []MysqlCluster `json:"clusters"`
+	Dedicated               map[string]any `json:"dedicated"`
 }
 
 type MysqlCluster struct {
@@ -396,4 +402,28 @@ func AddonIDToRealID(ctx context.Context, client *client.Client, organisation st
 	}
 
 	return "", fmt.Errorf("addon %s not found", addonID)
+}
+
+// FromMySQLReadOnlyUsers converts a slice of MySQLReadOnlyUser structs to a types.List with nested objects
+func FromMySQLReadOnlyUsers(users []MySQLReadOnlyUser) types.List {
+	objectType := types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"user":     types.StringType,
+			"password": types.StringType,
+		},
+	}
+
+	if len(users) == 0 {
+		return types.ListNull(objectType)
+	}
+
+	objects := make([]attr.Value, len(users))
+	for i, user := range users {
+		objects[i] = types.ObjectValueMust(objectType.AttrTypes, map[string]attr.Value{
+			"user":     types.StringValue(user.User),
+			"password": types.StringValue(user.Password),
+		})
+	}
+
+	return types.ListValueMust(objectType, objects)
 }
