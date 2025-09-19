@@ -16,7 +16,7 @@ import (
 
 type V struct {
 	attributes.Runtime
-	VBinary types.String `tfstk:"v_binary"`
+	VBinary      types.String `tfsdk:"v_binary"`
 	VEnvironment types.String `tfsdk:"v_environment"`
 }
 
