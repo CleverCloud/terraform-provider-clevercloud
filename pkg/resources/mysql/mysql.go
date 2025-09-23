@@ -4,13 +4,12 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
-	"go.clever-cloud.dev/client"
 )
 
 type ResourceMySQL struct {
-	cc                *client.Client
-	org               string
+	helper.Configurer
 	infos             *tmp.MysqlInfos
 	dedicatedVersions []string
 }
