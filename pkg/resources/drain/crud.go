@@ -3,29 +3,11 @@ package drain
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
-
-// Configure wires the Clever Cloud client/org from the provider into the resource
-func (r *ResourceDrain[T]) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceDrain.Configure()")
-
-	if req.ProviderData == nil {
-		return
-	}
-
-	p, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = p.Client()
-		r.org = p.Organization()
-	}
-}
 
 // Create drain resource
 func (r *ResourceDrain[T]) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -40,7 +22,7 @@ func (r *ResourceDrain[T]) Create(ctx context.Context, req resource.CreateReques
 		Recipient: plan.ToRecipient(),
 	}
 
-	createRes := tmp.CreateDrain(ctx, r.cc, r.org, plan.GetDrain().ResourceID.ValueString(), wannabeDrain)
+	createRes := tmp.CreateDrain(ctx, r.Client(), r.Organization(), plan.GetDrain().ResourceID.ValueString(), wannabeDrain)
 	if createRes.HasError() {
 		resp.Diagnostics.AddError("Failed to create drain", createRes.Error().Error())
 		return
@@ -66,7 +48,7 @@ func (r *ResourceDrain[T]) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 
 	// Get drain from API
-	drainRes := tmp.GetDrain(ctx, r.cc, r.org, state.GetDrain().ResourceID.ValueString(), state.GetDrain().ID.ValueString())
+	drainRes := tmp.GetDrain(ctx, r.Client(), r.Organization(), state.GetDrain().ResourceID.ValueString(), state.GetDrain().ID.ValueString())
 	if drainRes.HasError() {
 		resp.Diagnostics.AddError("Failed to read drain", drainRes.Error().Error())
 		return
@@ -96,7 +78,7 @@ func (r *ResourceDrain[T]) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	deleteRes := tmp.DeleteDrain(ctx, r.cc, r.org, state.GetDrain().ResourceID.ValueString(), state.GetDrain().ID.ValueString())
+	deleteRes := tmp.DeleteDrain(ctx, r.Client(), r.Organization(), state.GetDrain().ResourceID.ValueString(), state.GetDrain().ID.ValueString())
 	if !deleteRes.HasError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -104,10 +86,4 @@ func (r *ResourceDrain[T]) Delete(ctx context.Context, req resource.DeleteReques
 
 	resp.Diagnostics.AddError("Failed to delete drain", deleteRes.Error().Error())
 
-}
-
-// ImportState allows importing by id
-func (r *ResourceDrain[T]) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
 }

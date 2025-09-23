@@ -4,15 +4,14 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"go.clever-cloud.dev/client"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
 type ResourceDrain[T DrainAttributes] struct {
+	helper.Configurer
+
 	drainKind string
 	t         T // not instantiated, used only for static methods
-
-	cc  *client.Client
-	org string
 }
 
 func NewDatadogDrain() resource.Resource {

@@ -115,6 +115,16 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
+	state.Name = pkg.FromStr(appRes.App.Name)
+	state.Description = pkg.FromStr(appRes.App.Description)
+	state.Region = pkg.FromStr(appRes.App.Zone)
+	state.SmallestFlavor = pkg.FromStr(appRes.App.Instance.MinFlavor.Name)
+	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
+	state.MinInstanceCount = pkg.FromI(int64(appRes.App.Instance.MinInstances))
+	state.MaxInstanceCount = pkg.FromI(int64(appRes.App.Instance.MaxInstances))
+	state.BuildFlavor = appRes.GetBuildFlavor()
+	state.StickySessions = pkg.FromBool(appRes.App.StickySessions)
+	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 
 	vhosts := appRes.App.Vhosts.AsString()
 	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
