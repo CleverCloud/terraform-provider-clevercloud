@@ -6,34 +6,17 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
 func (r *ResourceMySQL) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceMySQL.Configure()")
-
 	r.FetchMysqlInfos(ctx, &resp.Diagnostics)
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData != nil {
-
-		provider, ok := req.ProviderData.(provider.Provider)
-		if ok {
-			r.cc = provider.Client()
-			r.org = provider.Organization()
-		}
-
-		tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
-	}
+	r.Configurer.Configure(ctx, req, resp)
 }
 
 func (r *ResourceMySQL) FetchMysqlInfos(ctx context.Context, diags *diag.Diagnostics) {
@@ -65,7 +48,7 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.cc)
+	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
@@ -97,7 +80,7 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 		addonReq.Options["do-backup"] = backupValue
 	}
 
-	res := tmp.CreateAddon(ctx, r.cc, r.org, addonReq)
+	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
@@ -110,7 +93,7 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, my)...)
 
-	myInfoRes := tmp.GetMySQL(ctx, r.cc, createdMy.ID)
+	myInfoRes := tmp.GetMySQL(ctx, r.Client(), createdMy.ID)
 	if myInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get mysql connection infos", myInfoRes.Error().Error())
 		return
@@ -142,14 +125,14 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 
 	// IDs
-	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, my.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), my.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
 	// Objects
-	addonRes := tmp.GetAddon(ctx, r.cc, r.org, addonId)
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -160,7 +143,7 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 	addon := addonRes.Payload()
 
-	addonMyRes := tmp.GetMySQL(ctx, r.cc, addonId)
+	addonMyRes := tmp.GetMySQL(ctx, r.Client(), addonId)
 	if addonMyRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -219,7 +202,7 @@ func (r *ResourceMySQL) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.cc, r.org, plan.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -239,13 +222,13 @@ func (r *ResourceMySQL) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 	tflog.Debug(ctx, "MySQL DELETE", map[string]any{"my": my})
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.cc, r.org, my.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), my.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.cc, r.org, addonId)
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -256,12 +239,4 @@ func (r *ResourceMySQL) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 
 	resp.State.RemoveResource(ctx)
-}
-
-// Import resource
-func (r *ResourceMySQL) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
 }
