@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -92,10 +93,14 @@ var runtimeCommon = map[string]schema.Attribute{
 	"sticky_sessions": schema.BoolAttribute{
 		Optional:            true,
 		MarkdownDescription: "Enable sticky sessions, use it when your client sessions are instances scoped",
+		Default:             booldefault.StaticBool(false),
+		Computed:            true,
 	},
 	"redirect_https": schema.BoolAttribute{
 		Optional:            true,
 		MarkdownDescription: "Redirect client from plain to TLS port",
+		Default:             booldefault.StaticBool(false),
+		Computed:            true,
 	},
 	"vhosts": schema.SetAttribute{
 		ElementType:         types.StringType,
