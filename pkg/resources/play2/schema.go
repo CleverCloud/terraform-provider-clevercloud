@@ -17,22 +17,31 @@ type Play2 struct {
 	attributes.Runtime
 }
 
+type Play2V0 struct {
+	attributes.RuntimeV0
+}
+
 //go:embed doc.md
 var play2Doc string
 
 func (r ResourcePlay2) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-	res.Schema = schema.Schema{
-		Version:             0,
-		MarkdownDescription: play2Doc,
-		Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
-		Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
-	}
+	res.Schema = schemaPlay2
 }
 
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (plan *Play2) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
+var schemaPlay2 = schema.Schema{
+	Version:             1,
+	MarkdownDescription: play2Doc,
+	Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
+	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
+
+var schemaPlay2V0 = schema.Schema{
+	Version:             0,
+	MarkdownDescription: play2Doc,
+	Attributes:          attributes.WithRuntimeCommonsV0(map[string]schema.Attribute{}),
+	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+}
+
 
 func (plan *Play2) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
 	env := map[string]string{}

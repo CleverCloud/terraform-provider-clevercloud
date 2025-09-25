@@ -75,24 +75,7 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
 	createdVhosts := createRes.Application.Vhosts
-	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
-	} else { // practitionner give it's own vhost, remove cleverapps one
-
-		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
-			deleteVhostRes := tmp.DeleteAppVHost(
-				ctx,
-				r.Client(),
-				r.Organization(),
-				plan.ID.ValueString(),
-				vhost,
-			)
-			if deleteVhostRes.HasError() {
-				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-				return
-			}
-		}
-	}
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -125,8 +108,7 @@ func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, res
 	state.SmallestFlavor = pkg.FromStr(appRes.App.Instance.MinFlavor.Name)
 	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
 
-	vhosts := appRes.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -146,13 +128,11 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	// Retrieve instance of the app from context
 	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "node", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	// Retriev all env values by extracting ctx env viriables and merge it with the app env variables
 	planEnvironment := plan.toEnv(ctx, res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
@@ -195,18 +175,14 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
-	// Correctly named: update the app (via PUT Method)
 	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource
@@ -232,5 +208,3 @@ func (r *ResourceNodeJS) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource

@@ -19,22 +19,32 @@ type Scala struct {
 	// Scala related
 }
 
+type ScalaV0 struct {
+	attributes.RuntimeV0
+	// Scala related
+}
+
 //go:embed doc.md
 var scalaDoc string
 
 func (r ResourceScala) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-	res.Schema = schema.Schema{
-		Version:             0,
-		MarkdownDescription: scalaDoc,
-		Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
-		Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
-	}
+	res.Schema = schemaScala
 }
 
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (plan *Scala) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
+var schemaScala = schema.Schema{
+	Version:             1,
+	MarkdownDescription: scalaDoc,
+	Attributes:          attributes.WithRuntimeCommons(map[string]schema.Attribute{}),
+	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
+
+var schemaScalaV0 = schema.Schema{
+	Version:             0,
+	MarkdownDescription: scalaDoc,
+	Attributes:          attributes.WithRuntimeCommonsV0(map[string]schema.Attribute{}),
+	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+}
+
 
 func (plan *Scala) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
 	env := map[string]string{}
