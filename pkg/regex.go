@@ -16,4 +16,6 @@ var (
 	)
 
 	VhostCleverAppsRegExp = regexp.MustCompile(`^app-.*\.cleverapps\.io$`)
+
+	VhostValidRegExp = regexp.MustCompile(`^[a-zA-Z0-9.-]+$`)
 )
