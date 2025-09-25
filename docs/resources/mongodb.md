@@ -34,4 +34,5 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mongo
 - `id` (String) Generated unique identifier
 - `password` (String, Sensitive) Login password
 - `port` (Number) Database port
+- `uri` (String, Sensitive) Database connection string
 - `user` (String) Login username
