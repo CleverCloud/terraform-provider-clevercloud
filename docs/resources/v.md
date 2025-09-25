@@ -102,7 +102,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `v_binary` (String) The name of the output binary file. Default: `${APP_HOME}/v_bin_${APP_ID}`
 - `v_environment` (String) Set to `development` to compile without the `-prod` flag.
-- `vhosts` (Set of String) Add custom hostname, see [documentation](https://www.clever.cloud/developers/doc/administrate/domain-names/)
+- `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
 
 ### Read-Only
 
@@ -128,3 +128,15 @@ Optional:
 - `pre_run` (String) [CC_PRE_RUN_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#pre-run)
 - `run_failed` (String) [CC_RUN_FAILED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)
 - `run_succeed` (String) [CC_RUN_SUCCEEDED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)
+
+
+<a id="nestedatt--vhosts"></a>
+### Nested Schema for `vhosts`
+
+Required:
+
+- `fqdn` (String) Fully qualified domain name
+
+Optional:
+
+- `path_begin` (String) Any HTTP request starting with this path will be sent to this application
