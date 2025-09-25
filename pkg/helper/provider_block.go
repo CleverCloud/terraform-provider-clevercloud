@@ -57,7 +57,7 @@ func (p *Provider) String() string {
 	s := `provider "` + p.provider + `" {
 	organisation = "` + p.organisation + `"
 }
-` + pkg.Reduce[fmt.Stringer, string](p.blocks, "", func(acc string, block fmt.Stringer) string {
+` + pkg.Reduce(p.blocks, "", func(acc string, block fmt.Stringer) string {
 		return acc + block.String() + "\n"
 	})
 	return s

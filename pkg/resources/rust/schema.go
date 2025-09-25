@@ -32,7 +32,7 @@ var rustDoc string
 func (r ResourceRust) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 
 	res.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: rustDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
 			// https://doc.rust-lang.org/cargo/reference/features.html#command-line-feature-options
