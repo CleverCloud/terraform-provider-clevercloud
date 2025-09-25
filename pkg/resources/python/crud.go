@@ -73,24 +73,10 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
 	createdVhosts := createRes.Application.Vhosts
-	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
-	} else { // practitionner give it's own vhost, remove cleverapps one
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
 
-		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
-			deleteVhostRes := tmp.DeleteAppVHost(
-				ctx,
-				r.Client(),
-				r.Organization(),
-				plan.ID.ValueString(),
-				vhost,
-			)
-			if deleteVhostRes.HasError() {
-				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-				return
-			}
-		}
-	}
+	plan.StickySessions = pkg.FromBool(createRes.Application.StickySessions)
+	plan.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(createRes.Application.ForceHTTPS))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -115,9 +101,18 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
+	state.Name = pkg.FromStr(appRes.App.Name)
+	state.Description = pkg.FromStr(appRes.App.Description)
+	state.Region = pkg.FromStr(appRes.App.Zone)
+	state.SmallestFlavor = pkg.FromStr(appRes.App.Instance.MinFlavor.Name)
+	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
+	state.MinInstanceCount = pkg.FromI(int64(appRes.App.Instance.MinInstances))
+	state.MaxInstanceCount = pkg.FromI(int64(appRes.App.Instance.MaxInstances))
+	state.BuildFlavor = appRes.GetBuildFlavor()
+	state.StickySessions = pkg.FromBool(appRes.App.StickySessions)
+	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 
-	vhosts := appRes.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -193,31 +188,9 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	cleverAppsVhost := updatedApp.Application.Vhosts.CleverAppsFQDN(plan.ID.ValueString())
-	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
-	} else { // practitionner give it's own vhost, remove cleverapps one
-		if cleverAppsVhost != nil {
-			deleteVhostRes := tmp.DeleteAppVHost(
-				ctx,
-				r.Client(),
-				r.Organization(),
-				plan.ID.ValueString(),
-				cleverAppsVhost.Fqdn,
-			)
-			if deleteVhostRes.HasError() {
-				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-				return
-			}
-
-			plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &res.Diagnostics)
-		}
-	}
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource

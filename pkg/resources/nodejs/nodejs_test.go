@@ -23,6 +23,8 @@ import (
 )
 
 func TestAccNodejs_basic(t *testing.T) {
+	t.Parallel()
+
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-node")
 	rName2 := acctest.RandomWithPrefix("tf-test-node-2")

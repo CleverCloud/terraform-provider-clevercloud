@@ -4,35 +4,13 @@ import (
 	"context"
 	"reflect"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
-
-// Weird behaviour, but TF can ask for a Resource without having configured a Provider (maybe for Meta and Schema)
-// So we need to handle the case there is no ProviderData
-func (r *ResourceRuby) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
-	tflog.Debug(ctx, "ResourceRuby.Configure()")
-
-	// Prevent panic if the provider has not been configured.
-	if req.ProviderData == nil {
-		return
-	}
-
-	provider, ok := req.ProviderData.(provider.Provider)
-	if ok {
-		r.cc = provider.Client()
-		r.org = provider.Organization()
-		r.gitAuth = provider.GitAuth()
-	}
-
-	tflog.Debug(ctx, "AFTER CONFIGURED", map[string]any{"cc": r.cc == nil, "org": r.org})
-}
 
 // Create a new resource
 func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -43,7 +21,7 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "ruby", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "ruby", resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -59,8 +37,8 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	createReq := application.CreateReq{
-		Client:       r.cc,
-		Organization: r.org,
+		Client:       r.Client(),
+		Organization: r.Organization(),
 		Application: tmp.CreateAppRequest{
 			Name:            plan.Name.ValueString(),
 			Deploy:          "git",
@@ -79,7 +57,7 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 		},
 		Environment:  environment,
 		VHosts:       vhosts,
-		Deployment:   plan.toDeployment(r.gitAuth),
+		Deployment:   plan.toDeployment(r.GitAuth()),
 		Dependencies: dependencies,
 	}
 
@@ -95,24 +73,7 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
 	createdVhosts := createRes.Application.Vhosts
-	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
-	} else { // practitionner give it's own vhost, remove cleverapps one
-
-		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
-			deleteVhostRes := tmp.DeleteAppVHost(
-				ctx,
-				r.cc,
-				r.org,
-				plan.ID.ValueString(),
-				vhost,
-			)
-			if deleteVhostRes.HasError() {
-				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-				return
-			}
-		}
-	}
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -126,7 +87,7 @@ func (r *ResourceRuby) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	appRes, diags := application.ReadApp(ctx, r.cc, r.org, state.ID.ValueString())
+	appRes, diags := application.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -138,8 +99,7 @@ func (r *ResourceRuby) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
 
-	vhosts := appRes.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -163,7 +123,7 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstanceByVariantSlug(ctx, r.cc, nil, "ruby", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "ruby", res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -184,8 +144,8 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 	// Get the updated values from plan and instance
 	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
-		Client:       r.cc,
-		Organization: r.org,
+		Client:       r.Client(),
+		Organization: r.Organization(),
 		Application: tmp.UpdateAppReq{
 			Name:            plan.Name.ValueString(),
 			Deploy:          "git",
@@ -205,7 +165,7 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 		},
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
-		Deployment:     plan.toDeployment(r.gitAuth),
+		Deployment:     plan.toDeployment(r.GitAuth()),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
@@ -216,31 +176,9 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	cleverAppsVhost := updatedApp.Application.Vhosts.CleverAppsFQDN(plan.ID.ValueString())
-	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
-	} else { // practitionner give it's own vhost, remove cleverapps one
-		if cleverAppsVhost != nil {
-			deleteVhostRes := tmp.DeleteAppVHost(
-				ctx,
-				r.cc,
-				r.org,
-				plan.ID.ValueString(),
-				cleverAppsVhost.Fqdn,
-			)
-			if deleteVhostRes.HasError() {
-				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-				return
-			}
-
-			plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &res.Diagnostics)
-		}
-	}
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource
@@ -251,7 +189,7 @@ func (r *ResourceRuby) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 	tflog.Debug(ctx, "Ruby DELETE", map[string]any{"app": state.ID.ValueString()})
 
-	res := tmp.DeleteApp(ctx, r.cc, r.org, state.ID.ValueString())
+	res := tmp.DeleteApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -262,12 +200,4 @@ func (r *ResourceRuby) Delete(ctx context.Context, req resource.DeleteRequest, r
 	}
 
 	resp.State.RemoveResource(ctx)
-}
-
-// Import resource
-func (r *ResourceRuby) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Save the import identifier in the id attribute
-	// and call Read() to fill fields
-	attr := path.Root("id")
-	resource.ImportStatePassthroughID(ctx, attr, req, resp)
 }

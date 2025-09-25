@@ -33,25 +33,17 @@ func NewValidator(description string, fn func(ctx context.Context, req validator
 
 func NewValidatorRegex(description string, rg *regexp.Regexp) validator.String {
 	return NewValidator(description, func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
-
-		/*var str types.String
-
-		diags := tfsdk.ValueAs(ctx, req.AttributeConfig, &str)
-		res.Diagnostics.Append(diags...)
-		if res.Diagnostics.HasError() {
-			return
-		}*/
-		value := req.ConfigValue.ValueString()
-
 		if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 			return
 		}
 
+		value := req.ConfigValue.ValueString()
+
 		if !rg.MatchString(value) {
 			res.Diagnostics.AddAttributeError(
 				req.Path,
-				"invalid organisation ID",
-				fmt.Sprintf("organisation do not starts with 'user_' or 'orga_' ('%s')", value),
+				"invalid value for attribute",
+				fmt.Sprintf("value do not match validation pattern, got '%s')", value),
 			)
 		}
 	})

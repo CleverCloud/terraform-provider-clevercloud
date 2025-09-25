@@ -26,7 +26,7 @@ var pythonDoc string
 func (r ResourcePython) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 
 	res.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: pythonDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
 			// CC_PYTHON_VERSION
