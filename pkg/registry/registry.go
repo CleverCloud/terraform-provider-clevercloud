@@ -6,6 +6,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar/bucket"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/configprovider"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/docker"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/dotnet"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/drain"
@@ -74,4 +75,5 @@ var Resources = []func() resource.Resource{
 	dotnet.NewResourceDotnet,
 	v.NewResourceV,
 	matomo.NewResourceMatomo,
+	configprovider.NewResourceConfigProvider,
 }

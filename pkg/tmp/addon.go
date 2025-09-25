@@ -129,6 +129,18 @@ func GetMySQL(ctx context.Context, cc *client.Client, mysqlID string) client.Res
 	return client.Get[MySQL](ctx, cc, path)
 }
 
+func GetConfigProvider(ctx context.Context, cc *client.Client, configProviderId string) client.Response[ConfigProvider] {
+	path := fmt.Sprintf("/v4/addon-providers/config-provider/addons/%s", configProviderId)
+	return client.Get[ConfigProvider](ctx, cc, path)
+}
+
+type ConfigProvider struct {
+	ID             string            `json:"id"`
+	OrganisationID string            `json:"ownerId"`
+	Plan           string            `json:"plan"`
+	Environment    map[string]string `json:"environment"`
+}
+
 type MateriaKV struct {
 	ID             string `json:"id"`
 	ClusterID      string `json:"clusterId"`
@@ -301,6 +313,7 @@ type EnvVar struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
+
 type EnvVars []EnvVar
 
 func GetAddon(ctx context.Context, cc *client.Client, organisation string, addon string) client.Response[AddonResponse] {
@@ -316,6 +329,16 @@ func GetAddonEnv(ctx context.Context, cc *client.Client, organisation string, ad
 func UpdateAddon(ctx context.Context, cc *client.Client, organisation string, addon string, env map[string]string) client.Response[AddonResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/addons/%s", organisation, addon)
 	return client.Put[AddonResponse](ctx, cc, path, env)
+}
+
+func UpdateConfigProviderEnv(ctx context.Context, cc *client.Client, organisation string, addon string, envVars []EnvVar) client.Response[EnvVars] {
+	path := fmt.Sprintf("/v4/addon-providers/config-provider/addons/%s/env", addon)
+	return client.Put[EnvVars](ctx, cc, path, envVars)
+}
+
+func GetConfigProviderEnv(ctx context.Context, cc *client.Client, organisation string, addon string) client.Response[EnvVars] {
+	path := fmt.Sprintf("/v4/addon-providers/config-provider/addons/%s/env", addon)
+	return client.Get[EnvVars](ctx, cc, path)
 }
 
 func ListAddons(ctx context.Context, cc *client.Client, organisation string) client.Response[[]AddonResponse] {
