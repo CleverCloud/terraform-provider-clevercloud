@@ -66,9 +66,12 @@ func FromSetString(items []string, diags *diag.Diagnostics) types.Set {
 	return s
 }
 
-func SetToStringSlice(ctx context.Context, items types.Set, diags *diag.Diagnostics) []string {
-	var strs []string
-	diags.Append(items.ElementsAs(ctx, &strs, true)...)
+func SetTo[T any](ctx context.Context, items types.Set, diags *diag.Diagnostics) []T {
+	var r []T
+	diags.Append(items.ElementsAs(ctx, &r, true)...)
+	return r
+}
 
-	return strs
+func SetToStringSlice(ctx context.Context, items types.Set, diags *diag.Diagnostics) []string {
+	return SetTo[string](ctx, items, diags)
 }
