@@ -73,24 +73,7 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
 	createdVhosts := createRes.Application.Vhosts
-	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
-	} else { // practitionner give it's own vhost, remove cleverapps one
-
-		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
-			deleteVhostRes := tmp.DeleteAppVHost(
-				ctx,
-				r.Client(),
-				r.Organization(),
-				plan.ID.ValueString(),
-				vhost,
-			)
-			if deleteVhostRes.HasError() {
-				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-				return
-			}
-		}
-	}
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -116,8 +99,7 @@ func (r *ResourceRuby) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
 
-	vhosts := appRes.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -194,31 +176,9 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 		return
 	}
 
-	cleverAppsVhost := updatedApp.Application.Vhosts.CleverAppsFQDN(plan.ID.ValueString())
-	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
-	} else { // practitionner give it's own vhost, remove cleverapps one
-		if cleverAppsVhost != nil {
-			deleteVhostRes := tmp.DeleteAppVHost(
-				ctx,
-				r.Client(),
-				r.Organization(),
-				plan.ID.ValueString(),
-				cleverAppsVhost.Fqdn,
-			)
-			if deleteVhostRes.HasError() {
-				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-				return
-			}
-
-			plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.WithoutCleverApps(plan.ID.ValueString()).AsString(), &res.Diagnostics)
-		}
-	}
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Delete resource

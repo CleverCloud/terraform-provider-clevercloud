@@ -25,7 +25,7 @@ var frankenphpDoc string
 
 func (r ResourceFrankenPHP) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 	res.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: frankenphpDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
 			"dev_dependencies": schema.BoolAttribute{

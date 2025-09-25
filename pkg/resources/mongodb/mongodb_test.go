@@ -65,7 +65,7 @@ func TestAccMongoDB_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*-mongodb\.services\.clever-cloud\.com$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("port"), knownvalue.NotNull()),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("user"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("password"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("password")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("database"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
 			},
 		}, {
@@ -77,7 +77,7 @@ func TestAccMongoDB_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*-mongodb\.services\.clever-cloud\.com$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("port"), knownvalue.NotNull()),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("user"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("password"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("password")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("database"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
 			},
 		}},
