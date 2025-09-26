@@ -28,7 +28,7 @@ func (r ResourceConfigProvider) Schema(_ context.Context, req resource.SchemaReq
 
 			"environment": schema.MapAttribute{
 				Optional:    true,
-				Sensitive:   false,
+				Sensitive:   true,
 				Description: "Environment variables injected into the application",
 				ElementType: types.StringType,
 			},
