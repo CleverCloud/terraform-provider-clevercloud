@@ -50,22 +50,32 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 	addonConfigProvider.ID = pkg.FromStr(createAddonRes.Payload().RealID)
 	addonConfigProvider.CreationDate = pkg.FromI(createAddonRes.Payload().CreationDate)
 
+	// Set the state before updating environment variables
 	res.Diagnostics.Append(res.State.Set(ctx, addonConfigProvider)...)
+	if res.Diagnostics.HasError() {
+		return
+	}
 
 	envVars := addonConfigProvider.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	// Convert the map to the expected format: []tmp.EnvVar
-	var envVarsArray []tmp.EnvVar
-	for k, v := range envVars {
-		envVarsArray = append(envVarsArray, tmp.EnvVar{
-			Name:  k,
-			Value: v,
-		})
+	// Always initialize an empty slice, even if there are no environment variables
+	envVarsArray := []tmp.EnvVar{}
+	
+	// Only add environment variables if the map is not empty
+	if len(envVars) > 0 {
+		// Convert the map to the expected format: []tmp.EnvVar
+		for k, v := range envVars {
+			envVarsArray = append(envVarsArray, tmp.EnvVar{
+				Name:  k,
+				Value: v,
+			})
+		}
 	}
 
+	tflog.Debug(ctx, "Setting environment variables on create", map[string]interface{}{"count": len(envVarsArray)})
 	envRes := tmp.UpdateConfigProviderEnv(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString(), envVarsArray)
 	if envRes.HasError() {
 		res.Diagnostics.AddError("failed to configure application environment", envRes.Error().Error())
