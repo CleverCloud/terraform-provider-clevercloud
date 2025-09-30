@@ -29,7 +29,7 @@ func TestAccConfigProvider_basic(t *testing.T) {
 	configProviderBlock := helper.NewRessource(
 		"clevercloud_configprovider",
 		rName,
-		helper.SetKeyValues(map[string]any{"name": rName, "region": "par", "plan": "std"}),
+		helper.SetKeyValues(map[string]any{"name": rName, "region": "par", "plan": "std", "environment": map[string]any{"foo": "this is foo"}}),
 	)
 
 	resource.Test(t, resource.TestCase{
