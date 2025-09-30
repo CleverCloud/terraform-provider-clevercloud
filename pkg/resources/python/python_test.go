@@ -29,7 +29,7 @@ func TestAccPython_basic(t *testing.T) {
 	rName2 := acctest.RandomWithPrefix("tf-test-python-2")
 	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_python.%s", rName2)
-	vhost := "bubhbfbnriubielrbeuvieuv.com/"
+	vhost := "bubhbfbnriubielrbeuvieuv.com"
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	pythonBlock := helper.NewRessource(
@@ -158,7 +158,7 @@ func TestAccPython_basic(t *testing.T) {
 			Config: providerBlock.Append(
 				pythonBlock.
 					SetOneValue("biggest_flavor", "XS").
-					SetOneValue("vhosts", []string{vhost}),
+					SetOneValue("vhosts", []map[string]string{{"fqdn": vhost}}),
 			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("biggest_flavor"), knownvalue.StringExact("XS")),
@@ -169,7 +169,7 @@ func TestAccPython_basic(t *testing.T) {
 					}
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
-					if len(app.Vhosts) != 1 || app.Vhosts[0].Fqdn != vhost {
+					if len(app.Vhosts) != 1 || app.Vhosts[0].Fqdn != (vhost+"/") {
 						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), vhost)
 					}
 					return nil
