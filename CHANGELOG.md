@@ -1,5 +1,35 @@
 # Changelog
 
+## [1.2.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.1.0...v1.2.0) (2025-09-24)
+
+
+### Features
+
+* drains ([61e5bc7](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/61e5bc7e3ae504f7d0953673e01edbfc2f6b4037))
+* ruby runtime ([807f55a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/807f55a92b21ecab48532b9b5aa133d0feb20c62))
+* **ruby:** cleanup ([6e7c32f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/6e7c32f37b54e75e5949b138ff3b032581f26f7c))
+
+
+### Bug Fixes
+
+* **addons:** support ulid formats ([3a36da6](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/3a36da6b5115fef8dc3106761f248f409fefab6e))
+* **applications:** always update separatebuild, update on app updates ([df8bcbd](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/df8bcbd4910ec86de7e69d05a31771e16feb50f9))
+* **apps:** urlencode vhosts for deletion ([37be86b](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/37be86b14669fdeb7f4d54d96faaad7a01438713))
+* **bin:** by default, provide a stripped binary ([f68470d](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/f68470d47d68d281ab524d864d5459e9d87a7abc))
+* change to typed IfIsSet ([ce0edec](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/ce0edec6c4173c9bc440abd7aba2abf080482b99))
+* **frankenphp:** diag pointer and vhosts ([bedc2f1](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/bedc2f1b1abdd006b90a5855594898c3be4b1dac))
+* **frankenphp:** update env/vhosts ([c2143ad](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/c2143adefddceeb44c3dd7e69ce26b03764e093c))
+* **keycloak:** Fix potential malformed url ([afd92af](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/afd92afd4c5f2978895f0f19a8d5790ea45fbcfe))
+* **ng:** add support for matching ng (beta) ([5c5e62f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5c5e62fd8ae8213b1cca6f91d7b0a4e7624a45d2))
+* **nodejs:** update test website ([bc369e6](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/bc369e6b4b63bbcc773445a58577b99be57df7a4))
+* **python:** reload infos from api after an update ([77c61b4](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/77c61b4cfaa4789f3add418851cb4cd269b01d92))
+* **python:** urls are returned with final / by api ([8cb1ee5](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/8cb1ee52e523d12d9b56453ae792aee3fc6f4af9))
+* **runtime:** avoid sticky_sessions and redirect_https reevaluation ([1ac3bea](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1ac3beac0e99ecc4c51fce17cf80eb9bcc2d050d))
+* **secrets:** mark tokens, passwords and secrets as Sensitive ([ea1bd9d](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/ea1bd9dbdb2beed0a12376d901c2b6c1a012799e))
+* **test:** cleanup unused imports ([6e7c32f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/6e7c32f37b54e75e5949b138ff3b032581f26f7c))
+* **test:** domains returned by the api now always ends with / ([cbd9458](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/cbd9458b71f0230d4e4c690ede13028aaf341ed4))
+* **test:** remove unused function ([6e7c32f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/6e7c32f37b54e75e5949b138ff3b032581f26f7c))
+
 ## [1.1.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.0.1...v1.1.0) (2025-09-12)
 
 
