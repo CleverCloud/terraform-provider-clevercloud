@@ -16,10 +16,10 @@ import (
 
 type Haskell struct {
 	attributes.Runtime
-	HaskellStackTarget types.String `tfsdk:"stack_target"`
-	HaskellStackSetupCommand types.String `tfsdk:"stack_setup_command"`
-	HaskellStackInstallCommand types.String `tfsdk:"stack_install_command"`
-	HaskellStackInstallDependenciesCommand types.String `tfsdk:"stack_install_dependencies_command"`
+	StackTarget types.String                     `tfsdk:"stack_target"`
+	StackSetupCommand types.String               `tfsdk:"stack_setup_command"`
+	StackInstallCommand types.String             `tfsdk:"stack_install_command"`
+	StackInstallDependenciesCommand types.String `tfsdk:"stack_install_dependencies_command"`
 }
 
 //go:embed doc.md
@@ -31,19 +31,19 @@ func (r ResourceHaskell) Schema(ctx context.Context, req resource.SchemaRequest,
 		Version:             0,
 		MarkdownDescription: haskellDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
-			"haskell_stack_target": schema.StringAttribute{
+			"stack_target": schema.StringAttribute{
 				Optional: true,
 				MarkdownDescription: "Specify Stack package target.",
 			},
-			"haskell_stack_setup_command": schema.StringAttribute{
+			"stack_setup_command": schema.StringAttribute{
 				Optional: true,
 				MarkdownDescription: "Only use this variable to override the default `setup` Stack step command.",
 			},
-			"haskell_stack_install_command": schema.StringAttribute{
+			"stack_install_command": schema.StringAttribute{
 				Optional: true,
 				MarkdownDescription: "Only use this variable to override the default `install` Stack step command.",
 			},
-			"haskell_stack_install_dependencies_command": schema.StringAttribute{
+			"stack_install_dependencies_command": schema.StringAttribute{
 				Optional: true,
 				MarkdownDescription: "Only use this variable to override the default `install --only-dependencies` Stack step command",
 			},
@@ -67,10 +67,10 @@ func (haskellapp Haskell) toEnv(ctx context.Context, diags *diag.Diagnostics) ma
 
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(haskellapp.HaskellStackTarget, func(s string) { env["CC_HASKELL_STACK_TARGET"] = s })
-	pkg.IfIsSetStr(haskellapp.HaskellStackSetupCommand, func(s string) { env["CC_HASKELL_STACK_SETUP_COMMAND"] = s })
-	pkg.IfIsSetStr(haskellapp.HaskellStackInstallCommand, func(s string) { env["CC_HASKELL_STACK_INSTALL_COMMAND"] = s })
-	pkg.IfIsSetStr(haskellapp.HaskellStackInstallDependenciesCommand, func(s string) { env["CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND"] = s })
+	pkg.IfIsSetStr(haskellapp.StackTarget, func(s string) { env["CC_HASKELL_STACK_TARGET"] = s })
+	pkg.IfIsSetStr(haskellapp.StackSetupCommand, func(s string) { env["CC_HASKELL_STACK_SETUP_COMMAND"] = s })
+	pkg.IfIsSetStr(haskellapp.StackInstallCommand, func(s string) { env["CC_HASKELL_STACK_INSTALL_COMMAND"] = s })
+	pkg.IfIsSetStr(haskellapp.StackInstallDependenciesCommand, func(s string) { env["CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND"] = s })
 
 	env = pkg.Merge(env, haskellapp.Hooks.ToEnv())
 
