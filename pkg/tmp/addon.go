@@ -139,6 +139,7 @@ type ConfigProvider struct {
 	OrganisationID string            `json:"ownerId"`
 	Plan           string            `json:"plan"`
 	Environment    map[string]string `json:"environment"`
+	Status         string `json:"status"`
 }
 
 type MateriaKV struct {
