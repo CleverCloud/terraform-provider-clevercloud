@@ -240,7 +240,7 @@ var schemaRubyV0 = schema.Schema{
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (ruby Ruby) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (ruby Ruby) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
