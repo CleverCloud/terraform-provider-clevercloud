@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.2.0...v1.2.1) (2025-10-01)
+
+
+### Bug Fixes
+
+* **diags:** diags are always references, so that errors arn't lost ([c25d727](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/c25d72791958314bd1422af69b4e9b9b3d399b5e))
+
 ## [1.2.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.1.0...v1.2.0) (2025-09-24)
 
 
