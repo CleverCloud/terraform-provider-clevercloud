@@ -43,7 +43,7 @@ var schemaPlay2V0 = schema.Schema{
 }
 
 
-func (plan *Play2) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (plan *Play2) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
