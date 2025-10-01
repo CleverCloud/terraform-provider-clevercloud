@@ -49,7 +49,7 @@ func (r ResourcePython) UpgradeState(ctx context.Context) map[int64]resource.Sta
 	return map[int64]resource.StateUpgrader{}
 }
 
-func (py Python) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (py Python) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it

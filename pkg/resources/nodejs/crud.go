@@ -22,12 +22,12 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "node", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "node", &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	environment := plan.toEnv(ctx, resp.Diagnostics)
+	environment := plan.toEnv(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -128,16 +128,16 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "node", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "node", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	planEnvironment := plan.toEnv(ctx, res.Diagnostics)
+	planEnvironment := plan.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	stateEnvironment := state.toEnv(ctx, res.Diagnostics)
+	stateEnvironment := state.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
