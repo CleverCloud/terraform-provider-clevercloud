@@ -3,14 +3,14 @@
 page_title: "clevercloud_configprovider Resource - terraform-provider-clevercloud"
 description: |-
   Manage ConfigProvider https://www.configProvider.org/ product.
-  See ConfigProvider product specification https://www.clever.cloud/developers/doc/addons/configProvider/.
+  See ConfigProvider product specification https://www.clever.cloud/developers/doc/addons/config-provider/.
 ---
 
 # clevercloud_configprovider (Resource)
 
 Manage [ConfigProvider](https://www.configProvider.org/) product.
 
-See [ConfigProvider product specification](https://www.clever.cloud/developers/doc/addons/configProvider/).
+See [ConfigProvider product specification](https://www.clever.cloud/developers/doc/addons/config-provider/).
 
 
 
