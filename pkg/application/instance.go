@@ -14,7 +14,7 @@ import (
 
 // Lookup for the instance matching this criteria
 // return the
-func LookupInstanceByVariantSlug(ctx context.Context, cc *client.Client, ownerId *string, variantSlug string, diags diag.Diagnostics) *tmp.ProductInstance {
+func LookupInstanceByVariantSlug(ctx context.Context, cc *client.Client, ownerId *string, variantSlug string, diags *diag.Diagnostics) *tmp.ProductInstance {
 
 	productRes := tmp.GetProductInstance(ctx, cc, ownerId)
 	if productRes.HasError() {

@@ -43,7 +43,7 @@ var schemaGoV0 = schema.Schema{
 }
 
 
-func (g Go) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (g Go) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it

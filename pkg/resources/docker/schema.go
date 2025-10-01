@@ -175,7 +175,7 @@ var schemaDockerV0 = schema.Schema{
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (p *Docker) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (p *Docker) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
