@@ -16,10 +16,10 @@ import (
 
 type Haskell struct {
 	attributes.Runtime
-	HaskellStackTarget types.String `tfsdk:"haskell_stack_target"`
-	HaskellStackSetupCommand types.String `tfsdk:"haskell_stack_setup_command"`
-	HaskellStackInstallCommand types.String `tfsdk:"haskell_stack_install_command"`
-	HaskellStackInstallDependenciesCommand types.String `tfsdk:"haskell_stack_install_dependencies_command"`
+	HaskellStackTarget types.String `tfsdk:"stack_target"`
+	HaskellStackSetupCommand types.String `tfsdk:"stack_setup_command"`
+	HaskellStackInstallCommand types.String `tfsdk:"stack_install_command"`
+	HaskellStackInstallDependenciesCommand types.String `tfsdk:"stack_install_dependencies_command"`
 }
 
 //go:embed doc.md
