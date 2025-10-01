@@ -22,12 +22,12 @@ func (r *ResourceDotnet) Create(ctx context.Context, req resource.CreateRequest,
 
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "dotnet", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "dotnet", &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	environment := plan.toEnv(ctx, resp.Diagnostics)
+	environment := plan.toEnv(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -135,17 +135,17 @@ func (r *ResourceDotnet) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "dotnet", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "dotnet", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
 	// Retriev all env values by extracting ctx env viriables and merge it with the app env variables
-	planEnvironment := plan.toEnv(ctx, res.Diagnostics)
+	planEnvironment := plan.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	stateEnvironment := state.toEnv(ctx, res.Diagnostics)
+	stateEnvironment := state.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
