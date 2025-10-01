@@ -22,12 +22,12 @@ func (r *ResourceHaskell) Create(ctx context.Context, req resource.CreateRequest
 
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "haskell", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "haskell", &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	environment := plan.toEnv(ctx, resp.Diagnostics)
+	environment := plan.toEnv(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -75,24 +75,7 @@ func (r *ResourceHaskell) Create(ctx context.Context, req resource.CreateRequest
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
 	createdVhosts := createRes.Application.Vhosts
-	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
-	} else { // practitionner give it's own vhost, remove cleverapps one
-
-		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
-			deleteVhostRes := tmp.DeleteAppVHost(
-				ctx,
-				r.Client(),
-				r.Organization(),
-				plan.ID.ValueString(),
-				vhost,
-			)
-			if deleteVhostRes.HasError() {
-				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-				return
-			}
-		}
-	}
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -125,8 +108,7 @@ func (r *ResourceHaskell) Read(ctx context.Context, req resource.ReadRequest, re
 	state.SmallestFlavor = pkg.FromStr(appRes.App.Instance.MinFlavor.Name)
 	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
 
-	vhosts := appRes.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -147,17 +129,17 @@ func (r *ResourceHaskell) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "haskell", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "haskell", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
 	// Retriev all env values by extracting ctx env viriables and merge it with the app env variables
-	planEnvironment := plan.toEnv(ctx, res.Diagnostics)
+	planEnvironment := plan.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	stateEnvironment := state.toEnv(ctx, res.Diagnostics)
+	stateEnvironment := state.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -201,7 +183,7 @@ func (r *ResourceHaskell) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
 
