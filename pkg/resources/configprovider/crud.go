@@ -63,7 +63,7 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 
 	// Always initialize an empty slice, even if there are no environment variables
 	envVarsArray := []tmp.EnvVar{}
-	
+
 	// Only add environment variables if the map is not empty
 	if len(envVars) > 0 {
 		// Convert the map to the expected format: []tmp.EnvVar
