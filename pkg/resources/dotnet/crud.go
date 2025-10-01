@@ -113,8 +113,7 @@ func (r *ResourceDotnet) Read(ctx context.Context, req resource.ReadRequest, res
 	//state.DotnetTFM = pkg.FromStr(appRes.App.DotnetTFM)
 	//state.DotnetVersion = pkg.FromStr(appRes.App.DotnetVersion)
 
-	vhosts := appRes.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -189,7 +188,7 @@ func (r *ResourceDotnet) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
 
