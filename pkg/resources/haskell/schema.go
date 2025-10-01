@@ -57,7 +57,7 @@ func (r ResourceHaskell) UpgradeState(ctx context.Context) map[int64]resource.St
 	return map[int64]resource.StateUpgrader{}
 }
 
-func (haskellapp Haskell) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (haskellapp Haskell) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
