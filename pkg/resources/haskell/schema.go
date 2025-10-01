@@ -64,9 +64,7 @@ func (haskellapp Haskell) toEnv(ctx context.Context, diags *diag.Diagnostics) ma
 	// https://github.com/hashicorp/terraform-plugin-framework/issues/698
 	customEnv := map[string]string{}
 	diags.Append(haskellapp.Environment.ElementsAs(ctx, &customEnv, false)...)
-	if diags.HasError() {
-		return env
-	}
+
 	env = pkg.Merge(env, customEnv)
 
 	pkg.IfIsSetStr(haskellapp.HaskellStackTarget, func(s string) { env["CC_HASKELL_STACK_TARGET"] = s })
