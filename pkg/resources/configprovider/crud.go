@@ -14,10 +14,6 @@ import (
 // Create a new resource
 func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
 	addonConfigProvider := helper.PlanFrom[ConfigProvider](ctx, req.Plan, &res.Diagnostics)
-	res.Diagnostics.Append(req.Plan.Get(ctx, &addonConfigProvider)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 
 	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
@@ -64,15 +60,12 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 	// Always initialize an empty slice, even if there are no environment variables
 	envVarsArray := []tmp.EnvVar{}
 
-	// Only add environment variables if the map is not empty
-	if len(envVars) > 0 {
-		// Convert the map to the expected format: []tmp.EnvVar
-		for k, v := range envVars {
-			envVarsArray = append(envVarsArray, tmp.EnvVar{
-				Name:  k,
-				Value: v,
-			})
-		}
+	// Convert the map to the expected format: []tmp.EnvVar
+	for k, v := range envVars {
+		envVarsArray = append(envVarsArray, tmp.EnvVar{
+			Name:  k,
+			Value: v,
+		})
 	}
 
 	tflog.Debug(ctx, "Setting environment variables on create", map[string]interface{}{"count": len(envVarsArray)})
@@ -83,9 +76,6 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, addonConfigProvider)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information
@@ -151,15 +141,12 @@ func (r *ResourceConfigProvider) Update(ctx context.Context, req resource.Update
 	// Always initialize an empty slice, even if there are no environment variables
 	envVarsArray := []tmp.EnvVar{}
 
-	// Only add environment variables if the map is not empty
-	if len(envVars) > 0 {
-		// Convert the map to the expected format: []tmp.EnvVar
-		for k, v := range envVars {
-			envVarsArray = append(envVarsArray, tmp.EnvVar{
-				Name:  k,
-				Value: v,
-			})
-		}
+	// Convert the map to the expected format: []tmp.EnvVar
+	for k, v := range envVars {
+		envVarsArray = append(envVarsArray, tmp.EnvVar{
+			Name:  k,
+			Value: v,
+		})
 	}
 
 	tflog.Debug(ctx, "Environment variables to update", map[string]interface{}{"count": len(envVarsArray)})
@@ -176,13 +163,11 @@ func (r *ResourceConfigProvider) Update(ctx context.Context, req resource.Update
 
 // Delete resource
 func (r *ResourceConfigProvider) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	addonConfigProvider := ConfigProvider{}
-
-	diags := req.State.Get(ctx, &addonConfigProvider)
-	resp.Diagnostics.Append(diags...)
+	addonConfigProvider := helper.StateFrom[ConfigProvider](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
 	tflog.Debug(ctx, "ConfigProvider DELETE", map[string]any{"configProvider": addonConfigProvider})
 
 	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString())
