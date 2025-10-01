@@ -37,8 +37,3 @@ func (r ResourceMetabase) Schema(_ context.Context, req resource.SchemaRequest, 
 		}),
 	}
 }
-
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourceMetabase) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
-}
