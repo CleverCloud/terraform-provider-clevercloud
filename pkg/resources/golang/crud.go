@@ -23,12 +23,12 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 
 	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "go", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "go", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	environment := plan.toEnv(ctx, res.Diagnostics)
+	environment := plan.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -132,17 +132,17 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "go", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "go", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
 	// Retrieve all env values by extracting ctx env variables and merge it with the app env variables
-	planEnvironment := plan.toEnv(ctx, res.Diagnostics)
+	planEnvironment := plan.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	stateEnvironment := state.toEnv(ctx, res.Diagnostics)
+	stateEnvironment := state.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

@@ -21,7 +21,7 @@ func (r *ResourceRust) Create(ctx context.Context, req resource.CreateRequest, r
 
 	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "rust", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "rust", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -134,7 +134,7 @@ func (r *ResourceRust) Update(ctx context.Context, req resource.UpdateRequest, r
 	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "rust", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "rust", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}

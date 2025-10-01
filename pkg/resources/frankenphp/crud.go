@@ -20,7 +20,7 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "frankenphp", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "frankenphp", &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -126,7 +126,7 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "frankenphp", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "frankenphp", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
