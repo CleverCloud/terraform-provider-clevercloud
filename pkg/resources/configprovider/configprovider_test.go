@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	tfjson "github.com/hashicorp/terraform-json"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
@@ -17,6 +18,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.dev/client"
 )
 
@@ -67,6 +69,40 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^config_.*`))),
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.ConfigProvider, error) {
+					addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, id)
+					if err != nil {
+						return nil, fmt.Errorf("failed to get addon ID: %s", err.Error())
+					}
+					res := tmp.GetConfigProvider(ctx, cc, addonId)
+					if res.IsNotFoundError() {
+						return nil, fmt.Errorf("Unable to find configProvider by real id " + addonId)
+					}
+					if res.HasError() {
+						return nil, fmt.Errorf("unexpectd error: %s", res.Error().Error())
+					}
+					return res.Payload(), nil
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
+					// Verify instance counts were updated
+
+					// Verify environment variables were updated
+					cpEnvRes := tmp.GetConfigProviderEnv(ctx, cc, tests.ORGANISATION, id)
+					if cpEnvRes.HasError() {
+						return fmt.Errorf("failed to get application: %w", cpEnvRes.Error())
+					}
+
+					env := pkg.Reduce(*cpEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
+						acc[e.Name] = e.Value
+						return acc
+					})
+
+					if v := env["MY_KEY"]; v != "updated_val" {
+						return assertError("bad updated env var value MY_KEY", "updated_val", v)
+					}
+
+
+					return nil
+				}),
 			},
 		}, {
 			ResourceName: rName,
@@ -77,4 +113,8 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			},
 		}},
 	})
+}
+// assertError helper function for cleaner error assertions
+func assertError(message string, got, want any) error {
+	return fmt.Errorf("%s: got %v, want %v", message, got, want)
 }
