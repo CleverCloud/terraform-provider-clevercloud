@@ -96,42 +96,42 @@ func TestAccGo_basic(t *testing.T) {
 					},
 					func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
 						if app.Name != rName {
-							return assertError("invalid name", app.Name, rName)
+							return tests.AssertError("invalid name", app.Name, rName)
 						}
 
 						if app.Instance.MinInstances != 1 {
-							return assertError("invalid min instance count", app.Instance.MinInstances, "1")
+							return tests.AssertError("invalid min instance count", app.Instance.MinInstances, "1")
 						}
 
 						if app.Instance.MaxInstances != 2 {
-							return assertError("invalid name", app.Name, rName)
+							return tests.AssertError("invalid name", app.Name, rName)
 						}
 
 						if app.Instance.MinFlavor.Name != "XS" {
-							return assertError("invalid name", app.Name, rName)
+							return tests.AssertError("invalid name", app.Name, rName)
 						}
 
 						if app.Instance.MaxFlavor.Name != "M" {
-							return assertError("invalid name", app.Name, rName)
+							return tests.AssertError("invalid name", app.Name, rName)
 						}
 
 						if app.ForceHTTPS != "ENABLED" {
-							return assertError("expect option to be set", "redirect_https", app.ForceHTTPS)
+							return tests.AssertError("expect option to be set", "redirect_https", app.ForceHTTPS)
 						}
 
 						if !app.StickySessions {
-							return assertError("expect option to be set", "sticky_sessions", app.StickySessions)
+							return tests.AssertError("expect option to be set", "sticky_sessions", app.StickySessions)
 						}
 						if app.Zone != "par" {
-							return assertError("expect region to be 'par'", "region", app.Zone)
+							return tests.AssertError("expect region to be 'par'", "region", app.Zone)
 						}
 
 						if len(app.Vhosts) != 1 {
-							return assertError("expect one vhost", app.Vhosts, "<cleverapps>")
+							return tests.AssertError("expect one vhost", app.Vhosts, "<cleverapps>")
 						}
 
 						if !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io/") {
-							return assertError("expect a cleverapps fqdn", app.Vhosts[0].Fqdn, "<cleverapps>")
+							return tests.AssertError("expect a cleverapps fqdn", app.Vhosts[0].Fqdn, "<cleverapps>")
 						}
 
 						appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
@@ -146,17 +146,17 @@ func TestAccGo_basic(t *testing.T) {
 
 						v := env["MY_KEY"]
 						if v != "myval" {
-							return assertError("bad env var value MY_KEY", "myval3", v)
+							return tests.AssertError("bad env var value MY_KEY", "myval3", v)
 						}
 
 						v2 := env["APP_FOLDER"]
 						if v2 != "./app" {
-							return assertError("bad env var value APP_FOLER", "./app", v2)
+							return tests.AssertError("bad env var value APP_FOLER", "./app", v2)
 						}
 
 						v3 := env["CC_POST_BUILD_HOOK"]
 						if v3 != "echo \"build is OK!\"" {
-							return assertError("bad env var value CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
+							return tests.AssertError("bad env var value CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
 						}
 						return nil
 					}),
@@ -172,8 +172,4 @@ func TestAccGo_basic(t *testing.T) {
 			},
 		}},
 	})
-}
-
-func assertError(msg string, a, b any) error {
-	return fmt.Errorf("%s, got: '%v', expect: '%v'", msg, a, b)
 }
