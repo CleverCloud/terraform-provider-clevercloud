@@ -22,7 +22,7 @@ func (r *ResourceV) Create(ctx context.Context, req resource.CreateRequest, resp
 
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "v", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "v", &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -75,24 +75,7 @@ func (r *ResourceV) Create(ctx context.Context, req resource.CreateRequest, resp
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
 	createdVhosts := createRes.Application.Vhosts
-	if plan.VHosts.IsUnknown() { // practitionner does not provide any vhost, return the cleverapps one
-		plan.VHosts = pkg.FromSetString(createdVhosts.AsString(), &resp.Diagnostics)
-	} else { // practitionner give it's own vhost, remove cleverapps one
-
-		for _, vhost := range pkg.Diff(vhosts, createdVhosts.AsString()) {
-			deleteVhostRes := tmp.DeleteAppVHost(
-				ctx,
-				r.Client(),
-				r.Organization(),
-				plan.ID.ValueString(),
-				vhost,
-			)
-			if deleteVhostRes.HasError() {
-				diags.AddError("failed to remove vhost", deleteVhostRes.Error().Error())
-				return
-			}
-		}
-	}
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -125,8 +108,7 @@ func (r *ResourceV) Read(ctx context.Context, req resource.ReadRequest, resp *re
 	state.SmallestFlavor = pkg.FromStr(appRes.App.Instance.MinFlavor.Name)
 	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
 
-	vhosts := appRes.App.Vhosts.AsString()
-	state.VHosts = pkg.FromSetString(vhosts, &resp.Diagnostics)
+	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -146,7 +128,7 @@ func (r *ResourceV) Update(ctx context.Context, req resource.UpdateRequest, res 
 		return
 	}
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "v", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "v", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -199,7 +181,7 @@ func (r *ResourceV) Update(ctx context.Context, req resource.UpdateRequest, res 
 		return
 	}
 
-	plan.VHosts = pkg.FromSetString(updatedApp.Application.Vhosts.AsString(), &res.Diagnostics)
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
 
