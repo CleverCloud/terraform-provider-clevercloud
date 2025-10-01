@@ -96,13 +96,13 @@ Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
-- `haskell_stack_install_command` (String) Only use this variable to override the default `install` Stack step command.
-- `haskell_stack_install_dependencies_command` (String) Only use this variable to override the default `install --only-dependencies` Stack step command
-- `haskell_stack_setup_command` (String) Only use this variable to override the default `setup` Stack step command.
-- `haskell_stack_target` (String) Specify Stack package target.
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
+- `stack_install_command` (String) Only use this variable to override the default `install` Stack step command.
+- `stack_install_dependencies_command` (String) Only use this variable to override the default `install --only-dependencies` Stack step command
+- `stack_setup_command` (String) Only use this variable to override the default `setup` Stack step command.
+- `stack_target` (String) Specify Stack package target.
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
 
