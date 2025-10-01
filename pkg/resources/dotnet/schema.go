@@ -57,7 +57,7 @@ func (r ResourceDotnet) UpgradeState(ctx context.Context) map[int64]resource.Sta
 	return map[int64]resource.StateUpgrader{}
 }
 
-func (dotnetapp Dotnet) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (dotnetapp Dotnet) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
