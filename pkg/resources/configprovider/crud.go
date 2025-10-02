@@ -108,10 +108,10 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 
 	tflog.Debug(ctx, "READ 3")
 	// Convert the environment variables to a map
-	envVars := map[string]string{}
-	for _, envVar := range *addonEnvRes.Payload() {
-		envVars[envVar.Name] = envVar.Value
-	}
+	envVars := pkg.Reduce(*addonEnvRes.Payload(), map[string]string{}, func(acc, envVar) {
+		acc[envVar.Name] = envVar.Value
+		return acc
+	})
 
 	tflog.Debug(ctx, "READ 4")
 	// Update the environment in the state
