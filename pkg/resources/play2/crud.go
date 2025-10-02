@@ -19,14 +19,14 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "play2", resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "play2", &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
 
-	environment := plan.toEnv(ctx, resp.Diagnostics)
+	environment := plan.toEnv(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -137,18 +137,18 @@ func (r *ResourcePlay2) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Retrieve instance of the app from context
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "play2", res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "play2", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
 	// Retriev all env values by extracting ctx env viriables and merge it with the app env variables
-	planEnvironment := plan.toEnv(ctx, res.Diagnostics)
+	planEnvironment := plan.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	stateEnvironment := state.toEnv(ctx, res.Diagnostics)
+	stateEnvironment := state.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
