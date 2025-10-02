@@ -25,7 +25,6 @@ func (r ResourceConfigProvider) Schema(_ context.Context, req resource.SchemaReq
 		Version:             0,
 		MarkdownDescription: resourceConfigProviderDoc,
 		Attributes: attributes.WithAddonCommons(map[string]schema.Attribute{
-
 			"environment": schema.MapAttribute{
 				Optional:    true,
 				Sensitive:   true,
@@ -34,11 +33,6 @@ func (r ResourceConfigProvider) Schema(_ context.Context, req resource.SchemaReq
 			},
 		}),
 	}
-}
-
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourceConfigProvider) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
 }
 
 func (appCp ConfigProvider) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
