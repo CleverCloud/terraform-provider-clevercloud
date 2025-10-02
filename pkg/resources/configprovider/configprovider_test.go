@@ -40,13 +40,12 @@ func TestAccConfigProvider_basic(t *testing.T) {
 		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				fmt.Println("Check Destroy with", resource.Primary.ID)
 				addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
 				if err != nil {
 					if strings.Contains(err.Error(), "not found") {
 						continue
 					}
-					return fmt.Errorf("CheckDestroy: failed to get addon ID: %s", err.Error())
+					return fmt.Errorf("Failed to get addon ID: %s", err.Error())
 				}
 
 				res := tmp.GetConfigProvider(ctx, cc, addonId)
@@ -54,7 +53,7 @@ func TestAccConfigProvider_basic(t *testing.T) {
 					continue
 				}
 				if res.HasError() {
-					return fmt.Errorf("CheckDestroy: unexpectd error: %s", res.Error().Error())
+					return fmt.Errorf("Unexpectd error: %s", res.Error().Error())
 				}
 				if res.Payload().Status == "TO_DELETE" {
 					continue
@@ -71,18 +70,12 @@ func TestAccConfigProvider_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^config_.*`))),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.ConfigProvider, error) {
-					fmt.Println("Got addon id ", id)
-					addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, id)
-					if err != nil {
-						return nil, fmt.Errorf("failed to get addon ID: %s", err.Error())
-					}
-					fmt.Println("Got real addon id", addonId)
-					res := tmp.GetConfigProvider(ctx, cc, addonId)
+					res := tmp.GetConfigProvider(ctx, cc, id)
 					if res.IsNotFoundError() {
-						return nil, fmt.Errorf("STEP1: Unable to find configProvider by real id " + addonId)
+						return nil, fmt.Errorf("Unable to find configProvider by real id " + id)
 					}
 					if res.HasError() {
-						return nil, fmt.Errorf("STEP1: unexpectd error: %s", res.Error().Error())
+						return nil, fmt.Errorf("Unexpectd error: %s", res.Error().Error())
 					}
 					return res.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
@@ -91,7 +84,7 @@ func TestAccConfigProvider_basic(t *testing.T) {
 					// Verify environment variables were updated
 					cpEnvRes := tmp.GetConfigProviderEnv(ctx, cc, tests.ORGANISATION, id)
 					if cpEnvRes.HasError() {
-						return fmt.Errorf("STEP1: failed to get application: %w", cpEnvRes.Error())
+						return fmt.Errorf("Failed to get application: %w", cpEnvRes.Error())
 					}
 
 					env := pkg.Reduce(*cpEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.EnvVar) map[string]string {
@@ -99,8 +92,8 @@ func TestAccConfigProvider_basic(t *testing.T) {
 						return acc
 					})
 
-					if v := env["MY_KEY"]; v != "updated_val" {
-						return tests.AssertError("bad updated env var value MY_KEY", v, "updated_val")
+					if v := env["foo"]; v != "this is foo" {
+						return tests.AssertError("Bad updated env var value MY_KEY", v, "this is foo")
 					}
 
 
