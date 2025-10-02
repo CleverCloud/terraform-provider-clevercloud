@@ -2,7 +2,6 @@ package configprovider
 
 import (
 	"context"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -24,11 +23,8 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 	addonsProviders := addonsProvidersRes.Payload()
 	provider := pkg.LookupAddonProvider(*addonsProviders, "config-provider")
 
-	plan := pkg.LookupProviderPlan(provider, "std")
-	if plan == nil {
-		res.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
-		return
-	}
+	// there is ALWAYS a first plan, the default plan
+	plan := provider.Plans[0]
 
 	addonReq := tmp.AddonRequest{
 		Name:       addonConfigProvider.Name.ValueString(),
