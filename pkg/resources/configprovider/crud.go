@@ -94,10 +94,10 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 	}
 
 	// Convert the environment variables to a map
-	envVars := map[string]string{}
-	for _, envVar := range *addonEnvRes.Payload() {
-		envVars[envVar.Name] = envVar.Value
-	}
+	envVars := pkg.Reduce(*addonEnvRes.Payload(), map[string]string{}, func(acc, envVar) {
+		acc[envVar.Name] = envVar.Value
+		return acc
+	})
 
 	// Update the environment in the state
 	addonConfigProvider.fromEnv(ctx, envVars, &resp.Diagnostics)
