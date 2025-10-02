@@ -97,7 +97,7 @@ func TestAccConfigProvider_basic(t *testing.T) {
 					})
 
 					if v := env["MY_KEY"]; v != "updated_val" {
-						return assertError("bad updated env var value MY_KEY", "updated_val", v)
+						return tests.AssertError("bad updated env var value MY_KEY", v, "updated_val")
 					}
 
 
@@ -113,8 +113,4 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			},
 		}},
 	})
-}
-// assertError helper function for cleaner error assertions
-func assertError(message string, got, want any) error {
-	return fmt.Errorf("%s: got %v, want %v", message, got, want)
 }
