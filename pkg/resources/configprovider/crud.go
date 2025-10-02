@@ -94,7 +94,7 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 	}
 
 	// Convert the environment variables to a map
-	envVars := pkg.Reduce(*addonEnvRes.Payload(), map[string]string{}, func(acc, envVar) {
+	envVars := pkg.Reduce(*addonEnvRes.Payload(), map[string]string{}, func(acc map[string]string, envVar tmp.EnvVar) map[string]string {
 		acc[envVar.Name] = envVar.Value
 		return acc
 	})
