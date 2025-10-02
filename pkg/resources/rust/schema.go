@@ -49,11 +49,6 @@ func (r ResourceRust) Schema(ctx context.Context, req resource.SchemaRequest, re
 	}
 }
 
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourceRust) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
-}
-
 func (r Rust) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 

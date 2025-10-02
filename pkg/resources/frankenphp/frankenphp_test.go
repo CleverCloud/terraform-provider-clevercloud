@@ -64,7 +64,7 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
 					if len(app.Vhosts) != 1 || app.Vhosts[0].Fqdn != (domain+"/") {
-						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), "1 cleverapps.io domain")
+						return tests.AssertError("invalid vhost list", app.Vhosts.AsString(), "1 cleverapps.io domain")
 					}
 					return nil
 				}),
@@ -91,7 +91,7 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
 					expectedVhosts := []string{"test-frankenphp-1.com/", "test-frankenphp-2.com/test"}
 					if len(app.Vhosts) != len(expectedVhosts) {
-						return assertError("invalid vhost count", "vhosts", len(app.Vhosts), len(expectedVhosts))
+						return tests.AssertError("invalid vhost count", len(app.Vhosts), len(expectedVhosts))
 					}
 
 					for _, expectedVhost := range expectedVhosts {
@@ -103,13 +103,13 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 							}
 						}
 						if !found {
-							return assertError("missing expected vhost", "vhosts", app.Vhosts.AsString(), expectedVhost)
+							return tests.AssertError("missing expected vhost", app.Vhosts.AsString(), expectedVhost)
 						}
 					}
 
 					for _, vhost := range app.Vhosts {
 						if strings.HasSuffix(vhost.Fqdn, ".cleverapps.io/") {
-							return assertError("cleverapps.io should not be present with custom vhosts", "vhosts", app.Vhosts.AsString(), "no cleverapps.io domain")
+							return tests.AssertError("cleverapps.io should not be present with custom vhosts", app.Vhosts.AsString(), "no cleverapps.io domain")
 						}
 					}
 
@@ -137,7 +137,7 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
 					if len(app.Vhosts) != 2 {
-						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), "2 custom domain")
+						return tests.AssertError("invalid vhost list", app.Vhosts.AsString(), "2 custom domain")
 					}
 					return nil
 				}),
@@ -161,8 +161,4 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 			return nil
 		},
 	})
-}
-
-func assertError(msg, param string, got, expect any) error {
-	return fmt.Errorf("%s, %s = '%v', expect: '%v'", msg, param, got, expect)
 }

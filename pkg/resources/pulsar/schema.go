@@ -60,8 +60,3 @@ func (r ResourcePulsar) Schema(_ context.Context, req resource.SchemaRequest, re
 		},
 	}
 }
-
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourcePulsar) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
-}

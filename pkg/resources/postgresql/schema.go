@@ -62,11 +62,6 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 	}
 }
 
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourcePostgreSQL) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
-}
-
 func (r ResourcePostgreSQL) validatePGVersion(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
