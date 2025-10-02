@@ -135,6 +135,14 @@ func TestAccGo_basic(t *testing.T) {
 							return tests.AssertError("expect a cleverapps fqdn", app.Vhosts[0].Fqdn, "<cleverapps>")
 						}
 
+						if len(app.Vhosts) != 1 {
+							return tests.AssertError("expect one vhost", app.Vhosts, "<cleverapps>")
+						}
+
+						if !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io/") {
+							return tests.AssertError("expect a cleverapps fqdn", app.Vhosts[0].Fqdn, "<cleverapps>")
+						}
+
 						appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
 						if appEnvRes.HasError() {
 							return fmt.Errorf("failed to get application: %w", appEnvRes.Error())

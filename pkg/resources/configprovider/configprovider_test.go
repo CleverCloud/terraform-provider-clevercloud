@@ -15,10 +15,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
-	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.dev/client"
 )
 
@@ -32,15 +32,26 @@ func TestAccConfigProvider_basic(t *testing.T) {
 	configProviderBlock := helper.NewRessource(
 		"clevercloud_configprovider",
 		rName,
-		helper.SetKeyValues(map[string]any{"name": rName, "region": "par", "plan": "std", "environment": map[string]any{"foo": "this is foo"}}),
+		helper.SetKeyValues(map[string]any{"name": rName, "environment": map[string]any{"foo": "this is foo"}}),
 	)
+
+	retrieveConfigProvider := func(ctx context.Context, id string) (*tmp.ConfigProvider, error) {
+		res := tmp.GetConfigProvider(ctx, cc, id)
+		if res.IsNotFoundError() {
+			return nil, fmt.Errorf("Unable to find configProvider by real id " + id)
+		}
+		if res.HasError() {
+			return nil, fmt.Errorf("Unexpectd error: %s", res.Error().Error())
+		}
+		return res.Payload(), nil
+	}
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
+				addonID, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
 				if err != nil {
 					if strings.Contains(err.Error(), "not found") {
 						continue
@@ -48,7 +59,7 @@ func TestAccConfigProvider_basic(t *testing.T) {
 					return fmt.Errorf("Failed to get addon ID: %s", err.Error())
 				}
 
-				res := tmp.GetConfigProvider(ctx, cc, addonId)
+				res := tmp.GetConfigProvider(ctx, cc, addonID)
 				if res.IsNotFoundError() {
 					continue
 				}
@@ -69,18 +80,7 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^config_.*`))),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.ConfigProvider, error) {
-					res := tmp.GetConfigProvider(ctx, cc, id)
-					if res.IsNotFoundError() {
-						return nil, fmt.Errorf("Unable to find configProvider by real id " + id)
-					}
-					if res.HasError() {
-						return nil, fmt.Errorf("Unexpectd error: %s", res.Error().Error())
-					}
-					return res.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
-					// Verify instance counts were updated
-
+				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
 					// Verify environment variables were updated
 					cpEnvRes := tmp.GetConfigProviderEnv(ctx, cc, tests.ORGANISATION, id)
 					if cpEnvRes.HasError() {
@@ -100,7 +100,6 @@ func TestAccConfigProvider_basic(t *testing.T) {
 						return tests.AssertError("Bad updated env var value MY_KEY", v, "this is foo")
 					}
 
-
 					return nil
 				}),
 			},
@@ -113,19 +112,9 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			},
 		}, {
 			ResourceName: rName,
-			Config: providerBlock.Append(configProviderBlock.SetOneValue("environment", map[string]any{"foo": "this is foo", "bar": "this is bar"})).String(),
+			Config:       providerBlock.Append(configProviderBlock.SetOneValue("environment", map[string]any{"foo": "this is foo", "bar": "this is bar"})).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.ConfigProvider, error) {
-					res := tmp.GetConfigProvider(ctx, cc, id)
-					if res.IsNotFoundError() {
-						return nil, fmt.Errorf("Unable to find configProvider by real id " + id)
-					}
-					if res.HasError() {
-						return nil, fmt.Errorf("Unexpectd error: %s", res.Error().Error())
-					}
-					return res.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
-
+				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
 					cpEnvRes := tmp.GetConfigProviderEnv(ctx, cc, tests.ORGANISATION, id)
 					if cpEnvRes.HasError() {
 						return fmt.Errorf("Failed to get application: %w", cpEnvRes.Error())
@@ -153,19 +142,9 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			},
 		}, {
 			ResourceName: rName,
-			Config: providerBlock.Append(configProviderBlock.SetOneValue("environment", map[string]any{"bar": "this is bar"})).String(),
+			Config:       providerBlock.Append(configProviderBlock.SetOneValue("environment", map[string]any{"bar": "this is bar"})).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.ConfigProvider, error) {
-					res := tmp.GetConfigProvider(ctx, cc, id)
-					if res.IsNotFoundError() {
-						return nil, fmt.Errorf("Unable to find configProvider by real id " + id)
-					}
-					if res.HasError() {
-						return nil, fmt.Errorf("Unexpectd error: %s", res.Error().Error())
-					}
-					return res.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
-
+				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
 					// Verify environment variables were updated
 					cpEnvRes := tmp.GetConfigProviderEnv(ctx, cc, tests.ORGANISATION, id)
 					if cpEnvRes.HasError() {
@@ -190,19 +169,9 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			},
 		}, {
 			ResourceName: rName,
-			Config: providerBlock.Append(configProviderBlock.SetOneValue("environment", map[string]any{})).String(),
+			Config:       providerBlock.Append(configProviderBlock.SetOneValue("environment", map[string]any{})).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.ConfigProvider, error) {
-					res := tmp.GetConfigProvider(ctx, cc, id)
-					if res.IsNotFoundError() {
-						return nil, fmt.Errorf("Unable to find configProvider by real id " + id)
-					}
-					if res.HasError() {
-						return nil, fmt.Errorf("Unexpectd error: %s", res.Error().Error())
-					}
-					return res.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
-
+				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
 					// Verify environment variables were updated
 					cpEnvRes := tmp.GetConfigProviderEnv(ctx, cc, tests.ORGANISATION, id)
 					if cpEnvRes.HasError() {
@@ -223,4 +192,9 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			},
 		}},
 	})
+}
+
+// assertError helper function for cleaner error assertions
+func assertError(message string, got, want any) error {
+	return fmt.Errorf("%s: got %v, want %v", message, got, want)
 }

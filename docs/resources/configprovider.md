@@ -20,14 +20,11 @@ See [ConfigProvider product specification](https://www.clever.cloud/developers/d
 ### Required
 
 - `name` (String) Name of the service
-- `plan` (String) Database size and spec
 
 ### Optional
 
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
-- `region` (String) Geographical region where the data will be stored
 
 ### Read-Only
 
-- `creation_date` (Number) Date of database creation
 - `id` (String) Generated unique identifier

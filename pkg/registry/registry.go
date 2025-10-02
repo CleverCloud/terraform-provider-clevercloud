@@ -72,8 +72,8 @@ var Resources = []func() resource.Resource{
 	pulsar.NewResourcePulsar,
 	rust.NewResourceRust,
 	networkgroup.NewResourceNetworkgroup,
-	dotnet.NewResourceDotnet,
 	v.NewResourceV,
 	matomo.NewResourceMatomo,
 	configprovider.NewResourceConfigProvider,
+	dotnet.NewResourceDotnet,
 }

@@ -7,14 +7,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"go.clever-cloud.com/terraform-provider/pkg"
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 )
 
 type ConfigProvider struct {
-	attributes.Addon
-	Environment types.Map `tfsdk:"environment"`
+	ID          types.String `tfsdk:"id"`
+	Name        types.String `tfsdk:"name"`
+	Environment types.Map    `tfsdk:"environment"`
 }
 
 //go:embed doc.md
@@ -24,29 +25,22 @@ func (r ResourceConfigProvider) Schema(_ context.Context, req resource.SchemaReq
 	resp.Schema = schema.Schema{
 		Version:             0,
 		MarkdownDescription: resourceConfigProviderDoc,
-		Attributes: attributes.WithAddonCommons(map[string]schema.Attribute{
+		Attributes: map[string]schema.Attribute{
 			"environment": schema.MapAttribute{
-				Optional:    true,
+				Required:    true,
 				Sensitive:   true,
 				Description: "Environment variables injected into the application",
 				ElementType: types.StringType,
 			},
-		}),
+			"id":   schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
+		},
 	}
 }
 
 func (appCp ConfigProvider) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
-
-	// do not use the real map since ElementAs can nullish it
-	// https://github.com/hashicorp/terraform-plugin-framework/issues/698
-	customEnv := map[string]string{}
-	diags.Append(appCp.Environment.ElementsAs(ctx, &customEnv, false)...)
-	if diags.HasError() {
-		return env
-	}
-	env = pkg.Merge(env, customEnv)
-
+	diags.Append(appCp.Environment.ElementsAs(ctx, &env, false)...)
 	return env
 }
 
