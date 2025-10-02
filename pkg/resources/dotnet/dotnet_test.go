@@ -128,14 +128,14 @@ func TestAccNodejs_basic(t *testing.T) {
 					}
 
 					if app.ForceHTTPS != "ENABLED" {
-						return tests.AssertError("expect option to be set", "redirect_https", app.ForceHTTPS)
+						return tests.AssertError("expect option to be set", app.ForceHTTPS, "ENABLED")
 					}
 
 					if !app.StickySessions {
-						return tests.AssertError("expect option to be set", "sticky_sessions", app.StickySessions)
+						return tests.AssertError("expect option to be set", app.StickySessions, true)
 					}
 					if app.Zone != "par" {
-						return tests.AssertError("expect region to be 'par'", "region", app.Zone)
+						return tests.AssertError("expect region to be 'par'", app.Zone, "par")
 					}
 					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
 					if appEnvRes.HasError() {
@@ -154,22 +154,22 @@ func TestAccNodejs_basic(t *testing.T) {
 
 					v1 := env["CC_DOTNET_PROFILE"]
 					if v1 != "dotnet-profile-1" {
-						return tests.AssertError("When providing 'dotnet_profile': 'dotnet-profile-1'", v1, "dotnet-profile-1")
+						return tests.AssertError("When providing 'dotnet_profile'", v1, "dotnet-profile-1")
 					}
 
 					v2 := env["CC_DOTNET_PROJ"]
 					if v2 != "dotnet-proj-name" {
-						return tests.AssertError("When providing 'dotnet_proj': 'dotnet-proj-name'", v2, "dotnet-proj-name")
+						return tests.AssertError("When providing 'dotnet_proj'", v2, "dotnet-proj-name")
 					}
 
 					v3 := env["CC_DOTNET_TFM"]
 					if v3 != "net42" {
-						return tests.AssertError("When providing 'dotnet_tfm': 'dotnet-profile-1'", v3, "net42")
+						return tests.AssertError("When providing 'dotnet_tfm'", v3, "net42")
 					}
 
 					v4 := env["CC_DOTNET_VERSION"]
 					if v4 != "9.0" {
-						return tests.AssertError("When providing 'dotnet_version': 'dotnet-profile-1'", v4, "9.0")
+						return tests.AssertError("When providing 'dotnet_version'", v4, "9.0")
 					}
 
 					return nil
