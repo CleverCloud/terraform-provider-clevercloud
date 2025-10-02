@@ -103,38 +103,38 @@ func TestAccNodejs_basic(t *testing.T) {
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
 					if app.Name != rName {
-						return assertError("invalid name", app.Name, rName)
+						return tests.AssertError("invalid name", app.Name, rName)
 					}
 
 					if app.Instance.MinInstances != 1 {
-						return assertError("invalid min instance count", app.Instance.MinInstances, "1")
+						return tests.AssertError("invalid min instance count", app.Instance.MinInstances, "1")
 					}
 
 					if app.Instance.MaxInstances != 2 {
-						return assertError("invalid name", app.Instance.MaxInstances, 2)
+						return tests.AssertError("invalid name", app.Instance.MaxInstances, 2)
 					}
 
 					if app.Instance.MinFlavor.Name != "XS" {
-						return assertError("invalid name", app.Instance.MinFlavor.Name, "XS")
+						return tests.AssertError("invalid name", app.Instance.MinFlavor.Name, "XS")
 					}
 
 					if app.Instance.MaxFlavor.Name != "M" {
-						return assertError("invalid max instance name", app.Instance.MaxFlavor.Name, "M")
+						return tests.AssertError("invalid max instance name", app.Instance.MaxFlavor.Name, "M")
 					}
 
 					if app.BuildFlavor.Name != "XL" {
-						return assertError("invalid build flavor", app.BuildFlavor.Name, "XL")
+						return tests.AssertError("invalid build flavor", app.BuildFlavor.Name, "XL")
 					}
 
 					if app.ForceHTTPS != "ENABLED" {
-						return assertError("expect option to be set", "redirect_https", app.ForceHTTPS)
+						return tests.AssertError("expect option to be set", app.ForceHTTPS, "ENABLED")
 					}
 
 					if !app.StickySessions {
-						return assertError("expect option to be set", "sticky_sessions", app.StickySessions)
+						return tests.AssertError("expect option to be set", app.StickySessions, true)
 					}
 					if app.Zone != "par" {
-						return assertError("expect region to be 'par'", "region", app.Zone)
+						return tests.AssertError("expect region to be 'par'", app.Zone, "par")
 					}
 					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
 					if appEnvRes.HasError() {
@@ -148,27 +148,27 @@ func TestAccNodejs_basic(t *testing.T) {
 
 					v := env["MY_KEY"]
 					if v != "myval" {
-						return assertError("bad env var value MY_KEY", "myval3", v)
+						return tests.AssertError("bad env var value MY_KEY", v, "myval")
 					}
 
 					v1 := env["CC_HASKELL_STACK_TARGET"]
 					if v1 != "default-target" {
-						return assertError("Bad value when providing 'haskell_stack_target': 'default-target'", "default-target", v1)
+						return tests.AssertError("Bad value when providing 'haskell_stack_target'", v1, "default-target")
 					}
 
 					v2 := env["CC_HASKELL_STACK_SETUP_COMMAND"]
 					if v2 != "./setup" {
-						return assertError("Bad value when providing 'haskell_stack_setup_command': './setup'", "./setup", v2)
+						return tests.AssertError("Bad value when providing 'haskell_stack_setup_command'", v2, "./setup")
 					}
 
 					v3 := env["CC_HASKELL_STACK_INSTALL_COMMAND"]
 					if v3 != "./install" {
-						return assertError("Bad value when providing 'haskell_stack_install_command': './install'", "./install", v3)
+						return tests.AssertError("Bad value when providing 'haskell_stack_install_command'", v3, "./install")
 					}
 
 					v4 := env["CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND"]
 					if v4 != "./install-deps" {
-						return assertError("Bad value when providing 'haskell_stack_install_dependencies_command': './install-deps'", "./install-deps", v4)
+						return tests.AssertError("Bad value when providing 'haskell_stack_install_dependencies_command'", v4, "./install-deps")
 					}
 
 					return nil
@@ -215,8 +215,4 @@ func TestAccNodejs_basic(t *testing.T) {
 			},
 		}},
 	})
-}
-
-func assertError(msg string, a, b any) error {
-	return fmt.Errorf("%s, got: '%v', expect: '%v'", msg, a, b)
 }
