@@ -104,38 +104,38 @@ func TestAccNodejs_basic(t *testing.T) {
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
 					if app.Name != rName {
-						return assertError("invalid name", app.Name, rName)
+						return tests.AssertError("invalid name", app.Name, rName)
 					}
 
 					if app.Instance.MinInstances != 1 {
-						return assertError("invalid min instance count", app.Instance.MinInstances, "1")
+						return tests.AssertError("invalid min instance count", app.Instance.MinInstances, "1")
 					}
 
 					if app.Instance.MaxInstances != 2 {
-						return assertError("invalid name", app.Instance.MaxInstances, 2)
+						return tests.AssertError("invalid name", app.Instance.MaxInstances, 2)
 					}
 
 					if app.Instance.MinFlavor.Name != "XS" {
-						return assertError("invalid name", app.Instance.MinFlavor.Name, "XS")
+						return tests.AssertError("invalid name", app.Instance.MinFlavor.Name, "XS")
 					}
 
 					if app.Instance.MaxFlavor.Name != "M" {
-						return assertError("invalid max instance name", app.Instance.MaxFlavor.Name, "M")
+						return tests.AssertError("invalid max instance name", app.Instance.MaxFlavor.Name, "M")
 					}
 
 					if app.BuildFlavor.Name != "XL" {
-						return assertError("invalid build flavor", app.BuildFlavor.Name, "XL")
+						return tests.AssertError("invalid build flavor", app.BuildFlavor.Name, "XL")
 					}
 
 					if app.ForceHTTPS != "ENABLED" {
-						return assertError("expect option to be set", "redirect_https", app.ForceHTTPS)
+						return tests.AssertError("expect option to be set", "redirect_https", app.ForceHTTPS)
 					}
 
 					if !app.StickySessions {
-						return assertError("expect option to be set", "sticky_sessions", app.StickySessions)
+						return tests.AssertError("expect option to be set", "sticky_sessions", app.StickySessions)
 					}
 					if app.Zone != "par" {
-						return assertError("expect region to be 'par'", "region", app.Zone)
+						return tests.AssertError("expect region to be 'par'", "region", app.Zone)
 					}
 					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
 					if appEnvRes.HasError() {
@@ -149,27 +149,27 @@ func TestAccNodejs_basic(t *testing.T) {
 
 					v := env["MY_KEY"]
 					if v != "myval" {
-						return assertError("bad env var value MY_KEY", v, "myval")
+						return tests.AssertError("bad env var value MY_KEY", v, "myval")
 					}
 
 					v1 := env["CC_DOTNET_PROFILE"]
 					if v1 != "dotnet-profile-1" {
-						return assertError("When providing 'dotnet_profile': 'dotnet-profile-1'", v1, "dotnet-profile-1")
+						return tests.AssertError("When providing 'dotnet_profile': 'dotnet-profile-1'", v1, "dotnet-profile-1")
 					}
 
 					v2 := env["CC_DOTNET_PROJ"]
 					if v2 != "dotnet-proj-name" {
-						return assertError("When providing 'dotnet_proj': 'dotnet-proj-name'", v2, "dotnet-proj-name")
+						return tests.AssertError("When providing 'dotnet_proj': 'dotnet-proj-name'", v2, "dotnet-proj-name")
 					}
 
 					v3 := env["CC_DOTNET_TFM"]
 					if v3 != "net42" {
-						return assertError("When providing 'dotnet_tfm': 'dotnet-profile-1'", v3, "net42")
+						return tests.AssertError("When providing 'dotnet_tfm': 'dotnet-profile-1'", v3, "net42")
 					}
 
 					v4 := env["CC_DOTNET_VERSION"]
 					if v4 != "9.0" {
-						return assertError("When providing 'dotnet_version': 'dotnet-profile-1'", v4, "9.0")
+						return tests.AssertError("When providing 'dotnet_version': 'dotnet-profile-1'", v4, "9.0")
 					}
 
 					return nil
@@ -216,8 +216,4 @@ func TestAccNodejs_basic(t *testing.T) {
 			},
 		}},
 	})
-}
-
-func assertError(msg string, a, b any) error {
-	return fmt.Errorf("%s, got: '%v', expect: '%v'", msg, a, b)
 }

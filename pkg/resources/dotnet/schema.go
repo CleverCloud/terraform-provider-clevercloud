@@ -52,11 +52,6 @@ func (r ResourceDotnet) Schema(ctx context.Context, req resource.SchemaRequest, 
 	}
 }
 
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourceDotnet) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
-}
-
 func (dotnetapp Dotnet) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
