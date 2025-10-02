@@ -102,38 +102,38 @@ func TestAccNodejs_basic(t *testing.T) {
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
 					if app.Name != rName {
-						return assertError("invalid name", app.Name, rName)
+						return tests.AssertError("invalid name", app.Name, rName)
 					}
 
 					if app.Instance.MinInstances != 1 {
-						return assertError("invalid min instance count", app.Instance.MinInstances, "1")
+						return tests.AssertError("invalid min instance count", app.Instance.MinInstances, "1")
 					}
 
 					if app.Instance.MaxInstances != 2 {
-						return assertError("invalid name", app.Instance.MaxInstances, 2)
+						return tests.AssertError("invalid name", app.Instance.MaxInstances, 2)
 					}
 
 					if app.Instance.MinFlavor.Name != "XS" {
-						return assertError("invalid name", app.Instance.MinFlavor.Name, "XS")
+						return tests.AssertError("invalid name", app.Instance.MinFlavor.Name, "XS")
 					}
 
 					if app.Instance.MaxFlavor.Name != "M" {
-						return assertError("invalid max instance name", app.Instance.MaxFlavor.Name, "M")
+						return tests.AssertError("invalid max instance name", app.Instance.MaxFlavor.Name, "M")
 					}
 
 					if app.BuildFlavor.Name != "XL" {
-						return assertError("invalid build flavor", app.BuildFlavor.Name, "XL")
+						return tests.AssertError("invalid build flavor", app.BuildFlavor.Name, "XL")
 					}
 
 					if app.ForceHTTPS != "ENABLED" {
-						return assertError("expect option to be set", "redirect_https", app.ForceHTTPS)
+						return tests.AssertError("expect option to be set", "redirect_https", app.ForceHTTPS)
 					}
 
 					if !app.StickySessions {
-						return assertError("expect option to be set", "sticky_sessions", app.StickySessions)
+						return tests.AssertError("expect option to be set", "sticky_sessions", app.StickySessions)
 					}
 					if app.Zone != "par" {
-						return assertError("expect region to be 'par'", "region", app.Zone)
+						return tests.AssertError("expect region to be 'par'", "region", app.Zone)
 					}
 					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
 					if appEnvRes.HasError() {
@@ -147,17 +147,17 @@ func TestAccNodejs_basic(t *testing.T) {
 
 					v := env["MY_KEY"]
 					if v != "myval" {
-						return assertError("bad env var value MY_KEY", v, "myval")
+						return tests.AssertError("bad env var value MY_KEY", v, "myval")
 					}
 
 					v1 := env["CC_V_BINARY"]
 					if v1 != "a.out" {
-						return assertError("When providing 'v_binary': 'a.out'", v1, "a.out")
+						return tests.AssertError("When providing 'v_binary': 'a.out'", v1, "a.out")
 					}
 
 					v2 := env["ENVIRONMENT"]
 					if v2 != "development" {
-						return assertError("When providing 'v_environment': 'development'", v2, "development")
+						return tests.AssertError("When providing 'v_environment': 'development'", v2, "development")
 					}
 
 					return nil
@@ -204,8 +204,4 @@ func TestAccNodejs_basic(t *testing.T) {
 			},
 		}},
 	})
-}
-
-func assertError(msg string, a, b any) error {
-	return fmt.Errorf("%s, got: '%v', expect: '%v'", msg, a, b)
 }
