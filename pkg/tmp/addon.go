@@ -131,6 +131,7 @@ func GetMySQL(ctx context.Context, cc *client.Client, mysqlID string) client.Res
 
 func GetConfigProvider(ctx context.Context, cc *client.Client, configProviderId string) client.Response[ConfigProvider] {
 	path := fmt.Sprintf("/v4/addon-providers/config-provider/addons/%s", configProviderId)
+	fmt.Println("Querying with configProviderId", configProviderId, path)
 	return client.Get[ConfigProvider](ctx, cc, path)
 }
 
