@@ -15,25 +15,21 @@ import (
 func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
 	addonConfigProvider := helper.PlanFrom[ConfigProvider](ctx, req.Plan, &res.Diagnostics)
 
-	tflog.Debug(ctx, "CREATE 1")
 	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		res.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
 	}
 
-	tflog.Debug(ctx, "CREATE 2")
 	addonsProviders := addonsProvidersRes.Payload()
 	provider := pkg.LookupAddonProvider(*addonsProviders, "config-provider")
 
-	tflog.Debug(ctx, "CREATE 3")
 	plan := pkg.LookupProviderPlan(provider, "std")
 	if plan == nil {
 		res.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
 		return
 	}
 
-	tflog.Debug(ctx, "CREATE 4")
 	addonReq := tmp.AddonRequest{
 		Name:       addonConfigProvider.Name.ValueString(),
 		Region:     addonConfigProvider.Region.ValueString(),
@@ -41,25 +37,21 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 		ProviderID: "config-provider",
 	}
 
-	tflog.Debug(ctx, "CREATE 5")
 	createAddonRes := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if createAddonRes.HasError() {
 		res.Diagnostics.AddError("failed to create ConfigProvider", createAddonRes.Error().Error())
 		return
 	}
 
-	tflog.Debug(ctx, "CREATE 6")
 	addonConfigProvider.ID = pkg.FromStr(createAddonRes.Payload().RealID)
 	addonConfigProvider.CreationDate = pkg.FromI(createAddonRes.Payload().CreationDate)
 
-	tflog.Debug(ctx, "CREATE 7")
 	// Set the state before updating environment variables
 	res.Diagnostics.Append(res.State.Set(ctx, addonConfigProvider)...)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	tflog.Debug(ctx, "CREATE 8")
 	envVars := addonConfigProvider.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
@@ -68,7 +60,6 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 	// Always initialize an empty slice, even if there are no environment variables
 	envVarsArray := []tmp.EnvVar{}
 
-	tflog.Debug(ctx, "CREATE 9")
 	// Convert the map to the expected format: []tmp.EnvVar
 	for k, v := range envVars {
 		envVarsArray = append(envVarsArray, tmp.EnvVar{
@@ -77,7 +68,6 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 		})
 	}
 
-	tflog.Debug(ctx, "CREATE 10")
 	tflog.Debug(ctx, "Setting environment variables on create", map[string]interface{}{"count": len(envVarsArray)})
 	envRes := tmp.UpdateConfigProviderEnv(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString(), envVarsArray)
 	if envRes.HasError() {
@@ -85,7 +75,6 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	tflog.Debug(ctx, "CREATE 11")
 	res.Diagnostics.Append(res.State.Set(ctx, addonConfigProvider)...)
 }
 
@@ -93,34 +82,29 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "ConfigProvider READ", map[string]any{"request": req})
 
-	tflog.Debug(ctx, "READ 1")
 	addonConfigProvider := helper.StateFrom[ConfigProvider](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	tflog.Debug(ctx, "READ 2")
 	addonEnvRes := tmp.GetConfigProviderEnv(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString())
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
 	}
 
-	tflog.Debug(ctx, "READ 3")
 	// Convert the environment variables to a map
 	envVars := map[string]string{}
 	for _, envVar := range *addonEnvRes.Payload() {
 		envVars[envVar.Name] = envVar.Value
 	}
 
-	tflog.Debug(ctx, "READ 4")
 	// Update the environment in the state
 	addonConfigProvider.fromEnv(ctx, envVars, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	tflog.Debug(ctx, "READ 5")
 	// Update the state
 	resp.Diagnostics.Append(resp.State.Set(ctx, addonConfigProvider)...)
 }
@@ -179,16 +163,13 @@ func (r *ResourceConfigProvider) Update(ctx context.Context, req resource.Update
 
 // Delete resource
 func (r *ResourceConfigProvider) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	tflog.Debug(ctx, "DELETE 1")
 	addonConfigProvider := helper.StateFrom[ConfigProvider](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	tflog.Debug(ctx, "DELETE 2")
 	tflog.Debug(ctx, "ConfigProvider DELETE", map[string]any{"configProvider": addonConfigProvider})
 
-	tflog.Debug(ctx, "DELETE 3")
 	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
@@ -199,6 +180,5 @@ func (r *ResourceConfigProvider) Delete(ctx context.Context, req resource.Delete
 		return
 	}
 
-	tflog.Debug(ctx, "DELETE 4")
 	resp.State.RemoveResource(ctx)
 }
