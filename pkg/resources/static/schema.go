@@ -45,7 +45,7 @@ var schemaStaticV0 = schema.Schema{
 }
 
 
-func (plan *Static) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (plan *Static) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it

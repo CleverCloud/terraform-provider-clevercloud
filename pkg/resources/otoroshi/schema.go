@@ -100,7 +100,3 @@ func (r ResourceOtoroshi) Schema(_ context.Context, req resource.SchemaRequest, 
 		},
 	}
 }
-
-func (r ResourceOtoroshi) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
-}

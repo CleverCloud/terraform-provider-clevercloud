@@ -31,8 +31,3 @@ func (r ResourceRedis) Schema(_ context.Context, req resource.SchemaRequest, res
 		}),
 	}
 }
-
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourceRedis) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
-}

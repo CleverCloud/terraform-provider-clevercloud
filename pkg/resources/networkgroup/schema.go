@@ -42,11 +42,6 @@ func (r ResourceNG) Schema(_ context.Context, req resource.SchemaRequest, resp *
 	}
 }
 
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourceNG) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
-}
-
 // val result = name.value.trim.replaceAll(",", "-").replaceAll(" ", "-").replaceAll("\\.", "-").replaceAll("_", "-")
 var validateLabel = pkg.NewStringValidator(
 	"Validate label property",

@@ -108,7 +108,7 @@ var schemaNodeJSV0 = schema.Schema{
 }
 
 
-func (node NodeJS) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (node NodeJS) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it

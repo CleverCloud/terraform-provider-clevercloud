@@ -519,7 +519,3 @@ func (r *OVHDrain) FromAPI(drain tmp.Drain) error {
 func (r OVHDrain) GetDrain() Drain { return r.Drain }
 
 func (r *OVHDrain) SetDrain(common Drain) { r.Drain = common }
-
-func (r ResourceDrain[T]) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
-}
