@@ -92,6 +92,10 @@ func TestAccConfigProvider_basic(t *testing.T) {
 						return acc
 					})
 
+					if len(env) != 1 {
+						return tests.AssertError("Env should only have 1 value", env, "env:foo")
+					}
+
 					if v := env["foo"]; v != "this is foo" {
 						return tests.AssertError("Bad updated env var value MY_KEY", v, "this is foo")
 					}
@@ -106,6 +110,116 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rNameEdited)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^config_.*`))),
+			},
+		}, {
+			ResourceName: rName,
+			Config: providerBlock.Append(configProviderBlock.SetOneValue("environment", map[string]any{"foo": "this is foo", "bar": "this is bar"})).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.ConfigProvider, error) {
+					res := tmp.GetConfigProvider(ctx, cc, id)
+					if res.IsNotFoundError() {
+						return nil, fmt.Errorf("Unable to find configProvider by real id " + id)
+					}
+					if res.HasError() {
+						return nil, fmt.Errorf("Unexpectd error: %s", res.Error().Error())
+					}
+					return res.Payload(), nil
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
+
+					cpEnvRes := tmp.GetConfigProviderEnv(ctx, cc, tests.ORGANISATION, id)
+					if cpEnvRes.HasError() {
+						return fmt.Errorf("Failed to get application: %w", cpEnvRes.Error())
+					}
+
+					env := pkg.Reduce(*cpEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.EnvVar) map[string]string {
+						acc[e.Name] = e.Value
+						return acc
+					})
+
+					if len(env) != 2 {
+						return tests.AssertError("Env should only have 1 value", env, "env:foo")
+					}
+
+					if v := env["foo"]; v != "this is foo" {
+						return tests.AssertError("Bad updated env foo", v, "this is foo")
+					}
+
+					if v2 := env["bar"]; v2 != "this is bar" {
+						return tests.AssertError("Bad updated env bar", v2, "this is bar")
+					}
+
+					return nil
+				}),
+			},
+		}, {
+			ResourceName: rName,
+			Config: providerBlock.Append(configProviderBlock.SetOneValue("environment", map[string]any{"bar": "this is bar"})).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.ConfigProvider, error) {
+					res := tmp.GetConfigProvider(ctx, cc, id)
+					if res.IsNotFoundError() {
+						return nil, fmt.Errorf("Unable to find configProvider by real id " + id)
+					}
+					if res.HasError() {
+						return nil, fmt.Errorf("Unexpectd error: %s", res.Error().Error())
+					}
+					return res.Payload(), nil
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
+
+					// Verify environment variables were updated
+					cpEnvRes := tmp.GetConfigProviderEnv(ctx, cc, tests.ORGANISATION, id)
+					if cpEnvRes.HasError() {
+						return fmt.Errorf("Failed to get application: %w", cpEnvRes.Error())
+					}
+
+					env := pkg.Reduce(*cpEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.EnvVar) map[string]string {
+						acc[e.Name] = e.Value
+						return acc
+					})
+
+					if len(env) != 1 {
+						return tests.AssertError("Env should only have 1 value", env, "env:foo")
+					}
+
+					if v2 := env["bar"]; v2 != "this is bar" {
+						return tests.AssertError("Bad updated env bar", v2, "this is bar")
+					}
+
+					return nil
+				}),
+			},
+		}, {
+			ResourceName: rName,
+			Config: providerBlock.Append(configProviderBlock.SetOneValue("environment", map[string]any{})).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.ConfigProvider, error) {
+					res := tmp.GetConfigProvider(ctx, cc, id)
+					if res.IsNotFoundError() {
+						return nil, fmt.Errorf("Unable to find configProvider by real id " + id)
+					}
+					if res.HasError() {
+						return nil, fmt.Errorf("Unexpectd error: %s", res.Error().Error())
+					}
+					return res.Payload(), nil
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
+
+					// Verify environment variables were updated
+					cpEnvRes := tmp.GetConfigProviderEnv(ctx, cc, tests.ORGANISATION, id)
+					if cpEnvRes.HasError() {
+						return fmt.Errorf("Failed to get application: %w", cpEnvRes.Error())
+					}
+
+					env := pkg.Reduce(*cpEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.EnvVar) map[string]string {
+						acc[e.Name] = e.Value
+						return acc
+					})
+
+					if len(env) != 0 {
+						return tests.AssertError("Env should have 0 entries", env, "[]")
+					}
+
+					return nil
+				}),
 			},
 		}},
 	})
