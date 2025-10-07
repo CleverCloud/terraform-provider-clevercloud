@@ -4,6 +4,8 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/miton18/helper/maps"
+
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -53,12 +55,24 @@ func (fp *FrankenPHP) toEnv(ctx context.Context, diags *diag.Diagnostics) map[st
 
 	pkg.IfIsSetB(fp.DevDependencies, func(devDeps bool) {
 		if devDeps {
-			env["CC_PHP_DEV_DEPENDENCIES"] = "install"
+			env[CC_PHP_DEV_DEPENDENCIES] = "install"
 		}
 	})
 	env = pkg.Merge(env, fp.Hooks.ToEnv())
 
 	return env
+}
+
+// fromEnv iter on environment set on the clever application and
+// handle language specific env vars
+// put the others on Environment field
+func (fp *FrankenPHP) fromEnv(ctx context.Context, env map[string]string) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	m := maps.NewMap(env)
+
+	fp.DevDependencies = pkg.FromBool(m.Pop(CC_PHP_DEV_DEPENDENCIES) == "install")
+	fp.FromEnvironment(ctx, m)
+	return diags
 }
 
 func (fp *FrankenPHP) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {

@@ -114,6 +114,7 @@ func (r *ResourceScala) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, readRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
+	//state.fromEnv(ctx, appFrankenPHP.EnvAsMap()) // TODO: replace
 	for envName, envValue := range readRes.EnvAsMap() {
 		switch envName {
 		case "APP_FOLDER":

@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/miton18/helper/maps"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -23,6 +25,8 @@ type VHost struct {
 	FQDN      types.String `tfsdk:"fqdn"`
 	PathBegin types.String `tfsdk:"path_begin"`
 }
+
+const APP_FOLDER = "APP_FOLDER"
 
 func (vh VHost) String() *string {
 	if vh.FQDN.IsNull() || vh.FQDN.IsUnknown() {
@@ -59,6 +63,24 @@ type Runtime struct {
 	// Env
 	AppFolder   types.String `tfsdk:"app_folder"`
 	Environment types.Map    `tfsdk:"environment"`
+}
+
+func (r *Runtime) FromEnvironment(ctx context.Context, env *maps.Map[string, string]) {
+	r.Hooks.FromEnv(env)
+
+	if appFolder := env.Pop(APP_FOLDER); appFolder != "" {
+		r.AppFolder = pkg.FromStr(appFolder)
+	}
+
+	if env.Size() == 0 {
+		return
+	}
+
+	m := map[string]attr.Value{}
+	for k, v := range env.All {
+		m[k] = pkg.FromStr(v)
+	}
+	r.Environment = types.MapValueMust(types.StringType, m)
 }
 
 type RuntimeV0 struct {

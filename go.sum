@@ -425,6 +425,10 @@ github.com/mitchellh/reflectwalk v1.0.0/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx
 github.com/mitchellh/reflectwalk v1.0.1/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
 github.com/mitchellh/reflectwalk v1.0.2 h1:G2LzWKi524PWgd3mLHV8Y5k7s6XUvT0Gef6zxSIeXaQ=
 github.com/mitchellh/reflectwalk v1.0.2/go.mod h1:mSTlrgnPZtwu0c4WaC2kGObEpuNDbx0jmZXqmk4esnw=
+github.com/miton18/helper v0.0.2-0.20251001163320-ee4c86a86792 h1:XeA098d0RWNJacxHe2zs7nQxVb8Ls67bv161EMsUu/g=
+github.com/miton18/helper v0.0.2-0.20251001163320-ee4c86a86792/go.mod h1:BpVJIypihdfdxycOj7PqtgCvyhNppV97AlmDrGgOjec=
+github.com/miton18/helper v0.0.2-0.20251007125855-ab20836f278e h1:9eeF2wEKZG9pd46AdAOCo6wnE6OdEgf3TL9ZSlMvEpM=
+github.com/miton18/helper v0.0.2-0.20251007125855-ab20836f278e/go.mod h1:BpVJIypihdfdxycOj7PqtgCvyhNppV97AlmDrGgOjec=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w8PVh93nsPXa1VrQ6jlwL5oN8l14QlcNfg=
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=

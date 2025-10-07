@@ -108,6 +108,7 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 	state.Region = pkg.FromStr(appPHP.App.Zone)
 	state.DeployURL = pkg.FromStr(appPHP.App.DeployURL)
 	state.BuildFlavor = appPHP.GetBuildFlavor()
+	//state.fromEnv(ctx, appFrankenPHP.EnvAsMap()) // TODO
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appPHP.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 

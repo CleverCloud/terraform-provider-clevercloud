@@ -89,7 +89,7 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 
 	my.ID = pkg.FromStr(createdMy.RealID)
 	my.CreationDate = pkg.FromI(createdMy.CreationDate)
-	my.Plan = pkg.FromStr(createdMy.Plan.Slug)
+	my.Plan = pkg.FromStr(strings.ToLower(createdMy.Plan.Slug))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, my)...)
 
@@ -165,7 +165,7 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 	tflog.Debug(ctx, "API", map[string]any{"my": addonMy})
 	my.ID = pkg.FromStr(addon.RealID)
 	my.Name = pkg.FromStr(addon.Name)
-	my.Plan = pkg.FromStr(addonMy.Plan)
+	my.Plan = pkg.FromStr(strings.ToLower(addonMy.Plan))
 	my.Region = pkg.FromStr(addonMy.Zone)
 	my.CreationDate = pkg.FromI(addon.CreationDate)
 	my.Host = pkg.FromStr(addonMy.Host)
