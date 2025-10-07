@@ -89,11 +89,6 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	}
 	res.Application.Vhosts = *vhostsRes.Payload()
 
-	// Git Deployment
-	if req.Deployment != nil {
-		diags.Append(gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
-	}
-
 	// Dependencies
 	dependenciesWithAddonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, req.Dependencies...)
 	if err != nil {
@@ -109,6 +104,11 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 			tflog.Error(ctx, "ERROR: "+dependency, map[string]any{"err": depRes.Error().Error()})
 			diags.AddError("failed to add dependency", depRes.Error().Error())
 		}
+	}
+
+	// Git Deployment
+	if req.Deployment != nil {
+		diags.Append(gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
 	}
 
 	return res, diags
