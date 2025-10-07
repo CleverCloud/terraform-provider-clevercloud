@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.2.0...v1.2.1) (2025-10-07)
+
+
+### Bug Fixes
+
+* **apps:** trigger deployment after all others steps ([21e9348](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/21e9348e0519675f6e59fe72c8b5b878ec5b9ba1))
+* **diags:** diags are always references, so that errors arn't lost ([c25d727](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/c25d72791958314bd1422af69b4e9b9b3d399b5e))
+
 ## [1.2.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.1.0...v1.2.0) (2025-09-24)
 
 
