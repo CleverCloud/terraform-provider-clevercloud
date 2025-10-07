@@ -111,6 +111,7 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 	state.BuildFlavor = appRes.GetBuildFlavor()
 	state.StickySessions = pkg.FromBool(appRes.App.StickySessions)
 	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
+	//state.fromEnv(ctx, appFrankenPHP.EnvAsMap()) // TODO
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 

@@ -110,7 +110,7 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 	state.Region = pkg.FromStr(app.App.Zone)
 	state.DeployURL = pkg.FromStr(app.App.DeployURL)
 	state.BuildFlavor = app.GetBuildFlavor()
-
+	//state.fromEnv(ctx, appFrankenPHP.EnvAsMap()) // TODO
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, app.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

@@ -1,6 +1,6 @@
 module go.clever-cloud.com/terraform-provider
 
-go 1.23.7
+go 1.24.0
 
 toolchain go1.24.5
 
@@ -93,6 +93,7 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
+	github.com/miton18/helper v0.0.2-0.20251007125855-ab20836f278e
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/oklog/run v1.0.0 // indirect
 	github.com/philhofer/fwd v1.2.0 // indirect

@@ -132,7 +132,7 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	rd.Name = pkg.FromStr(addonRD.Name)
 	rd.Host = envAsMap["REDIS_HOST"]
-	rd.Plan = pkg.FromStr(addonRD.Plan.Slug)
+	rd.Plan = pkg.FromStr(strings.ToLower(addonRD.Plan.Slug))
 	rd.Port = pkg.FromI(port)
 	rd.Region = pkg.FromStr(addonRD.Region)
 	rd.Token = envAsMap["REDIS_PASSWORD"]
