@@ -99,7 +99,7 @@ func (r *ResourceRuby) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	state.DeployURL = pkg.FromStr(appRes.App.DeployURL)
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
-	//state.fromEnv(ctx, appFrankenPHP.EnvAsMap()) // TODO
+	state.fromEnv(ctx, appRes.EnvAsMap())
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)

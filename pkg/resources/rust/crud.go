@@ -3,7 +3,6 @@ package rust
 import (
 	"context"
 	"reflect"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -109,11 +108,7 @@ func (r *ResourceRust) Read(ctx context.Context, req resource.ReadRequest, res *
 	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &res.Diagnostics)
-
-	//state.fromEnv(ctx, appFrankenPHP.EnvAsMap()) // TODO: replace
-	if env := appRes.EnvAsMap(); env[CC_RUST_FEATURES] != "" {
-		state.Features = pkg.FromSetString(strings.Split(env[CC_RUST_FEATURES], ","), &res.Diagnostics)
-	}
+	state.fromEnv(ctx, appRes.EnvAsMap())
 
 	diags = res.State.Set(ctx, state)
 	res.Diagnostics.Append(diags...)

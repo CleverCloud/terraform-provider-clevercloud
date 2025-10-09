@@ -10,6 +10,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+const (
+	CC_DISABLE_MAX_METASPACE = "CC_DISABLE_MAX_METASPACE"
+	CC_EXTRA_JAVA_ARGS       = "CC_EXTRA_JAVA_ARGS"
+	CC_JAR_ARGS              = "CC_JAR_ARGS"
+	CC_JAR_PATH              = "CC_JAR_PATH"
+	CC_JAVA_VERSION          = "CC_JAVA_VERSION"
+	CC_MAVEN_PROFILES        = "CC_MAVEN_PROFILES"
+	CC_RUN_COMMAND           = "CC_RUN_COMMAND"
+	CC_SBT_TARGET_BIN        = "CC_SBT_TARGET_BIN"
+	CC_SBT_TARGET_DIR        = "CC_SBT_TARGET_DIR"
+	GRADLE_DEPLOY_GOAL       = "GRADLE_DEPLOY_GOAL"
+	MAVEN_DEPLOY_GOAL        = "MAVEN_DEPLOY_GOAL"
+	NUDGE_APPID              = "NUDGE_APPID"
+	PLAY1_VERSION            = "PLAY1_VERSION"
+	SBT_DEPLOY_GOAL          = "SBT_DEPLOY_GOAL"
+)
+
 type ResourceJava struct {
 	helper.Configurer
 	profile string

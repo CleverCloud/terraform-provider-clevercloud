@@ -10,6 +10,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+const (
+	CC_ENABLE_SIDEKIQ          = "CC_ENABLE_SIDEKIQ"
+	CC_HTTP_BASIC_AUTH         = "CC_HTTP_BASIC_AUTH"
+	CC_NGINX_PROXY_BUFFERS     = "CC_NGINX_PROXY_BUFFERS"
+	CC_NGINX_PROXY_BUFFER_SIZE = "CC_NGINX_PROXY_BUFFER_SIZE"
+	CC_RACKUP_SERVER           = "CC_RACKUP_SERVER"
+	CC_RAKEGOALS               = "CC_RAKEGOALS"
+	CC_RUBY_VERSION            = "CC_RUBY_VERSION"
+	CC_SIDEKIQ_FILES           = "CC_SIDEKIQ_FILES"
+	ENABLE_GZIP_COMPRESSION    = "ENABLE_GZIP_COMPRESSION"
+	GZIP_TYPES                 = "GZIP_TYPES"
+	NGINX_READ_TIMEOUT         = "NGINX_READ_TIMEOUT"
+	RACK_ENV                   = "RACK_ENV"
+	RAILS_ENV                  = "RAILS_ENV"
+	STATIC_FILES_PATH          = "STATIC_FILES_PATH"
+	STATIC_URL_PREFIX          = "STATIC_URL_PREFIX"
+	STATIC_WEBROOT             = "STATIC_WEBROOT"
+)
+
 type ResourceRuby struct {
 	helper.Configurer
 }

@@ -10,6 +10,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+const (
+	CC_BUILD_COMMAND           = "CC_BUILD_COMMAND"
+	CC_HUGO_VERSION            = "CC_HUGO_VERSION"
+	CC_OVERRIDE_BUILDCACHE     = "CC_OVERRIDE_BUILDCACHE"
+	CC_STATIC_AUTOBUILD_OUTDIR = "CC_STATIC_AUTOBUILD_OUTDIR"
+	CC_STATIC_CADDYFILE        = "CC_STATIC_CADDYFILE"
+	CC_STATIC_FLAGS            = "CC_STATIC_FLAGS"
+	CC_STATIC_PORT             = "CC_STATIC_PORT"
+	CC_STATIC_SERVER           = "CC_STATIC_SERVER"
+	CC_WEBROOT                 = "CC_WEBROOT"
+)
+
 type ResourceStatic struct {
 	helper.Configurer
 }

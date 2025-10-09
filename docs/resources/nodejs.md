@@ -91,6 +91,7 @@ resource "clevercloud_nodejs" "myapp" {
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `custom_build_tool` (String) A custom command to run (with package_manager set to `custom`)
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
@@ -98,10 +99,12 @@ Can be either app_xxx or postgres_yyy ID format
 - `dev_dependencies` (Boolean) Install development dependencies specified in package.json
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
-- `package_manager` (String) Either npm, npm-ci, bun, pnpm, yarn-berry or custom
+- `node_version` (String) Set Node.js version, for example `24`, `23.11` or `22.15.1`
+- `package_manager` (String) Choose your build tool between npm, npm-ci, yarn, yarn2 and custom. Default is `npm`
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
-- `registry` (String) The host of your private repository, available values: github or the registry host
+- `registry` (String) The host of your private repository, available values: github or the registry host. Default is `registry.npmjs.org`
+- `registry_basic_auth` (String, Sensitive) Private repository credentials, in the form `user:password`. You can't use this if registry_token is set
 - `registry_token` (String, Sensitive) Private repository token
 - `start_script` (String) Set custom start script, instead of `npm start`
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped

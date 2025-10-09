@@ -50,6 +50,7 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 			InstanceType:    instance.Type,
 			InstanceVariant: instance.Variant.ID,
 			InstanceVersion: instance.Version,
+			BuildFlavor:     plan.BuildFlavor.ValueString(),
 			MinFlavor:       plan.SmallestFlavor.ValueString(),
 			MaxFlavor:       plan.BiggestFlavor.ValueString(),
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
@@ -100,6 +101,7 @@ func (r *ResourceFrankenPHP) Read(ctx context.Context, req resource.ReadRequest,
 
 	state.Name = pkg.FromStr(appFrankenPHP.App.Name)
 	state.Description = pkg.FromStr(appFrankenPHP.App.Description)
+	state.BuildFlavor = appFrankenPHP.GetBuildFlavor()
 	state.MinInstanceCount = pkg.FromI(int64(appFrankenPHP.App.Instance.MinInstances))
 	state.MaxInstanceCount = pkg.FromI(int64(appFrankenPHP.App.Instance.MaxInstances))
 	state.SmallestFlavor = pkg.FromStr(appFrankenPHP.App.Instance.MinFlavor.Name)
@@ -154,6 +156,7 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 			InstanceType:    instance.Type,
 			InstanceVariant: instance.Variant.ID,
 			InstanceVersion: instance.Version,
+			BuildFlavor:     plan.BuildFlavor.ValueString(),
 			MinFlavor:       plan.SmallestFlavor.ValueString(),
 			MaxFlavor:       plan.BiggestFlavor.ValueString(),
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
@@ -193,7 +196,14 @@ func (r *ResourceFrankenPHP) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 
 	deleteAppRes := tmp.DeleteApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	if deleteAppRes.IsNotFoundError() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 	if deleteAppRes.HasError() {
 		resp.Diagnostics.AddError("failed to delete app", deleteAppRes.Error().Error())
+		return
 	}
+
+	resp.State.RemoveResource(ctx)
 }

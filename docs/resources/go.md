@@ -96,6 +96,9 @@ Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
+- `go_build_tool` (String) Available values: `gomod`, `gobuild`. Build and install your application (`goget` is deprecated)
+- `go_pkg` (String) Tell the `CC_GO_BUILD_TOOL` which file contains the `main()` function (default: `main.go`)
+- `go_rundir` (String) Run the application from the specified path, relative to `$GOPATH/src/` (deprecated)
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
