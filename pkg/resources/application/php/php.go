@@ -3,8 +3,9 @@ package php
 import (
 	"context"
 
+	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -13,6 +14,43 @@ import (
 type ResourcePHP struct {
 	helper.Configurer
 }
+
+const (
+	ALWAYS_POPULATE_RAW_POST_DATA                   = "ALWAYS_POPULATE_RAW_POST_DATA"
+	CC_COMPOSER_VERSION                             = "CC_COMPOSER_VERSION"
+	CC_CGI_IMPLEMENTATION                           = "CC_CGI_IMPLEMENTATION"
+	CC_HTTP_BASIC_AUTH                              = "CC_HTTP_BASIC_AUTH"
+	CC_APACHE_HEADERS_SIZE                          = "CC_APACHE_HEADERS_SIZE"
+	CC_LDAP_CA_CERT                                 = "CC_LDAP_CA_CERT"
+	CC_MTA_AUTH_PASSWORD                            = "CC_MTA_AUTH_PASSWORD"
+	CC_MTA_AUTH_USER                                = "CC_MTA_AUTH_USER"
+	CC_MTA_SERVER_AUTH_METHOD                       = "CC_MTA_SERVER_AUTH_METHOD"
+	CC_MTA_SERVER_HOST                              = "CC_MTA_SERVER_HOST"
+	CC_MTA_SERVER_PORT                              = "CC_MTA_SERVER_PORT"
+	CC_MTA_SERVER_USE_TLS                           = "CC_MTA_SERVER_USE_TLS"
+	CC_OPCACHE_INTERNED_STRINGS_BUFFER              = "CC_OPCACHE_INTERNED_STRINGS_BUFFER"
+	CC_OPCACHE_MAX_ACCELERATED_FILES                = "CC_OPCACHE_MAX_ACCELERATED_FILES"
+	CC_OPCACHE_MEMORY                               = "CC_OPCACHE_MEMORY"
+	CC_OPCACHE_PRELOAD                              = "CC_OPCACHE_PRELOAD"
+	CC_PHP_ASYNC_APP_BUCKET                         = "CC_PHP_ASYNC_APP_BUCKET"
+	CC_PHP_DEV_DEPENDENCIES                         = "CC_PHP_DEV_DEPENDENCIES"
+	CC_PHP_DISABLE_APP_BUCKET                       = "CC_PHP_DISABLE_APP_BUCKET"
+	CC_PHP_VERSION                                  = "CC_PHP_VERSION"
+	CC_REALPATH_CACHE_TTL                           = "CC_REALPATH_CACHE_TTL"
+	CC_WEBROOT                                      = "CC_WEBROOT"
+	ENABLE_ELASTIC_APM_AGENT                        = "ENABLE_ELASTIC_APM_AGENT"
+	ENABLE_GRPC                                     = "ENABLE_GRPC"
+	ENABLE_PDFLIB                                   = "ENABLE_PDFLIB"
+	ENABLE_REDIS                                    = "ENABLE_REDIS"
+	HTTP_TIMEOUT                                    = "HTTP_TIMEOUT"
+	LDAPTLS_CACERT                                  = "LDAPTLS_CACERT"
+	MAX_INPUT_VARS                                  = "MAX_INPUT_VARS"
+	MEMORY_LIMIT                                    = "MEMORY_LIMIT"
+	SESSION_TYPE                                    = "SESSION_TYPE"
+	SOCKSIFY_EVERYTHING                             = "SOCKSIFY_EVERYTHING"
+	SQREEN_API_APP_NAME                             = "SQREEN_API_APP_NAME"
+	SQREEN_API_TOKEN                                = "SQREEN_API_TOKEN"
+)
 
 func NewResourcePHP() resource.Resource {
 	return &ResourcePHP{}
@@ -40,7 +78,7 @@ func (r *ResourcePHP) UpgradeState(ctx context.Context) map[int64]resource.State
 				vhosts := helper.VHostsFromAPIHosts(ctx, oldVhosts, old.VHosts, &res.Diagnostics)
 
 				newState := PHP{
-					Runtime: application.Runtime{
+					Runtime: attributes.Runtime{
 						ID:               old.ID,
 						Name:             old.Name,
 						Description:      old.Description,
@@ -60,10 +98,22 @@ func (r *ResourcePHP) UpgradeState(ctx context.Context) map[int64]resource.State
 						AppFolder:        old.AppFolder,
 						Environment:      old.Environment,
 					},
-					PHPVersion:      old.PHPVersion,
-					WebRoot:         old.WebRoot,
-					RedisSessions:   old.RedisSessions,
-					DevDependencies: old.DevDependencies,
+					PHPVersion: old.PHPVersion,
+					WebRoot:    old.WebRoot,
+				}
+
+				// Migrate RedisSessions (Bool) to SessionType (String)
+				if !old.RedisSessions.IsNull() && old.RedisSessions.ValueBool() {
+					newState.SessionType = pkg.FromStr("redis")
+				}
+
+				// Migrate DevDependencies from Bool to String
+				if !old.DevDependencies.IsNull() {
+					if old.DevDependencies.ValueBool() {
+						newState.DevDependencies = pkg.FromStr("install")
+					} else {
+						newState.DevDependencies = pkg.FromStr("ignore")
+					}
 				}
 
 				res.Diagnostics.Append(res.State.Set(ctx, newState)...)

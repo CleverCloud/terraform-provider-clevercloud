@@ -10,6 +10,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+const (
+	CC_SBT_TARGET_BIN = "CC_SBT_TARGET_BIN"
+	CC_SBT_TARGET_DIR = "CC_SBT_TARGET_DIR"
+	SBT_DEPLOY_GOAL   = "SBT_DEPLOY_GOAL"
+)
+
 type ResourceScala struct {
 	helper.Configurer
 }

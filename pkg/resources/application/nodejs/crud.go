@@ -107,7 +107,8 @@ func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, res
 	state.MaxInstanceCount = basetypes.NewInt64Value(int64(appRes.App.Instance.MaxInstances))
 	state.SmallestFlavor = pkg.FromStr(appRes.App.Instance.MinFlavor.Name)
 	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
-	//state.fromEnv(ctx, appFrankenPHP.EnvAsMap()) // TODO
+
+	resp.Diagnostics.Append(state.fromEnv(ctx, appRes.EnvAsMap())...)
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 

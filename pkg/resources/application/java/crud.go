@@ -109,18 +109,7 @@ func (r *ResourceJava) Read(ctx context.Context, req resource.ReadRequest, resp 
 	state.BuildFlavor = readRes.GetBuildFlavor()
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, readRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
-
-	//state.fromEnv(ctx, appFrankenPHP.EnvAsMap()) // TODO: replace
-	for envName, envValue := range readRes.EnvAsMap() {
-		switch envName {
-		case "APP_FOLDER":
-			state.AppFolder = pkg.FromStr(envValue)
-		case "CC_JAVA_VERSION":
-			state.JavaVersion = pkg.FromStr(envValue)
-		default:
-			//state.Environment.
-		}
-	}
+	state.fromEnv(ctx, readRes.EnvAsMap())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

@@ -7,21 +7,23 @@ import (
 	"net"
 	"strconv"
 
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
-
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/application"
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
 type Docker struct {
 	application.Runtime
 	Dockerfile        types.String `tfsdk:"dockerfile"`
+	Buildx            types.Bool   `tfsdk:"buildx"`
 	ContainerPort     types.Int64  `tfsdk:"container_port"`
 	ContainerPortTCP  types.Int64  `tfsdk:"container_port_tcp"`
 	EnableIPv6        types.Bool   `tfsdk:"enable_ipv6"`
@@ -59,6 +61,12 @@ var schemaDocker = schema.Schema{
 		"dockerfile": schema.StringAttribute{
 			Optional:            true,
 			MarkdownDescription: "The name of the Dockerfile to build",
+		},
+		"buildx": schema.BoolAttribute{
+			Optional:            true,
+			Computed:            true,
+			Default:             booldefault.StaticBool(false),
+			MarkdownDescription: "Set to true to use buildx to build the Docker image",
 		},
 		"container_port": schema.Int64Attribute{
 			Optional:            true,
@@ -108,6 +116,8 @@ var schemaDocker = schema.Schema{
 		},
 		"daemon_socket_mount": schema.BoolAttribute{
 			Optional:            true,
+			Computed:            true,
+			Default:             booldefault.StaticBool(false),
 			MarkdownDescription: "Set to true to access the host Docker socket from inside your container",
 		},
 	}),
@@ -170,6 +180,8 @@ var schemaDockerV0 = schema.Schema{
 		},
 		"daemon_socket_mount": schema.BoolAttribute{
 			Optional:            true,
+			Computed:            true,
+			Default:             booldefault.StaticBool(false),
 			MarkdownDescription: "Set to true to access the host Docker socket from inside your container",
 		},
 	}),
@@ -177,32 +189,51 @@ var schemaDockerV0 = schema.Schema{
 }
 
 func (p *Docker) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
-	env := map[string]string{}
-
-	// do not use the real map since ElementAs can nullish it
-	// https://github.com/hashicorp/terraform-plugin-framework/issues/698
-	customEnv := map[string]string{}
-	diags.Append(p.Environment.ElementsAs(ctx, &customEnv, false)...)
+	// Start with common runtime environment variables (APP_FOLDER, Hooks, Environment)
+	env := p.ToEnv(ctx, diags)
 	if diags.HasError() {
 		return env
 	}
-	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(p.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-
-	// Docker specific
-	pkg.IfIsSetStr(p.Dockerfile, func(s string) { env["CC_DOCKERFILE"] = s })
-	pkg.IfIsSetI(p.ContainerPort, func(i int64) { env["CC_DOCKER_EXPOSED_HTTP_PORT"] = fmt.Sprintf("%d", i) })
-	pkg.IfIsSetI(p.ContainerPortTCP, func(i int64) { env["CC_DOCKER_EXPOSED_TCP_PORT"] = fmt.Sprintf("%d", i) })
-	pkg.IfIsSetStr(p.IPv6Cidr, func(s string) { env["CC_DOCKER_FIXED_CIDR_V6"] = s })
-	pkg.IfIsSetStr(p.RegistryURL, func(s string) { env["CC_DOCKER_LOGIN_SERVER"] = s })
-	pkg.IfIsSetStr(p.RegistryUser, func(s string) { env["CC_DOCKER_LOGIN_USERNAME"] = s })
-	pkg.IfIsSetStr(p.RegistryPassword, func(s string) { env["CC_DOCKER_LOGIN_PASSWORD"] = s })
-	pkg.IfIsSetB(p.DaemonSocketMount, func(e bool) { env["CC_MOUNT_DOCKER_SOCKET"] = strconv.FormatBool(e) })
-
-	env = pkg.Merge(env, p.Hooks.ToEnv())
+	// Add Docker-specific environment variables
+	pkg.IfIsSetStr(p.Dockerfile, func(s string) { env[CC_DOCKERFILE] = s })
+	pkg.IfIsSetB(p.Buildx, func(b bool) { env[CC_DOCKER_BUILDX] = strconv.FormatBool(b) })
+	pkg.IfIsSetI(p.ContainerPort, func(i int64) { env[CC_DOCKER_EXPOSED_HTTP_PORT] = fmt.Sprintf("%d", i) })
+	pkg.IfIsSetI(p.ContainerPortTCP, func(i int64) { env[CC_DOCKER_EXPOSED_TCP_PORT] = fmt.Sprintf("%d", i) })
+	pkg.IfIsSetStr(p.IPv6Cidr, func(s string) { env[CC_DOCKER_FIXED_CIDR_V6] = s })
+	pkg.IfIsSetStr(p.RegistryURL, func(s string) { env[CC_DOCKER_LOGIN_SERVER] = s })
+	pkg.IfIsSetStr(p.RegistryUser, func(s string) { env[CC_DOCKER_LOGIN_USERNAME] = s })
+	pkg.IfIsSetStr(p.RegistryPassword, func(s string) { env[CC_DOCKER_LOGIN_PASSWORD] = s })
+	pkg.IfIsSetB(p.DaemonSocketMount, func(e bool) { env[CC_MOUNT_DOCKER_SOCKET] = strconv.FormatBool(e) })
 
 	return env
+}
+
+// fromEnv iter on environment set on the clever application and
+// handle language specific env vars
+// put the others on Environment field
+func (d *Docker) fromEnv(ctx context.Context, env map[string]string) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+	m := helper.NewEnvMap(env)
+
+	d.Dockerfile = pkg.FromStr(m.Pop(CC_DOCKERFILE))
+	d.Buildx = pkg.FromBool(m.Pop(CC_DOCKER_BUILDX) == "true")
+
+	if port, err := strconv.ParseInt(m.Pop(CC_DOCKER_EXPOSED_HTTP_PORT), 10, 64); err == nil {
+		d.ContainerPort = pkg.FromI(port)
+	}
+	if port, err := strconv.ParseInt(m.Pop(CC_DOCKER_EXPOSED_TCP_PORT), 10, 64); err == nil {
+		d.ContainerPortTCP = pkg.FromI(port)
+	}
+
+	d.IPv6Cidr = pkg.FromStr(m.Pop(CC_DOCKER_FIXED_CIDR_V6))
+	d.RegistryURL = pkg.FromStr(m.Pop(CC_DOCKER_LOGIN_SERVER))
+	d.RegistryUser = pkg.FromStr(m.Pop(CC_DOCKER_LOGIN_USERNAME))
+	d.RegistryPassword = pkg.FromStr(m.Pop(CC_DOCKER_LOGIN_PASSWORD))
+	d.DaemonSocketMount = pkg.FromBool(m.Pop(CC_MOUNT_DOCKER_SOCKET) == "true")
+
+	d.FromEnvironment(ctx, m)
+	return diags
 }
 
 func (p *Docker) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
