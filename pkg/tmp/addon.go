@@ -176,6 +176,11 @@ type MongoDB struct {
 	Database string `tfsdk:"database"`
 }
 
+
+func (mg MongoDB) Uri() string {
+	return fmt.Sprintf("mongodb://%s:%s@%s:%d/%s", mg.User, mg.Password, mg.Host, mg.Port, mg.Database)
+}
+
 // Use Addon ID
 func GetMongoDB(ctx context.Context, cc *client.Client, mongodbID string) client.Response[MongoDB] {
 	path := fmt.Sprintf("/v4/addon-providers/mongodb-addon/addons/%s", mongodbID)
