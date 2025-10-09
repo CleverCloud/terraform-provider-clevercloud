@@ -8,8 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
 // Deployment block
@@ -129,7 +129,7 @@ func (hooks *Hooks) ToEnv() map[string]string {
 	return m
 }
 
-func (hooks *Hooks) FromEnv(env *maps.Map[string, string]) {
+func (hooks *Hooks) FromEnv(env *helper.EnvMap) {
 	if script := env.Pop(CC_PRE_BUILD_HOOK); script != "" {
 		hooks.PreBuild = pkg.FromStr(script)
 	}
