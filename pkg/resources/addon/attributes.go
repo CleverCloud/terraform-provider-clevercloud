@@ -1,9 +1,6 @@
 package addon
 
 import (
-	"context"
-	"regexp"
-
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -12,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
 type CommonAttributes struct {
@@ -28,7 +26,7 @@ var addonCommon = map[string]schema.Attribute{
 	"plan": schema.StringAttribute{
 		Required:            true,
 		MarkdownDescription: "Database size and spec",
-		Validators:          []validator.String{slugValidator},
+		Validators:          []validator.String{helper.CCPlanFlavorValidator},
 	},
 	"region": schema.StringAttribute{
 		Optional:            true,
@@ -42,17 +40,3 @@ var addonCommon = map[string]schema.Attribute{
 func WithAddonCommons(runtimeSpecifics map[string]schema.Attribute) map[string]schema.Attribute {
 	return pkg.Merge(addonCommon, runtimeSpecifics)
 }
-
-// https://regex101.com/r/bMOotf/1
-var slugRegex = regexp.MustCompile(`^[a-z1-9_]*$`)
-var slugValidator = pkg.NewStringValidator(
-	"expect slug value",
-	func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
-		if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-			return
-		}
-
-		if !slugRegex.MatchString(req.ConfigValue.ValueString()) {
-			res.Diagnostics.AddAttributeError(req.Path, "expect lowercase and underscore characters only", "Invalid slug, expect something like `xs_tny`")
-		}
-	})
