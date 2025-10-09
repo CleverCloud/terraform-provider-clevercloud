@@ -151,17 +151,17 @@ var runtimeCommon = map[string]schema.Attribute{
 	},
 	"smallest_flavor": schema.StringAttribute{
 		Required:            true,
-		Validators:          []validator.String{helper.UpperCaseValidator},
+		Validators:          []validator.String{helper.CCPlanFlavorValidator},
 		MarkdownDescription: "Smallest instance flavor",
 	},
 	"biggest_flavor": schema.StringAttribute{
 		Required:            true,
-		Validators:          []validator.String{helper.UpperCaseValidator},
+		Validators:          []validator.String{helper.CCPlanFlavorValidator},
 		MarkdownDescription: "Biggest instance flavor, if different from smallest, enable auto-scaling",
 	},
 	"build_flavor": schema.StringAttribute{
 		Optional:            true,
-		Validators:          []validator.String{helper.UpperCaseValidator},
+		Validators:          []validator.String{helper.CCPlanFlavorValidator},
 		MarkdownDescription: "Use dedicated instance with given flavor for build phase",
 	},
 	"region": schema.StringAttribute{
