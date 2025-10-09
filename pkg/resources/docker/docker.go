@@ -14,6 +14,18 @@ type ResourceDocker struct {
 	helper.Configurer
 }
 
+const (
+	CC_DOCKERFILE               = "CC_DOCKERFILE"
+	CC_DOCKER_BUILDX            = "CC_DOCKER_BUILDX"
+	CC_DOCKER_EXPOSED_HTTP_PORT = "CC_DOCKER_EXPOSED_HTTP_PORT"
+	CC_DOCKER_EXPOSED_TCP_PORT  = "CC_DOCKER_EXPOSED_TCP_PORT"
+	CC_DOCKER_FIXED_CIDR_V6     = "CC_DOCKER_FIXED_CIDR_V6"
+	CC_DOCKER_LOGIN_SERVER      = "CC_DOCKER_LOGIN_SERVER"
+	CC_DOCKER_LOGIN_USERNAME    = "CC_DOCKER_LOGIN_USERNAME"
+	CC_DOCKER_LOGIN_PASSWORD    = "CC_DOCKER_LOGIN_PASSWORD"
+	CC_MOUNT_DOCKER_SOCKET      = "CC_MOUNT_DOCKER_SOCKET"
+)
+
 func NewResourceDocker() resource.Resource {
 	return &ResourceDocker{}
 }
@@ -29,7 +41,7 @@ func (r *ResourceDocker) UpgradeState(ctx context.Context) map[int64]resource.St
 		0: {
 			PriorSchema: &schemaDockerV0,
 			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, res *resource.UpgradeStateResponse) {
-				old := helper.StateFrom[Docker](ctx, *req.State, &res.Diagnostics)
+				old := helper.StateFrom[DockerV0](ctx, *req.State, &res.Diagnostics)
 				if res.Diagnostics.HasError() {
 					return
 				}

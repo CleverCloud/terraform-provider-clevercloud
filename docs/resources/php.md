@@ -27,22 +27,52 @@ See [PHP with Apache product specification](https://www.clever.cloud/developers/
 
 ### Optional
 
+- `always_populate_raw_post_data` (String) Controls population of raw POST data
+- `apache_headers_size` (Number) Set the maximum size of the headers in Apache, between `8` and `256`. Default is `8`
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `async_app_bucket` (String) Mount the default app FS bucket asynchronously. If set, should have value `async`
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `cgi_implementation` (String) Choose the Apache FastCGI module between `fastcgi` and `proxy_fcgi`. Default is `proxy_fcgi`
+- `composer_version` (String) Choose your composer version between 1 and 2. Default is `2`
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
-- `dev_dependencies` (Boolean) Install development dependencies
+- `dev_dependencies` (String) Control if development dependencies are installed or not. Values are either `install` or `ignore`
+- `disable_app_bucket` (String) Disable entirely the app FS Bucket. Values are either `true`, `yes` or `disable`
+- `enable_elastic_apm_agent` (Boolean) Enable the Elastic APM Agent for PHP. Default is `true` if `ELASTIC_APM_SERVER_URL` is defined, `false` otherwise
+- `enable_grpc` (Boolean) Enable the use of gRPC module. Default is `false`
+- `enable_pdflib` (Boolean) Enable the use of PDFlib module. Default is `false`
+- `enable_redis` (Boolean) Enable Redis support. Default is `false`
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
-- `php_version` (String) PHP version (Default: 8)
+- `http_basic_auth` (String, Sensitive) Restrict HTTP access to your application. Example: `login:password`. You can define multiple credentials using additional `CC_HTTP_BASIC_AUTH_n` (where `n` is a number) environment variables
+- `http_timeout` (Number) Define a custom HTTP timeout. Default is `180`
+- `ldap_ca_cert` (String) Path to the LDAP CA certificate
+- `ldaptls_cacert` (String) Path to the LDAP TLS CA certificate
+- `max_input_vars` (Number) Maximum number of input variables that can be accepted
+- `memory_limit` (String) Change the default memory limit for PHP scripts
+- `mta_auth_password` (String, Sensitive) Password to authenticate to the SMTP server
+- `mta_auth_user` (String) User to authenticate to the SMTP server
+- `mta_server_auth_method` (String) Enable or disable authentication to the SMTP server. Default is `on`
+- `mta_server_host` (String) Host of the SMTP server
+- `mta_server_port` (Number) Port of the SMTP server. Default is `465`
+- `mta_server_use_tls` (Boolean) Enable or disable TLS when connecting to the SMTP server. Default is `true`
+- `opcache_interned_strings_buffer` (Number) The amount of memory used to store interned strings, in megabytes. Default is `4` (PHP5), `8` (PHP7)
+- `opcache_max_accelerated_files` (Number) Maximum number of files handled by opcache. Default depends on the scaler size
+- `opcache_memory` (String) Set the shared opcache memory size. Default is about 1/8 of the RAM
+- `opcache_preload` (String) The path of the PHP preload file (PHP version 7.4 or higher)
+- `php_version` (String) Choose your PHP version among those supported. Default is `8.3`
+- `realpath_cache_ttl` (Number) The size of the realpath cache to be used by PHP. Default is `120`
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
-- `redis_sessions` (Boolean) Use a linked Redis instance to store sessions (Default: false)
 - `region` (String) Geographical region where the database will be deployed
+- `session_type` (String) Choose `redis` to use Redis as session store
+- `socksify_everything` (Boolean) Enable SOCKS proxy for all outgoing connections. Default is `false`
+- `sqreen_api_app_name` (String) The name of your Sqreen application
+- `sqreen_api_token` (String, Sensitive) Your Sqreen organization token
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
-- `webroot` (String) Define the DocumentRoot of your project (default: ".")
+- `webroot` (String) Define the DocumentRoot of your project. Default is `.`
 
 ### Read-Only
 

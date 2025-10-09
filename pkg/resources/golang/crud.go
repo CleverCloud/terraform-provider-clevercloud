@@ -112,7 +112,7 @@ func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *re
 	state.StickySessions = pkg.FromBool(appRes.App.StickySessions)
 	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &res.Diagnostics)
-	//state.fromEnv(ctx, appFrankenPHP.EnvAsMap()) // TODO
+	state.fromEnv(ctx, appRes.EnvAsMap())
 
 	diags = res.State.Set(ctx, state)
 	res.Diagnostics.Append(diags...)

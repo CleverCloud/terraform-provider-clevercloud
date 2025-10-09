@@ -82,6 +82,29 @@ func (r *Runtime) FromEnvironment(ctx context.Context, env *helper.EnvMap) {
 	r.Environment = types.MapValueMust(types.StringType, m)
 }
 
+// ToEnv converts common Runtime fields to environment variables map
+// This includes APP_FOLDER, Hooks, and custom Environment variables
+func (r *Runtime) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+	env := map[string]string{}
+
+	// Custom environment variables from user config
+	// Bug workaround: https://github.com/hashicorp/terraform-plugin-framework/issues/698
+	customEnv := map[string]string{}
+	diags.Append(r.Environment.ElementsAs(ctx, &customEnv, false)...)
+	if diags.HasError() {
+		return env
+	}
+	env = pkg.Merge(env, customEnv)
+
+	// APP_FOLDER
+	pkg.IfIsSetStr(r.AppFolder, func(s string) { env[APP_FOLDER] = s })
+
+	// Hooks
+	env = pkg.Merge(env, r.Hooks.ToEnv())
+
+	return env
+}
+
 type RuntimeV0 struct {
 	ID               types.String `tfsdk:"id"`
 	Name             types.String `tfsdk:"name"`

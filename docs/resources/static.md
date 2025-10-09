@@ -90,6 +90,7 @@ resource "clevercloud_static" "myapp" {
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `build_command` (String) Command to run during build phase
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
@@ -97,10 +98,18 @@ Can be either app_xxx or postgres_yyy ID format
 - `description` (String) Application description
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
+- `hugo_version` (String) Set Hugo version (e.g., `0.150`)
+- `override_buildcache` (String) Customize build cache directories
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
+- `static_autobuild_outdir` (String) Output directory for static site generator (default: `/cc_static_autobuilt`)
+- `static_caddyfile` (String) Path to Caddyfile for custom Caddy configuration (default: `./Caddyfile`)
+- `static_flags` (String) Custom command line flags to pass to the static server
+- `static_port` (Number) Custom listen port for the static server (default: `8080`)
+- `static_server` (String) Server to use for static website (default: `static-web-server`)
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
+- `webroot` (String) Path to web content to serve (default: `/`)
 
 ### Read-Only
 
