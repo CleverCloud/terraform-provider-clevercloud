@@ -4,10 +4,13 @@ import (
 	"context"
 	_ "embed"
 
+<<<<<<< HEAD:pkg/resources/application/frankenphp/schema.go
 	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
+=======
+>>>>>>> 476ccfe (refactor: remove external helper):pkg/resources/frankenphp/schema.go
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -15,6 +18,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+<<<<<<< HEAD:pkg/resources/application/frankenphp/schema.go
+=======
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/application"
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
+>>>>>>> 476ccfe (refactor: remove external helper):pkg/resources/frankenphp/schema.go
 )
 
 type FrankenPHP struct {
@@ -68,7 +77,7 @@ func (fp *FrankenPHP) toEnv(ctx context.Context, diags *diag.Diagnostics) map[st
 // put the others on Environment field
 func (fp *FrankenPHP) fromEnv(ctx context.Context, env map[string]string) diag.Diagnostics {
 	diags := diag.Diagnostics{}
-	m := maps.NewMap(env)
+	m := helper.NewEnvMap(env)
 
 	fp.DevDependencies = pkg.FromBool(m.Pop(CC_PHP_DEV_DEPENDENCIES) == "install")
 	fp.FromEnvironment(ctx, m)

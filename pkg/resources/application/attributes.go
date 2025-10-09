@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/miton18/helper/maps"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -66,7 +65,7 @@ type Runtime struct {
 	Environment types.Map    `tfsdk:"environment"`
 }
 
-func (r *Runtime) FromEnvironment(ctx context.Context, env *maps.Map[string, string]) {
+func (r *Runtime) FromEnvironment(ctx context.Context, env *helper.EnvMap) {
 	r.Hooks.FromEnv(env)
 
 	if appFolder := env.Pop(APP_FOLDER); appFolder != "" {
