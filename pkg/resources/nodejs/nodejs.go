@@ -14,6 +14,17 @@ type ResourceNodeJS struct {
 	helper.Configurer
 }
 
+const (
+	CC_NODE_VERSION          = "CC_NODE_VERSION"
+	CC_NODE_DEV_DEPENDENCIES = "CC_NODE_DEV_DEPENDENCIES"
+	CC_RUN_COMMAND           = "CC_RUN_COMMAND"
+	CC_NODE_BUILD_TOOL       = "CC_NODE_BUILD_TOOL"
+	CC_CUSTOM_BUILD_TOOL     = "CC_CUSTOM_BUILD_TOOL"
+	CC_NPM_REGISTRY          = "CC_NPM_REGISTRY"
+	CC_NPM_BASIC_AUTH        = "CC_NPM_BASIC_AUTH"
+	NPM_TOKEN                = "NPM_TOKEN"
+)
+
 func NewResourceNodeJS() resource.Resource {
 	return &ResourceNodeJS{}
 }

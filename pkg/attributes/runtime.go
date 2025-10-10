@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -23,6 +24,8 @@ type VHost struct {
 	FQDN      types.String `tfsdk:"fqdn"`
 	PathBegin types.String `tfsdk:"path_begin"`
 }
+
+const APP_FOLDER = "APP_FOLDER"
 
 func (vh VHost) String() *string {
 	if vh.FQDN.IsNull() || vh.FQDN.IsUnknown() {
@@ -59,6 +62,47 @@ type Runtime struct {
 	// Env
 	AppFolder   types.String `tfsdk:"app_folder"`
 	Environment types.Map    `tfsdk:"environment"`
+}
+
+func (r *Runtime) FromEnvironment(ctx context.Context, env *helper.EnvMap) {
+	r.Hooks.FromEnv(env)
+
+	if appFolder := env.Pop(APP_FOLDER); appFolder != "" {
+		r.AppFolder = pkg.FromStr(appFolder)
+	}
+
+	if env.Size() == 0 {
+		return
+	}
+
+	m := map[string]attr.Value{}
+	for k, v := range env.All {
+		m[k] = pkg.FromStr(v)
+	}
+	r.Environment = types.MapValueMust(types.StringType, m)
+}
+
+// ToEnv converts common Runtime fields to environment variables map
+// This includes APP_FOLDER, Hooks, and custom Environment variables
+func (r *Runtime) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+	env := map[string]string{}
+
+	// Custom environment variables from user config
+	// Bug workaround: https://github.com/hashicorp/terraform-plugin-framework/issues/698
+	customEnv := map[string]string{}
+	diags.Append(r.Environment.ElementsAs(ctx, &customEnv, false)...)
+	if diags.HasError() {
+		return env
+	}
+	env = pkg.Merge(env, customEnv)
+
+	// APP_FOLDER
+	pkg.IfIsSetStr(r.AppFolder, func(s string) { env[APP_FOLDER] = s })
+
+	// Hooks
+	env = pkg.Merge(env, r.Hooks.ToEnv())
+
+	return env
 }
 
 type RuntimeV0 struct {
@@ -130,17 +174,17 @@ var runtimeCommon = map[string]schema.Attribute{
 	},
 	"smallest_flavor": schema.StringAttribute{
 		Required:            true,
-		Validators:          []validator.String{helper.UpperCaseValidator},
+		Validators:          []validator.String{helper.CCPlanFlavorValidator},
 		MarkdownDescription: "Smallest instance flavor",
 	},
 	"biggest_flavor": schema.StringAttribute{
 		Required:            true,
-		Validators:          []validator.String{helper.UpperCaseValidator},
+		Validators:          []validator.String{helper.CCPlanFlavorValidator},
 		MarkdownDescription: "Biggest instance flavor, if different from smallest, enable auto-scaling",
 	},
 	"build_flavor": schema.StringAttribute{
 		Optional:            true,
-		Validators:          []validator.String{helper.UpperCaseValidator},
+		Validators:          []validator.String{helper.CCPlanFlavorValidator},
 		MarkdownDescription: "Use dedicated instance with given flavor for build phase",
 	},
 	"region": schema.StringAttribute{

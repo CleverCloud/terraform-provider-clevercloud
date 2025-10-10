@@ -105,7 +105,7 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	a := addonRes.Payload()
 	ad.Name = pkg.FromStr(a.Name)
-	ad.Plan = pkg.FromStr(a.Plan.Slug)
+	ad.Plan = pkg.FromStr(strings.ToLower(a.Plan.Slug))
 	ad.Region = pkg.FromStr(a.Region)
 	ad.ThirdPartyProvider = pkg.FromStr(a.Provider.ID)
 	ad.CreationDate = pkg.FromI(a.CreationDate)

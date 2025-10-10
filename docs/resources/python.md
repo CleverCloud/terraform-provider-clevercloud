@@ -91,18 +91,45 @@ resource "clevercloud_python" "myapp" {
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `celery_logfile` (String) Sets the relative path to the Celery log file (e.g., `/path/to/logdir`)
+- `celery_module` (String) Specifies the Celery module to start
+- `celery_use_beat` (Boolean) Set to `true` to enable Celery Beat support
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
+- `enable_gzip_compression` (Boolean) Set to `true` to enable Gzip compression via Nginx
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
+- `gunicorn_timeout` (Number) Timeout for Gunicorn workers. Default is `180`
+- `gunicorn_worker_class` (String) Gunicorn worker class (e.g., `gevent`, `sync`)
+- `gzip_types` (String) Defines the MIME types to be compressed by Gzip. Default is `text/* application/json application/xml application/javascript image/svg+xml`
+- `harakiri` (Number) Timeout in seconds after which an unresponsive process is killed. Default is `180`
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
-- `pip_requirements` (String) Define a custom requirements.txt file (default: requirements.txt)
-- `python_version` (String) Python version >= 2.7
+- `http_basic_auth` (String, Sensitive) Restrict HTTP access to your application. Example: `login:password`. Multiple credentials can be defined using `CC_HTTP_BASIC_AUTH_n`
+- `manage_tasks` (String) A comma-separated list of Django `manage.py` tasks to execute
+- `nginx_proxy_buffer_size` (String) Sets the size of the buffer for the initial part of the response from the proxied server
+- `nginx_proxy_buffers` (String) Configures the number and size of buffers for reading responses from the proxied server
+- `nginx_read_timeout` (Number) Read timeout in seconds for Nginx. Default is `300`
+- `pip_requirements` (String) Specifies a custom requirements.txt file for package installation. Default is `requirements.txt`
+- `python_backend` (String) Selects the Python backend. Options include `daphne`, `gunicorn`, `uvicorn`, and `uwsgi`. Default is `uwsgi`
+- `python_module` (String) Defines the Python module to start with, including the path to the application object. Example: `app.server:app` for a `server.py` file in an `/app` folder
+- `python_version` (String) Selects the Python version. Refer to supported versions documentation
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
+- `setup_py_goal` (String) A custom goal to execute after `requirements.txt` installation
+- `static_files_path` (String) The relative path to the directory containing static files (e.g., `path/to/static`)
+- `static_url_prefix` (String) The URL path prefix for serving static files. Commonly set to `/public`
+- `static_webroot` (String) Specifies the web root for static files
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
+- `use_gevent` (Boolean) Set to `true` to enable Gevent support
+- `uwsgi_async` (Number) Configures the number of cores for uWSGI asynchronous/non-blocking modes
+- `uwsgi_async_engine` (String) Selects the asynchronous engine for uWSGI (optional)
+- `uwsgi_intercept_errors` (Boolean) Enables or disables error interception in uWSGI
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
+- `wsgi_buffer_size` (Number) Buffer size in bytes for uploads. Default is `4096`
+- `wsgi_post_buffering` (Number) Maximum size in bytes for request headers. Default is `4096`
+- `wsgi_threads` (Number) Number of threads per worker. Defaults to automatic setup based on scaler size
+- `wsgi_workers` (Number) Number of workers. Defaults to automatic setup based on scaler size
 
 ### Read-Only
 

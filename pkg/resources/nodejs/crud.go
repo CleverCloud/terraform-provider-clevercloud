@@ -108,6 +108,8 @@ func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, res
 	state.SmallestFlavor = pkg.FromStr(appRes.App.Instance.MinFlavor.Name)
 	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
 
+	resp.Diagnostics.Append(state.fromEnv(ctx, appRes.EnvAsMap())...)
+
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)

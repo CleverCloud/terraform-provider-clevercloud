@@ -100,6 +100,9 @@ Can be either app_xxx or postgres_yyy ID format
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
+- `run_command` (String) Custom command to run your application
+- `rust_bin` (String) The name of the binary to launch once built
+- `rustup_channel` (String) The rust channel to use. Use a specific channel version with `stable`, `beta`, `nightly` or a specific version like `1.13.0` (default: `stable`)
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
 

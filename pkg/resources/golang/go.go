@@ -10,6 +10,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+const (
+	CC_GO_BUILD_TOOL = "CC_GO_BUILD_TOOL"
+	CC_GO_PKG        = "CC_GO_PKG"
+	CC_GO_RUNDIR     = "CC_GO_RUNDIR"
+)
+
 type ResourceGo struct {
 	helper.Configurer
 }

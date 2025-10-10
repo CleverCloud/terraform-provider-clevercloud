@@ -95,11 +95,24 @@ resource "clevercloud_java_war" "myapp" {
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
+- `disable_max_metaspace` (Boolean) Allows to disable the Java option `-XX:MaxMetaspaceSize`
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
+- `extra_java_args` (String) Define extra arguments to pass to `java` for JAR
+- `gradle_deploy_goal` (String) Define which Gradle goals to run during build
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
-- `java_version` (String) Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).
+- `jar_args` (String) Define arguments to pass to the launched JAR
+- `jar_path` (String) Define the path to your JAR
+- `java_version` (String) Choose the JVM version between 7 to 24 for OpenJDK or `graalvm-ce` for GraalVM (default: 21)
+- `maven_deploy_goal` (String) Define which Maven goals to run during build
+- `maven_profiles` (String) Define which Maven profile to use during default build
+- `nudge_app_id` (String) Nudge application ID
+- `play1_version` (String) Define which play1 version to use between `1.2`, `1.3`, `1.4` and `1.5`
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
+- `run_command` (String) Custom command to run your application. Replaces the default behavior
+- `sbt_deploy_goal` (String) Define which SBT goals to run during build (default: `stage`)
+- `sbt_target_bin` (String) Define the bin to pick in the `CC_SBT_TARGET_DIR`
+- `sbt_target_dir` (String) Define the folder the `target` dir is in (default: `.`)
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
 

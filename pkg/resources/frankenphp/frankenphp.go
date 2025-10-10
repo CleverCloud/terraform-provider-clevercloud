@@ -11,6 +11,14 @@ type ResourceFrankenPHP struct {
 	helper.Configurer
 }
 
+const (
+	CC_FRANKENPHP_PORT      = "CC_FRENKENPHP_PORT"
+	CC_FRANKENPHP_WORKER    = "CC_FRENKENPHP_WORKER"
+	CC_PHP_COMPOSER_FLAGS   = "CC_PHP_COMPOSER_FLAGS"
+	CC_PHP_DEV_DEPENDENCIES = "CC_PHP_DEV_DEPENDENCIES"
+	CC_WEBROOT              = "CC_WEBROOT"
+)
+
 func NewResourceFrankenPHP() resource.Resource {
 	return &ResourceFrankenPHP{}
 }
