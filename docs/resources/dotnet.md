@@ -95,15 +95,15 @@ resource "clevercloud_dotnet" "myapp" {
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
-- `dotnet_profile` (String) Override the build configuration settings in your project. Default: Release
-- `dotnet_proj` (String) The name of your project file to use for the build, without the .csproj / .fsproj / .vbproj extension.
-- `dotnet_tfm` (String) Compiles for a specific framework. The framework must be defined in the project file. Example : net5.0
-- `dotnet_version` (String) Choose the .NET Core version between 6.0, 8.0, 9.0. Default: '8.0'
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
+- `profile` (String) Override the build configuration settings in your project. Default: Release
+- `proj` (String) The name of your project file to use for the build, without the .csproj / .fsproj / .vbproj extension.
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
+- `tfm` (String) Compiles for a specific framework. The framework must be defined in the project file. Example : net5.0
+- `version` (String) Choose the .NET Core version between 6.0, 8.0, 9.0. Default: '8.0'
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
 
 ### Read-Only
