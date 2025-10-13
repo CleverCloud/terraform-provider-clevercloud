@@ -108,10 +108,10 @@ func (r *ResourceDotnet) Read(ctx context.Context, req resource.ReadRequest, res
 	state.SmallestFlavor = pkg.FromStr(appRes.App.Instance.MinFlavor.Name)
 	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
 	state.BuildFlavor = appRes.GetBuildFlavor()
-	state.DotnetProfile = pkg.FromStr(appRes.App.DotnetProfile)
-	state.DotnetProj = pkg.FromStr(appRes.App.DotnetProj)
-	state.DotnetTFM = pkg.FromStr(appRes.App.DotnetTFM)
-	state.DotnetVersion = pkg.FromStr(appRes.App.DotnetVersion)
+	//state.DotnetProfile = pkg.FromStr(appRes.App.DotnetProfile)
+	//state.DotnetProj = pkg.FromStr(appRes.App.DotnetProj)
+	//state.DotnetTFM = pkg.FromStr(appRes.App.DotnetTFM)
+	//state.DotnetVersion = pkg.FromStr(appRes.App.DotnetVersion)
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
