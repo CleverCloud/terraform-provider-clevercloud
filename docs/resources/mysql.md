@@ -25,6 +25,7 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 ### Optional
 
 - `backup` (Boolean) Enable or disable backups for this MySQL add-on. Since backups are included in the add-on price, disabling it has no impact on your billing.
+- `read_only_users` (Attributes List) MySQL users with read-only access (see [below for nested schema](#nestedatt--read_only_users))
 - `region` (String) Geographical region where the data will be stored
 - `version` (String) MySQL version
 
@@ -38,3 +39,11 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 - `port` (Number) Database port
 - `uri` (String, Sensitive) Database connection string
 - `user` (String) Login username
+
+<a id="nestedatt--read_only_users"></a>
+### Nested Schema for `read_only_users`
+
+Required:
+
+- `password` (String, Sensitive) Password for read-only user
+- `user` (String) Username for read-only access

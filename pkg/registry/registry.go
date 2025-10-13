@@ -7,6 +7,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar/bucket"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/docker"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/dotnet"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/drain"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/frankenphp"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/fsbucket"
@@ -69,5 +70,6 @@ var Resources = []func() resource.Resource{
 	pulsar.NewResourcePulsar,
 	rust.NewResourceRust,
 	networkgroup.NewResourceNetworkgroup,
+	dotnet.NewResourceDotnet,
 	haskell.NewResourceHaskell,
 }

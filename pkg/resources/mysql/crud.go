@@ -110,6 +110,7 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 	my.Password = pkg.FromStr(addonMy.Password)
 	my.Version = pkg.FromStr(addonMy.Version)
 	my.Uri = pkg.FromStr(addonMy.Uri())
+	my.ReadOnlyUsers = tmp.FromMySQLReadOnlyUsers(addonMy.ReadOnlyUsers)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, my)...)
 }
@@ -174,6 +175,7 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 	my.Password = pkg.FromStr(addonMy.Password)
 	my.Version = pkg.FromStr(addonMy.Version)
 	my.Uri = pkg.FromStr(addonMy.Uri())
+	my.ReadOnlyUsers = tmp.FromMySQLReadOnlyUsers(addonMy.ReadOnlyUsers)
 
 	for _, feature := range addonMy.Features {
 		if feature.Name == "do-backup" {

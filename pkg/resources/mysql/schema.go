@@ -27,7 +27,8 @@ type MySQL struct {
 	Version  types.String `tfsdk:"version"`
 	Uri      types.String `tfsdk:"uri"`
 
-	Backup types.Bool `tfsdk:"backup"`
+	Backup        types.Bool `tfsdk:"backup"`
+	ReadOnlyUsers types.List `tfsdk:"read_only_users"`
 }
 
 //go:embed doc.md
@@ -57,6 +58,24 @@ func (r ResourceMySQL) Schema(_ context.Context, req resource.SchemaRequest, res
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
 				MarkdownDescription: "Enable or disable backups for this MySQL add-on. Since backups are included in the add-on price, disabling it has no impact on your billing.",
+			},
+			"read_only_users": schema.ListNestedAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "MySQL users with read-only access",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"user": schema.StringAttribute{
+							Required:            true,
+							MarkdownDescription: "Username for read-only access",
+						},
+						"password": schema.StringAttribute{
+							Required:            true,
+							Sensitive:           true,
+							MarkdownDescription: "Password for read-only user",
+						},
+					},
+				},
 			},
 		}),
 	}
