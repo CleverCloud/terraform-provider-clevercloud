@@ -61,7 +61,7 @@ func TestAccHaskell_basic(t *testing.T) {
 			"max_instance_count": 2,
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
-			"build_flavour":      "3XL",
+			"build_flavor":       "3XL",
 		}),
 		helper.SetBlockValues("deployment", map[string]any{
 			"repository": "https://github.com/CleverCloud/haskell-scotty-example",
