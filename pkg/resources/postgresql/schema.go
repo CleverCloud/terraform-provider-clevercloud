@@ -43,7 +43,7 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 			"database": schema.StringAttribute{Computed: true, MarkdownDescription: "Database name on the PostgreSQL server"},
 			"user":     schema.StringAttribute{Computed: true, MarkdownDescription: "Login username"},
 			"password": schema.StringAttribute{Computed: true, MarkdownDescription: "Login password", Sensitive: true},
-			"uri":      schema.StringAttribute{Computed: true, MarkdownDescription: "Database connection string (without credentials)"},
+			"uri":      schema.StringAttribute{Computed: true, MarkdownDescription: "Database connection string", Sensitive: true},
 			"version": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
