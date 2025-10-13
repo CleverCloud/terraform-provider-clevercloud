@@ -16,10 +16,10 @@ import (
 
 type Dotnet struct {
 	attributes.Runtime
-	DotnetProfile types.String `tfsdk:"dotnet_profile"`
-	DotnetProj    types.String `tfsdk:"dotnet_proj"`
-	DotnetTFM     types.String `tfsdk:"dotnet_tfm"`
-	DotnetVersion types.String `tfsdk:"dotnet_version"`
+	DotnetProfile types.String `tfsdk:"profile"`
+	DotnetProj    types.String `tfsdk:"proj"`
+	DotnetTFM     types.String `tfsdk:"tfm"`
+	DotnetVersion types.String `tfsdk:"version"`
 }
 
 //go:embed doc.md
@@ -31,19 +31,19 @@ func (r ResourceDotnet) Schema(ctx context.Context, req resource.SchemaRequest, 
 		Version:             0,
 		MarkdownDescription: dotnetDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
-			"dotnet_profile": schema.StringAttribute{
+			"profile": schema.StringAttribute{
 				Optional: true,
 				MarkdownDescription: "Override the build configuration settings in your project. Default: Release",
 			},
-			"dotnet_proj": schema.StringAttribute{
+			"proj": schema.StringAttribute{
 				Optional: true,
 				MarkdownDescription: "The name of your project file to use for the build, without the .csproj / .fsproj / .vbproj extension.",
 			},
-			"dotnet_tfm": schema.StringAttribute{
+			"tfm": schema.StringAttribute{
 				Optional: true,
 				MarkdownDescription: "Compiles for a specific framework. The framework must be defined in the project file. Example : net5.0",
 			},
-			"dotnet_version": schema.StringAttribute{
+			"version": schema.StringAttribute{
 				Optional: true,
 				MarkdownDescription: "Choose the .NET Core version between 6.0, 8.0, 9.0. Default: '8.0'",
 			},
