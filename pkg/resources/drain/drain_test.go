@@ -20,6 +20,7 @@ import (
 )
 
 func TestAccDrainDatadog_basic(t *testing.T) {
+	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
 
@@ -74,6 +75,7 @@ func TestAccDrainDatadog_basic(t *testing.T) {
 }
 
 func TestAccDrainHTTP_basic(t *testing.T) {
+	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
 
@@ -128,6 +130,7 @@ func TestAccDrainHTTP_basic(t *testing.T) {
 }
 
 func TestAccDrainSyslogTCP_basic(t *testing.T) {
+	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
 
@@ -183,6 +186,7 @@ func TestAccDrainSyslogTCP_basic(t *testing.T) {
 }
 
 func TestAccDrainSyslogUDP_basic(t *testing.T) {
+	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
 
@@ -237,6 +241,7 @@ func TestAccDrainSyslogUDP_basic(t *testing.T) {
 }
 
 func TestAccDrainNewRelic_basic(t *testing.T) {
+	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
 
@@ -292,6 +297,7 @@ func TestAccDrainNewRelic_basic(t *testing.T) {
 }
 
 func TestAccDrainElasticsearch_basic(t *testing.T) {
+	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
 
@@ -353,6 +359,7 @@ func TestAccDrainElasticsearch_basic(t *testing.T) {
 }
 
 func TestAccDrainOVH_basic(t *testing.T) {
+	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
 

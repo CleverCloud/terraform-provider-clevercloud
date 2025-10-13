@@ -25,6 +25,7 @@ import (
 
 // This is a test for local Git repositories, we don't care about the runtime
 func TestAccPython_localGit(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-python")
 	fullName := fmt.Sprintf("clevercloud_python.%s", rName)

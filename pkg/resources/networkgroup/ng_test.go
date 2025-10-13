@@ -20,6 +20,7 @@ import (
 )
 
 func TestAccNG_basic(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandomWithPrefix("tf-test-ng")
 	fullName := fmt.Sprintf("clevercloud_networkgroup.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())

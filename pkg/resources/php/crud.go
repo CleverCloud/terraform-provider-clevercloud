@@ -207,5 +207,3 @@ func (r *ResourcePHP) Delete(ctx context.Context, req resource.DeleteRequest, re
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource

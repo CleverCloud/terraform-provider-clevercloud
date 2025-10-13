@@ -19,4 +19,12 @@ jobs:
         CC_OAUTH_TOKEN: ${{ secrets.CC_OAUTH_TOKEN }}
         CC_OAUTH_SECRET: ${{ secrets.CC_OAUTH_SECRET }}
         ORGANISATION: ${{ secrets.ORGANISATION }}
+    - name: Sweepers
+      if: always()
+      run: make sweep
+      env:
+        CC_OAUTH_TOKEN: ${{ secrets.CC_OAUTH_TOKEN }}
+        CC_OAUTH_SECRET: ${{ secrets.CC_OAUTH_SECRET }}
+        ORGANISATION: ${{ secrets.ORGANISATION }}
+
 ...

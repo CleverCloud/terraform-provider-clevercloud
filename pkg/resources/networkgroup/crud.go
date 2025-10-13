@@ -13,7 +13,6 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-
 // Create a new resource
 func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	plan := helper.PlanFrom[Networkgroup](ctx, req.Plan, &resp.Diagnostics)
@@ -95,8 +94,6 @@ func (r *ResourceNG) Delete(ctx context.Context, req resource.DeleteRequest, res
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource
 
 func (r *ResourceNG) WaitForNG(ctx context.Context, cc *client.Client, organisationID, ngId string) (*tmp.Networkgroup, error) {
 	var lastErr error

@@ -49,6 +49,14 @@ lint:
 testacc:
 	TF_ACC=1 go test -p 1 ./... -v $(TESTARGS) -timeout 120m ./...
 
+sweep:
+	@echo "Running sweepers to clean up test resources..."
+	@if [ -z "$(ORGANISATION)" ]; then \
+		echo "Error: ORGANISATION environment variable must be set"; \
+		exit 1; \
+	fi
+	@go test ./main_test.go -v -sweep=par -timeout 30m
+
 .PHONY: docs
 docs:
 	tfplugindocs generate
