@@ -3,6 +3,7 @@ package play2
 import (
 	"context"
 	_ "embed"
+	"maps"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -42,8 +43,7 @@ var schemaPlay2V0 = schema.Schema{
 	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-
-func (plan *Play2) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (plan *Play2) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -53,9 +53,7 @@ func (plan *Play2) toEnv(ctx context.Context, diags diag.Diagnostics) map[string
 	if diags.HasError() {
 		return env
 	}
-	for k, v := range customEnv {
-		env[k] = v
-	}
+	maps.Copy(env, customEnv)
 
 	pkg.IfIsSetStr(plan.AppFolder, func(s string) { env["APP_FOLDER"] = s })
 	return env
