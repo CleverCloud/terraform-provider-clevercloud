@@ -20,28 +20,53 @@ type Python struct {
 	PipRequirements types.String `tfsdk:"pip_requirements"`
 }
 
+type PythonV0 struct {
+	attributes.RuntimeV0
+	PythonVersion   types.String `tfsdk:"python_version"`
+	PipRequirements types.String `tfsdk:"pip_requirements"`
+}
+
 //go:embed doc.md
 var pythonDoc string
 
 func (r ResourcePython) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
+	res.Schema = schemaPythonV1
+}
 
-	res.Schema = schema.Schema{
-		Version:             1,
-		MarkdownDescription: pythonDoc,
-		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
-			// CC_PYTHON_VERSION
-			"python_version": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "Python version >= 2.7",
-			},
-			// CC_PIP_REQUIREMENTS_FILE
-			"pip_requirements": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "Define a custom requirements.txt file (default: requirements.txt)",
-			},
-		}),
-		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
-	}
+var schemaPythonV1 = schema.Schema{
+	Version:             1,
+	MarkdownDescription: pythonDoc,
+	Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
+		// CC_PYTHON_VERSION
+		"python_version": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Python version >= 2.7",
+		},
+		// CC_PIP_REQUIREMENTS_FILE
+		"pip_requirements": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Define a custom requirements.txt file (default: requirements.txt)",
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+}
+
+var schemaPythonV0 = schema.Schema{
+	Version:             0,
+	MarkdownDescription: pythonDoc,
+	Attributes: attributes.WithRuntimeCommonsV0(map[string]schema.Attribute{
+		// CC_PYTHON_VERSION
+		"python_version": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Python version >= 2.7",
+		},
+		// CC_PIP_REQUIREMENTS_FILE
+		"pip_requirements": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Define a custom requirements.txt file (default: requirements.txt)",
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 func (py Python) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
