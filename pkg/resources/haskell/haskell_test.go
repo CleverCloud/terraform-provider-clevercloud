@@ -22,7 +22,7 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-func TestAccNodejs_basic(t *testing.T) {
+func TestAccHaskell_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-haskell")
 	rName2 := acctest.RandomWithPrefix("tf-test-haskell-2")
