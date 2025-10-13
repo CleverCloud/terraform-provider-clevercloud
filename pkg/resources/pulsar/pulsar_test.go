@@ -20,6 +20,7 @@ import (
 )
 
 func TestAccPulsar_basic(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandomWithPrefix("tf-test-pulsar")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_pulsar.%s", rName)

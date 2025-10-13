@@ -23,6 +23,7 @@ import (
 )
 
 func TestAccGo_basic(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-go")
 	fullName := fmt.Sprintf("clevercloud_go.%s", rName)

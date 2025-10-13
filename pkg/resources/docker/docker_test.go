@@ -20,6 +20,7 @@ import (
 )
 
 func TestAccDocker_basic(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-docker")
 	fullName := fmt.Sprintf("clevercloud_docker.%s", rName)

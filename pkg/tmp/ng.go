@@ -81,3 +81,8 @@ func GenID() string {
 
 	return fmt.Sprintf("ng_%s", id)
 }
+
+func ListNetworkgroups(ctx context.Context, cc *client.Client, organisationID string) client.Response[[]Networkgroup] {
+	path := fmt.Sprintf("/v4/networkgroups/organisations/%s/networkgroups", organisationID)
+	return client.Get[[]Networkgroup](ctx, cc, path)
+}

@@ -120,5 +120,3 @@ func (r *ResourceCellarBucket) Delete(ctx context.Context, req resource.DeleteRe
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource

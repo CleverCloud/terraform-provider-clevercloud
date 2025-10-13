@@ -20,6 +20,7 @@ import (
 )
 
 func TestAccCellarBucket_basic(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("my-bucket")
 	cc := client.New(client.WithAutoOauthConfig())

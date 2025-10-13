@@ -20,6 +20,7 @@ import (
 )
 
 func TestAccPlay2_basic(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-play2")
 	fullName := fmt.Sprintf("clevercloud_play2.%s", rName)

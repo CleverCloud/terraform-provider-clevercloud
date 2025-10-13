@@ -242,5 +242,3 @@ func (r *ResourcePostgreSQL) Delete(ctx context.Context, req resource.DeleteRequ
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource

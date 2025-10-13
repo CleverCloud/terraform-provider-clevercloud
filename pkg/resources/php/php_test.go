@@ -20,6 +20,7 @@ import (
 )
 
 func TestAccPHP_basic(t *testing.T) {
+	t.Parallel()
 	t.Logf("starting....")
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-php")

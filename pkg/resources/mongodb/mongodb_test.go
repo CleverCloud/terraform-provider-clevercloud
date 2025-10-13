@@ -21,6 +21,7 @@ import (
 )
 
 func TestAccMongoDB_basic(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandomWithPrefix("tf-test-mg")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_mongodb.%s", rName)
@@ -85,6 +86,7 @@ func TestAccMongoDB_basic(t *testing.T) {
 }
 
 func TestAccMongoDB_RefreshDeleted(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandomWithPrefix("tf-test-mg")
 	//fullName := fmt.Sprintf("clevercloud_mongodb.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
