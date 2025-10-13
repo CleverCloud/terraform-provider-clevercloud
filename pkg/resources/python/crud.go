@@ -216,5 +216,3 @@ func (r *ResourcePython) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource
