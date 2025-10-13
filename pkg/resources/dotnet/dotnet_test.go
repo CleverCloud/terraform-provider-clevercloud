@@ -22,7 +22,7 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-func TestAccNodejs_basic(t *testing.T) {
+func TestAccDotnet_basic(t *testing.T) {
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-dotnet")
 	rName2 := acctest.RandomWithPrefix("tf-test-dotnet-2")
