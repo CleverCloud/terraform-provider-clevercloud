@@ -61,6 +61,7 @@ func TestAccHaskell_basic(t *testing.T) {
 			"max_instance_count": 2,
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
+			"build_flavour":      "3XL",
 		}),
 		helper.SetBlockValues("deployment", map[string]any{
 			"repository": "https://github.com/CleverCloud/haskell-scotty-example",
@@ -205,7 +206,7 @@ func TestAccHaskell_basic(t *testing.T) {
 					}
 
 					// Test deployed app
-					err := tests.HealthCheck(ctx, vhosts.CleverAppsFQDN(id).Fqdn, 2*time.Minute)
+					err := tests.HealthCheck(ctx, vhosts.CleverAppsFQDN(id).Fqdn, 15*time.Minute)
 					if err != nil {
 						return fmt.Errorf("application did not respond in the allowed time: %w", err)
 					}
