@@ -153,22 +153,22 @@ func TestAccHaskell_basic(t *testing.T) {
 
 					v1 := env["CC_HASKELL_STACK_TARGET"]
 					if v1 != "default-target" {
-						return tests.AssertError("Bad value when providing 'haskell_stack_target'", v1, "default-target")
+						return tests.AssertError("Bad value when providing 'stack_target'", v1, "default-target")
 					}
 
 					v2 := env["CC_HASKELL_STACK_SETUP_COMMAND"]
 					if v2 != "./setup" {
-						return tests.AssertError("Bad value when providing 'haskell_stack_setup_command'", v2, "./setup")
+						return tests.AssertError("Bad value when providing 'stack_setup_command'", v2, "./setup")
 					}
 
 					v3 := env["CC_HASKELL_STACK_INSTALL_COMMAND"]
 					if v3 != "./install" {
-						return tests.AssertError("Bad value when providing 'haskell_stack_install_command'", v3, "./install")
+						return tests.AssertError("Bad value when providing 'stack_install_command'", v3, "./install")
 					}
 
 					v4 := env["CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND"]
 					if v4 != "./install-deps" {
-						return tests.AssertError("Bad value when providing 'haskell_stack_install_dependencies_command'", v4, "./install-deps")
+						return tests.AssertError("Bad value when providing 'stack_install_dependencies_command'", v4, "./install-deps")
 					}
 
 					return nil
