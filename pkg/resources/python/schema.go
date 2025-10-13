@@ -20,36 +20,56 @@ type Python struct {
 	PipRequirements types.String `tfsdk:"pip_requirements"`
 }
 
+type PythonV0 struct {
+	attributes.RuntimeV0
+	PythonVersion   types.String `tfsdk:"python_version"`
+	PipRequirements types.String `tfsdk:"pip_requirements"`
+}
+
 //go:embed doc.md
 var pythonDoc string
 
 func (r ResourcePython) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-
-	res.Schema = schema.Schema{
-		Version:             1,
-		MarkdownDescription: pythonDoc,
-		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
-			// CC_PYTHON_VERSION
-			"python_version": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "Python version >= 2.7",
-			},
-			// CC_PIP_REQUIREMENTS_FILE
-			"pip_requirements": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "Define a custom requirements.txt file (default: requirements.txt)",
-			},
-		}),
-		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
-	}
+	res.Schema = schemaPythonV1
 }
 
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourcePython) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
+var schemaPythonV1 = schema.Schema{
+	Version:             1,
+	MarkdownDescription: pythonDoc,
+	Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
+		// CC_PYTHON_VERSION
+		"python_version": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Python version >= 2.7",
+		},
+		// CC_PIP_REQUIREMENTS_FILE
+		"pip_requirements": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Define a custom requirements.txt file (default: requirements.txt)",
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (py Python) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+var schemaPythonV0 = schema.Schema{
+	Version:             0,
+	MarkdownDescription: pythonDoc,
+	Attributes: attributes.WithRuntimeCommonsV0(map[string]schema.Attribute{
+		// CC_PYTHON_VERSION
+		"python_version": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Python version >= 2.7",
+		},
+		// CC_PIP_REQUIREMENTS_FILE
+		"pip_requirements": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Define a custom requirements.txt file (default: requirements.txt)",
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+}
+
+func (py Python) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it

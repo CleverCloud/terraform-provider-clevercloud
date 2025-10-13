@@ -62,11 +62,6 @@ func (r ResourceMySQL) Schema(_ context.Context, req resource.SchemaRequest, res
 	}
 }
 
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourceMySQL) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
-}
-
 func (r ResourceMySQL) validateMyVersion(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return

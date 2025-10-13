@@ -89,35 +89,35 @@ func TestAccPython_basic(t *testing.T) {
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
 					if app.Name != rName {
-						return assertError("invalid name", "name", app.Name, rName)
+						return tests.AssertError("invalid name", app.Name, rName)
 					}
 
 					if app.Instance.MinInstances != 1 {
-						return assertError("invalid min instance count", "min_instance_count", app.Instance.MinInstances, 1)
+						return tests.AssertError("invalid min instance count", app.Instance.MinInstances, 1)
 					}
 
 					if app.Instance.MaxInstances != 2 {
-						return assertError("invalid max instance count", "max_instance_count", app.Instance.MaxInstances, 2)
+						return tests.AssertError("invalid max instance count", app.Instance.MaxInstances, 2)
 					}
 
 					if app.Instance.MinFlavor.Name != "XS" {
-						return assertError("invalid min flavor", "min_flavor", app.Instance.MinFlavor.Name, "XS")
+						return tests.AssertError("invalid min flavor", app.Instance.MinFlavor.Name, "XS")
 					}
 
 					if app.Instance.MaxFlavor.Name != "M" {
-						return assertError("invalid max flavor", "max_flavor", app.Instance.MaxFlavor.Name, "M")
+						return tests.AssertError("invalid max flavor", app.Instance.MaxFlavor.Name, "M")
 					}
 
 					if app.ForceHTTPS != "ENABLED" {
-						return assertError("expect option to be set", "redirect_https", app.ForceHTTPS, "ENABLED")
+						return tests.AssertError("expect force_https option to be set", app.ForceHTTPS, "ENABLED")
 					}
 
 					if !app.StickySessions {
-						return assertError("expect option to be set", "sticky_sessions", app.StickySessions, true)
+						return tests.AssertError("expect option sticky_sessions to be set", app.StickySessions, true)
 					}
 
 					if len(app.Vhosts) != 1 || !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io/") {
-						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), "1 cleverapps.io domain")
+						return tests.AssertError("invalid vhost list", app.Vhosts.AsString(), "1 cleverapps.io domain")
 					}
 
 					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
@@ -132,22 +132,22 @@ func TestAccPython_basic(t *testing.T) {
 
 					v := env["MY_KEY"]
 					if v != "myval" {
-						return assertError("bad env var value", "env:MY_KEY", v, "myval")
+						return tests.AssertError("bad env var value for MY_KEY", v, "myval")
 					}
 
 					v2 := env["APP_FOLDER"]
 					if v2 != "./app" {
-						return assertError("bad env var value", "env:APP_FOLDER", v2, "./app")
+						return tests.AssertError("bad env var value for APP_FOLDER", v2, "./app")
 					}
 
 					v3 := env["CC_POST_BUILD_HOOK"]
 					if v3 != "echo \"build is OK!\"" {
-						return assertError("bad env var value", "env:CC_POST_BUILD_HOOK", v3, "echo \"build is OK!\"")
+						return tests.AssertError("bad env var value for CC_POST_BUILD_HOOK", v3, "echo \"build is OK!\"")
 					}
 
 					v4 := env["CC_PIP_REQUIREMENTS_FILE"]
 					if v4 != "requirements.txt" {
-						return assertError("bad env var value", "env:CC_PIP_REQUIREMENTS_FILE", v4, "requirements.txt")
+						return tests.AssertError("bad env var value for CC_PIP_REQUIREMENTS_FILE", v4, "requirements.txt")
 					}
 
 					return nil
@@ -170,7 +170,7 @@ func TestAccPython_basic(t *testing.T) {
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
 					if len(app.Vhosts) != 1 || app.Vhosts[0].Fqdn != (vhost+"/") {
-						return assertError("invalid vhost list", "vhosts", app.Vhosts.AsString(), vhost)
+						return tests.AssertError("invalid vhost list", app.Vhosts.AsString(), vhost)
 					}
 					return nil
 				}),
@@ -217,8 +217,4 @@ func TestAccPython_basic(t *testing.T) {
 			},
 		}},
 	})
-}
-
-func assertError(msg, param string, got, expect any) error {
-	return fmt.Errorf("%s, %s = '%v', expect: '%v'", msg, param, got, expect)
 }

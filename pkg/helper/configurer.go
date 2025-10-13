@@ -35,3 +35,8 @@ func (c *Configurer) ImportState(ctx context.Context, req resource.ImportStateRe
 	attr := path.Root("id")
 	resource.ImportStatePassthroughID(ctx, attr, req, resp)
 }
+
+// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
+func (c *Configurer) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{}
+}

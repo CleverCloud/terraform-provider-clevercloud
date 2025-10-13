@@ -64,7 +64,7 @@ type PostgreSQL struct {
 }
 
 func (p PostgreSQL) Uri() string {
-	return fmt.Sprintf("postgresql://%s:%d/%s", p.Host, p.Port, p.Database)
+	return fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", p.User, p.Password, p.Host, p.Port, p.Database)
 }
 
 type PostgreSQLFeature struct {
@@ -174,6 +174,11 @@ type MongoDB struct {
 	User     string `tfsdk:"user"`
 	Password string `tfsdk:"password"`
 	Database string `tfsdk:"database"`
+}
+
+
+func (mg MongoDB) Uri() string {
+	return fmt.Sprintf("mongodb://%s:%s@%s:%d/%s", mg.User, mg.Password, mg.Host, mg.Port, mg.Database)
 }
 
 // Use Addon ID

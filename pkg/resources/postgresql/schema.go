@@ -43,7 +43,7 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 			"database": schema.StringAttribute{Computed: true, MarkdownDescription: "Database name on the PostgreSQL server"},
 			"user":     schema.StringAttribute{Computed: true, MarkdownDescription: "Login username"},
 			"password": schema.StringAttribute{Computed: true, MarkdownDescription: "Login password", Sensitive: true},
-			"uri":      schema.StringAttribute{Computed: true, MarkdownDescription: "Database connection string (without credentials)"},
+			"uri":      schema.StringAttribute{Computed: true, MarkdownDescription: "Database connection string", Sensitive: true},
 			"version": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
@@ -60,11 +60,6 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 			},
 		}),
 	}
-}
-
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourcePostgreSQL) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
 }
 
 func (r ResourcePostgreSQL) validatePGVersion(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {

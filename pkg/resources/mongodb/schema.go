@@ -17,6 +17,7 @@ type MongoDB struct {
 	User     types.String `tfsdk:"user"`
 	Password types.String `tfsdk:"password"`
 	Database types.String `tfsdk:"database"`
+	Uri      types.String `tfsdk:"uri"`
 }
 
 //go:embed doc.md
@@ -33,11 +34,7 @@ func (r ResourceMongoDB) Schema(_ context.Context, req resource.SchemaRequest, r
 			"user":     schema.StringAttribute{Computed: true, MarkdownDescription: "Login username"},
 			"password": schema.StringAttribute{Computed: true, MarkdownDescription: "Login password", Sensitive: true},
 			"database": schema.StringAttribute{Computed: true, MarkdownDescription: "Database name"},
+			"uri":      schema.StringAttribute{Computed: true, MarkdownDescription: "Database connection string", Sensitive: true},
 		}),
 	}
-}
-
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourceMongoDB) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
 }
