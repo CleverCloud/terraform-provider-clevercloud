@@ -82,10 +82,9 @@ type MySQL struct {
 	Host string `json:"host" example:"bwf32ifhr5cofspgzrbb-postgresql.services.clever-cloud.com"`
 	// id:ea97919f-983b-4699-a673-2ed0668bf196
 	// owner_id:user_32114ae3-1716-4aa7-8d16-e664ca6ccd1f
-	Password string `json:"password" example:"omEbGQw628gIxHK9Bp8d"`
-	Plan     string `json:"plan" example:"xs_med"`
-	Port     int    `json:"port" example:"6388"`
-	// read_only_users:[]
+	Password      string              `json:"password" example:"omEbGQw628gIxHK9Bp8d"`
+	Plan          string              `json:"plan" example:"xs_med"`
+	Port          int                 `json:"port" example:"6388"`
 	Status        string              `json:"status" example:"ACTIVE"`
 	User          string              `json:"user" example:"uxw1ikwnp6gflbgp5iun"`
 	Version       string              `json:"version"` // 14
@@ -479,4 +478,36 @@ func FromMySQLReadOnlyUsers(users []MySQLReadOnlyUser) types.List {
 	}
 
 	return types.ListValueMust(objectType, objects)
+}
+
+type KubernetesInfo struct {
+	ResourceID        string              `json:"resourceId"`
+	AddonID           string              `json:"addonId"`
+	Name              string              `json:"name"`
+	OwnerID           string              `json:"ownerId"`
+	Plan              string              `json:"plan"`
+	Version           string              `json:"version"`
+	AvailableVersions []string            `json:"availableVersions"`
+	Resources         KubernetesResources `json:"resources"`
+	EnvVars           map[string]string   `json:"envVars"`
+}
+
+type KubernetesResources struct {
+	ClusterID            string `json:"clusterId"`
+	ExternalApiServerUrl string `json:"externalApiServerUrl"`
+	NetworkGroupID       string `json:"networkGroupId"`
+	ClusterDns           string `json:"clusterDns"`
+	Status               string `json:"status"`
+}
+
+// GetKubernetes retrieves Kubernetes addon details using the addon cluster ID
+func GetKubernetes(ctx context.Context, cc *client.Client, organisationID, addonClusterID string) client.Response[KubernetesInfo] {
+	path := fmt.Sprintf("/v4/addon-providers/addon-kubernetes/addons/%s", addonClusterID)
+	return client.Get[KubernetesInfo](ctx, cc, path)
+}
+
+// GetKubeconfig retrieves the kubeconfig file for a Kubernetes cluster
+func GetKubeconfig(ctx context.Context, cc *client.Client, organisationID, addonClusterID string) client.Response[client.PlainTextString] {
+	path := fmt.Sprintf("/v4/addon-providers/addon-kubernetes/addons/%s/kubeconfig", addonClusterID)
+	return client.Get[client.PlainTextString](ctx, cc, path)
 }
