@@ -183,7 +183,6 @@ type MongoDB struct {
 	Database string `tfsdk:"database"`
 }
 
-
 func (mg MongoDB) Uri() string {
 	return fmt.Sprintf("mongodb://%s:%s@%s:%d/%s", mg.User, mg.Password, mg.Host, mg.Port, mg.Database)
 }
@@ -213,6 +212,32 @@ type KeycloakApplication struct {
 func GetKeycloak(ctx context.Context, cc *client.Client, organisationID, keycloakID string) client.Response[Keycloak] {
 	path := fmt.Sprintf("/v4/keycloaks/organisations/%s/keycloaks/%s", organisationID, keycloakID)
 	return client.Get[Keycloak](ctx, cc, path)
+}
+
+type Matomo struct {
+	ResourceID        string            `json:"resourceId"`
+	AddonID           string            `json:"addonId"`
+	Name              string            `json:"name"`
+	OwnerID           string            `json:"ownerId"`
+	Plan              string            `json:"plan"`
+	Version           string            `json:"version"`
+	PhpVersion        string            `json:"phpVersion"`
+	AccessURL         string            `json:"accessUrl"`
+	AvailableVersions []string          `json:"availableVersions"`
+	Resources         MatomoResources   `json:"resources"`
+	EnvVars           map[string]string `json:"envVars"`
+}
+
+type MatomoResources struct {
+	Entrypoint string `json:"entrypoint"`
+	MysqlID    string `json:"mysqlId"`
+	RedisID    string `json:"redisId"`
+}
+
+// Use real ID
+func GetMatomo(ctx context.Context, cc *client.Client, matomoID string) client.Response[Matomo] {
+	path := fmt.Sprintf("/v4/addon-providers/addon-matomo/addons/%s", matomoID)
+	return client.Get[Matomo](ctx, cc, path)
 }
 
 type OtoroshiInfo struct {

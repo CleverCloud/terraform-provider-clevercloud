@@ -6,17 +6,18 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 )
 
 type Matomo struct {
-	attributes.Addon
-	Host types.String `tfsdk:"host"`
-	// ID           types.String `tfsdk:"id"`
-	// Name         types.String `tfsdk:"name"`
-	// CreationDate types.Int64  `tfsdk:"creation_date"`
-	// Region       types.String `tfsdk:"region"`
+	ID      types.String `tfsdk:"id"`
+	Name    types.String `tfsdk:"name"`
+	Region  types.String `tfsdk:"region"`
+	Host    types.String `tfsdk:"host"`
+	Version types.String `tfsdk:"version"`
 }
 
 //go:embed doc.md
@@ -26,22 +27,17 @@ func (r ResourceMatomo) Schema(_ context.Context, req resource.SchemaRequest, re
 	resp.Schema = schema.Schema{
 		Version:             0,
 		MarkdownDescription: resourceMatomoDoc,
-		Attributes: attributes.WithAddonCommons(map[string]schema.Attribute{
+		Attributes: map[string]schema.Attribute{
+			"id":   schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"host": schema.StringAttribute{Computed: true, MarkdownDescription: "URL to access Matomo"},
-			// "name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
-			// "region": schema.StringAttribute{
-			// 	Optional:            true,
-			// 	Computed:            true,
-			// 	Default:             stringdefault.StaticString("par"),
-			// 	MarkdownDescription: "Geographical region where the data will be stored",
-			// },
-			// "id":            schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier"},
-			// "creation_date": schema.Int64Attribute{Computed: true, MarkdownDescription: "Date of database creation"},
-		}),
+			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
+			"region": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString("par"),
+				MarkdownDescription: "Geographical region where the data will be stored",
+			},
+			"version": schema.StringAttribute{Computed: true, MarkdownDescription: "Current version of Matomo"},
+		},
 	}
-}
-
-// https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
-func (r ResourceMatomo) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
-	return map[int64]resource.StateUpgrader{}
 }

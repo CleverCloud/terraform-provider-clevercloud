@@ -15,7 +15,6 @@ import (
 // Create a new resource
 func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
 	appMatomo := helper.PlanFrom[Matomo](ctx, req.Plan, &res.Diagnostics)
-	res.Diagnostics.Append(req.Plan.Get(ctx, &appMatomo)...)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -25,14 +24,14 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 		res.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
 	}
-
 	addonsProviders := addonsProvidersRes.Payload()
+
 	provider := pkg.LookupAddonProvider(*addonsProviders, "addon-matomo")
 
 	// For now, only the "beta" plan is available
-	plan := pkg.LookupProviderPlan(provider, "beta") // appMatomo.Plan.ValueString())
+	plan := pkg.LookupProviderPlan(provider, "beta")
 	if plan == nil {
-		res.Diagnostics.AddError("This plan does not exists", "available plans are: " +strings.Join(pkg.ProviderPlansAsList(provider), ", "))
+		res.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
 		return
 	}
 
@@ -48,54 +47,46 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 		res.Diagnostics.AddError("failed to create Matomo", createAddonRes.Error().Error())
 		return
 	}
+	addon := createAddonRes.Payload()
 
-	appMatomo.ID = pkg.FromStr(createAddonRes.Payload().RealID)
-	appMatomo.CreationDate = pkg.FromI(createAddonRes.Payload().CreationDate)
-
+	fmt.Printf("\nADDON: %+v\n", addon.RealID)
+	appMatomo.ID = pkg.FromStr(addon.RealID)
 	res.Diagnostics.Append(res.State.Set(ctx, appMatomo)...)
 
-	appMatomoEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), appMatomo.ID.ValueString())
-	if appMatomoEnvRes.HasError() {
-		res.Diagnostics.AddError("failed to get Matomo connection infos", appMatomoEnvRes.Error().Error())
+	matomoRes := tmp.GetMatomo(ctx, r.Client(), addon.RealID)
+	if matomoRes.HasError() {
+		res.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
 		return
 	}
+	matomo := matomoRes.Payload()
 
-	appMatomoEnv := *appMatomoEnvRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]any{
-		"payload": fmt.Sprintf("%+v", appMatomoEnv),
-	})
-
-	hostEnvVar := pkg.First(appMatomoEnv, func(v tmp.EnvVar) bool {
-		return v.Name == "MATOMO_URL"
-	})
-	if hostEnvVar == nil {
-		res.Diagnostics.AddError("cannot get Matomo infos", "missing MATOMO_URL env var on created addon")
-		return
-	}
-
-	appMatomo.Host = pkg.FromStr(hostEnvVar.Value)
-
+	appMatomo.Host = pkg.FromStr(matomo.AccessURL)
+	appMatomo.Version = pkg.FromStr(matomo.Version)
 	res.Diagnostics.Append(res.State.Set(ctx, appMatomo)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 }
 
 // Read resource information
 func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "Matomo READ", map[string]any{"request": req})
 
-	var appMatomo Matomo
-	diags := req.State.Get(ctx, &appMatomo)
-	resp.Diagnostics.Append(diags...)
+	state := helper.StateFrom[Matomo](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// TODO
+	matomoRes := tmp.GetMatomo(ctx, r.Client(), state.ID.ValueString())
+	if matomoRes.HasError() {
+		resp.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
+		return
+	}
+	matomo := matomoRes.Payload()
 
-	diags = resp.State.Set(ctx, appMatomo)
-	resp.Diagnostics.Append(diags...)
+	state.Name = pkg.FromStr(matomo.Name)
+	// region ?
+	state.Host = pkg.FromStr(matomo.AccessURL)
+	state.Version = pkg.FromStr(matomo.Version)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Update resource
@@ -130,16 +121,19 @@ func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest,
 
 // Delete resource
 func (r *ResourceMatomo) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	appMatomo := Matomo{}
-
-	diags := req.State.Get(ctx, &appMatomo)
-	resp.Diagnostics.Append(diags...)
+	state := helper.StateFrom[Matomo](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Matomo DELETE", map[string]any{"matomo": appMatomo})
+	tflog.Debug(ctx, "Matomo DELETE", map[string]any{"matomo": state})
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), appMatomo.ID.ValueString())
+	fmt.Printf("\nID: %+v\n", state.ID.ValueString())
+	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("cannot get ID of matomo", err.Error())
+	}
+
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonID)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

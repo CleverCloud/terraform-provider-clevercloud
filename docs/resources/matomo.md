@@ -31,3 +31,4 @@ See [Matomo product specification](https://www.clever.cloud/developers/doc/addon
 - `creation_date` (Number) Date of database creation
 - `host` (String) URL to access Matomo
 - `id` (String) Generated unique identifier
+- `version` (String) Current version of Matomo
