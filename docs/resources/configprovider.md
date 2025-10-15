@@ -19,11 +19,8 @@ See [ConfigProvider product specification](https://www.clever.cloud/developers/d
 
 ### Required
 
-- `name` (String) Name of the service
-
-### Optional
-
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
+- `name` (String) Name of the service
 
 ### Read-Only
 
