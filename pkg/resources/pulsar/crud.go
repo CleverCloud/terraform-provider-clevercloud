@@ -172,7 +172,6 @@ func readRetention(ctx context.Context, state *Pulsar, diags *diag.Diagnostics) 
 	}
 
 	retention, err := admin.Namespaces().GetRetention(state.TenantAndNamespace())
-	fmt.Printf("retention: %v\n", retention)
 	if err != nil {
 		diags.AddError("failed to get Pulsar namespace retention", err.Error())
 		return
