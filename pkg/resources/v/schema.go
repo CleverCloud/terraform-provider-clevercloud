@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/application"
@@ -16,8 +17,8 @@ import (
 
 type V struct {
 	attributes.Runtime
-	VBinary      types.String `tfsdk:"v_binary"`
-	VEnvironment types.String `tfsdk:"v_environment"`
+	Binary           types.String `tfsdk:"binary"`
+	DevelopmentBuild types.Bool   `tfsdk:"development_build"`
 }
 
 //go:embed doc.md
@@ -29,20 +30,22 @@ func (r ResourceV) Schema(ctx context.Context, req resource.SchemaRequest, res *
 		Version:             0,
 		MarkdownDescription: vDoc,
 		Attributes: attributes.WithRuntimeCommons(map[string]schema.Attribute{
-			"v_binary": schema.StringAttribute{
-				Optional: true,
+			"binary": schema.StringAttribute{
+				Optional:            true,
 				MarkdownDescription: "The name of the output binary file. Default: `${APP_HOME}/v_bin_${APP_ID}`",
 			},
-			"v_environment": schema.StringAttribute{
-				Optional: true,
-				MarkdownDescription: "Set to `development` to compile without the `-prod` flag.",
+			"development_build": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				MarkdownDescription: "Set to true to compile without the `-prod` flag.",
 			},
 		}),
 		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 	}
 }
 
-func (vapp V) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]string {
+func (vapp V) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -54,8 +57,12 @@ func (vapp V) toEnv(ctx context.Context, diags diag.Diagnostics) map[string]stri
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(vapp.VBinary, func(s string) { env["CC_V_BINARY"] = s })
-	pkg.IfIsSetStr(vapp.VEnvironment, func(s string) { env["ENVIRONMENT"] = s })
+	pkg.IfIsSetStr(vapp.Binary, func(s string) { env["CC_V_BINARY"] = s })
+	pkg.IfIsSetB(vapp.DevelopmentBuild, func(devBuild bool) {
+		if devBuild {
+			env["ENVIRONMENT"] = "development"
+		}
+	})
 
 	env = pkg.Merge(env, vapp.Hooks.ToEnv())
 

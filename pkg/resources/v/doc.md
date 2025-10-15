@@ -1,6 +1,6 @@
-Manage [.NET](https://v.microsoft.com/en-us/) applications.
+Manage [vlang](https://vlang.io/) applications.
 
-See [V / .NET](https://www.clever.cloud/developers/doc/applications/v/).
+See [V](https://www.clever.cloud/developers/doc/applications/v/).
 
 ## Example usage
 

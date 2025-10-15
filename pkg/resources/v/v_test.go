@@ -46,8 +46,8 @@ func TestAccNodejs_basic(t *testing.T) {
 			"app_folder":         "./app",
 			"environment":        map[string]any{"MY_KEY": "myval"},
 			"dependencies":       []string{},
-			"v_binary":           "a.out",
-			"v_environment":      "development",
+			"binary":             "a.out",
+			"development_build":  true,
 		}),
 	)
 	vBlock2 := helper.NewRessource(
