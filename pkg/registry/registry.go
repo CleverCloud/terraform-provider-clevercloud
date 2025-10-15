@@ -31,6 +31,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/rust"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/scala"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/static"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/v"
 )
 
 var Datasources = []func() datasource.DataSource{}
@@ -70,4 +71,5 @@ var Resources = []func() resource.Resource{
 	rust.NewResourceRust,
 	networkgroup.NewResourceNetworkgroup,
 	dotnet.NewResourceDotnet,
+	v.NewResourceV,
 }
