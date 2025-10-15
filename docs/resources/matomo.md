@@ -20,7 +20,6 @@ See [Matomo product specification](https://www.clever.cloud/developers/doc/addon
 ### Required
 
 - `name` (String) Name of the service
-- `plan` (String) Database size and spec
 
 ### Optional
 
@@ -28,7 +27,6 @@ See [Matomo product specification](https://www.clever.cloud/developers/doc/addon
 
 ### Read-Only
 
-- `creation_date` (Number) Date of database creation
 - `host` (String) URL to access Matomo
 - `id` (String) Generated unique identifier
 - `version` (String) Current version of Matomo
