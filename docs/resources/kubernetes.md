@@ -92,6 +92,8 @@ $ terraform import clevercloud_kubernetes.my_cluster addon_12345
 
 ### Read-Only
 
+- `apiserver_url` (String) Kubernetes APIServer URL
 - `id` (String) Generated unique identifier
 - `kubeconfig` (String) Kubernetes configuration file content for accessing the cluster
+- `networkgroup_id` (String) NetworkgGroup ID
 - `version` (String) Kubernetes version
