@@ -20,7 +20,6 @@ See [Metabase product specification](https://www.clever.cloud/developers/doc/add
 ### Required
 
 - `name` (String) Name of the service
-- `plan` (String) Database size and spec
 
 ### Optional
 
@@ -28,6 +27,5 @@ See [Metabase product specification](https://www.clever.cloud/developers/doc/add
 
 ### Read-Only
 
-- `creation_date` (Number) Date of database creation
 - `host` (String) Metabase host, used to connect to
 - `id` (String) Generated unique identifier
