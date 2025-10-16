@@ -3,7 +3,6 @@ package materiakv
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -32,9 +31,9 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 	addonsProviders := addonsProvidersRes.Payload()
 	provider := pkg.LookupAddonProvider(*addonsProviders, "kv")
 
-	plan := pkg.LookupProviderPlan(provider, "base")
+	plan := provider.FirstPlan()
 	if plan == nil {
-		resp.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
+		resp.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
 	}
 

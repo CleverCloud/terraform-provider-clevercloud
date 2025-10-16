@@ -2,7 +2,6 @@ package configprovider
 
 import (
 	"context"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -26,9 +25,9 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 
 	provider := pkg.LookupAddonProvider(*addonsProviders, "config-provider")
 
-	plan := pkg.LookupProviderPlan(provider, "std")
+	plan := provider.FirstPlan()
 	if plan == nil {
-		res.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
+		res.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
 	}
 

@@ -39,11 +39,23 @@ type AddonPlan struct {
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 }
+type AddonPlans []AddonPlan
+
+func (provider *AddonProvider) FirstPlan() *AddonPlan {
+	if provider == nil {
+		return nil
+	}
+	if len(provider.Plans) == 0 {
+		return nil
+	}
+
+	return &provider.Plans[0]
+}
 
 type AddonProvider struct {
-	ID    string      `json:"id"`
-	Name  string      `json:"name"`
-	Plans []AddonPlan `json:"plans"`
+	ID    string     `json:"id"`
+	Name  string     `json:"name"`
+	Plans AddonPlans `json:"plans"`
 }
 
 type PostgreSQL struct {

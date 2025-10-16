@@ -6,17 +6,17 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 )
 
 type Metabase struct {
-	attributes.Addon
-	Host types.String `tfsdk:"host"`
-	// HerokuId     types.String `tfsdk:"heroku_id"`
-	// CallbackURL  types.String `tfsdk:"callback_url"`
-	// LogplexToken types.String `tfsdk:"logplex_token"`
-	// OwnerId      types.String `tfsdk:"owner_id"`
+	ID     types.String `tfsdk:"id"`
+	Name   types.String `tfsdk:"name"`
+	Region types.String `tfsdk:"region"`
+	Host   types.String `tfsdk:"host"`
 }
 
 //go:embed doc.md
@@ -26,14 +26,16 @@ func (r ResourceMetabase) Schema(_ context.Context, req resource.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Version:             0,
 		MarkdownDescription: resourceMetabaseDoc,
-		Attributes: attributes.WithAddonCommons(map[string]schema.Attribute{
-			// customer provided
-			// TODO: Markdown description
+		Attributes: map[string]schema.Attribute{
+			"id":   schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
+			"region": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             stringdefault.StaticString("par"),
+				MarkdownDescription: "Geographical region where the data will be stored",
+			},
 			"host": schema.StringAttribute{Computed: true, MarkdownDescription: "Metabase host, used to connect to"},
-			// "heroku_id":     schema.StringAttribute{Computed: true, MarkdownDescription: "heroku_id"},
-			// "callback_url":  schema.StringAttribute{Computed: true, MarkdownDescription: "callback_url"},
-			// "logplex_token": schema.StringAttribute{Computed: true, MarkdownDescription: "logplex_token"},
-			// "owner_id":      schema.StringAttribute{Computed: true, MarkdownDescription: "owner_id"},
-		}),
+		},
 	}
 }

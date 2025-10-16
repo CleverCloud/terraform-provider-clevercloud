@@ -31,7 +31,11 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.AddError("Otoroshi provider doesn't exist", fmt.Sprintf("available providers are: %s", strings.Join(pkg.AddonProvidersAsList(*addonsProviders), ", ")))
 		return
 	}
-	plan := provider.Plans[0]
+	plan := provider.FirstPlan()
+	if plan == nil {
+		resp.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
+		return
+	}
 
 	addonReq := tmp.AddonRequest{
 		Name:       otoroshi.Name.ValueString(),

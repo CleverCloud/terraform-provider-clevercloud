@@ -2,7 +2,6 @@ package metabase
 
 import (
 	"context"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -26,9 +25,9 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 
 	addonsProviders := addonsProvidersRes.Payload()
 	prov := pkg.LookupAddonProvider(*addonsProviders, "metabase")
-	plan := pkg.LookupProviderPlan(prov, mb.Plan.ValueString())
+	plan := prov.FirstPlan()
 	if plan == nil {
-		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov), ", ")+", got: "+mb.Plan.String())
+		resp.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
 	}
 
@@ -47,9 +46,6 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 	addon := res.Payload()
 
 	mb.ID = pkg.FromStr(addon.RealID)
-	mb.CreationDate = pkg.FromI(addon.CreationDate)
-	// mb.Plan = pkg.FromStr(addon).Plan.Slug)
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
 
 	mbInfoRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), res.Payload().ID)
