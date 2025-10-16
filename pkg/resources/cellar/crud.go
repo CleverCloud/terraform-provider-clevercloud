@@ -30,7 +30,12 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 		resp.Diagnostics.AddError("failed to find Cellar provider", "")
 		return
 	}
-	plan := prov.Plans[0]
+
+	plan := prov.FirstPlan()
+	if plan == nil {
+		resp.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
+		return
+	}
 
 	addonReq := tmp.AddonRequest{
 		Name:       cellar.Name.ValueString(),

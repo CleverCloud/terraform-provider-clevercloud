@@ -3,7 +3,6 @@ package pulsar
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/apache/pulsar-client-go/pulsaradmin/pkg/utils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -31,9 +30,9 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 	addonsProviders := addonsProvidersRes.Payload()
 
 	prov := pkg.LookupAddonProvider(*addonsProviders, "addon-pulsar")
-	addonPlan := pkg.LookupProviderPlan(prov, "beta")
+	addonPlan := prov.FirstPlan()
 	if addonPlan == nil {
-		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov), ", "))
+		resp.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
 	}
 

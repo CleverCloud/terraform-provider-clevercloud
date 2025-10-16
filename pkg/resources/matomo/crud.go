@@ -2,8 +2,6 @@ package matomo
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -28,10 +26,9 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 
 	provider := pkg.LookupAddonProvider(*addonsProviders, "addon-matomo")
 
-	// For now, only the "beta" plan is available
-	plan := pkg.LookupProviderPlan(provider, "beta")
+	plan := provider.FirstPlan()
 	if plan == nil {
-		res.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
+		res.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
 	}
 
@@ -49,7 +46,6 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	addon := createAddonRes.Payload()
 
-	fmt.Printf("\nADDON: %+v\n", addon.RealID)
 	appMatomo.ID = pkg.FromStr(addon.RealID)
 	res.Diagnostics.Append(res.State.Set(ctx, appMatomo)...)
 
@@ -127,7 +123,6 @@ func (r *ResourceMatomo) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 	tflog.Debug(ctx, "Matomo DELETE", map[string]any{"matomo": state})
 
-	fmt.Printf("\nID: %+v\n", state.ID.ValueString())
 	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("cannot get ID of matomo", err.Error())

@@ -3,7 +3,6 @@ package keycloak
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -29,9 +28,9 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 	addonsProviders := addonsProvidersRes.Payload()
 	provider := pkg.LookupAddonProvider(*addonsProviders, "keycloak")
 
-	plan := pkg.LookupProviderPlan(provider, kc.Plan.ValueString())
+	plan := provider.FirstPlan()
 	if plan == nil {
-		res.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
+		res.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
 	}
 
@@ -49,8 +48,6 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	kc.ID = pkg.FromStr(createAddonRes.Payload().RealID)
-	kc.CreationDate = pkg.FromI(createAddonRes.Payload().CreationDate)
-
 	res.Diagnostics.Append(res.State.Set(ctx, kc)...)
 
 	kcEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), kc.ID.ValueString())
