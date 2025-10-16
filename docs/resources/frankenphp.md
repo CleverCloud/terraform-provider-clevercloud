@@ -36,6 +36,7 @@ FrankenPHP is a modern PHP application server, written in Go. It gives superpowe
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `composer_flags` (String) Flags to pass to Composer
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
@@ -43,10 +44,13 @@ Can be either app_xxx or postgres_yyy ID format
 - `dev_dependencies` (Boolean) Install development dependencies (Default: false)
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
+- `listened_port` (Number) The port on which FrankenPHP listens for HTTP requests
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
+- `webroot` (String) Path to the web content to serve, relative to the root of your application
+- `worker_path` (String) Path to the worker script, relative to the root of your project (e.g. /worker/scrip.php)
 
 ### Read-Only
 

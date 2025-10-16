@@ -112,6 +112,8 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 	state.StickySessions = pkg.FromBool(appRes.App.StickySessions)
 	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 
+	state.fromEnv(ctx, appRes.EnvAsMap())
+
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)

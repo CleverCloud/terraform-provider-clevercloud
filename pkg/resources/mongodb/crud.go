@@ -42,14 +42,15 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
 	}
+	addon := res.Payload()
 
-	mg.ID = pkg.FromStr(res.Payload().RealID)
-	mg.CreationDate = pkg.FromI(res.Payload().CreationDate)
-	mg.Plan = pkg.FromStr(res.Payload().Plan.Slug)
+	mg.ID = pkg.FromStr(addon.RealID)
+	mg.CreationDate = pkg.FromI(addon.CreationDate)
+	mg.Plan = pkg.FromStr(strings.ToLower(addon.Plan.Slug))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 
-	mgInfoRes := tmp.GetMongoDB(ctx, r.Client(), res.Payload().ID)
+	mgInfoRes := tmp.GetMongoDB(ctx, r.Client(), addon.ID)
 	if mgInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get MongoDB connection infos", mgInfoRes.Error().Error())
 		return

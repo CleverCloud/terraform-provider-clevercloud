@@ -14,9 +14,8 @@ import (
 
 // Create a new resource
 func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	plan := Docker{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
+	tflog.Debug(ctx, "ResourceDocker.Create()")
+	plan := helper.PlanFrom[Docker](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -27,6 +26,9 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 	}
 
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	environment := plan.toEnv(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -84,9 +86,8 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 
 // Read resource information
 func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state Docker
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	tflog.Debug(ctx, "ResourceDocker.Read()")
+	state := helper.StateFrom[Docker](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -110,7 +111,7 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 	state.Region = pkg.FromStr(app.App.Zone)
 	state.DeployURL = pkg.FromStr(app.App.DeployURL)
 	state.BuildFlavor = app.GetBuildFlavor()
-
+	state.fromEnv(ctx, app.EnvAsMap())
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, app.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
@@ -188,14 +189,16 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 
 	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
 
+	plan.ID = pkg.FromStr(updatedApp.Application.ID)
+	plan.DeployURL = pkg.FromStr(updatedApp.Application.DeployURL)
+
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
 
 // Delete resource
 func (r *ResourceDocker) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state Docker
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	tflog.Debug(ctx, "ResourceDocker.Delete()")
+	state := helper.StateFrom[Docker](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

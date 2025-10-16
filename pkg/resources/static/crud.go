@@ -111,15 +111,7 @@ func (r *ResourceStatic) Read(ctx context.Context, req resource.ReadRequest, res
 	state.BuildFlavor = readRes.GetBuildFlavor()
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, readRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
-
-	for envName, envValue := range readRes.EnvAsMap() {
-		switch envName {
-		case "APP_FOLDER":
-			state.AppFolder = pkg.FromStr(envValue)
-		default:
-			//state.Environment.
-		}
-	}
+	state.fromEnv(ctx, readRes.EnvAsMap())
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

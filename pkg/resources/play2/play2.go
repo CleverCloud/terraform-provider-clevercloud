@@ -10,6 +10,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+const (
+	CC_SBT_TARGET_BIN  = "CC_SBT_TARGET_BIN"
+	CC_SBT_TARGET_DIR  = "CC_SBT_TARGET_DIR"
+	PLAY1_VERSION      = "PLAY1_VERSION"
+	SBT_DEPLOY_GOAL    = "SBT_DEPLOY_GOAL"
+)
+
 type ResourcePlay2 struct {
 	helper.Configurer
 }
