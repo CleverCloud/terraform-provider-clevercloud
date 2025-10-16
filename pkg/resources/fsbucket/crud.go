@@ -11,7 +11,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
-
 // Create a new resource
 func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	fsbucket := helper.PlanFrom[FSBucket](ctx, req.Plan, &resp.Diagnostics)
@@ -172,5 +171,3 @@ func (r *ResourceFSBucket) Delete(ctx context.Context, req resource.DeleteReques
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource

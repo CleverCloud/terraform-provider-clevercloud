@@ -21,6 +21,7 @@ import (
 )
 
 func TestAccMySQL_basic(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandomWithPrefix("tf-test-my")
 	rNameEdited := rName + "-edit"
 	rName2 := acctest.RandomWithPrefix("tf-test2-my")
@@ -114,6 +115,7 @@ func TestAccMySQL_basic(t *testing.T) {
 }
 
 func TestAccMySQL_RefreshDeleted(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandomWithPrefix("tf-test-my")
 	//fullName := fmt.Sprintf("clevercloud_mysql.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())

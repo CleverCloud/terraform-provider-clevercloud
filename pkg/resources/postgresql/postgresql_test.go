@@ -21,6 +21,7 @@ import (
 )
 
 func TestAccPostgreSQL_basic(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandomWithPrefix("tf-test-pg")
 	rNameEdited := rName + "-edit"
 	rName2 := acctest.RandomWithPrefix("tf-test2-pg")
@@ -126,6 +127,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 }
 
 func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandomWithPrefix("tf-test-pg")
 	//fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())

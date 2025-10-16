@@ -32,7 +32,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 	addonsProviders := addonsProvidersRes.Payload()
 	provider := pkg.LookupAddonProvider(*addonsProviders, "kv")
 
-	plan := pkg.LookupProviderPlan(provider, "alpha")
+	plan := pkg.LookupProviderPlan(provider, "base")
 	if plan == nil {
 		resp.Diagnostics.AddError("This plan does not exists", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
 		return
@@ -162,5 +162,3 @@ func (r *ResourceMateriaKV) Delete(ctx context.Context, req resource.DeleteReque
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource

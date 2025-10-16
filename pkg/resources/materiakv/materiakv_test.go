@@ -20,6 +20,7 @@ import (
 )
 
 func TestAccMateriaKV_basic(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-kv")
 	rNameEdited := rName + "-edit"

@@ -22,6 +22,7 @@ import (
 )
 
 func TestAccRuby_basic(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-ruby")
 	fullName := fmt.Sprintf("clevercloud_ruby.%s", rName)

@@ -6,6 +6,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/cellar/bucket"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/configprovider"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/docker"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/dotnet"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/drain"
@@ -16,6 +17,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/java"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/keycloak"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/materiakv"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/matomo"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/metabase"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/mongodb"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/mysql"
@@ -32,6 +34,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/rust"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/scala"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/static"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/v"
 )
 
 var Datasources = []func() datasource.DataSource{}
@@ -70,6 +73,9 @@ var Resources = []func() resource.Resource{
 	pulsar.NewResourcePulsar,
 	rust.NewResourceRust,
 	networkgroup.NewResourceNetworkgroup,
+	v.NewResourceV,
+	matomo.NewResourceMatomo,
+	configprovider.NewResourceConfigProvider,
 	dotnet.NewResourceDotnet,
 	haskell.NewResourceHaskell,
 }

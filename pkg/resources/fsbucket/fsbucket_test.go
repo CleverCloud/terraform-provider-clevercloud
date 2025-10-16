@@ -20,6 +20,7 @@ import (
 )
 
 func TestAccFSBucket_basic(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-fsbucket")
 	rNameEdited := rName + "-edit"

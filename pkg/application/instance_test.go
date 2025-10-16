@@ -7,6 +7,8 @@ import (
 )
 
 func TestAccNodejs_basic(t *testing.T) {
+	t.Parallel()
+
 	variants := []tmp.ProductInstance{{
 		Version: "20220101",
 	}, {

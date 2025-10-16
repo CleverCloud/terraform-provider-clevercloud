@@ -23,6 +23,7 @@ import (
 )
 
 func TestAccGo_basic(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	rName := acctest.RandomWithPrefix("tf-test-go")
 	fullName := fmt.Sprintf("clevercloud_go.%s", rName)
@@ -124,6 +125,14 @@ func TestAccGo_basic(t *testing.T) {
 						}
 						if app.Zone != "par" {
 							return tests.AssertError("expect region to be 'par'", "region", app.Zone)
+						}
+
+						if len(app.Vhosts) != 1 {
+							return tests.AssertError("expect one vhost", app.Vhosts, "<cleverapps>")
+						}
+
+						if !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io/") {
+							return tests.AssertError("expect a cleverapps fqdn", app.Vhosts[0].Fqdn, "<cleverapps>")
 						}
 
 						if len(app.Vhosts) != 1 {

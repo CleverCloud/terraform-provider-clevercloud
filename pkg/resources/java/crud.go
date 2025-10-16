@@ -221,5 +221,3 @@ func (r *ResourceJava) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource

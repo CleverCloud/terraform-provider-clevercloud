@@ -20,6 +20,7 @@ import (
 )
 
 func TestAccAddon_basic(t *testing.T) {
+	t.Parallel()
 	rName := acctest.RandomWithPrefix("tf-test-mp")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_addon.%s", rName)

@@ -11,7 +11,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
-
 // Create a new resource
 func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	cellar := helper.PlanFrom[Cellar](ctx, req.Plan, &resp.Diagnostics)
@@ -165,5 +164,3 @@ func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource

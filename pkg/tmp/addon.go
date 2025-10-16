@@ -129,6 +129,18 @@ func GetMySQL(ctx context.Context, cc *client.Client, mysqlID string) client.Res
 	return client.Get[MySQL](ctx, cc, path)
 }
 
+func GetConfigProvider(ctx context.Context, cc *client.Client, configProviderId string) client.Response[ConfigProvider] {
+	path := fmt.Sprintf("/v4/addon-providers/config-provider/addons/%s", configProviderId)
+	return client.Get[ConfigProvider](ctx, cc, path)
+}
+
+type ConfigProvider struct {
+	ID             string            `json:"id"`
+	OrganisationID string            `json:"ownerId"`
+	Environment    map[string]string `json:"environment"`
+	Status         string            `json:"status"`
+}
+
 type MateriaKV struct {
 	ID             string `json:"id"`
 	ClusterID      string `json:"clusterId"`
@@ -183,7 +195,6 @@ type MongoDB struct {
 	Database string `tfsdk:"database"`
 }
 
-
 func (mg MongoDB) Uri() string {
 	return fmt.Sprintf("mongodb://%s:%s@%s:%d/%s", mg.User, mg.Password, mg.Host, mg.Port, mg.Database)
 }
@@ -213,6 +224,32 @@ type KeycloakApplication struct {
 func GetKeycloak(ctx context.Context, cc *client.Client, organisationID, keycloakID string) client.Response[Keycloak] {
 	path := fmt.Sprintf("/v4/keycloaks/organisations/%s/keycloaks/%s", organisationID, keycloakID)
 	return client.Get[Keycloak](ctx, cc, path)
+}
+
+type Matomo struct {
+	ResourceID        string            `json:"resourceId"`
+	AddonID           string            `json:"addonId"`
+	Name              string            `json:"name"`
+	OwnerID           string            `json:"ownerId"`
+	Plan              string            `json:"plan"`
+	Version           string            `json:"version"`
+	PhpVersion        string            `json:"phpVersion"`
+	AccessURL         string            `json:"accessUrl"`
+	AvailableVersions []string          `json:"availableVersions"`
+	Resources         MatomoResources   `json:"resources"`
+	EnvVars           map[string]string `json:"envVars"`
+}
+
+type MatomoResources struct {
+	Entrypoint string `json:"entrypoint"`
+	MysqlID    string `json:"mysqlId"`
+	RedisID    string `json:"redisId"`
+}
+
+// Use real ID
+func GetMatomo(ctx context.Context, cc *client.Client, matomoID string) client.Response[Matomo] {
+	path := fmt.Sprintf("/v4/addon-providers/addon-matomo/addons/%s", matomoID)
+	return client.Get[Matomo](ctx, cc, path)
 }
 
 type OtoroshiInfo struct {
@@ -276,6 +313,7 @@ type EnvVar struct {
 	Name  string `json:"name"`
 	Value string `json:"value"`
 }
+
 type EnvVars []EnvVar
 
 func GetAddon(ctx context.Context, cc *client.Client, organisation string, addon string) client.Response[AddonResponse] {
@@ -291,6 +329,16 @@ func GetAddonEnv(ctx context.Context, cc *client.Client, organisation string, ad
 func UpdateAddon(ctx context.Context, cc *client.Client, organisation string, addon string, env map[string]string) client.Response[AddonResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/addons/%s", organisation, addon)
 	return client.Put[AddonResponse](ctx, cc, path, env)
+}
+
+func UpdateConfigProviderEnv(ctx context.Context, cc *client.Client, organisation string, addon string, envVars EnvVars) client.Response[EnvVars] {
+	path := fmt.Sprintf("/v4/addon-providers/config-provider/addons/%s/env", addon)
+	return client.Put[EnvVars](ctx, cc, path, envVars)
+}
+
+func GetConfigProviderEnv(ctx context.Context, cc *client.Client, organisation string, addon string) client.Response[EnvVars] {
+	path := fmt.Sprintf("/v4/addon-providers/config-provider/addons/%s/env", addon)
+	return client.Get[EnvVars](ctx, cc, path)
 }
 
 func ListAddons(ctx context.Context, cc *client.Client, organisation string) client.Response[[]AddonResponse] {

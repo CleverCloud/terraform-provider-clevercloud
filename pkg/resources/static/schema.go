@@ -44,7 +44,6 @@ var schemaStaticV0 = schema.Schema{
 	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-
 func (plan *Static) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 

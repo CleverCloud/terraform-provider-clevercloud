@@ -213,5 +213,3 @@ func (r *ResourceGo) Delete(ctx context.Context, req resource.DeleteRequest, res
 
 	res.State.RemoveResource(ctx)
 }
-
-// Import resource

@@ -147,5 +147,3 @@ func (r *ResourceKeycloak) Delete(ctx context.Context, req resource.DeleteReques
 
 	resp.State.RemoveResource(ctx)
 }
-
-// Import resource
