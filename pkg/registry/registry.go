@@ -1,8 +1,10 @@
 package registry
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework/action"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"go.clever-cloud.com/terraform-provider/pkg/actions"
 	"go.clever-cloud.com/terraform-provider/pkg/datasources/defaultloadbalancer"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/docker"
@@ -81,4 +83,8 @@ var Resources = []func() resource.Resource{
 	matomo.NewResourceMatomo,
 	configprovider.NewResourceConfigProvider,
 	dotnet.NewResourceDotnet,
+}
+
+var Actions = []func() action.Action{
+	actions.RebootApplication,
 }

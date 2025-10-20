@@ -397,3 +397,42 @@ func ListInstances(ctx context.Context, cc *client.Client, organisationID, appli
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/instances", organisationID, applicationID)
 	return client.Get[[]AppInstance](ctx, cc, path)
 }
+
+type RebootAppRes struct {
+	ID           int    `json:"id"`
+	Message      string `json:"message"`
+	Type         string `json:"type"` // error / success
+	DeploymentID string `json:"deploymentId"`
+}
+
+func RebootApp(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[RebootAppRes] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/instances", organisationID, applicationID)
+	return client.Post[RebootAppRes](ctx, cc, path, nil)
+}
+
+type DeploymentAuthor struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type DeploymentResponse struct {
+	ID        int              `json:"id"`
+	UUID      string           `json:"uuid"`
+	Date      int64            `json:"date"`
+	State     string           `json:"state"`
+	Action    string           `json:"action"`
+	Commit    string           `json:"commit"`
+	Cause     string           `json:"cause"`
+	Instances int              `json:"instances"`
+	Author    DeploymentAuthor `json:"author"`
+}
+
+// y en manques, on verra
+func (d1 DeploymentResponse) Equal(d2 *DeploymentResponse) bool {
+	return (d2 != nil) && d1.Date == d2.Date && d1.State == d2.State && d1.Action == d2.Action && d1.Instances == d2.Instances
+}
+
+func GetDeployment(ctx context.Context, cc *client.Client, organisationID, applicationID, deploymentID string) client.Response[DeploymentResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/deployments/%s", organisationID, applicationID, deploymentID)
+	return client.Get[DeploymentResponse](ctx, cc, path)
+}

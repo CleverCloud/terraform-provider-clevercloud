@@ -107,6 +107,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 	// We pass the full provider to the children resources
 	resp.DataSourceData = p
 	resp.ResourceData = p
+	resp.ActionData = p
 
 	tflog.Debug(ctx, "provider configured")
 }
