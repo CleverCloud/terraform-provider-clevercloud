@@ -1,5 +1,28 @@
 # Changelog
 
+## [1.3.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.2.0...v1.3.0) (2025-10-16)
+
+
+### Features
+
+* **addon:** add ConfigProvider addon ([#256](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/256)) ([48e5e93](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/48e5e93016aee0fb78ad8b3748ece863b0dc5470))
+* **addons:** add matomo ([#253](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/253)) ([e8f2206](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/e8f22064b85d0d5489178c15ed80460e3e87f18e))
+* **mongodb:** return full uri (as sensitive field) ([#233](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/233)) ([25229d1](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/25229d1615e12ef90f33332b37551f8e37f184c9))
+* **mysql:** read read-only users generated from the console ([598fdfd](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/598fdfd746c62ad89a75de68031d506899887592))
+* **runtime:** add dotnet ([#245](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/245)) ([2894249](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/2894249f8cb7a53072de7d05881b923f0c2cfa4f))
+* **v:** add v runtime ([#248](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/248)) ([40174ed](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/40174edc88465fa664286c9b4f2dbbcfba1c3e9b))
+
+
+### Bug Fixes
+
+* **addons:** do not use plan name is only one plan ([#271](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/271)) ([f6df981](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/f6df9819fa6399538ddb312655fa3c5dc1c46386))
+* **apps:** trigger deployment after all others steps ([21e9348](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/21e9348e0519675f6e59fe72c8b5b878ec5b9ba1))
+* **diags:** diags are always references, so that errors arn't lost ([c25d727](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/c25d72791958314bd1422af69b4e9b9b3d399b5e))
+* **makefile:** make release uses ldflags too ([#255](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/255)) ([b916b72](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/b916b726b7abd84185f2f7e8ea6689a10c1cd326))
+* **mysql:** return full uri (with login and password) as sensitive field ([#234](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/234)) ([47b82b1](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/47b82b1477efba54daccb138ffd9e7cdf06dd366))
+* **postgresql:** return uri (with login/passord) as sensitive field ([#235](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/235)) ([6626039](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/662603971274b769e76bc2ee1247bdfbe15c2e33))
+* **python:** missing upgrade state ([eff72a0](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/eff72a02b628cda44235183f914e8d562a87c55a))
+
 ## [1.2.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.1.0...v1.2.0) (2025-09-24)
 
 
