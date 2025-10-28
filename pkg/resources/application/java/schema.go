@@ -2,7 +2,7 @@ package java
 
 import (
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
+	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"context"
 	_ "embed"
 
@@ -17,12 +17,12 @@ import (
 )
 
 type Java struct {
-	common.Runtime
+	application.Runtime
 	JavaVersion types.String `tfsdk:"java_version"`
 }
 
 type JavaV0 struct {
-	common.RuntimeV0
+	application.RuntimeV0
 	JavaVersion types.String `tfsdk:"java_version"`
 }
 
@@ -36,7 +36,7 @@ func (r ResourceJava) Schema(ctx context.Context, req resource.SchemaRequest, re
 var schemaJava = schema.Schema{
 	Version:             1,
 	MarkdownDescription: javaDoc,
-	Attributes: common.WithRuntimeCommons(map[string]schema.Attribute{
+	Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 		"java_version": schema.StringAttribute{
 			Optional:    true,
 			Description: "Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).",
@@ -48,7 +48,7 @@ var schemaJava = schema.Schema{
 var schemaJavaV0 = schema.Schema{
 	Version:             0,
 	MarkdownDescription: javaDoc,
-	Attributes: common.WithRuntimeCommonsV0(map[string]schema.Attribute{
+	Attributes: application.WithRuntimeCommonsV0(map[string]schema.Attribute{
 		"java_version": schema.StringAttribute{
 			Optional:    true,
 			Description: "Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).",
@@ -74,12 +74,12 @@ func (plan *Java) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string
 	return env
 }
 
-func (java *Java) toDeployment(gitAuth *http.BasicAuth) *common.Deployment {
+func (java *Java) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if java.Deployment == nil || java.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &common.Deployment{
+	return &application.Deployment{
 		Repository:    java.Deployment.Repository.ValueString(),
 		Commit:        java.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

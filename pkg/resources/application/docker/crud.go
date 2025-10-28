@@ -1,9 +1,10 @@
 package docker
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
 	"context"
 	"reflect"
+
+	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -21,7 +22,7 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "docker", &resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "docker", &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -38,7 +39,7 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	createAppReq := common.CreateReq{
+	createAppReq := application.CreateReq{
 		Client:       r.Client(),
 		Organization: r.Organization(),
 		Application: tmp.CreateAppRequest{
@@ -54,7 +55,7 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
@@ -64,7 +65,7 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		Dependencies: dependencies,
 	}
 
-	createAppRes, diags := common.CreateApp(ctx, createAppReq)
+	createAppRes, diags := application.Create(ctx, createAppReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -91,7 +92,7 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	app, diags := common.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	app, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -131,7 +132,7 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Retrieve instance of the app from context
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "docker", &res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "docker", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -151,7 +152,7 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 
 	// Get the updated values from plan and instance
-	updateAppReq := common.UpdateReq{
+	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
 		Client:       r.Client(),
 		Organization: r.Organization(),
@@ -168,7 +169,7 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
@@ -180,7 +181,7 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Correctly named: update the app (via PUT Method)
-	updatedApp, diags := common.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.Update(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return

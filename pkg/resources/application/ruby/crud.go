@@ -1,7 +1,6 @@
 package ruby
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
 	"context"
 	"reflect"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -21,7 +21,7 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
 
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "ruby", &resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "ruby", &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -36,7 +36,7 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 		return
 	}
 
-	createReq := common.CreateReq{
+	createReq := application.CreateReq{
 		Client:       r.Client(),
 		Organization: r.Organization(),
 		Application: tmp.CreateAppRequest{
@@ -52,7 +52,7 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			BuildFlavor:     plan.BuildFlavor.ValueString(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 		},
 		Environment:  environment,
@@ -61,7 +61,7 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 		Dependencies: dependencies,
 	}
 
-	createRes, diags := common.CreateApp(ctx, createReq)
+	createRes, diags := application.Create(ctx, createReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -87,7 +87,7 @@ func (r *ResourceRuby) Read(ctx context.Context, req resource.ReadRequest, resp 
 		return
 	}
 
-	appRes, diags := common.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	appRes, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -123,7 +123,7 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	// Retrieve instance of the app from context
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "ruby", &res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "ruby", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -142,7 +142,7 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
 
 	// Get the updated values from plan and instance
-	updateAppReq := common.UpdateReq{
+	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
 		Client:       r.Client(),
 		Organization: r.Organization(),
@@ -159,7 +159,7 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
@@ -170,7 +170,7 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	// Correctly named: update the app (via PUT Method)
-	updatedApp, diags := common.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.Update(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return

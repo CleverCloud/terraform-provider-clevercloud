@@ -193,8 +193,3 @@ func TestAccConfigProvider_basic(t *testing.T) {
 		}},
 	})
 }
-
-// assertError helper function for cleaner error assertions
-func assertError(message string, got, want any) error {
-	return fmt.Errorf("%s: got %v, want %v", message, got, want)
-}

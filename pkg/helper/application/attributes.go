@@ -1,4 +1,4 @@
-package common
+package application
 
 import (
 	"context"
@@ -40,17 +40,17 @@ func (vh VHost) String() *string {
 }
 
 type Runtime struct {
-	ID               types.String `tfsdk:"id"`
-	Name             types.String `tfsdk:"name"`
-	Description      types.String `tfsdk:"description"`
-	MinInstanceCount types.Int64  `tfsdk:"min_instance_count"`
-	MaxInstanceCount types.Int64  `tfsdk:"max_instance_count"`
-	SmallestFlavor   types.String `tfsdk:"smallest_flavor"`
-	BiggestFlavor    types.String `tfsdk:"biggest_flavor"`
-	BuildFlavor      types.String `tfsdk:"build_flavor"`
-	Region           types.String `tfsdk:"region"`
-	StickySessions   types.Bool   `tfsdk:"sticky_sessions"`
-	RedirectHTTPS    types.Bool   `tfsdk:"redirect_https"`
+	ID               types.String           `tfsdk:"id"`
+	Name             types.String           `tfsdk:"name"`
+	Description      types.String           `tfsdk:"description"`
+	MinInstanceCount types.Int64            `tfsdk:"min_instance_count"`
+	MaxInstanceCount types.Int64            `tfsdk:"max_instance_count"`
+	SmallestFlavor   types.String           `tfsdk:"smallest_flavor"`
+	BiggestFlavor    types.String           `tfsdk:"biggest_flavor"`
+	BuildFlavor      types.String           `tfsdk:"build_flavor"`
+	Region           types.String           `tfsdk:"region"`
+	StickySessions   types.Bool             `tfsdk:"sticky_sessions"`
+	RedirectHTTPS    types.Bool             `tfsdk:"redirect_https"`
 	VHosts           types.Set              `tfsdk:"vhosts"`
 	DeployURL        types.String           `tfsdk:"deploy_url"`
 	Dependencies     types.Set              `tfsdk:"dependencies"`
@@ -63,17 +63,17 @@ type Runtime struct {
 }
 
 type RuntimeV0 struct {
-	ID               types.String `tfsdk:"id"`
-	Name             types.String `tfsdk:"name"`
-	Description      types.String `tfsdk:"description"`
-	MinInstanceCount types.Int64  `tfsdk:"min_instance_count"`
-	MaxInstanceCount types.Int64  `tfsdk:"max_instance_count"`
-	SmallestFlavor   types.String `tfsdk:"smallest_flavor"`
-	BiggestFlavor    types.String `tfsdk:"biggest_flavor"`
-	BuildFlavor      types.String `tfsdk:"build_flavor"`
-	Region           types.String `tfsdk:"region"`
-	StickySessions   types.Bool   `tfsdk:"sticky_sessions"`
-	RedirectHTTPS    types.Bool   `tfsdk:"redirect_https"`
+	ID               types.String           `tfsdk:"id"`
+	Name             types.String           `tfsdk:"name"`
+	Description      types.String           `tfsdk:"description"`
+	MinInstanceCount types.Int64            `tfsdk:"min_instance_count"`
+	MaxInstanceCount types.Int64            `tfsdk:"max_instance_count"`
+	SmallestFlavor   types.String           `tfsdk:"smallest_flavor"`
+	BiggestFlavor    types.String           `tfsdk:"biggest_flavor"`
+	BuildFlavor      types.String           `tfsdk:"build_flavor"`
+	Region           types.String           `tfsdk:"region"`
+	StickySessions   types.Bool             `tfsdk:"sticky_sessions"`
+	RedirectHTTPS    types.Bool             `tfsdk:"redirect_https"`
 	VHosts           types.Set              `tfsdk:"vhosts"`
 	DeployURL        types.String           `tfsdk:"deploy_url"`
 	Dependencies     types.Set              `tfsdk:"dependencies"`

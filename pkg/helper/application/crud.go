@@ -1,4 +1,4 @@
-package common
+package application
 
 import (
 	"context"
@@ -56,7 +56,30 @@ func (r *CreateRes) GetBuildFlavor() types.String {
 	return types.StringValue(r.Application.BuildFlavor.Name)
 }
 
-func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics) {
+type ReadAppRes struct {
+	App          tmp.CreatAppResponse
+	AppIsDeleted bool
+	Env          []tmp.Env
+}
+
+func (res *ReadAppRes) GetBuildFlavor() types.String {
+	if !res.App.SeparateBuild {
+		return types.StringNull()
+	}
+	return types.StringValue(res.App.BuildFlavor.Name)
+}
+
+func (r ReadAppRes) EnvAsMap() map[string]string {
+	return pkg.Reduce(
+		r.Env,
+		map[string]string{},
+		func(acc map[string]string, entry tmp.Env) map[string]string {
+			acc[entry.Name] = entry.Value
+			return acc
+		})
+}
+
+func Create(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 
 	// Application
@@ -114,7 +137,38 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	return res, diags
 }
 
-func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics) {
+func Read(ctx context.Context, cc *client.Client, orgId, appId string) (*ReadAppRes, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
+	r := &ReadAppRes{}
+
+	appRes := tmp.GetApp(ctx, cc, orgId, appId)
+	if appRes.IsNotFoundError() {
+		r.AppIsDeleted = true
+		return r, diags
+	}
+	if appRes.HasError() {
+		diags.AddError("failed to get app", appRes.Error().Error())
+		return r, diags
+	}
+
+	r.App = *appRes.Payload()
+
+	envRes := tmp.GetAppEnv(ctx, cc, orgId, appId)
+	if envRes.IsNotFoundError() {
+		r.AppIsDeleted = true
+		return r, diags
+	}
+	if envRes.HasError() {
+		diags.AddError("failed to get app", appRes.Error().Error())
+		return r, diags
+	}
+
+	r.Env = *envRes.Payload()
+
+	return r, diags
+}
+
+func Update(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 
 	// Application
@@ -189,6 +243,24 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	}
 
 	return res, diags
+}
+
+// Delete deletes an application and handles the NotFoundError case consistently.
+// Returns diagnostics on error.
+// Used by all application resources during Delete operation.
+func Delete(ctx context.Context, client *client.Client, organization, appID string) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+
+	res := tmp.DeleteApp(ctx, client, organization, appID)
+	if res.IsNotFoundError() {
+		// App already deleted, this is fine
+		return diags
+	}
+	if res.HasError() {
+		diags.AddError("failed to delete app", res.Error().Error())
+	}
+
+	return diags
 }
 
 // on clever side, it's an enum

@@ -1,11 +1,12 @@
 package rust
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
 	"context"
 	_ "embed"
 	"strings"
+
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -16,7 +17,7 @@ import (
 )
 
 type Rust struct {
-	common.Runtime
+	application.Runtime
 	Features types.Set `tfsdk:"features"`
 }
 
@@ -34,7 +35,7 @@ func (r ResourceRust) Schema(ctx context.Context, req resource.SchemaRequest, re
 	res.Schema = schema.Schema{
 		Version:             1,
 		MarkdownDescription: rustDoc,
-		Attributes: common.WithRuntimeCommons(map[string]schema.Attribute{
+		Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 			// https://doc.rust-lang.org/cargo/reference/features.html#command-line-feature-options
 			// Multiple features may be separated with commas or spaces.
 			// If using spaces, be sure to use quotes around all the features if running Cargo from a shell (such as --features "foo bar").
@@ -73,12 +74,12 @@ func (r Rust) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (r Rust) toDeployment(gitAuth *http.BasicAuth) *common.Deployment {
+func (r Rust) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if r.Deployment == nil || r.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &common.Deployment{
+	return &application.Deployment{
 		Repository:    r.Deployment.Repository.ValueString(),
 		Commit:        r.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

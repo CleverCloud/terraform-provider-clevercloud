@@ -2,7 +2,7 @@ package frankenphp
 
 import (
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
+	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"context"
 	_ "embed"
 
@@ -16,7 +16,7 @@ import (
 )
 
 type FrankenPHP struct {
-	common.Runtime
+	application.Runtime
 	DevDependencies types.Bool `tfsdk:"dev_dependencies"`
 }
 
@@ -27,7 +27,7 @@ func (r ResourceFrankenPHP) Schema(ctx context.Context, req resource.SchemaReque
 	res.Schema = schema.Schema{
 		Version:             1,
 		MarkdownDescription: frankenphpDoc,
-		Attributes: common.WithRuntimeCommons(map[string]schema.Attribute{
+		Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 			"dev_dependencies": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -61,12 +61,12 @@ func (fp *FrankenPHP) toEnv(ctx context.Context, diags *diag.Diagnostics) map[st
 	return env
 }
 
-func (fp *FrankenPHP) toDeployment(gitAuth *http.BasicAuth) *common.Deployment {
+func (fp *FrankenPHP) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if fp.Deployment == nil || fp.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &common.Deployment{
+	return &application.Deployment{
 		Repository:    fp.Deployment.Repository.ValueString(),
 		Commit:        fp.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

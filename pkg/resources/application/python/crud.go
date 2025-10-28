@@ -1,7 +1,6 @@
 package python
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
 	"context"
 	"reflect"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -21,7 +21,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
 
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "python", &resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "python", &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -36,7 +36,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	createReq := common.CreateReq{
+	createReq := application.CreateReq{
 		Client:       r.Client(),
 		Organization: r.Organization(),
 		Application: tmp.CreateAppRequest{
@@ -52,7 +52,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			BuildFlavor:     plan.BuildFlavor.ValueString(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 		},
 		Environment:  environment,
@@ -61,7 +61,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 		Dependencies: dependencies,
 	}
 
-	createRes, diags := common.CreateApp(ctx, createReq)
+	createRes, diags := application.Create(ctx, createReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -76,7 +76,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
 
 	plan.StickySessions = pkg.FromBool(createRes.Application.StickySessions)
-	plan.RedirectHTTPS = pkg.FromBool(common.ToForceHTTPS(createRes.Application.ForceHTTPS))
+	plan.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(createRes.Application.ForceHTTPS))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -90,7 +90,7 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	appRes, diags := common.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	appRes, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -110,7 +110,7 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 	state.MaxInstanceCount = pkg.FromI(int64(appRes.App.Instance.MaxInstances))
 	state.BuildFlavor = appRes.GetBuildFlavor()
 	state.StickySessions = pkg.FromBool(appRes.App.StickySessions)
-	state.RedirectHTTPS = pkg.FromBool(common.ToForceHTTPS(appRes.App.ForceHTTPS))
+	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
@@ -133,7 +133,7 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Retrieve instance of the app from context
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "python", &res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "python", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -153,7 +153,7 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 
 	// Get the updated values from plan and instance
-	updateAppReq := common.UpdateReq{
+	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
 		Client:       r.Client(),
 		Organization: r.Organization(),
@@ -170,7 +170,7 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
@@ -182,7 +182,7 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Correctly named: update the app (via PUT Method)
-	updatedApp, diags := common.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.Update(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return

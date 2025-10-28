@@ -2,7 +2,7 @@ package dotnet
 
 import (
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
+	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"context"
 	_ "embed"
 
@@ -15,7 +15,7 @@ import (
 )
 
 type Dotnet struct {
-	common.Runtime
+	application.Runtime
 	DotnetProfile types.String `tfsdk:"profile"`
 	DotnetProj    types.String `tfsdk:"proj"`
 	DotnetTFM     types.String `tfsdk:"tfm"`
@@ -30,7 +30,7 @@ func (r ResourceDotnet) Schema(ctx context.Context, req resource.SchemaRequest, 
 	res.Schema = schema.Schema{
 		Version:             0,
 		MarkdownDescription: dotnetDoc,
-		Attributes: common.WithRuntimeCommons(map[string]schema.Attribute{
+		Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 			"profile": schema.StringAttribute{
 				Optional: true,
 				MarkdownDescription: "Override the build configuration settings in your project. Default: Release",
@@ -72,12 +72,12 @@ func (dotnetapp Dotnet) toEnv(ctx context.Context, diags *diag.Diagnostics) map[
 	return env
 }
 
-func (dotnetapp Dotnet) toDeployment(gitAuth *http.BasicAuth) *common.Deployment {
+func (dotnetapp Dotnet) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if dotnetapp.Deployment == nil || dotnetapp.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &common.Deployment{
+	return &application.Deployment{
 		Repository:    dotnetapp.Deployment.Repository.ValueString(),
 		Commit:        dotnetapp.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

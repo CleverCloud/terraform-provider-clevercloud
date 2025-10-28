@@ -1,9 +1,10 @@
 package frankenphp
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
 	"context"
 	"reflect"
+
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -20,7 +21,7 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "frankenphp", &resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "frankenphp", &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -40,7 +41,7 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	createAppReq := common.CreateReq{
+	createAppReq := application.CreateReq{
 		Client:       r.Client(),
 		Organization: r.Organization(),
 		Application: tmp.CreateAppRequest{
@@ -55,7 +56,7 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
@@ -65,7 +66,7 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 		Dependencies: dependencies,
 	}
 
-	createAppRes, diags := common.CreateApp(ctx, createAppReq)
+	createAppRes, diags := application.Create(ctx, createAppReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -88,7 +89,7 @@ func (r *ResourceFrankenPHP) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	appFrankenPHP, diags := common.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	appFrankenPHP, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -126,7 +127,7 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "frankenphp", &res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "frankenphp", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -143,7 +144,7 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
 	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 
-	updateAppReq := common.UpdateReq{
+	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
 		Client:       r.Client(),
 		Organization: r.Organization(),
@@ -159,7 +160,7 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
@@ -170,7 +171,7 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
-	updateAppRes, diags := common.UpdateApp(ctx, updateAppReq)
+	updateAppRes, diags := application.Update(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return

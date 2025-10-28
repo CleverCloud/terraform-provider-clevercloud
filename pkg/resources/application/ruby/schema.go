@@ -1,11 +1,12 @@
 package ruby
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
 	"context"
 	_ "embed"
 	"strconv"
+
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -16,7 +17,7 @@ import (
 )
 
 type Ruby struct {
-	common.Runtime
+	application.Runtime
 	RubyVersion           types.String `tfsdk:"ruby_version"`
 	EnableSidekiq         types.Bool   `tfsdk:"enable_sidekiq"`
 	RackupServer          types.String `tfsdk:"rackup_server"`
@@ -36,7 +37,7 @@ type Ruby struct {
 }
 
 type RubyV0 struct {
-	common.RuntimeV0
+	application.RuntimeV0
 	RubyVersion           types.String `tfsdk:"ruby_version"`
 	EnableSidekiq         types.Bool   `tfsdk:"enable_sidekiq"`
 	RackupServer          types.String `tfsdk:"rackup_server"`
@@ -65,7 +66,7 @@ func (r ResourceRuby) Schema(ctx context.Context, req resource.SchemaRequest, re
 var schemaRuby = schema.Schema{
 	Version:             1,
 	MarkdownDescription: rubyDoc,
-	Attributes: common.WithRuntimeCommons(map[string]schema.Attribute{
+	Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 		// CC_RUBY_VERSION
 		"ruby_version": schema.StringAttribute{
 			Optional:            true,
@@ -154,7 +155,7 @@ var schemaRuby = schema.Schema{
 var schemaRubyV0 = schema.Schema{
 	Version:             0,
 	MarkdownDescription: rubyDoc,
-	Attributes: common.WithRuntimeCommonsV0(map[string]schema.Attribute{
+	Attributes: application.WithRuntimeCommonsV0(map[string]schema.Attribute{
 		// CC_RUBY_VERSION
 		"ruby_version": schema.StringAttribute{
 			Optional:            true,
@@ -282,12 +283,12 @@ func (ruby Ruby) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
-func (ruby Ruby) toDeployment(gitAuth *http.BasicAuth) *common.Deployment {
+func (ruby Ruby) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if ruby.Deployment == nil || ruby.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &common.Deployment{
+	return &application.Deployment{
 		Repository:    ruby.Deployment.Repository.ValueString(),
 		Commit:        ruby.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

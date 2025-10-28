@@ -1,9 +1,10 @@
 package golang
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
 	"context"
 	"reflect"
+
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -23,7 +24,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 
 	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
 
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "go", &res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "go", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -38,7 +39,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 		return
 	}
 
-	createReq := common.CreateReq{
+	createReq := application.CreateReq{
 		Client:       r.Client(),
 		Organization: r.Organization(),
 		Application: tmp.CreateAppRequest{
@@ -54,7 +55,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			BuildFlavor:     plan.BuildFlavor.ValueString(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 		},
 		Environment:  environment,
@@ -63,7 +64,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 		Dependencies: dependencies,
 	}
 
-	createRes, diags := common.CreateApp(ctx, createReq)
+	createRes, diags := application.Create(ctx, createReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
@@ -90,7 +91,7 @@ func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *re
 		return
 	}
 
-	appRes, diags := common.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	appRes, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
@@ -110,7 +111,7 @@ func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *re
 	state.MaxInstanceCount = pkg.FromI(int64(appRes.App.Instance.MaxInstances))
 	state.BuildFlavor = appRes.GetBuildFlavor()
 	state.StickySessions = pkg.FromBool(appRes.App.StickySessions)
-	state.RedirectHTTPS = pkg.FromBool(common.ToForceHTTPS(appRes.App.ForceHTTPS))
+	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &res.Diagnostics)
 
 	diags = res.State.Set(ctx, state)
@@ -132,7 +133,7 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 
 	// Retrieve instance of the app from context
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "go", &res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "go", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -152,7 +153,7 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 
 	// Get the updated values from plan and instance
-	updateAppReq := common.UpdateReq{
+	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
 		Client:       r.Client(),
 		Organization: r.Organization(),
@@ -169,7 +170,7 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
@@ -181,7 +182,7 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 
 	// Correctly named: update the app (via PUT Method)
-	updatedApp, diags := common.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.Update(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return

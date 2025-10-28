@@ -13,12 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/addon/common"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type PostgreSQL struct {
-	common.AddonBase
+	addon.AddonBase
 	Host     types.String `tfsdk:"host"`
 	Port     types.Int64  `tfsdk:"port"`
 	Database types.String `tfsdk:"database"`
@@ -37,7 +37,7 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 	resp.Schema = schema.Schema{
 		Version:             0,
 		MarkdownDescription: resourcePostgresqlDoc,
-		Attributes: common.WithAddonCommons(map[string]schema.Attribute{
+		Attributes: addon.WithAddonCommons(map[string]schema.Attribute{
 			"host":     schema.StringAttribute{Computed: true, MarkdownDescription: "Database host, used to connect to"},
 			"port":     schema.Int64Attribute{Computed: true, MarkdownDescription: "Database port"},
 			"database": schema.StringAttribute{Computed: true, MarkdownDescription: "Database name on the PostgreSQL server"},

@@ -2,7 +2,7 @@ package nodejs
 
 import (
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
+	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"context"
 	_ "embed"
 
@@ -15,7 +15,7 @@ import (
 )
 
 type NodeJS struct {
-	common.Runtime
+	application.Runtime
 	DevDependencies types.Bool   `tfsdk:"dev_dependencies"`
 	StartScript     types.String `tfsdk:"start_script"`
 	PackageManager  types.String `tfsdk:"package_manager"`
@@ -24,7 +24,7 @@ type NodeJS struct {
 }
 
 type NodeJSV0 struct {
-	common.RuntimeV0
+	application.RuntimeV0
 	DevDependencies types.Bool   `tfsdk:"dev_dependencies"`
 	StartScript     types.String `tfsdk:"start_script"`
 	PackageManager  types.String `tfsdk:"package_manager"`
@@ -42,7 +42,7 @@ func (r ResourceNodeJS) Schema(ctx context.Context, req resource.SchemaRequest, 
 var schemaNodeJS = schema.Schema{
 	Version:             1,
 	MarkdownDescription: nodejsDoc,
-	Attributes: common.WithRuntimeCommons(map[string]schema.Attribute{
+	Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 		// CC_NODE_DEV_DEPENDENCIES
 		"dev_dependencies": schema.BoolAttribute{
 			Optional:            true,
@@ -76,7 +76,7 @@ var schemaNodeJS = schema.Schema{
 var schemaNodeJSV0 = schema.Schema{
 	Version:             0,
 	MarkdownDescription: nodejsDoc,
-	Attributes: common.WithRuntimeCommonsV0(map[string]schema.Attribute{
+	Attributes: application.WithRuntimeCommonsV0(map[string]schema.Attribute{
 		// CC_NODE_DEV_DEPENDENCIES
 		"dev_dependencies": schema.BoolAttribute{
 			Optional:            true,
@@ -130,12 +130,12 @@ func (node NodeJS) toEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (node NodeJS) toDeployment(gitAuth *http.BasicAuth) *common.Deployment {
+func (node NodeJS) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if node.Deployment == nil || node.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &common.Deployment{
+	return &application.Deployment{
 		Repository:    node.Deployment.Repository.ValueString(),
 		Commit:        node.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

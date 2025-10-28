@@ -1,10 +1,11 @@
 package v
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
 	"context"
 	_ "embed"
+
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -16,7 +17,7 @@ import (
 )
 
 type V struct {
-	common.Runtime
+	application.Runtime
 	Binary           types.String `tfsdk:"binary"`
 	DevelopmentBuild types.Bool   `tfsdk:"development_build"`
 }
@@ -29,7 +30,7 @@ func (r ResourceV) Schema(ctx context.Context, req resource.SchemaRequest, res *
 	res.Schema = schema.Schema{
 		Version:             0,
 		MarkdownDescription: vDoc,
-		Attributes: common.WithRuntimeCommons(map[string]schema.Attribute{
+		Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 			"binary": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "The name of the output binary file. Default: `${APP_HOME}/v_bin_${APP_ID}`",
@@ -69,12 +70,12 @@ func (vapp V) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (vapp V) toDeployment(gitAuth *http.BasicAuth) *common.Deployment {
+func (vapp V) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if vapp.Deployment == nil || vapp.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &common.Deployment{
+	return &application.Deployment{
 		Repository:    vapp.Deployment.Repository.ValueString(),
 		Commit:        vapp.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

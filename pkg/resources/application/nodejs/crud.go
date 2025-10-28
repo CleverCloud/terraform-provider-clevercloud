@@ -1,9 +1,10 @@
 package nodejs
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
 	"context"
 	"reflect"
+
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -22,7 +23,7 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
 
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "node", &resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "node", &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -37,7 +38,7 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	createReq := common.CreateReq{
+	createReq := application.CreateReq{
 		Client:       r.Client(),
 		Organization: r.Organization(),
 		Application: tmp.CreateAppRequest{
@@ -53,7 +54,7 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			BuildFlavor:     plan.BuildFlavor.ValueString(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 		},
 		Environment:  environment,
@@ -62,7 +63,7 @@ func (r *ResourceNodeJS) Create(ctx context.Context, req resource.CreateRequest,
 		Dependencies: dependencies,
 	}
 
-	createRes, diags := common.CreateApp(ctx, createReq)
+	createRes, diags := application.Create(ctx, createReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -89,7 +90,7 @@ func (r *ResourceNodeJS) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	appRes, diags := common.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	appRes, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -128,7 +129,7 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "node", &res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "node", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -147,7 +148,7 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 
 	// Get the updated values from plan and instance
-	updateAppReq := common.UpdateReq{
+	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
 		Client:       r.Client(),
 		Organization: r.Organization(),
@@ -164,7 +165,7 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
@@ -175,7 +176,7 @@ func (r *ResourceNodeJS) Update(ctx context.Context, req resource.UpdateRequest,
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
-	updatedApp, diags := common.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.Update(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return

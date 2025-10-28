@@ -7,11 +7,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/addon/common"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/addon"
 )
 
 type Redis struct {
-	common.AddonBase
+	addon.AddonBase
 	Host  types.String `tfsdk:"host"`
 	Port  types.Int64  `tfsdk:"port"`
 	Token types.String `tfsdk:"token"`
@@ -24,7 +24,7 @@ func (r ResourceRedis) Schema(_ context.Context, req resource.SchemaRequest, res
 	resp.Schema = schema.Schema{
 		Version:             0,
 		MarkdownDescription: resourceRedisDoc,
-		Attributes: common.WithAddonCommons(map[string]schema.Attribute{
+		Attributes: addon.WithAddonCommons(map[string]schema.Attribute{
 			"host":  schema.StringAttribute{Computed: true, MarkdownDescription: "Database host, used to connect to"},
 			"port":  schema.Int64Attribute{Computed: true, MarkdownDescription: "Database port"},
 			"token": schema.StringAttribute{Computed: true, MarkdownDescription: "Token to authenticate", Sensitive: true},

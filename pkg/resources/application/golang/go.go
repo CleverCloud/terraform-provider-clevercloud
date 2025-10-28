@@ -1,7 +1,7 @@
 package golang
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
+	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"context"
 
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
@@ -40,7 +40,7 @@ func (r *ResourceGo) UpgradeState(ctx context.Context) map[int64]resource.StateU
 				vhosts := helper.VHostsFromAPIHosts(ctx, oldVhosts, old.VHosts, &res.Diagnostics)
 
 				newState := Go{
-					Runtime: common.Runtime{
+					Runtime: application.Runtime{
 						ID:               old.ID,
 						Name:             old.Name,
 						Description:      old.Description,

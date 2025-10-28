@@ -1,4 +1,4 @@
-package common
+package addon
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"

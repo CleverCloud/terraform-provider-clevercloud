@@ -1,4 +1,4 @@
-package addon_test
+package generic_test
 
 import (
 	"context"

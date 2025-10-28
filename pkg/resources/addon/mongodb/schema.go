@@ -7,11 +7,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/addon/common"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/addon"
 )
 
 type MongoDB struct {
-	common.AddonBase
+	addon.AddonBase
 	Host     types.String `tfsdk:"host"`
 	Port     types.Int64  `tfsdk:"port"`
 	User     types.String `tfsdk:"user"`
@@ -27,7 +27,7 @@ func (r ResourceMongoDB) Schema(_ context.Context, req resource.SchemaRequest, r
 	resp.Schema = schema.Schema{
 		Version:             0,
 		MarkdownDescription: resourceMongoDBDoc,
-		Attributes: common.WithAddonCommons(map[string]schema.Attribute{
+		Attributes: addon.WithAddonCommons(map[string]schema.Attribute{
 			// customer provided
 			"host":     schema.StringAttribute{Computed: true, MarkdownDescription: "Database host, used to connect to"},
 			"port":     schema.Int64Attribute{Computed: true, MarkdownDescription: "Database port"},

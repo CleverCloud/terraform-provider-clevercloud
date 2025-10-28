@@ -1,7 +1,6 @@
 package play2
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
 	"context"
 	"reflect"
 
@@ -9,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -19,7 +19,7 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "play2", &resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "play2", &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -36,7 +36,7 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	createAppReq := common.CreateReq{
+	createAppReq := application.CreateReq{
 		Client:       r.Client(),
 		Organization: r.Organization(),
 		Application: tmp.CreateAppRequest{
@@ -52,7 +52,7 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
@@ -62,7 +62,7 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 		Dependencies: dependencies,
 	}
 
-	createAppRes, diags := common.CreateApp(ctx, createAppReq)
+	createAppRes, diags := application.Create(ctx, createAppReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -87,7 +87,7 @@ func (r *ResourcePlay2) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	readRes, diags := common.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	readRes, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -137,7 +137,7 @@ func (r *ResourcePlay2) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Retrieve instance of the app from context
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "play2", &res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "play2", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -158,7 +158,7 @@ func (r *ResourcePlay2) Update(ctx context.Context, req resource.UpdateRequest, 
 	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 
 	// Get the updated values from plan and instance
-	updateAppReq := common.UpdateReq{
+	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
 		Client:       r.Client(),
 		Organization: r.Organization(),
@@ -175,7 +175,7 @@ func (r *ResourcePlay2) Update(ctx context.Context, req resource.UpdateRequest, 
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
@@ -187,7 +187,7 @@ func (r *ResourcePlay2) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Correctly named: update the app (via PUT Method)
-	updatedApp, diags := common.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.Update(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return

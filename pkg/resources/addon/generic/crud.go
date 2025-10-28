@@ -1,9 +1,7 @@
-package common
+package generic
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -11,54 +9,45 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	helperAddon "go.clever-cloud.com/terraform-provider/pkg/helper/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 // Create a new resource
 func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceAddon.Create()")
 	ad := helper.PlanFrom[Addon](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
-	if addonsProvidersRes.HasError() {
-		resp.Diagnostics.AddError("failed to get add-on providers", addonsProvidersRes.Error().Error())
-		return
-	}
-	addonsProviders := addonsProvidersRes.Payload()
-
-	provider := pkg.LookupAddonProvider(*addonsProviders, ad.ThirdPartyProvider.ValueString())
-	if provider == nil {
-		resp.Diagnostics.AddError("This provider doesn't exist", fmt.Sprintf("available providers are: %s", strings.Join(pkg.AddonProvidersAsList(*addonsProviders), ", ")))
-		return
-	}
-
-	plan := pkg.LookupProviderPlan(provider, ad.Plan.ValueString())
-	if plan == nil {
-		resp.Diagnostics.AddError("This plan doesn't exist", "available plans are: "+strings.Join(pkg.ProviderPlansAsList(provider), ", "))
+	plan, diags := helperAddon.GetAddonPlan(ctx, r.Client(), ad.ThirdPartyProvider.ValueString(), ad.Plan.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	addonReq := tmp.AddonRequest{
 		Name:       ad.Name.ValueString(),
 		Plan:       plan.ID,
-		ProviderID: provider.ID,
+		ProviderID: ad.ThirdPartyProvider.ValueString(),
 		Region:     ad.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
-	if res.HasError() {
-		resp.Diagnostics.AddError("failed to create add-on", res.Error().Error())
+	createdAd, diags := helperAddon.Create(ctx, r.Client(), r.Organization(), addonReq)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	ad.ID = pkg.FromStr(res.Payload().ID)
-	ad.CreationDate = pkg.FromI(res.Payload().CreationDate)
+	ad.ID = pkg.FromStr(createdAd.ID)
+	ad.Name = pkg.FromStr(createdAd.Name)
+	ad.Region = pkg.FromStr(createdAd.Region)
+	ad.CreationDate = pkg.FromI(createdAd.CreationDate)
 
-	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), res.Payload().ID)
-	if res.HasError() {
-		resp.Diagnostics.AddError("failed to get add-on env", res.Error().Error())
+	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), createdAd.ID)
+	if envRes.HasError() {
+		resp.Diagnostics.AddError("failed to get add-on env", envRes.Error().Error())
 		return
 	}
 
@@ -73,24 +62,25 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 
 // Read resource information
 func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Add-on READ", map[string]any{"request": req})
+	tflog.Debug(ctx, "ResourceAddon.Read()")
 
-	var ad Addon
-	diags := req.State.Get(ctx, &ad)
-	resp.Diagnostics.Append(diags...)
+	ad := helper.StateFrom[Addon](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// Objects
 	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), ad.ID.ValueString())
 	if addonRes.IsNotFoundError() {
-		req.State.RemoveResource(ctx)
+		resp.State.RemoveResource(ctx)
 		return
 	}
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on", addonRes.Error().Error())
 		return
 	}
+
+	addon := addonRes.Payload()
 
 	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), ad.ID.ValueString())
 	if addonEnvRes.HasError() {
@@ -103,20 +93,19 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 		return acc
 	})
 
-	a := addonRes.Payload()
-	ad.Name = pkg.FromStr(a.Name)
-	ad.Plan = pkg.FromStr(a.Plan.Slug)
-	ad.Region = pkg.FromStr(a.Region)
-	ad.ThirdPartyProvider = pkg.FromStr(a.Provider.ID)
-	ad.CreationDate = pkg.FromI(a.CreationDate)
+	ad.Name = pkg.FromStr(addon.Name)
+	ad.Plan = pkg.FromStr(addon.Plan.Slug)
+	ad.Region = pkg.FromStr(addon.Region)
+	ad.ThirdPartyProvider = pkg.FromStr(addon.Provider.ID)
+	ad.CreationDate = pkg.FromI(addon.CreationDate)
 	ad.Configurations = types.MapValueMust(types.StringType, envAsMap)
 
-	diags = resp.State.Set(ctx, ad)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, ad)...)
 }
 
 // Update resource
 func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceAddon.Update()")
 	plan := helper.PlanFrom[Addon](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -133,11 +122,11 @@ func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
+	diags := helperAddon.Update(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
 		"name": plan.Name.ValueString(),
 	})
-	if addonRes.HasError() {
-		resp.Diagnostics.AddError("failed to update Addon", addonRes.Error().Error())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 	state.Name = plan.Name
@@ -147,22 +136,15 @@ func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, 
 
 // Delete resource
 func (r *ResourceAddon) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var ad Addon
-
-	diags := req.State.Get(ctx, &ad)
-	resp.Diagnostics.Append(diags...)
+	tflog.Debug(ctx, "ResourceAddon.Delete()")
+	ad := helper.StateFrom[Addon](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Add-on DELETE", map[string]any{"addon": ad})
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), ad.ID.ValueString())
-	if res.IsNotFoundError() {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	if res.HasError() {
-		resp.Diagnostics.AddError("failed to delete add-on", res.Error().Error())
+	diags := helperAddon.Delete(ctx, r.Client(), r.Organization(), ad.ID.ValueString())
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

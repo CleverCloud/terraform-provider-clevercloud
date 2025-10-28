@@ -1,9 +1,10 @@
 package php
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
 	"context"
 	"reflect"
+
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -20,7 +21,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "php", &resp.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "php", &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -37,7 +38,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		return
 	}
 
-	createAppReq := common.CreateReq{
+	createAppReq := application.CreateReq{
 		Client:       r.Client(),
 		Organization: r.Organization(),
 		Application: tmp.CreateAppRequest{
@@ -53,7 +54,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
@@ -63,7 +64,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 		Dependencies: dependencies,
 	}
 
-	createAppRes, diags := common.CreateApp(ctx, createAppReq)
+	createAppRes, diags := application.Create(ctx, createAppReq)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -89,7 +90,7 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 		return
 	}
 
-	appPHP, diags := common.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	appPHP, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -128,7 +129,7 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	instance := common.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "php", &res.Diagnostics)
+	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "php", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -145,7 +146,7 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
 	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 
-	updateAppReq := common.UpdateReq{
+	updateAppReq := application.UpdateReq{
 		ID:           state.ID.ValueString(),
 		Client:       r.Client(),
 		Organization: r.Organization(),
@@ -162,7 +163,7 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 			MinInstances:    plan.MinInstanceCount.ValueInt64(),
 			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
 			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      common.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
+			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
 			Zone:            plan.Region.ValueString(),
 			CancelOnPush:    false,
 		},
@@ -173,7 +174,7 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
-	updatedApp, diags := common.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.Update(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return

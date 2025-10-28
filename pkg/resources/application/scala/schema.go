@@ -1,11 +1,12 @@
 package scala
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
 	"context"
 	_ "embed"
 	"maps"
+
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -15,12 +16,12 @@ import (
 )
 
 type Scala struct {
-	common.Runtime
+	application.Runtime
 	// Scala related
 }
 
 type ScalaV0 struct {
-	common.RuntimeV0
+	application.RuntimeV0
 	// Scala related
 }
 
@@ -34,14 +35,14 @@ func (r ResourceScala) Schema(ctx context.Context, req resource.SchemaRequest, r
 var schemaScala = schema.Schema{
 	Version:             1,
 	MarkdownDescription: scalaDoc,
-	Attributes:          common.WithRuntimeCommons(map[string]schema.Attribute{}),
+	Attributes:          application.WithRuntimeCommons(map[string]schema.Attribute{}),
 	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 var schemaScalaV0 = schema.Schema{
 	Version:             0,
 	MarkdownDescription: scalaDoc,
-	Attributes:          common.WithRuntimeCommonsV0(map[string]schema.Attribute{}),
+	Attributes:          application.WithRuntimeCommonsV0(map[string]schema.Attribute{}),
 	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
@@ -61,12 +62,12 @@ func (plan *Scala) toEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (java *Scala) toDeployment(gitAuth *http.BasicAuth) *common.Deployment {
+func (java *Scala) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if java.Deployment == nil || java.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &common.Deployment{
+	return &application.Deployment{
 		Repository:    java.Deployment.Repository.ValueString(),
 		Commit:        java.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

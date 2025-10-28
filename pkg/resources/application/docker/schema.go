@@ -2,7 +2,7 @@ package docker
 
 import (
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application/common"
+	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"context"
 	_ "embed"
 	"fmt"
@@ -19,7 +19,7 @@ import (
 )
 
 type Docker struct {
-	common.Runtime
+	application.Runtime
 	Dockerfile        types.String `tfsdk:"dockerfile"`
 	ContainerPort     types.Int64  `tfsdk:"container_port"`
 	ContainerPortTCP  types.Int64  `tfsdk:"container_port_tcp"`
@@ -32,7 +32,7 @@ type Docker struct {
 }
 
 type DockerV0 struct {
-	common.RuntimeV0
+	application.RuntimeV0
 	Dockerfile        types.String `tfsdk:"dockerfile"`
 	ContainerPort     types.Int64  `tfsdk:"container_port"`
 	ContainerPortTCP  types.Int64  `tfsdk:"container_port_tcp"`
@@ -54,7 +54,7 @@ func (r ResourceDocker) Schema(ctx context.Context, req resource.SchemaRequest, 
 var schemaDocker = schema.Schema{
 	Version:             1,
 	MarkdownDescription: dockerDoc,
-	Attributes: common.WithRuntimeCommons(map[string]schema.Attribute{
+	Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 		"dockerfile": schema.StringAttribute{
 			Optional:            true,
 			MarkdownDescription: "The name of the Dockerfile to build",
@@ -116,7 +116,7 @@ var schemaDocker = schema.Schema{
 var schemaDockerV0 = schema.Schema{
 	Version:             0,
 	MarkdownDescription: dockerDoc,
-	Attributes: common.WithRuntimeCommonsV0(map[string]schema.Attribute{
+	Attributes: application.WithRuntimeCommonsV0(map[string]schema.Attribute{
 		"dockerfile": schema.StringAttribute{
 			Optional:            true,
 			MarkdownDescription: "The name of the Dockerfile to build",
@@ -204,12 +204,12 @@ func (p *Docker) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
-func (p *Docker) toDeployment(gitAuth *http.BasicAuth) *common.Deployment {
+func (p *Docker) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if p.Deployment == nil || p.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &common.Deployment{
+	return &application.Deployment{
 		Repository:    p.Deployment.Repository.ValueString(),
 		Commit:        p.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

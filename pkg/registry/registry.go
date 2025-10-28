@@ -5,9 +5,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon/cellar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon/cellar/bucket"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/addon/common"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon/configprovider"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon/fsbucket"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/addon/generic"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon/keycloak"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon/materiakv"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon/matomo"
@@ -39,7 +39,7 @@ import (
 var Datasources = []func() datasource.DataSource{}
 
 var Resources = []func() resource.Resource{
-	common.NewResourceAddon,
+	generic.NewResourceAddon,
 	bucket.NewResourceCellarBucket,
 	cellar.NewResourceCellar,
 	fsbucket.NewResourceFSBucket,

@@ -1,4 +1,4 @@
-package common
+package generic
 
 import (
 	"context"
@@ -7,10 +7,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/addon"
 )
 
 type Addon struct {
-	AddonBase
+	addon.AddonBase
 	ThirdPartyProvider types.String `tfsdk:"third_party_provider"`
 	Configurations     types.Map    `tfsdk:"configurations"`
 }
@@ -22,7 +23,7 @@ func (r ResourceAddon) Schema(_ context.Context, req resource.SchemaRequest, res
 	resp.Schema = schema.Schema{
 		Version:             0,
 		MarkdownDescription: resourcePostgresqlDoc,
-		Attributes: WithAddonCommons(map[string]schema.Attribute{
+		Attributes: addon.WithAddonCommons(map[string]schema.Attribute{
 			"third_party_provider": schema.StringAttribute{Required: true, MarkdownDescription: "Provider ID"},
 			// provider
 			"configurations": schema.MapAttribute{
