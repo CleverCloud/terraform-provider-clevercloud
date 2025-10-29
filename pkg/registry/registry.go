@@ -29,6 +29,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/pulsar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/redis"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/drain"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/elasticsearch"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/networkgroup"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/software/keycloak"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/software/matomo"
@@ -52,6 +53,7 @@ var Resources = []func() resource.Resource{
 	otoroshi.NewResourceOtoroshi,
 	php.NewResourcePHP,
 	postgresql.NewResourcePostgreSQL,
+	elasticsearch.NewResourceElasticsearch,
 	python.NewResourcePython,
 	ruby.NewResourceRuby,
 	scala.NewResourceScala(),

@@ -110,6 +110,7 @@ func (r *ResourceRust) Read(ctx context.Context, req resource.ReadRequest, res *
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &res.Diagnostics)
 
+	//state.fromEnv(ctx, appFrankenPHP.EnvAsMap()) // TODO: replace
 	if env := appRes.EnvAsMap(); env[CC_RUST_FEATURES] != "" {
 		state.Features = pkg.FromSetString(strings.Split(env[CC_RUST_FEATURES], ","), &res.Diagnostics)
 	}

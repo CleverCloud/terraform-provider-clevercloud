@@ -51,7 +51,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	addonsProviders := addonsProvidersRes.Payload()
 
 	prov := pkg.LookupAddonProvider(*addonsProviders, "postgresql-addon")
-	plan := pkg.LookupProviderPlan(prov, pg.Plan.ValueString())
+	plan := pkg.LookupProviderPlan(prov, strings.ToLower(pg.Plan.ValueString()))
 	if plan == nil {
 		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov), ", ")+", got: "+pg.Plan.String())
 		return
@@ -85,7 +85,8 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 
 	pg.ID = pkg.FromStr(createdPg.RealID)
 	pg.CreationDate = pkg.FromI(createdPg.CreationDate)
-	pg.Plan = pkg.FromStr(createdPg.Plan.Slug)
+	// Normalize plan to lowercase
+	pg.Plan = pkg.FromStr(strings.ToLower(pg.Plan.ValueString()))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 
@@ -99,6 +100,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	tflog.Debug(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", addonPG),
 	})
+	pg.Plan = pkg.FromStr(strings.ToLower(addonPG.Plan))
 	pg.Host = pkg.FromStr(addonPG.Host)
 	pg.Port = pkg.FromI(int64(addonPG.Port))
 	pg.Database = pkg.FromStr(addonPG.Database)
@@ -166,7 +168,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	tflog.Debug(ctx, "API", map[string]any{"pg": addonPG})
 	pg.ID = pkg.FromStr(realID)
 	pg.Name = pkg.FromStr(addon.Name)
-	pg.Plan = pkg.FromStr(addonPG.Plan)
+	pg.Plan = pkg.FromStr(strings.ToLower(addonPG.Plan))
 	pg.Region = pkg.FromStr(addonPG.Zone)
 	pg.CreationDate = pkg.FromI(addon.CreationDate)
 	pg.Host = pkg.FromStr(addonPG.Host)

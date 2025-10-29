@@ -120,6 +120,46 @@ type MySQLFeature struct {
 	Enabled bool   `json:"enabled"`
 }
 
+type Elasticsearch struct {
+	ID             string                 `json:"id"`
+	AppID          string                 `json:"app_id"`
+	Plan           string                 `json:"plan"`
+	Zone           string                 `json:"zone"`
+	OwnerID        string                 `json:"owner_id"`
+	CreationDate   string                 `json:"creation_date"`
+	Status         string                 `json:"status"`
+	Host           string                 `json:"host"`
+	User           string                 `json:"user"`
+	Password       string                 `json:"password"`
+	ApmUser        string                 `json:"apm_user"`
+	ApmPassword    string                 `json:"apm_password"`
+	ApmAuthToken   string                 `json:"apm_auth_token"`
+	KibanaUser     string                 `json:"kibana_user"`
+	KibanaPassword string                 `json:"kibana_password"`
+	Version        string                 `json:"version"`
+	Backups        ElasticsearchBackups   `json:"backups"`
+	Services       []ElasticsearchService `json:"services"`
+	Features       []ElasticsearchFeature `json:"features"`
+}
+
+type ElasticsearchBackups struct {
+	KibanaSnapshotsURL string `json:"kibana_snapshots_url"`
+}
+
+type ElasticsearchService struct {
+	Name    string `json:"name"`
+	Enabled bool   `json:"enabled"`
+}
+
+func (e Elasticsearch) Uri() string {
+	return fmt.Sprintf("https://%s:%s@%s:9243", e.User, e.Password, e.Host)
+}
+
+type ElasticsearchFeature struct {
+	Name    string `json:"name"`
+	Enabled bool   `json:"enabled"`
+}
+
 func GetAddonsProviders(ctx context.Context, cc *client.Client) client.Response[[]AddonProvider] {
 	return client.Get[[]AddonProvider](ctx, cc, "/v2/products/addonproviders")
 }
@@ -139,6 +179,12 @@ func GetPostgreSQL(ctx context.Context, cc *client.Client, postgresqlID string) 
 func GetMySQL(ctx context.Context, cc *client.Client, mysqlID string) client.Response[MySQL] {
 	path := fmt.Sprintf("/v4/addon-providers/mysql-addon/addons/%s", mysqlID)
 	return client.Get[MySQL](ctx, cc, path)
+}
+
+// Use Addon ID
+func GetElasticsearch(ctx context.Context, cc *client.Client, elasticsearchID string) client.Response[Elasticsearch] {
+	path := fmt.Sprintf("/v4/addon-providers/es-addon/addons/%s", elasticsearchID)
+	return client.Get[Elasticsearch](ctx, cc, path)
 }
 
 func GetConfigProvider(ctx context.Context, cc *client.Client, configProviderId string) client.Response[ConfigProvider] {
@@ -328,6 +374,15 @@ type EnvVar struct {
 
 type EnvVars []EnvVar
 
+func (evs EnvVars) Map() map[string]string {
+	m := map[string]string{}
+	for _, item := range evs {
+		m[item.Name] = item.Value
+	}
+
+	return m
+}
+
 func GetAddon(ctx context.Context, cc *client.Client, organisation string, addon string) client.Response[AddonResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/addons/%s", organisation, addon)
 	return client.Get[AddonResponse](ctx, cc, path)
@@ -396,6 +451,26 @@ type MysqlCluster struct {
 func GetMysqlInfos(ctx context.Context, cc *client.Client) client.Response[MysqlInfos] {
 	path := "/v4/addon-providers/mysql-addon"
 	return client.Get[MysqlInfos](ctx, cc, path)
+}
+
+type ElasticsearchInfos struct {
+	DefaultDedicatedVersion string                 `json:"defaultDedicatedVersion"`
+	ProviderID              string                 `json:"providerId"`
+	Clusters                []ElasticsearchCluster `json:"clusters"`
+	Dedicated               map[string]any         `json:"dedicated"`
+}
+
+type ElasticsearchCluster struct {
+	ID       string `json:"id"`
+	Label    string `json:"label"`
+	Region   string `json:"zone"`
+	Version  string `json:"version"`
+	Features []any  `json:"features"`
+}
+
+func GetElasticsearchInfos(ctx context.Context, cc *client.Client) client.Response[ElasticsearchInfos] {
+	path := "/v4/addon-providers/es-addon"
+	return client.Get[ElasticsearchInfos](ctx, cc, path)
 }
 
 func RealIDsToAddonIDs(ctx context.Context, client *client.Client, organisation string, realID ...string) ([]string, error) {

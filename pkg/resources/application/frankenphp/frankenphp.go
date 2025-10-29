@@ -11,6 +11,8 @@ type ResourceFrankenPHP struct {
 	helper.Configurer
 }
 
+const CC_PHP_DEV_DEPENDENCIES = "CC_PHP_DEV_DEPENDENCIES"
+
 func NewResourceFrankenPHP() resource.Resource {
 	return &ResourceFrankenPHP{}
 }

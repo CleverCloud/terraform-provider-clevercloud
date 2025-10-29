@@ -18,3 +18,9 @@ func StateFrom[T any](ctx context.Context, s tfsdk.State, diags *diag.Diagnostic
 	diags.Append(s.Get(ctx, &t)...)
 	return t
 }
+
+func IdentityFrom[T any](ctx context.Context, s tfsdk.ResourceIdentity, diags *diag.Diagnostics) T {
+	var t T
+	diags.Append(s.Get(ctx, &t)...)
+	return t
+}

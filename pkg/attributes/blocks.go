@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
@@ -25,6 +26,14 @@ type Hooks struct {
 	RunSucceed types.String `tfsdk:"run_succeed"`
 	RunFailed  types.String `tfsdk:"run_failed"`
 }
+
+const (
+	CC_PRE_BUILD_HOOK     = "CC_PRE_BUILD_HOOK"
+	CC_POST_BUILD_HOOK    = "CC_POST_BUILD_HOOK"
+	CC_PRE_RUN_HOOK       = "CC_PRE_RUN_HOOK"
+	CC_RUN_FAILED_HOOK    = "CC_RUN_FAILED_HOOK"
+	CC_RUN_SUCCEEDED_HOOK = "CC_RUN_SUCCEEDED_HOOK"
+)
 
 var blocks = map[string]schema.Block{
 	"deployment": schema.SingleNestedBlock{
@@ -111,11 +120,33 @@ func (hooks *Hooks) ToEnv() map[string]string {
 		return m
 	}
 
-	pkg.IfIsSetStr(hooks.PreBuild, func(script string) { m["CC_PRE_BUILD_HOOK"] = script })
-	pkg.IfIsSetStr(hooks.PostBuild, func(script string) { m["CC_POST_BUILD_HOOK"] = script })
-	pkg.IfIsSetStr(hooks.PreRun, func(script string) { m["CC_PRE_RUN_HOOK"] = script })
-	pkg.IfIsSetStr(hooks.RunFailed, func(script string) { m["CC_RUN_FAILED_HOOK"] = script })
-	pkg.IfIsSetStr(hooks.RunSucceed, func(script string) { m["CC_RUN_SUCCEEDED_HOOK"] = script })
+	pkg.IfIsSetStr(hooks.PreBuild, func(script string) { m[CC_PRE_BUILD_HOOK] = script })
+	pkg.IfIsSetStr(hooks.PostBuild, func(script string) { m[CC_POST_BUILD_HOOK] = script })
+	pkg.IfIsSetStr(hooks.PreRun, func(script string) { m[CC_PRE_RUN_HOOK] = script })
+	pkg.IfIsSetStr(hooks.RunFailed, func(script string) { m[CC_RUN_FAILED_HOOK] = script })
+	pkg.IfIsSetStr(hooks.RunSucceed, func(script string) { m[CC_RUN_SUCCEEDED_HOOK] = script })
 
 	return m
+}
+
+func (hooks *Hooks) FromEnv(env *maps.Map[string, string]) {
+	if script := env.Pop(CC_PRE_BUILD_HOOK); script != "" {
+		hooks.PreBuild = pkg.FromStr(script)
+	}
+
+	if script := env.Pop(CC_POST_BUILD_HOOK); script != "" {
+		hooks.PostBuild = pkg.FromStr(script)
+	}
+
+	if script := env.Pop(CC_PRE_RUN_HOOK); script != "" {
+		hooks.PreRun = pkg.FromStr(script)
+	}
+
+	if script := env.Pop(CC_RUN_SUCCEEDED_HOOK); script != "" {
+		hooks.RunSucceed = pkg.FromStr(script)
+	}
+
+	if script := env.Pop(CC_RUN_FAILED_HOOK); script != "" {
+		hooks.RunFailed = pkg.FromStr(script)
+	}
 }

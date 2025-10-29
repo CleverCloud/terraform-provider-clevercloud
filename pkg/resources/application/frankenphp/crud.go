@@ -106,7 +106,7 @@ func (r *ResourceFrankenPHP) Read(ctx context.Context, req resource.ReadRequest,
 	state.BiggestFlavor = pkg.FromStr(appFrankenPHP.App.Instance.MaxFlavor.Name)
 	state.Region = pkg.FromStr(appFrankenPHP.App.Zone)
 	state.DeployURL = pkg.FromStr(appFrankenPHP.App.DeployURL)
-
+	state.fromEnv(ctx, appFrankenPHP.EnvAsMap())
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appFrankenPHP.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

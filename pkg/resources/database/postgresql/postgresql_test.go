@@ -35,7 +35,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 		helper.SetKeyValues(map[string]any{
 			"name":   rName,
 			"region": "par",
-			"plan":   "dev",
+			"plan":   "xs_tny", // Plan names are case-insensitive in the API
 			"backup": true,
 		}))
 
@@ -77,7 +77,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("database"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("user"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
 				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("password")),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.StringExact("dev")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.StringExact("xs_tny")), // Normalized to lowercase
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("backup"), knownvalue.Bool(true)),
 			},
 		}, {
@@ -146,7 +146,7 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				addonId, err := tmp.RealIDToAddonID(context.Background(), cc, tests.ORGANISATION, resource.Primary.ID)
+				addonID, err := tmp.RealIDToAddonID(context.Background(), cc, tests.ORGANISATION, resource.Primary.ID)
 				if err != nil {
 					if strings.Contains(err.Error(), "not found") {
 						continue
@@ -154,7 +154,7 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 					return fmt.Errorf("failed to get addon ID: %s", err.Error())
 				}
 
-				res := tmp.GetPostgreSQL(context.Background(), cc, addonId)
+				res := tmp.GetPostgreSQL(context.Background(), cc, addonID)
 				if res.IsNotFoundError() {
 					continue
 				}
