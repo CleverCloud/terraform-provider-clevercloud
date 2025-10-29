@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.4.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.3.0...v1.4.0) (2025-10-29)
+
+
+### Features
+
+* elasticsearch ([de8521b](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/de8521be446644aa23cba0b27dd59d3f20f5b4da))
+
 ## [1.3.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.2.0...v1.3.0) (2025-10-16)
 
 
