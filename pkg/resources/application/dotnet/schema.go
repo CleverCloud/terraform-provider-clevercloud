@@ -1,10 +1,10 @@
 package dotnet
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"context"
 	_ "embed"
+
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -32,23 +32,23 @@ func (r ResourceDotnet) Schema(ctx context.Context, req resource.SchemaRequest, 
 		MarkdownDescription: dotnetDoc,
 		Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 			"profile": schema.StringAttribute{
-				Optional: true,
+				Optional:            true,
 				MarkdownDescription: "Override the build configuration settings in your project. Default: Release",
 			},
 			"proj": schema.StringAttribute{
-				Optional: true,
+				Optional:            true,
 				MarkdownDescription: "The name of your project file to use for the build, without the .csproj / .fsproj / .vbproj extension.",
 			},
 			"tfm": schema.StringAttribute{
-				Optional: true,
+				Optional:            true,
 				MarkdownDescription: "Compiles for a specific framework. The framework must be defined in the project file. Example : net5.0",
 			},
 			"version": schema.StringAttribute{
-				Optional: true,
+				Optional:            true,
 				MarkdownDescription: "Choose the .NET Core version between 6.0, 8.0, 9.0. Default: '8.0'",
 			},
 		}),
-		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+		Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 	}
 }
 
@@ -72,12 +72,12 @@ func (dotnetapp Dotnet) toEnv(ctx context.Context, diags *diag.Diagnostics) map[
 	return env
 }
 
-func (dotnetapp Dotnet) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (dotnetapp Dotnet) toDeployment(gitAuth *http.BasicAuth) *application.DeploymentConfig {
 	if dotnetapp.Deployment == nil || dotnetapp.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &application.Deployment{
+	return &application.DeploymentConfig{
 		Repository:    dotnetapp.Deployment.Repository.ValueString(),
 		Commit:        dotnetapp.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

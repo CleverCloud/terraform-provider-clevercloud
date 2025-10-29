@@ -1,10 +1,10 @@
 package java
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"context"
 	_ "embed"
+
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"maps"
 
@@ -42,7 +42,7 @@ var schemaJava = schema.Schema{
 			Description: "Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).",
 		},
 	}),
-	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 var schemaJavaV0 = schema.Schema{
@@ -54,7 +54,7 @@ var schemaJavaV0 = schema.Schema{
 			Description: "Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).",
 		},
 	}),
-	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 func (plan *Java) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
@@ -74,12 +74,12 @@ func (plan *Java) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string
 	return env
 }
 
-func (java *Java) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (java *Java) toDeployment(gitAuth *http.BasicAuth) *application.DeploymentConfig {
 	if java.Deployment == nil || java.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &application.Deployment{
+	return &application.DeploymentConfig{
 		Repository:    java.Deployment.Repository.ValueString(),
 		Commit:        java.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

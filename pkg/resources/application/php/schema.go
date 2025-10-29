@@ -1,10 +1,10 @@
 package php
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"context"
 	_ "embed"
+
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -60,7 +60,7 @@ var schemaPHP = schema.Schema{
 			MarkdownDescription: "Install development dependencies",
 		},
 	}),
-	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 var schemaPHPV0 = schema.Schema{
@@ -86,7 +86,7 @@ var schemaPHPV0 = schema.Schema{
 			MarkdownDescription: "Install development dependencies",
 		},
 	}),
-	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 func (p *PHP) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
@@ -119,12 +119,12 @@ func (p *PHP) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (p *PHP) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (p *PHP) toDeployment(gitAuth *http.BasicAuth) *application.DeploymentConfig {
 	if p.Deployment == nil || p.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &application.Deployment{
+	return &application.DeploymentConfig{
 		Repository:    p.Deployment.Repository.ValueString(),
 		Commit:        p.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

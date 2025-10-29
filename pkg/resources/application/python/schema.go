@@ -4,7 +4,7 @@ import (
 	"context"
 	_ "embed"
 
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
-	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 )
 
 type Python struct {
@@ -49,7 +48,7 @@ var schemaPythonV1 = schema.Schema{
 			MarkdownDescription: "Define a custom requirements.txt file (default: requirements.txt)",
 		},
 	}),
-	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 var schemaPythonV0 = schema.Schema{
@@ -67,7 +66,7 @@ var schemaPythonV0 = schema.Schema{
 			MarkdownDescription: "Define a custom requirements.txt file (default: requirements.txt)",
 		},
 	}),
-	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 func (py Python) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
@@ -90,12 +89,12 @@ func (py Python) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
-func (py Python) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (py Python) toDeployment(gitAuth *http.BasicAuth) *application.DeploymentConfig {
 	if py.Deployment == nil || py.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &application.Deployment{
+	return &application.DeploymentConfig{
 		Repository:    py.Deployment.Repository.ValueString(),
 		Commit:        py.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

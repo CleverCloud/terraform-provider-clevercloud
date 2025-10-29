@@ -1,10 +1,10 @@
 package nodejs
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"context"
 	_ "embed"
+
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -70,7 +70,7 @@ var schemaNodeJS = schema.Schema{
 			MarkdownDescription: "Private repository token",
 		},
 	}),
-	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 var schemaNodeJSV0 = schema.Schema{
@@ -104,7 +104,7 @@ var schemaNodeJSV0 = schema.Schema{
 			MarkdownDescription: "Private repository token",
 		},
 	}),
-	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 func (node NodeJS) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
@@ -130,12 +130,12 @@ func (node NodeJS) toEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (node NodeJS) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (node NodeJS) toDeployment(gitAuth *http.BasicAuth) *application.DeploymentConfig {
 	if node.Deployment == nil || node.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &application.Deployment{
+	return &application.DeploymentConfig{
 		Repository:    node.Deployment.Repository.ValueString(),
 		Commit:        node.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

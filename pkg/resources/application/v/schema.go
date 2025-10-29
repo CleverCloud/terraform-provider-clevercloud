@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -42,7 +41,7 @@ func (r ResourceV) Schema(ctx context.Context, req resource.SchemaRequest, res *
 				MarkdownDescription: "Set to true to compile without the `-prod` flag.",
 			},
 		}),
-		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+		Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 	}
 }
 
@@ -70,12 +69,12 @@ func (vapp V) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (vapp V) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (vapp V) toDeployment(gitAuth *http.BasicAuth) *application.DeploymentConfig {
 	if vapp.Deployment == nil || vapp.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &application.Deployment{
+	return &application.DeploymentConfig{
 		Repository:    vapp.Deployment.Repository.ValueString(),
 		Commit:        vapp.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

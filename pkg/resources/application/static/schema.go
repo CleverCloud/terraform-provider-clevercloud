@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -35,14 +34,14 @@ var schemaStatic = schema.Schema{
 	Version:             1,
 	MarkdownDescription: staticDoc,
 	Attributes:          application.WithRuntimeCommons(map[string]schema.Attribute{}),
-	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks:              application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 var schemaStaticV0 = schema.Schema{
 	Version:             0,
 	MarkdownDescription: staticDoc,
 	Attributes:          application.WithRuntimeCommonsV0(map[string]schema.Attribute{}),
-	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks:              application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 func (plan *Static) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
@@ -63,12 +62,12 @@ func (plan *Static) toEnv(ctx context.Context, diags *diag.Diagnostics) map[stri
 	return env
 }
 
-func (java *Static) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (java *Static) toDeployment(gitAuth *http.BasicAuth) *application.DeploymentConfig {
 	if java.Deployment == nil || java.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &application.Deployment{
+	return &application.DeploymentConfig{
 		Repository:    java.Deployment.Repository.ValueString(),
 		Commit:        java.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

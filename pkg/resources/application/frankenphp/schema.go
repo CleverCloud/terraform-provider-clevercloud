@@ -1,10 +1,10 @@
 package frankenphp
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"context"
 	_ "embed"
+
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -35,7 +35,7 @@ func (r ResourceFrankenPHP) Schema(ctx context.Context, req resource.SchemaReque
 				Default:             booldefault.StaticBool(false),
 			},
 		}),
-		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+		Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 	}
 }
 
@@ -61,12 +61,12 @@ func (fp *FrankenPHP) toEnv(ctx context.Context, diags *diag.Diagnostics) map[st
 	return env
 }
 
-func (fp *FrankenPHP) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (fp *FrankenPHP) toDeployment(gitAuth *http.BasicAuth) *application.DeploymentConfig {
 	if fp.Deployment == nil || fp.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &application.Deployment{
+	return &application.DeploymentConfig{
 		Repository:    fp.Deployment.Repository.ValueString(),
 		Commit:        fp.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

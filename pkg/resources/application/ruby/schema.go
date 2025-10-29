@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"strconv"
 
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -149,7 +148,7 @@ var schemaRuby = schema.Schema{
 			MarkdownDescription: "Path to the web content to serve, relative to the root of your application",
 		},
 	}),
-	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 var schemaRubyV0 = schema.Schema{
@@ -238,7 +237,7 @@ var schemaRubyV0 = schema.Schema{
 			MarkdownDescription: "Path to the web content to serve, relative to the root of your application",
 		},
 	}),
-	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 func (ruby Ruby) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
@@ -283,12 +282,12 @@ func (ruby Ruby) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
-func (ruby Ruby) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (ruby Ruby) toDeployment(gitAuth *http.BasicAuth) *application.DeploymentConfig {
 	if ruby.Deployment == nil || ruby.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &application.Deployment{
+	return &application.DeploymentConfig{
 		Repository:    ruby.Deployment.Repository.ValueString(),
 		Commit:        ruby.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

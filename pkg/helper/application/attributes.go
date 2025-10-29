@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -16,7 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
@@ -39,23 +39,65 @@ func (vh VHost) String() *string {
 	return &vhost
 }
 
+// DeploymentBlock represents the deployment block in Terraform schema
+type DeploymentBlock struct {
+	Repository types.String `tfsdk:"repository"`
+	Commit     types.String `tfsdk:"commit"`
+}
+
+// Hooks represents the hooks block in Terraform schema
+type Hooks struct {
+	PreBuild   types.String `tfsdk:"pre_build"`
+	PostBuild  types.String `tfsdk:"post_build"`
+	PreRun     types.String `tfsdk:"pre_run"`
+	RunSucceed types.String `tfsdk:"run_succeed"`
+	RunFailed  types.String `tfsdk:"run_failed"`
+}
+
+// ToEnv converts Hooks to environment variables map
+func (hooks *Hooks) ToEnv() map[string]string {
+	m := map[string]string{}
+
+	if hooks == nil {
+		return m
+	}
+
+	pkg.IfIsSetStr(hooks.PreBuild, func(script string) { m["CC_PRE_BUILD_HOOK"] = script })
+	pkg.IfIsSetStr(hooks.PostBuild, func(script string) { m["CC_POST_BUILD_HOOK"] = script })
+	pkg.IfIsSetStr(hooks.PreRun, func(script string) { m["CC_PRE_RUN_HOOK"] = script })
+	pkg.IfIsSetStr(hooks.RunFailed, func(script string) { m["CC_RUN_FAILED_HOOK"] = script })
+	pkg.IfIsSetStr(hooks.RunSucceed, func(script string) { m["CC_RUN_SUCCEEDED_HOOK"] = script })
+
+	return m
+}
+
+// DeploymentConfig holds internal deployment configuration
+// Used by CRUD operations and Git deployment logic
+type DeploymentConfig struct {
+	CleverGitAuth  *http.BasicAuth
+	Repository     string
+	Commit         *string
+	User, Password *string
+	PrivateSSHKey  *string
+}
+
 type Runtime struct {
-	ID               types.String           `tfsdk:"id"`
-	Name             types.String           `tfsdk:"name"`
-	Description      types.String           `tfsdk:"description"`
-	MinInstanceCount types.Int64            `tfsdk:"min_instance_count"`
-	MaxInstanceCount types.Int64            `tfsdk:"max_instance_count"`
-	SmallestFlavor   types.String           `tfsdk:"smallest_flavor"`
-	BiggestFlavor    types.String           `tfsdk:"biggest_flavor"`
-	BuildFlavor      types.String           `tfsdk:"build_flavor"`
-	Region           types.String           `tfsdk:"region"`
-	StickySessions   types.Bool             `tfsdk:"sticky_sessions"`
-	RedirectHTTPS    types.Bool             `tfsdk:"redirect_https"`
-	VHosts           types.Set              `tfsdk:"vhosts"`
-	DeployURL        types.String           `tfsdk:"deploy_url"`
-	Dependencies     types.Set              `tfsdk:"dependencies"`
-	Deployment       *attributes.Deployment `tfsdk:"deployment"`
-	Hooks            *attributes.Hooks      `tfsdk:"hooks"`
+	ID               types.String        `tfsdk:"id"`
+	Name             types.String        `tfsdk:"name"`
+	Description      types.String        `tfsdk:"description"`
+	MinInstanceCount types.Int64         `tfsdk:"min_instance_count"`
+	MaxInstanceCount types.Int64         `tfsdk:"max_instance_count"`
+	SmallestFlavor   types.String        `tfsdk:"smallest_flavor"`
+	BiggestFlavor    types.String        `tfsdk:"biggest_flavor"`
+	BuildFlavor      types.String        `tfsdk:"build_flavor"`
+	Region           types.String        `tfsdk:"region"`
+	StickySessions   types.Bool          `tfsdk:"sticky_sessions"`
+	RedirectHTTPS    types.Bool          `tfsdk:"redirect_https"`
+	VHosts           types.Set           `tfsdk:"vhosts"`
+	DeployURL        types.String        `tfsdk:"deploy_url"`
+	Dependencies     types.Set           `tfsdk:"dependencies"`
+	Deployment       *DeploymentBlock    `tfsdk:"deployment"`
+	Hooks            *Hooks              `tfsdk:"hooks"`
 
 	// Env
 	AppFolder   types.String `tfsdk:"app_folder"`
@@ -63,22 +105,22 @@ type Runtime struct {
 }
 
 type RuntimeV0 struct {
-	ID               types.String           `tfsdk:"id"`
-	Name             types.String           `tfsdk:"name"`
-	Description      types.String           `tfsdk:"description"`
-	MinInstanceCount types.Int64            `tfsdk:"min_instance_count"`
-	MaxInstanceCount types.Int64            `tfsdk:"max_instance_count"`
-	SmallestFlavor   types.String           `tfsdk:"smallest_flavor"`
-	BiggestFlavor    types.String           `tfsdk:"biggest_flavor"`
-	BuildFlavor      types.String           `tfsdk:"build_flavor"`
-	Region           types.String           `tfsdk:"region"`
-	StickySessions   types.Bool             `tfsdk:"sticky_sessions"`
-	RedirectHTTPS    types.Bool             `tfsdk:"redirect_https"`
-	VHosts           types.Set              `tfsdk:"vhosts"`
-	DeployURL        types.String           `tfsdk:"deploy_url"`
-	Dependencies     types.Set              `tfsdk:"dependencies"`
-	Deployment       *attributes.Deployment `tfsdk:"deployment"`
-	Hooks            *attributes.Hooks      `tfsdk:"hooks"`
+	ID               types.String        `tfsdk:"id"`
+	Name             types.String        `tfsdk:"name"`
+	Description      types.String        `tfsdk:"description"`
+	MinInstanceCount types.Int64         `tfsdk:"min_instance_count"`
+	MaxInstanceCount types.Int64         `tfsdk:"max_instance_count"`
+	SmallestFlavor   types.String        `tfsdk:"smallest_flavor"`
+	BiggestFlavor    types.String        `tfsdk:"biggest_flavor"`
+	BuildFlavor      types.String        `tfsdk:"build_flavor"`
+	Region           types.String        `tfsdk:"region"`
+	StickySessions   types.Bool          `tfsdk:"sticky_sessions"`
+	RedirectHTTPS    types.Bool          `tfsdk:"redirect_https"`
+	VHosts           types.Set           `tfsdk:"vhosts"`
+	DeployURL        types.String        `tfsdk:"deploy_url"`
+	Dependencies     types.Set           `tfsdk:"dependencies"`
+	Deployment       *DeploymentBlock    `tfsdk:"deployment"`
+	Hooks            *Hooks              `tfsdk:"hooks"`
 
 	// Env
 	AppFolder   types.String `tfsdk:"app_folder"`

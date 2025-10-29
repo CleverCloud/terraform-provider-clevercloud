@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -20,7 +19,7 @@ type CreateReq struct {
 	Application  tmp.CreateAppRequest
 	Environment  map[string]string
 	VHosts       []string
-	Deployment   *Deployment
+	Deployment   *DeploymentConfig
 	Dependencies []string
 }
 
@@ -31,17 +30,9 @@ type UpdateReq struct {
 	Application    tmp.UpdateAppReq
 	Environment    map[string]string
 	VHosts         []string
-	Deployment     *Deployment
+	Deployment     *DeploymentConfig
 	Dependencies   []string
 	TriggerRestart bool // when env vars change for example
-}
-
-type Deployment struct {
-	CleverGitAuth  *http.BasicAuth
-	Repository     string
-	Commit         *string
-	User, Password *string
-	PrivateSSHKey  *string
 }
 
 type CreateRes struct {

@@ -1,10 +1,10 @@
 package golang
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"context"
 	_ "embed"
+
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -32,14 +32,14 @@ var schemaGo = schema.Schema{
 	Version:             1,
 	MarkdownDescription: goDoc,
 	Attributes:          application.WithRuntimeCommons(map[string]schema.Attribute{}),
-	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks:              application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 var schemaGoV0 = schema.Schema{
 	Version:             0,
 	MarkdownDescription: goDoc,
 	Attributes:          application.WithRuntimeCommonsV0(map[string]schema.Attribute{}),
-	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks:              application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 func (g Go) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
@@ -60,12 +60,12 @@ func (g Go) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]strin
 	return env
 }
 
-func (g Go) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (g Go) toDeployment(gitAuth *http.BasicAuth) *application.DeploymentConfig {
 	if g.Deployment == nil || g.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &application.Deployment{
+	return &application.DeploymentConfig{
 		Repository:    g.Deployment.Repository.ValueString(),
 		Commit:        g.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

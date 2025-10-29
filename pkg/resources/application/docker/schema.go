@@ -1,8 +1,6 @@
 package docker
 
 import (
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	application "go.clever-cloud.com/terraform-provider/pkg/helper/application"
 	"context"
 	_ "embed"
 	"fmt"
@@ -16,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 )
 
 type Docker struct {
@@ -110,7 +109,7 @@ var schemaDocker = schema.Schema{
 			MarkdownDescription: "Set to true to access the host Docker socket from inside your container",
 		},
 	}),
-	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 var schemaDockerV0 = schema.Schema{
@@ -172,7 +171,7 @@ var schemaDockerV0 = schema.Schema{
 			MarkdownDescription: "Set to true to access the host Docker socket from inside your container",
 		},
 	}),
-	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 func (p *Docker) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
@@ -204,12 +203,12 @@ func (p *Docker) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
-func (p *Docker) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (p *Docker) toDeployment(gitAuth *http.BasicAuth) *application.DeploymentConfig {
 	if p.Deployment == nil || p.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &application.Deployment{
+	return &application.DeploymentConfig{
 		Repository:    p.Deployment.Repository.ValueString(),
 		Commit:        p.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

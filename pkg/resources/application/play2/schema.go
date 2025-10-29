@@ -5,14 +5,12 @@ import (
 	_ "embed"
 	"maps"
 
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
-
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 )
 
 type Play2 struct {
@@ -34,14 +32,14 @@ var schemaPlay2 = schema.Schema{
 	Version:             1,
 	MarkdownDescription: play2Doc,
 	Attributes:          application.WithRuntimeCommons(map[string]schema.Attribute{}),
-	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks:              application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 var schemaPlay2V0 = schema.Schema{
 	Version:             0,
 	MarkdownDescription: play2Doc,
 	Attributes:          application.WithRuntimeCommonsV0(map[string]schema.Attribute{}),
-	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+	Blocks:              application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
 func (plan *Play2) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
@@ -60,12 +58,12 @@ func (plan *Play2) toEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (play2 *Play2) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (play2 *Play2) toDeployment(gitAuth *http.BasicAuth) *application.DeploymentConfig {
 	if play2.Deployment == nil || play2.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &application.Deployment{
+	return &application.DeploymentConfig{
 		Repository:    play2.Deployment.Repository.ValueString(),
 		Commit:        play2.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

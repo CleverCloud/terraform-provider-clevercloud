@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"strings"
 
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/helper/application"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
@@ -46,7 +45,7 @@ func (r ResourceRust) Schema(ctx context.Context, req resource.SchemaRequest, re
 				MarkdownDescription: "List of Rust features to enable during build",
 			},
 		}),
-		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+		Blocks: application.WithBlockRuntimeCommons(map[string]schema.Block{}),
 	}
 }
 
@@ -74,12 +73,12 @@ func (r Rust) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (r Rust) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (r Rust) toDeployment(gitAuth *http.BasicAuth) *application.DeploymentConfig {
 	if r.Deployment == nil || r.Deployment.Repository.IsNull() {
 		return nil
 	}
 
-	return &application.Deployment{
+	return &application.DeploymentConfig{
 		Repository:    r.Deployment.Repository.ValueString(),
 		Commit:        r.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,

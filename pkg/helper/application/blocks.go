@@ -1,30 +1,15 @@
-package attributes
+package application
 
 import (
 	"context"
+	"maps"
 	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
-
-// Deployment block
-type Deployment struct {
-	Repository types.String `tfsdk:"repository"`
-	Commit     types.String `tfsdk:"commit"`
-}
-
-// Hooks block
-type Hooks struct {
-	PreBuild   types.String `tfsdk:"pre_build"`
-	PostBuild  types.String `tfsdk:"post_build"`
-	PreRun     types.String `tfsdk:"pre_run"`
-	RunSucceed types.String `tfsdk:"run_succeed"`
-	RunFailed  types.String `tfsdk:"run_failed"`
-}
 
 var blocks = map[string]schema.Block{
 	"deployment": schema.SingleNestedBlock{
@@ -93,29 +78,8 @@ var blocks = map[string]schema.Block{
 func WithBlockRuntimeCommons(runtimeSpecifics map[string]schema.Block) map[string]schema.Block {
 	m := map[string]schema.Block{}
 
-	for blockName, block := range blocks {
-		m[blockName] = block
-	}
-
-	for blockName, block := range runtimeSpecifics {
-		m[blockName] = block
-	}
-
-	return m
-}
-
-func (hooks *Hooks) ToEnv() map[string]string {
-	m := map[string]string{}
-
-	if hooks == nil {
-		return m
-	}
-
-	pkg.IfIsSetStr(hooks.PreBuild, func(script string) { m["CC_PRE_BUILD_HOOK"] = script })
-	pkg.IfIsSetStr(hooks.PostBuild, func(script string) { m["CC_POST_BUILD_HOOK"] = script })
-	pkg.IfIsSetStr(hooks.PreRun, func(script string) { m["CC_PRE_RUN_HOOK"] = script })
-	pkg.IfIsSetStr(hooks.RunFailed, func(script string) { m["CC_RUN_FAILED_HOOK"] = script })
-	pkg.IfIsSetStr(hooks.RunSucceed, func(script string) { m["CC_RUN_SUCCEEDED_HOOK"] = script })
+	maps.Copy(m, blocks)
+	maps.Copy(m, runtimeSpecifics)
 
 	return m
 }
