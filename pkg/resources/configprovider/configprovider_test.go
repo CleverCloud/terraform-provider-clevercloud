@@ -38,7 +38,7 @@ func TestAccConfigProvider_basic(t *testing.T) {
 	retrieveConfigProvider := func(ctx context.Context, id string) (*tmp.ConfigProvider, error) {
 		res := tmp.GetConfigProvider(ctx, cc, id)
 		if res.IsNotFoundError() {
-			return nil, fmt.Errorf("Unable to find configProvider by real id " + id)
+			return nil, fmt.Errorf("Unable to find configProvider by real id %s", id)
 		}
 		if res.HasError() {
 			return nil, fmt.Errorf("Unexpectd error: %s", res.Error().Error())

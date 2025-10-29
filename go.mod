@@ -1,6 +1,6 @@
 module go.clever-cloud.com/terraform-provider
 
-go 1.23.7
+go 1.24.0
 
 toolchain go1.24.5
 
@@ -18,6 +18,7 @@ require (
 	github.com/hashicorp/terraform-plugin-sdk v1.17.2
 	github.com/hashicorp/terraform-plugin-testing v1.13.2
 	github.com/minio/minio-go/v7 v7.0.95
+	github.com/miton18/helper v0.0.2
 	go.clever-cloud.dev/client v0.1.1
 	golang.org/x/exp v0.0.0-20240719175910-8a7402abbf56
 )
