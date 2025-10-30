@@ -4,8 +4,8 @@ import (
 	"context"
 
 	"go.clever-cloud.com/terraform-provider/pkg"
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -78,7 +78,7 @@ func (r *ResourcePHP) UpgradeState(ctx context.Context) map[int64]resource.State
 				vhosts := helper.VHostsFromAPIHosts(ctx, oldVhosts, old.VHosts, &res.Diagnostics)
 
 				newState := PHP{
-					Runtime: attributes.Runtime{
+					Runtime: application.Runtime{
 						ID:               old.ID,
 						Name:             old.Name,
 						Description:      old.Description,
