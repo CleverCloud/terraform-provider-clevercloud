@@ -278,12 +278,6 @@ type KeycloakApplication struct {
 	JavaApplicationID string `json:"javaId"`
 }
 
-// Not working ?
-func GetKeycloak(ctx context.Context, cc *client.Client, organisationID, keycloakID string) client.Response[Keycloak] {
-	path := fmt.Sprintf("/v4/keycloaks/organisations/%s/keycloaks/%s", organisationID, keycloakID)
-	return client.Get[Keycloak](ctx, cc, path)
-}
-
 type Matomo struct {
 	ResourceID        string            `json:"resourceId"`
 	AddonID           string            `json:"addonId"`
@@ -299,9 +293,10 @@ type Matomo struct {
 }
 
 type MatomoResources struct {
-	Entrypoint string `json:"entrypoint"`
-	MysqlID    string `json:"mysqlId"`
-	RedisID    string `json:"redisId"`
+	Entrypoint string  `json:"entrypoint"`
+	MysqlID    string  `json:"mysqlId"`
+	RedisID    string  `json:"redisId"`
+	KvID       *string `json:"kvId"`
 }
 
 // Use real ID

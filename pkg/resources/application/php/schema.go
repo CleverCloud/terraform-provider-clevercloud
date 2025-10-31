@@ -13,47 +13,47 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
-	"go.clever-cloud.com/terraform-provider/pkg/application"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 )
 
 type PHP struct {
 	application.Runtime
-	AlwaysPopulateRawPostData              types.String `tfsdk:"always_populate_raw_post_data"`
-	ComposerVersion                        types.String `tfsdk:"composer_version"`
-	CgiImplementation                      types.String `tfsdk:"cgi_implementation"`
-	HttpBasicAuth                          types.String `tfsdk:"http_basic_auth"`
-	ApacheHeadersSize                      types.Int64  `tfsdk:"apache_headers_size"`
-	LdapCaCert                             types.String `tfsdk:"ldap_ca_cert"`
-	MtaAuthPassword                        types.String `tfsdk:"mta_auth_password"`
-	MtaAuthUser                            types.String `tfsdk:"mta_auth_user"`
-	MtaServerAuthMethod                    types.String `tfsdk:"mta_server_auth_method"`
-	MtaServerHost                          types.String `tfsdk:"mta_server_host"`
-	MtaServerPort                          types.Int64  `tfsdk:"mta_server_port"`
-	MtaServerUseTLS                        types.Bool   `tfsdk:"mta_server_use_tls"`
-	OpcacheInternedStringsBuffer           types.Int64  `tfsdk:"opcache_interned_strings_buffer"`
-	OpcacheMaxAcceleratedFiles             types.Int64  `tfsdk:"opcache_max_accelerated_files"`
-	OpcacheMemory                          types.String `tfsdk:"opcache_memory"`
-	OpcachePreload                         types.String `tfsdk:"opcache_preload"`
-	AsyncAppBucket                         types.String `tfsdk:"async_app_bucket"`
-	DevDependencies                        types.String `tfsdk:"dev_dependencies"`
-	DisableAppBucket                       types.String `tfsdk:"disable_app_bucket"`
-	PHPVersion                             types.String `tfsdk:"php_version"`
-	RealpathCacheTTL                       types.Int64  `tfsdk:"realpath_cache_ttl"`
-	WebRoot                                types.String `tfsdk:"webroot"`
-	EnableElasticApmAgent                  types.Bool   `tfsdk:"enable_elastic_apm_agent"`
-	EnableGrpc                             types.Bool   `tfsdk:"enable_grpc"`
-	EnablePdflib                           types.Bool   `tfsdk:"enable_pdflib"`
-	EnableRedis                            types.Bool   `tfsdk:"enable_redis"`
-	HttpTimeout                            types.Int64  `tfsdk:"http_timeout"`
-	LdaptlsCacert                          types.String `tfsdk:"ldaptls_cacert"`
-	MaxInputVars                           types.Int64  `tfsdk:"max_input_vars"`
-	MemoryLimit                            types.String `tfsdk:"memory_limit"`
-	SessionType                            types.String `tfsdk:"session_type"`
-	SocksifyEverything                     types.Bool   `tfsdk:"socksify_everything"`
-	SqreenApiAppName                       types.String `tfsdk:"sqreen_api_app_name"`
-	SqreenApiToken                         types.String `tfsdk:"sqreen_api_token"`
+	AlwaysPopulateRawPostData    types.String `tfsdk:"always_populate_raw_post_data"`
+	ComposerVersion              types.String `tfsdk:"composer_version"`
+	CgiImplementation            types.String `tfsdk:"cgi_implementation"`
+	HttpBasicAuth                types.String `tfsdk:"http_basic_auth"`
+	ApacheHeadersSize            types.Int64  `tfsdk:"apache_headers_size"`
+	LdapCaCert                   types.String `tfsdk:"ldap_ca_cert"`
+	MtaAuthPassword              types.String `tfsdk:"mta_auth_password"`
+	MtaAuthUser                  types.String `tfsdk:"mta_auth_user"`
+	MtaServerAuthMethod          types.String `tfsdk:"mta_server_auth_method"`
+	MtaServerHost                types.String `tfsdk:"mta_server_host"`
+	MtaServerPort                types.Int64  `tfsdk:"mta_server_port"`
+	MtaServerUseTLS              types.Bool   `tfsdk:"mta_server_use_tls"`
+	OpcacheInternedStringsBuffer types.Int64  `tfsdk:"opcache_interned_strings_buffer"`
+	OpcacheMaxAcceleratedFiles   types.Int64  `tfsdk:"opcache_max_accelerated_files"`
+	OpcacheMemory                types.String `tfsdk:"opcache_memory"`
+	OpcachePreload               types.String `tfsdk:"opcache_preload"`
+	AsyncAppBucket               types.String `tfsdk:"async_app_bucket"`
+	DevDependencies              types.String `tfsdk:"dev_dependencies"`
+	DisableAppBucket             types.String `tfsdk:"disable_app_bucket"`
+	PHPVersion                   types.String `tfsdk:"php_version"`
+	RealpathCacheTTL             types.Int64  `tfsdk:"realpath_cache_ttl"`
+	WebRoot                      types.String `tfsdk:"webroot"`
+	EnableElasticApmAgent        types.Bool   `tfsdk:"enable_elastic_apm_agent"`
+	EnableGrpc                   types.Bool   `tfsdk:"enable_grpc"`
+	EnablePdflib                 types.Bool   `tfsdk:"enable_pdflib"`
+	EnableRedis                  types.Bool   `tfsdk:"enable_redis"`
+	HttpTimeout                  types.Int64  `tfsdk:"http_timeout"`
+	LdaptlsCacert                types.String `tfsdk:"ldaptls_cacert"`
+	MaxInputVars                 types.Int64  `tfsdk:"max_input_vars"`
+	MemoryLimit                  types.String `tfsdk:"memory_limit"`
+	SessionType                  types.String `tfsdk:"session_type"`
+	SocksifyEverything           types.Bool   `tfsdk:"socksify_everything"`
+	SqreenApiAppName             types.String `tfsdk:"sqreen_api_app_name"`
+	SqreenApiToken               types.String `tfsdk:"sqreen_api_token"`
 }
 
 type PHPV0 struct {
