@@ -2,7 +2,6 @@ package keycloak
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -46,30 +45,18 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		res.Diagnostics.AddError("failed to create Keycloak", createAddonRes.Error().Error())
 		return
 	}
+	addon := createAddonRes.Payload()
 
-	kc.ID = pkg.FromStr(createAddonRes.Payload().RealID)
+	kc.ID = pkg.FromStr(addon.RealID)
 	res.Diagnostics.Append(res.State.Set(ctx, kc)...)
 
-	kcEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), kc.ID.ValueString())
-	if kcEnvRes.HasError() {
-		res.Diagnostics.AddError("failed to get Keycloak connection infos", kcEnvRes.Error().Error())
-		return
+	keycloakRes := tmp.GetKeycloak(ctx, r.Client(), addon.RealID)
+	if keycloakRes.HasError() {
+		res.Diagnostics.AddError("failed to get Keycloak", keycloakRes.Error().Error())
+	} else {
+		keycloak := keycloakRes.Payload()
+		kc.Host = pkg.FromStr(keycloak.AccessURL)
 	}
-
-	kcEnv := *kcEnvRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]any{
-		"payload": fmt.Sprintf("%+v", kcEnv),
-	})
-
-	hostEnvVar := pkg.First(kcEnv, func(v tmp.EnvVar) bool {
-		return v.Name == "CC_KEYCLOAK_URL"
-	})
-	if hostEnvVar == nil {
-		res.Diagnostics.AddError("cannot get Keycloak infos", "missing CC_KEYCLOAK_URL env var on created addon")
-		return
-	}
-
-	kc.Host = pkg.FromStr(hostEnvVar.Value)
 
 	res.Diagnostics.Append(res.State.Set(ctx, kc)...)
 }
@@ -78,17 +65,20 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "Keycloak READ", map[string]any{"request": req})
 
-	var kc Keycloak
-	diags := req.State.Get(ctx, &kc)
-	resp.Diagnostics.Append(diags...)
+	state := helper.StateFrom[Keycloak](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	// TODO
+	keycloakRes := tmp.GetKeycloak(ctx, r.Client(), state.ID.ValueString())
+	if keycloakRes.HasError() {
+		resp.Diagnostics.AddError("failed to get keycloak", keycloakRes.Error().Error())
+	} else {
+		keycloak := keycloakRes.Payload()
+		state.Host = pkg.FromStr(keycloak.AccessURL)
+	}
 
-	diags = resp.State.Set(ctx, kc)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Update resource
@@ -114,23 +104,19 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Keycloak", addonRes.Error().Error())
-		return
+	} else {
+		state.Name = plan.Name
 	}
-	state.Name = plan.Name
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Delete resource
 func (r *ResourceKeycloak) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	kc := Keycloak{}
-
-	diags := req.State.Get(ctx, &kc)
-	resp.Diagnostics.Append(diags...)
+	kc := helper.StateFrom[Keycloak](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Keycloak DELETE", map[string]any{"keycloak": kc})
 
 	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), kc.ID.ValueString())
 	if res.IsNotFoundError() {

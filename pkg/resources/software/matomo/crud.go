@@ -52,19 +52,17 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 	matomoRes := tmp.GetMatomo(ctx, r.Client(), addon.RealID)
 	if matomoRes.HasError() {
 		res.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
-		return
+	} else {
+		matomo := matomoRes.Payload()
+		appMatomo.Host = pkg.FromStr(matomo.AccessURL)
+		appMatomo.Version = pkg.FromStr(matomo.Version)
 	}
-	matomo := matomoRes.Payload()
 
-	appMatomo.Host = pkg.FromStr(matomo.AccessURL)
-	appMatomo.Version = pkg.FromStr(matomo.Version)
 	res.Diagnostics.Append(res.State.Set(ctx, appMatomo)...)
 }
 
 // Read resource information
 func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Matomo READ", map[string]any{"request": req})
-
 	state := helper.StateFrom[Matomo](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -73,14 +71,13 @@ func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, res
 	matomoRes := tmp.GetMatomo(ctx, r.Client(), state.ID.ValueString())
 	if matomoRes.HasError() {
 		resp.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
-		return
+	} else {
+		matomo := matomoRes.Payload()
+		state.Name = pkg.FromStr(matomo.Name)
+		// region ?
+		state.Host = pkg.FromStr(matomo.AccessURL)
+		state.Version = pkg.FromStr(matomo.Version)
 	}
-	matomo := matomoRes.Payload()
-
-	state.Name = pkg.FromStr(matomo.Name)
-	// region ?
-	state.Host = pkg.FromStr(matomo.AccessURL)
-	state.Version = pkg.FromStr(matomo.Version)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -108,9 +105,9 @@ func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest,
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Matomo", addonRes.Error().Error())
-		return
+	} else {
+		state.Name = plan.Name
 	}
-	state.Name = plan.Name
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

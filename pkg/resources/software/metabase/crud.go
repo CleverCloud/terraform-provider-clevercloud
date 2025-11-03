@@ -22,8 +22,8 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
 	}
-
 	addonsProviders := addonsProvidersRes.Payload()
+
 	prov := pkg.LookupAddonProvider(*addonsProviders, "metabase")
 	plan := prov.FirstPlan()
 	if plan == nil {
@@ -48,68 +48,36 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 	mb.ID = pkg.FromStr(addon.RealID)
 	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
 
-	mbInfoRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), res.Payload().ID)
-	if mbInfoRes.HasError() {
-		resp.Diagnostics.AddError("failed to get Metabase connection infos", mbInfoRes.Error().Error())
-		return
+	metabaseRes := tmp.GetMetabase(ctx, r.Client(), addon.RealID)
+	if metabaseRes.HasError() {
+		resp.Diagnostics.AddError("failed to get Metabase", metabaseRes.Error().Error())
+	} else {
+		metabase := metabaseRes.Payload()
+		mb.Host = pkg.FromStr(metabase.AccessURL)
 	}
-	addonMB := *mbInfoRes.Payload()
-
-	hostEnvVar := pkg.First(addonMB, func(v tmp.EnvVar) bool {
-		return v.Name == "METABASE_URL"
-	})
-	if hostEnvVar == nil {
-		resp.Diagnostics.AddError("cannot get Metabase infos", "missing METABASE_URL env var on created addon")
-		return
-	}
-
-	mb.Host = pkg.FromStr(hostEnvVar.Value)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
 }
 
 // Read resource information
 func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Metabase READ", map[string]any{"request": req})
-
-	mb := helper.StateFrom[Metabase](ctx, req.State, &resp.Diagnostics)
+	state := helper.StateFrom[Metabase](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	addonMBRes := tmp.GetMetabase(ctx, r.Client(), mb.ID.ValueString())
+	addonMBRes := tmp.GetMetabase(ctx, r.Client(), state.ID.ValueString())
 	if addonMBRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
-	}
-	if addonMBRes.HasError() {
+	} else if addonMBRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Metabase resource", addonMBRes.Error().Error())
-		return
+	} else {
+		metabase := addonMBRes.Payload()
+		state.Host = pkg.FromStr(metabase.AccessURL)
 	}
 
-	addonMB := addonMBRes.Payload()
-
-	if addonMB.Status == "TO_DELETE" {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	realID, err := tmp.AddonIDToRealID(ctx, r.Client(), r.Organization(), mb.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
-		return
-	}
-
-	tflog.Debug(ctx, "STATE", map[string]any{"mb": mb})
-	tflog.Debug(ctx, "API", map[string]any{"mb": addonMB})
-	mb.ID = pkg.FromStr(realID)
-	// mb.Host = pkg.FromStr(addonMB.Applications[0].Host)
-	// mb.Port = pkg.FromI(int64(addonMB.Port))
-	// mb.User = pkg.FromStr(addonMB.User)
-	// mb.Password = pkg.FromStr(addonMB.Password)
-
-	diags := resp.State.Set(ctx, mb)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Update resource
@@ -135,9 +103,9 @@ func (r *ResourceMetabase) Update(ctx context.Context, req resource.UpdateReques
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Metabase", addonRes.Error().Error())
-		return
+	} else {
+		state.Name = plan.Name
 	}
-	state.Name = plan.Name
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

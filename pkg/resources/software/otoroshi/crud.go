@@ -13,7 +13,7 @@ import (
 )
 
 func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	otoroshi := helper.PlanFrom[Otoroshi](ctx, req.Plan, &resp.Diagnostics)
+	state := helper.PlanFrom[Otoroshi](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -38,15 +38,15 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 	}
 
 	addonReq := tmp.AddonRequest{
-		Name:       otoroshi.Name.ValueString(),
+		Name:       state.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: provider.ID,
-		Region:     otoroshi.Region.ValueString(),
+		Region:     state.Region.ValueString(),
 	}
 
-	if !otoroshi.Version.IsNull() && !otoroshi.Version.IsUnknown() {
+	if !state.Version.IsNull() && !state.Version.IsUnknown() {
 		addonReq.Options = map[string]string{
-			"version": otoroshi.Version.ValueString(),
+			"version": state.Version.ValueString(),
 		}
 	}
 
@@ -57,97 +57,59 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 	}
 	addonRes := res.Payload()
 
-	otoroshi.ID = pkg.FromStr(addonRes.RealID)
-	otoroshi.CreationDate = pkg.FromI(addonRes.CreationDate)
+	state.ID = pkg.FromStr(addonRes.RealID)
+	state.CreationDate = pkg.FromI(addonRes.CreationDate)
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, otoroshi)...)
-
-	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), addonRes.ID)
-	if envRes.HasError() {
-		resp.Diagnostics.AddError("failed to get add-on env", envRes.Error().Error())
-		return
+	otoroshiRes := tmp.GetOtoroshi(ctx, r.Client(), addonRes.RealID)
+	if otoroshiRes.HasError() {
+		resp.Diagnostics.AddError("failed to get Otorshi", otoroshiRes.Error().Error())
+	} else {
+		otoroshi := otoroshiRes.Payload()
+		state.APIURL = pkg.FromStr(otoroshi.API.URL)
+		state.APIClientID = pkg.FromStr(otoroshi.EnvVars["CC_OTOROSHI_API_CLIENT_ID"])
+		state.APIClientSecret = pkg.FromStr(otoroshi.EnvVars["CC_OTOROSHI_API_CLIENT_SECRET"])
+		state.InitialAdminLogin = pkg.FromStr(otoroshi.Initialredentials.User)
+		state.InitialAdminPassword = pkg.FromStr(otoroshi.Initialredentials.Passsword)
+		state.URL = pkg.FromStr(otoroshi.AccessURL)
 	}
 
-	envVars := *envRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]any{
-		"env_vars": fmt.Sprintf("%+v", envVars),
-	})
-
-	for _, envVar := range envVars {
-		switch envVar.Name {
-		case "CC_OTOROSHI_API_CLIENT_ID":
-			otoroshi.APIClientID = pkg.FromStr(envVar.Value)
-		case "CC_OTOROSHI_API_CLIENT_SECRET":
-			otoroshi.APIClientSecret = pkg.FromStr(envVar.Value)
-		case "CC_OTOROSHI_API_URL":
-			otoroshi.APIURL = pkg.FromStr(envVar.Value)
-		case "CC_OTOROSHI_INITIAL_ADMIN_LOGIN":
-			otoroshi.InitialAdminLogin = pkg.FromStr(envVar.Value)
-		case "CC_OTOROSHI_INITIAL_ADMIN_PASSWORD":
-			otoroshi.InitialAdminPassword = pkg.FromStr(envVar.Value)
-		case "CC_OTOROSHI_URL":
-			otoroshi.URL = pkg.FromStr(envVar.Value)
-		}
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, otoroshi)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Otoroshi READ", map[string]any{"request": req})
-
-	otoroshi := helper.StateFrom[Otoroshi](ctx, req.State, &resp.Diagnostics)
+	state := helper.StateFrom[Otoroshi](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), otoroshi.ID.ValueString())
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
-	}
-	if addonRes.HasError() {
+	} else if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Otoroshi", addonRes.Error().Error())
-		return
-	}
-	addon := addonRes.Payload()
-
-	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), otoroshi.ID.ValueString())
-	if addonEnvRes.HasError() {
-		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
-		return
+	} else {
+		addon := addonRes.Payload()
+		state.Name = pkg.FromStr(addon.Name)
+		state.Region = pkg.FromStr(addon.Region)
+		state.CreationDate = pkg.FromI(addon.CreationDate)
 	}
 
-	otoroshi.Name = pkg.FromStr(addon.Name)
-	otoroshi.Region = pkg.FromStr(addon.Region)
-	otoroshi.CreationDate = pkg.FromI(addon.CreationDate)
-
-	envVars := *addonEnvRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]any{
-		"env_vars": fmt.Sprintf("%+v", envVars),
-	})
-
-	for _, envVar := range envVars {
-		switch envVar.Name {
-		case "CC_OTOROSHI_API_CLIENT_ID":
-			otoroshi.APIClientID = pkg.FromStr(envVar.Value)
-		case "CC_OTOROSHI_API_CLIENT_SECRET":
-			otoroshi.APIClientSecret = pkg.FromStr(envVar.Value)
-		case "CC_OTOROSHI_API_URL":
-			otoroshi.APIURL = pkg.FromStr(envVar.Value)
-		case "CC_OTOROSHI_INITIAL_ADMIN_LOGIN":
-			otoroshi.InitialAdminLogin = pkg.FromStr(envVar.Value)
-		case "CC_OTOROSHI_INITIAL_ADMIN_PASSWORD":
-			otoroshi.InitialAdminPassword = pkg.FromStr(envVar.Value)
-		case "CC_OTOROSHI_URL":
-			otoroshi.URL = pkg.FromStr(envVar.Value)
-		}
+	otoroshiRes := tmp.GetOtoroshi(ctx, r.Client(), state.ID.ValueString())
+	if otoroshiRes.HasError() {
+		resp.Diagnostics.AddError("failed to get Otorshi", otoroshiRes.Error().Error())
+	} else {
+		otoroshi := otoroshiRes.Payload()
+		state.APIURL = pkg.FromStr(otoroshi.API.URL)
+		state.APIClientID = pkg.FromStr(otoroshi.EnvVars["CC_OTOROSHI_API_CLIENT_ID"])
+		state.APIClientSecret = pkg.FromStr(otoroshi.EnvVars["CC_OTOROSHI_API_CLIENT_SECRET"])
+		state.InitialAdminLogin = pkg.FromStr(otoroshi.Initialredentials.User)
+		state.InitialAdminPassword = pkg.FromStr(otoroshi.Initialredentials.Passsword)
+		state.URL = pkg.FromStr(otoroshi.AccessURL)
 	}
 
-	resp.Diagnostics.Append(resp.State.Set(ctx, otoroshi)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {

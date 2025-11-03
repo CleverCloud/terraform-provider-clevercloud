@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"fmt"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -39,23 +38,12 @@ func TestAccMetabase_basic(t *testing.T) {
 		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if err != nil {
-					if strings.Contains(err.Error(), "not found") {
-						continue
-					}
-					return fmt.Errorf("failed to get addon ID: %s", err.Error())
-				}
-
-				res := tmp.GetMetabase(ctx, cc, addonId)
+				res := tmp.GetMetabase(ctx, cc, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}
 				if res.HasError() {
 					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
-				if res.Payload().Status == "TO_DELETE" {
-					continue
 				}
 
 				return fmt.Errorf("expect resource '%s' to be deleted", resource.Primary.ID)

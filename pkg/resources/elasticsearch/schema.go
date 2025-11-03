@@ -103,10 +103,6 @@ func (r *ResourceElasticsearch) Schema(_ context.Context, req resource.SchemaReq
 }
 
 func (r *ResourceElasticsearch) validateESVersion(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
-	if req.ConfigValue.IsUnknown() {
-		return
-	}
-
 	// TODO
 	/*version := req.ConfigValue.ValueString()
 	//for v := range r.versions.Iter() {
