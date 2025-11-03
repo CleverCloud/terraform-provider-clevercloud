@@ -219,18 +219,35 @@ func GetMateriaKV(ctx context.Context, cc *client.Client, organisationID, postgr
 }
 
 type Metabase struct {
-	OwnerID        string                `json:"ownerId"`
-	ID             string                `json:"addonId"`
-	NetworkgroupID *string               `json:"networkgroupId"`
-	PostgresID     string                `json:"postgresId"`
-	Status         string                `json:"status" example:"ACTIVE"`
-	Applications   []MetabaseApplication `json:"applications"`
+	ResourceID         string               `json:"resourceId"`
+	AddonID            string               `json:"addonId"`
+	Name               string               `json:"name"`
+	OwnerID            string               `json:"ownerId"`
+	Plan               string               `json:"plan"`
+	Version            string               `json:"version"`
+	AccessURL          string               `json:"accessUrl"`
+	InitialCredentials *MetabaseCredentials `json:"initialCredentials,omitempty"`
+	AvailableVersions  []string             `json:"availableVersions"`
+	Resources          MetabaseResources    `json:"resources"`
+	Features           MetabaseFeatures     `json:"features"`
+	EnvVars            map[string]string    `json:"envVars"`
 }
-type MetabaseApplication struct {
-	MetabaseID        string `json:"appId"`
-	MetabasePlan      string `json:"planIdentifier"`
-	Host              string `json:"host"`
-	JavaApplicationID string `json:"javaId"`
+
+type MetabaseCredentials struct {
+	User     string `json:"user"`
+	Password string `json:"password"`
+}
+
+type MetabaseResources struct {
+	PostgresID string `json:"postgresId"`
+}
+
+type MetabaseFeatures struct {
+	NetworkGroup *MetabaseNetworkGroup `json:"networkGroup,omitempty"`
+}
+
+type MetabaseNetworkGroup struct {
+	NetworkGroupID string `json:"networkGroupId"`
 }
 
 func CreateMetabase(ctx context.Context, cc *client.Client, organisation string, addon AddonRequest) client.Response[AddonResponse] {
@@ -264,23 +281,37 @@ func GetMongoDB(ctx context.Context, cc *client.Client, mongodbID string) client
 }
 
 type Keycloak struct {
-	OwnerID        string                `json:"ownerId"`
-	ID             string                `json:"addonId"`
-	NetworkgroupID *string               `json:"networkgroupId"`
-	PostgresID     string                `json:"postgresId"`
-	FSBucketID     string                `json:"fsBucketId"`
-	Applications   []KeycloakApplication `json:"applications"`
-}
-type KeycloakApplication struct {
-	KeycloakID        string `json:"appId"`
-	KeycloakPlan      string `json:"planIdentifier"`
-	Host              string `json:"host"`
-	JavaApplicationID string `json:"javaId"`
+	ResourceID        string            `json:"resourceId"`
+	AddonID           string            `json:"addonId"`
+	Name              string            `json:"name"`
+	OwnerID           string            `json:"ownerId"`
+	Plan              string            `json:"plan"`
+	Version           string            `json:"version"`
+	AccessURL         string            `json:"accessUrl"`
+	AdminUsername     string            `json:"adminUsername"`
+	AdminPassword     string            `json:"adminPassword"`
+	AvailableVersions []string          `json:"availableVersions"`
+	Resources         KeycloakResources `json:"resources"`
+	Features          KeycloakFeatures  `json:"features"`
+	EnvVars           map[string]string `json:"envVars"`
 }
 
-// Not working ?
-func GetKeycloak(ctx context.Context, cc *client.Client, organisationID, keycloakID string) client.Response[Keycloak] {
-	path := fmt.Sprintf("/v4/keycloaks/organisations/%s/keycloaks/%s", organisationID, keycloakID)
+type KeycloakResources struct {
+	PostgresID string `json:"postgresId"`
+	FSBucketID string `json:"fsBucketId"`
+}
+
+type KeycloakFeatures struct {
+	NetworkGroup *KeycloakNetworkGroup `json:"networkGroup,omitempty"`
+}
+
+type KeycloakNetworkGroup struct {
+	NetworkGroupID string `json:"networkGroupId"`
+}
+
+// Use real ID
+func GetKeycloak(ctx context.Context, cc *client.Client, keycloakID string) client.Response[Keycloak] {
+	path := fmt.Sprintf("/v4/addon-providers/addon-keycloak/addons/%s", keycloakID)
 	return client.Get[Keycloak](ctx, cc, path)
 }
 
@@ -311,26 +342,23 @@ func GetMatomo(ctx context.Context, cc *client.Client, matomoID string) client.R
 }
 
 type OtoroshiInfo struct {
-	ResourceID           string            `json:"resourceId"`
-	AddonID              string            `json:"addonId"`
-	Name                 string            `json:"name"`
-	OwnerID              string            `json:"ownerId"`
-	Plan                 string            `json:"plan"`
-	Version              string            `json:"version"`
-	AccessURL            string            `json:"accessUrl"`
-	API                  *OtoroshiAPI      `json:"api"`
-	AvailableVersions    []string          `json:"availableVersions"`
-	Resources            map[string]string `json:"resources"`
-	Features             map[string]any    `json:"features"`
-	EnvVars              map[string]string `json:"envVars"`
-	APIClientID          string            // Extracted from envVars
-	APIClientSecret      string            // Extracted from envVars
-	APIURL               string            // Extracted from envVars
-	InitialAdminLogin    string            // Extracted from envVars
-	InitialAdminPassword string            // Extracted from envVars
-	URL                  string            // Extracted from envVars
+	ResourceID        string            `json:"resourceId"`
+	AddonID           string            `json:"addonId"`
+	Name              string            `json:"name"`
+	OwnerID           string            `json:"ownerId"`
+	Plan              string            `json:"plan"`
+	Version           string            `json:"version"`
+	AccessURL         string            `json:"accessUrl"`
+	API               *OtoroshiAPI      `json:"api"`
+	AvailableVersions []string          `json:"availableVersions"`
+	Resources         map[string]string `json:"resources"`
+	Features          map[string]any    `json:"features"`
+	EnvVars           map[string]string `json:"envVars"`
+	Initialredentials struct {
+		User      string `json:"user"`
+		Passsword string `json:"password"`
+	} `json:"initialCredentials"`
 }
-
 type OtoroshiAPI struct {
 	URL string `json:"url"`
 }
@@ -338,22 +366,7 @@ type OtoroshiAPI struct {
 // Use real ID
 func GetOtoroshi(ctx context.Context, cc *client.Client, otoroshiID string) client.Response[OtoroshiInfo] {
 	path := fmt.Sprintf("/v4/addon-providers/addon-otoroshi/addons/%s", otoroshiID)
-	resp := client.Get[OtoroshiInfo](ctx, cc, path)
-
-	// Extract specific env vars to dedicated fields if response is successful
-	if !resp.HasError() && resp.Payload() != nil {
-		info := resp.Payload()
-		if info.EnvVars != nil {
-			info.APIClientID = info.EnvVars["CC_OTOROSHI_API_CLIENT_ID"]
-			info.APIClientSecret = info.EnvVars["CC_OTOROSHI_API_CLIENT_SECRET"]
-			info.APIURL = info.EnvVars["CC_OTOROSHI_API_URL"]
-			info.InitialAdminLogin = info.EnvVars["CC_OTOROSHI_INITIAL_ADMIN_LOGIN"]
-			info.InitialAdminPassword = info.EnvVars["CC_OTOROSHI_INITIAL_ADMIN_PASSWORD"]
-			info.URL = info.EnvVars["CC_OTOROSHI_URL"]
-		}
-	}
-
-	return resp
+	return client.Get[OtoroshiInfo](ctx, cc, path)
 }
 
 type DeleteAddonResponse struct {
