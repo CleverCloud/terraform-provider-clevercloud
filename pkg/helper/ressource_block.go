@@ -14,6 +14,7 @@ type Ressource struct {
 	ressourceName string
 	keyValues     map[string]any
 	blockValues   map[string]any
+	isData        bool // true for data sources, false for resources
 }
 
 // New function type that accepts pointer to Ressource
@@ -31,6 +32,28 @@ func NewRessource(ressourceType, ressourceName string, opts ...RessourceOption) 
 	r.ressourceName = ressourceName
 	r.keyValues = map[string]any{}
 	r.blockValues = map[string]any{}
+	r.isData = false
+
+	// RessourceOption functions
+	for _, opt := range opts {
+		opt(&r)
+	}
+
+	return &r
+}
+
+// DataRessource constructor:
+//   - desc: Build a new data source Ressource and apply specifics RessourceOption functions
+//   - args: Ressource type and ressource name, RessourceOption function
+//   - return: pointer to Ressource
+func NewDataRessource(ressourceType, ressourceName string, opts ...RessourceOption) *Ressource {
+
+	var r Ressource
+	r.ressourceType = ressourceType
+	r.ressourceName = ressourceName
+	r.keyValues = map[string]any{}
+	r.blockValues = map[string]any{}
+	r.isData = true
 
 	// RessourceOption functions
 	for _, opt := range opts {
@@ -85,8 +108,14 @@ func SetBlockValues(blockName string, newMap map[string]any) RessourceOption {
 //   - args: none
 //   - return: string
 func (r *Ressource) String() string {
-	s := `resource "` + r.ressourceType + `" "` + r.ressourceName + `" {
+	var s string
+	if r.isData {
+		s = `data "` + r.ressourceType + `" "` + r.ressourceName + `" {
 `
+	} else {
+		s = `resource "` + r.ressourceType + `" "` + r.ressourceName + `" {
+`
+	}
 
 	// create keyValues block
 	s = map_String(r.keyValues, s, `	`, ` =`)

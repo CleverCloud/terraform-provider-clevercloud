@@ -3,6 +3,7 @@ package registry
 import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"go.clever-cloud.com/terraform-provider/pkg/datasources/defaultloadbalancer"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/docker"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/dotnet"
@@ -37,7 +38,9 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/software/otoroshi"
 )
 
-var Datasources = []func() datasource.DataSource{}
+var Datasources = []func() datasource.DataSource{
+	defaultloadbalancer.NewDataSourceDefaultLoadBalancer,
+}
 
 var Resources = []func() resource.Resource{
 	addon.NewResourceAddon,
