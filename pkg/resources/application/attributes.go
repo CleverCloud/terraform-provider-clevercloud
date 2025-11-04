@@ -149,6 +149,9 @@ var runtimeCommon = map[string]schema.Attribute{
 		Computed:            true,
 		Default:             stringdefault.StaticString("par"),
 		MarkdownDescription: "Geographical region where the database will be deployed",
+		PlanModifiers: []planmodifier.String{
+			stringplanmodifier.RequiresReplace(),
+		},
 	},
 	"sticky_sessions": schema.BoolAttribute{
 		Optional:            true,
