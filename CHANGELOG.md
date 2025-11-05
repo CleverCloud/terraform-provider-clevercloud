@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.4.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.3.0...v1.4.0) (2025-11-05)
+
+
+### Features
+
+* elasticsearch ([de8521b](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/de8521be446644aa23cba0b27dd59d3f20f5b4da))
+* **lb:** add loadbalancer datasource ([4f6c864](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/4f6c8644d4e55e926d838dd52fba93abd6b7f7fd))
+* replace applications when region changes ([f51cc56](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/f51cc564d0ca42f6fda482f1f8486464bbed285b)), closes [#269](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/269)
+
+
+### Bug Fixes
+
+* **software:** use dedicated API when available ([f8b57f2](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/f8b57f2cbf5ccb7a59803f10f82e4ffe4567ebb9))
+
 ## [1.3.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.2.0...v1.3.0) (2025-10-16)
 
 
