@@ -67,7 +67,7 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 		acc[v.Name] = pkg.FromStr(v.Value)
 		return acc
 	})
-	tflog.Info(ctx, "API response", map[string]any{
+	tflog.Debug(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", envAsMap),
 	})
 	port, err := strconv.ParseInt(envAsMap["REDIS_PORT"].ValueString(), 10, 64)
@@ -122,7 +122,7 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 		acc[v.Name] = pkg.FromStr(v.Value)
 		return acc
 	})
-	tflog.Info(ctx, "API response", map[string]any{
+	tflog.Debug(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", envAsMap),
 	})
 	port, err := strconv.ParseInt(envAsMap["REDIS_PORT"].ValueString(), 10, 64)

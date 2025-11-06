@@ -23,8 +23,7 @@ import (
 
 func TestAccFrankenPHP_basic(t *testing.T) {
 	t.Parallel()
-
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-frankenphp")
 	fullName := fmt.Sprintf("clevercloud_frankenphp.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())

@@ -21,20 +21,8 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "frankenphp", &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	environment := plan.toEnv(ctx, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	dependencies := plan.DependenciesAsString(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -61,7 +49,6 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 		},
 		Environment:  environment,
 		VHosts:       vhosts,
-		Deployment:   plan.toDeployment(r.GitAuth()),
 		Dependencies: dependencies,
 	}
 
@@ -74,8 +61,17 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
 
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+
 	createdVhosts := createAppRes.Application.Vhosts
 	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
+	plan.StickySessions = pkg.FromBool(createAppRes.Application.StickySessions)
+	plan.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(createAppRes.Application.ForceHTTPS))
+
+	deploy := plan.toDeployment(r.GitAuth())
+	if deploy != nil {
+		application.GitDeploy(ctx, *deploy, createAppRes.Application.DeployURL, &resp.Diagnostics)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }

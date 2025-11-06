@@ -20,17 +20,8 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 	}
 
 	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "play2", &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
-
 	environment := plan.toEnv(ctx, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	dependencies := plan.DependenciesAsString(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -58,7 +49,6 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 		},
 		Environment:  environment,
 		VHosts:       vhosts,
-		Deployment:   plan.toDeployment(r.GitAuth()),
 		Dependencies: dependencies,
 	}
 
@@ -68,7 +58,6 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]any{})
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
 
@@ -76,6 +65,13 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 
 	createdVhosts := createAppRes.Application.Vhosts
 	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
+	plan.StickySessions = pkg.FromBool(createAppRes.Application.StickySessions)
+	plan.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(createAppRes.Application.ForceHTTPS))
+
+	deploy := plan.toDeployment(r.GitAuth())
+	if deploy != nil {
+		application.GitDeploy(ctx, *deploy, createAppRes.Application.DeployURL, &resp.Diagnostics)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }

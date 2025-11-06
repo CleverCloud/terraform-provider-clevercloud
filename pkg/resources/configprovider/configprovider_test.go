@@ -23,7 +23,7 @@ import (
 )
 
 func TestAccConfigProvider_basic(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-cp")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_configprovider.%s", rName)

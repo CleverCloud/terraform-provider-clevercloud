@@ -1,7 +1,6 @@
 package otoroshi_test
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"regexp"
@@ -21,7 +20,7 @@ import (
 
 func TestAccOtoroshi_basic(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-otoroshi")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_otoroshi.%s", rName)

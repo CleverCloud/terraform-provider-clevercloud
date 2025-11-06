@@ -4,7 +4,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -21,33 +20,29 @@ import (
 
 func TestAccCellarBucket_basic(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("my-bucket")
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
-	cellar := &tmp.AddonResponse{}
-	if os.Getenv("TF_ACC") == "1" {
-		res := tmp.CreateAddon(ctx, cc, tests.ORGANISATION, tmp.AddonRequest{
-			Name:       acctest.RandomWithPrefix("tf-cellar-forbucket"),
-			ProviderID: "cellar-addon",
-			Plan:       "plan_84c85ee3-5fdb-4aca-a727-298ddc14b766",
-			Region:     "par",
-		})
-		if res.HasError() {
-			t.Errorf("failed to create depdendence Cellar: %s", res.Error().Error())
-			return
-		}
-
-		cellar = res.Payload()
-
-		defer func() {
-			rmRes := tmp.DeleteAddon(ctx, cc, tests.ORGANISATION, cellar.ID)
-			if rmRes.HasError() && !rmRes.IsNotFoundError() {
-				t.Fatalf("failed to destroy deps %s: %s", cellar.RealID, rmRes.Error().Error())
-			}
-		}()
+	res := tmp.CreateAddon(ctx, cc, tests.ORGANISATION, tmp.AddonRequest{
+		Name:       acctest.RandomWithPrefix("tf-cellar-forbucket"),
+		ProviderID: "cellar-addon",
+		Plan:       "plan_84c85ee3-5fdb-4aca-a727-298ddc14b766",
+		Region:     "par",
+	})
+	if res.HasError() {
+		t.Fatalf("failed to create depdendence Cellar: %s", res.Error().Error())
 	}
+	cellar := res.Payload()
+
+	t.Logf("Using cellar: %+v", cellar)
+	defer func() {
+		rmRes := tmp.DeleteAddon(ctx, cc, tests.ORGANISATION, cellar.ID)
+		if rmRes.HasError() && !rmRes.IsNotFoundError() {
+			t.Fatalf("failed to destroy deps %s: %s", cellar.RealID, rmRes.Error().Error())
+		}
+	}()
 
 	cellarBucketBlock := helper.NewRessource(
 		"clevercloud_cellar_bucket",

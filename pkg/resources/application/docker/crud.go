@@ -14,25 +14,11 @@ import (
 
 // Create a new resource
 func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	plan := Docker{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
+	plan := helper.PlanFrom[Docker](ctx, req.Plan, &resp.Diagnostics)
 
 	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "docker", &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
-
 	environment := plan.toEnv(ctx, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	dependencies := plan.DependenciesAsString(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -60,7 +46,6 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		},
 		Environment:  environment,
 		VHosts:       vhosts,
-		Deployment:   plan.toDeployment(r.GitAuth()),
 		Dependencies: dependencies,
 	}
 
@@ -78,6 +63,11 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 
 	createdVhosts := createAppRes.Application.Vhosts
 	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
+
+	deploy := plan.toDeployment(r.GitAuth())
+	if deploy != nil {
+		application.GitDeploy(ctx, *deploy, createAppRes.Application.DeployURL, &resp.Diagnostics)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }

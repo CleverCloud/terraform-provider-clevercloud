@@ -1,7 +1,6 @@
 package helper
 
 import (
-	"context"
 	"reflect"
 	"testing"
 
@@ -12,7 +11,7 @@ import (
 )
 
 func TestPlanFrom(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	type MyPlan struct {
 		Region string `tfsdk:"region"`
@@ -47,7 +46,7 @@ func TestPlanFrom(t *testing.T) {
 }
 
 func TestPlanFromWithError(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	type MyPlan struct {
 		Region string `tfsdk:"region"`

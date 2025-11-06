@@ -58,8 +58,6 @@ func (r *CreateRes) GetBuildFlavor() types.String {
 
 func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
-
-	// Application
 	res := &CreateRes{}
 
 	req.Application.SeparateBuild = req.Application.BuildFlavor != ""
@@ -104,11 +102,6 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 			tflog.Error(ctx, "ERROR: "+dependency, map[string]any{"err": depRes.Error().Error()})
 			diags.AddError("failed to add dependency", depRes.Error().Error())
 		}
-	}
-
-	// Git Deployment
-	if req.Deployment != nil {
-		diags.Append(gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
 	}
 
 	return res, diags
@@ -172,7 +165,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 
 	// Git Deployment (when commit change)
 	if req.Deployment != nil {
-		diags.Append(gitDeploy(ctx, *req.Deployment, req.Client, res.Application.DeployURL)...)
+		diags.Append(gitDeploy(ctx, *req.Deployment, res.Application.DeployURL)...)
 		if diags.HasError() {
 			return nil, diags
 		}
