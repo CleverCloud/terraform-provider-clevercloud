@@ -23,7 +23,7 @@ import (
 
 func TestAccRuby_basic(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-ruby")
 	fullName := fmt.Sprintf("clevercloud_ruby.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())

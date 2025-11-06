@@ -23,7 +23,7 @@ import (
 )
 
 func TestAccNodejs_basic(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-v")
 	rName2 := acctest.RandomWithPrefix("tf-test-v-2")
 	fullName := fmt.Sprintf("clevercloud_v.%s", rName)

@@ -20,17 +20,8 @@ func (r *ResourceRust) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
-
 	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "rust", &res.Diagnostics)
-	if res.Diagnostics.HasError() {
-		return
-	}
-
 	environment := plan.toEnv(ctx, &res.Diagnostics)
-	if res.Diagnostics.HasError() {
-		return
-	}
-
 	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
@@ -57,7 +48,6 @@ func (r *ResourceRust) Create(ctx context.Context, req resource.CreateRequest, r
 		},
 		Environment:  environment,
 		VHosts:       vhosts,
-		Deployment:   plan.toDeployment(r.GitAuth()),
 		Dependencies: dependencies,
 	}
 
@@ -75,6 +65,13 @@ func (r *ResourceRust) Create(ctx context.Context, req resource.CreateRequest, r
 
 	createdVhosts := createRes.Application.Vhosts
 	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &res.Diagnostics)
+	plan.StickySessions = pkg.FromBool(createRes.Application.StickySessions)
+	plan.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(createRes.Application.ForceHTTPS))
+
+	deploy := plan.toDeployment(r.GitAuth())
+	if deploy != nil {
+		application.GitDeploy(ctx, *deploy, createRes.Application.DeployURL, &res.Diagnostics)
+	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }

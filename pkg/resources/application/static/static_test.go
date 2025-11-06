@@ -1,7 +1,6 @@
 package static_test
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"regexp"
@@ -20,7 +19,7 @@ import (
 )
 
 func TestAccStatic_basic(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-static")
 	fullName := fmt.Sprintf("clevercloud_static.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())

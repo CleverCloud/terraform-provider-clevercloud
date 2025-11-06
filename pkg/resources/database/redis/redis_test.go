@@ -1,7 +1,6 @@
 package redis_test
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"regexp"
@@ -21,7 +20,7 @@ import (
 
 func TestAccRedis_basic(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-redis")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_redis.%s", rName)

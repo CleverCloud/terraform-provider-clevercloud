@@ -16,24 +16,24 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"go.clever-cloud.dev/client"
 )
 
-func gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemote string) diag.Diagnostics {
-	var diags diag.Diagnostics
-
+func GitDeploy(ctx context.Context, d Deployment, cleverRemote string, diags *diag.Diagnostics) {
+	var errs diag.Diagnostics
 	for range 5 {
-		diags = _gitDeploy(ctx, d, cc, cleverRemote)
-		if !diags.HasError() {
+		errs = gitDeploy(ctx, d, cleverRemote)
+		if !errs.HasError() {
 			break
 		}
 
 		time.Sleep(3 * time.Second)
 	}
-	return diags
+
+	// only add last error
+	diags.Append(errs...)
 }
 
-func _gitDeploy(ctx context.Context, d Deployment, cc *client.Client, cleverRemote string) diag.Diagnostics {
+func gitDeploy(ctx context.Context, d Deployment, cleverRemote string) diag.Diagnostics {
 	cleverRemote = strings.Replace(cleverRemote, "git+ssh", "https", 1) // switch protocol
 
 	repo, diags := OpenOrClone(ctx, d.Repository, d.Commit)

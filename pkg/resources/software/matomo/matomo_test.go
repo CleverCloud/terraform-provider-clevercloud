@@ -1,7 +1,6 @@
 package matomo_test
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"regexp"
@@ -20,7 +19,7 @@ import (
 )
 
 func TestAccMatomo_basic(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-matomo")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_matomo.%s", rName)

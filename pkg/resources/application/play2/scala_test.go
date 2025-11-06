@@ -1,7 +1,6 @@
 package play2_test
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"regexp"
@@ -21,7 +20,7 @@ import (
 
 func TestAccPlay2_basic(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-play2")
 	fullName := fmt.Sprintf("clevercloud_play2.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())

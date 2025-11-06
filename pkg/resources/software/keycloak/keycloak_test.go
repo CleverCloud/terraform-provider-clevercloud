@@ -1,7 +1,6 @@
 package keycloak_test
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"regexp"
@@ -21,7 +20,7 @@ import (
 
 func TestAccKeycloak_basic(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-kc")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_keycloak.%s", rName)

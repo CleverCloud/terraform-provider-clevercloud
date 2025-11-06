@@ -157,8 +157,7 @@ func readCluster(state *Pulsar, cluster *tmp.PulsarCluster, diags *diag.Diagnost
 
 func readRetention(ctx context.Context, state *Pulsar, diags *diag.Diagnostics) {
 	period, size := state.RetentionPeriod, state.RetentionSize
-
-	tflog.Warn(ctx, "ReadRetention", map[string]any{"period": period, "size": size})
+	tflog.Debug(ctx, "ReadRetention", map[string]any{"period": period, "size": size})
 
 	admin, err := state.AdminClient()
 	if err != nil {
@@ -189,7 +188,7 @@ func setRetention(ctx context.Context, plan *Pulsar, diags *diag.Diagnostics) {
 	size := plan.RetentionSize
 	period := plan.RetentionPeriod
 
-	tflog.Warn(ctx, "SetRetention", map[string]any{"period": period, "size": size, "tenantNs": plan.TenantAndNamespace()})
+	tflog.Debug(ctx, "SetRetention", map[string]any{"period": period, "size": size, "tenantNs": plan.TenantAndNamespace()})
 
 	if !pkg.AtLeastOneSet(size, period) {
 		return // none of the attributs set

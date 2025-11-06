@@ -25,7 +25,7 @@ import (
 
 func TestAccPython_basic(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-python")
 	rName2 := acctest.RandomWithPrefix("tf-test-python-2")
 	fullName := fmt.Sprintf("clevercloud_python.%s", rName)

@@ -1,7 +1,6 @@
 package php_test
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"regexp"
@@ -22,7 +21,7 @@ import (
 func TestAccPHP_basic(t *testing.T) {
 	t.Parallel()
 	t.Logf("starting....")
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-php")
 	fullName := fmt.Sprintf("clevercloud_php.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())

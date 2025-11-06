@@ -1,7 +1,6 @@
 package resources_test
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"os"
@@ -26,7 +25,7 @@ import (
 // This is a test for local Git repositories, we don't care about the runtime
 func TestAccPython_localGit(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-python")
 	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())

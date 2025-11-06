@@ -1,7 +1,6 @@
 package materiakv_test
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"regexp"
@@ -21,7 +20,7 @@ import (
 
 func TestAccMateriaKV_basic(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-kv")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_materia_kv.%s", rName)

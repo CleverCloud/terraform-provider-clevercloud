@@ -1,7 +1,6 @@
 package scala_test
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"regexp"
@@ -22,7 +21,7 @@ import (
 )
 
 func TestAccScala_basic(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-scala")
 	fullName := fmt.Sprintf("clevercloud_scala.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())

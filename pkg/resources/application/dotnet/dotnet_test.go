@@ -24,7 +24,7 @@ import (
 
 func TestAccDotnet_basic(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-dotnet")
 	rName2 := acctest.RandomWithPrefix("tf-test-dotnet-2")
 	fullName := fmt.Sprintf("clevercloud_dotnet.%s", rName)
