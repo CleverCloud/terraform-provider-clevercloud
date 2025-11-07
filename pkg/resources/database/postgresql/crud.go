@@ -13,13 +13,16 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
-	"go.clever-cloud.dev/client"
 )
 
 func (r *ResourcePostgreSQL) FetchPostgresInfos(ctx context.Context, diags *diag.Diagnostics) {
-	cc := client.New()
+	// Skip fetching during schema validation (before provider is configured)
+	if r.Provider == nil || r.Client() == nil {
+		tflog.Debug(ctx, "Skipping postgres infos fetch - provider not configured yet")
+		return
+	}
 
-	res := tmp.GetPostgresInfos(ctx, cc)
+	res := tmp.GetPostgresInfos(ctx, r.Client())
 	if res.HasError() {
 		tflog.Error(ctx, "failed to get postgres infos", map[string]any{"error": res.Error().Error()})
 		return
