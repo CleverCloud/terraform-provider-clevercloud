@@ -3,6 +3,7 @@ package python
 import (
 	"context"
 	_ "embed"
+	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
@@ -95,9 +96,19 @@ func (py Python) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 		return nil
 	}
 
-	return &application.Deployment{
+	d := &application.Deployment{
 		Repository:    py.Deployment.Repository.ValueString(),
 		Commit:        py.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,
 	}
+
+	if !py.Deployment.BasicAuthentication.IsNull() && !py.Deployment.BasicAuthentication.IsUnknown() {
+		// Expect validation to be done in the schema valisation step
+		userPass := py.Deployment.BasicAuthentication.ValueString()
+		splits := strings.SplitN(userPass, ":", 2)
+		d.Username = &splits[0]
+		d.Password = &splits[1]
+	}
+
+	return d
 }

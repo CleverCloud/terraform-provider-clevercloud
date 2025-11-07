@@ -3,6 +3,7 @@ package v
 import (
 	"context"
 	_ "embed"
+	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
@@ -75,9 +76,19 @@ func (vapp V) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 		return nil
 	}
 
-	return &application.Deployment{
+	d := &application.Deployment{
 		Repository:    vapp.Deployment.Repository.ValueString(),
 		Commit:        vapp.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,
 	}
+
+	if !vapp.Deployment.BasicAuthentication.IsNull() && !vapp.Deployment.BasicAuthentication.IsUnknown() {
+		// Expect validation to be done in the schema valisation step
+		userPass := vapp.Deployment.BasicAuthentication.ValueString()
+		splits := strings.SplitN(userPass, ":", 2)
+		d.Username = &splits[0]
+		d.Password = &splits[1]
+	}
+
+	return d
 }

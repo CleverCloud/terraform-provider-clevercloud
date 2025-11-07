@@ -28,14 +28,14 @@ description: |-
   
   For detailed instructions, refer to GitHub's documentation on creating a fine-grained personal access token https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-fine-grained-personal-access-token
   Using the Token in Terraform
-  Once the token is generated, add the authentication attribute to the deployment block of your application resource:
+  Once the token is generated, add the authentication_basic attribute to the deployment block of your application resource:
   
   resource "clevercloud_nodejs" "my_app" {
     # ... other configuration ...
   
     deployment {
       repository = "https://github.com/OWNER/REPO.git"
-      authentication = "USER:PAT_TOKEN"
+      authentication_basic = "USER:PAT_TOKEN"
     }
   }
   
@@ -84,7 +84,7 @@ For detailed instructions, refer to [GitHub's documentation on creating a fine-g
 
 ### Using the Token in Terraform
 
-Once the token is generated, add the `authentication` attribute to the `deployment` block of your application resource:
+Once the token is generated, add the `authentication_basic` attribute to the `deployment` block of your application resource:
 
 ```hcl
 resource "clevercloud_nodejs" "my_app" {
@@ -92,7 +92,7 @@ resource "clevercloud_nodejs" "my_app" {
 
   deployment {
     repository = "https://github.com/OWNER/REPO.git"
-    authentication = "USER:PAT_TOKEN"
+    authentication_basic = "USER:PAT_TOKEN"
   }
 }
 ```
