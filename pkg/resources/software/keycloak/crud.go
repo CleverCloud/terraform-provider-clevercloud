@@ -13,7 +13,6 @@ import (
 // Create a new resource
 func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
 	kc := helper.PlanFrom[Keycloak](ctx, req.Plan, &res.Diagnostics)
-	res.Diagnostics.Append(req.Plan.Get(ctx, &kc)...)
 	if res.Diagnostics.HasError() {
 		return
 	}

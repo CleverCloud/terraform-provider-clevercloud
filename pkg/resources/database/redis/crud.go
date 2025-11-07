@@ -19,9 +19,7 @@ import (
 
 // Create a new resource
 func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	rd := Redis{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &rd)...)
+	rd := helper.PlanFrom[Redis](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

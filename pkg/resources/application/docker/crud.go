@@ -84,9 +84,7 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 
 // Read resource information
 func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state Docker
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	state := helper.StateFrom[Docker](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -203,9 +201,7 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 
 // Delete resource
 func (r *ResourceDocker) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state Docker
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	state := helper.StateFrom[Docker](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -36,7 +37,7 @@ func GitDeploy(ctx context.Context, d Deployment, cleverRemote string, diags *di
 func gitDeploy(ctx context.Context, d Deployment, cleverRemote string) diag.Diagnostics {
 	cleverRemote = strings.Replace(cleverRemote, "git+ssh", "https", 1) // switch protocol
 
-	repo, diags := OpenOrClone(ctx, d.Repository, d.Commit)
+	repo, diags := OpenOrClone(ctx, d.Repository, WithCommit(d.Commit), WithBasicAuth(d.Username, d.Password))
 	if diags.HasError() {
 		return diags
 	}
@@ -140,12 +141,12 @@ func IsSHA1(s string) bool {
 	return err == nil && len(h) == sha1.Size
 }
 
-func OpenOrClone(ctx context.Context, repoUrl string, commit *string) (*git.Repository, diag.Diagnostics) {
+func OpenOrClone(ctx context.Context, repoUrl string, opts ...CloneOpts) (*git.Repository, diag.Diagnostics) {
 	if strings.HasPrefix(repoUrl, "file://") {
 		return open(repoUrl)
 	}
 
-	return clone(ctx, repoUrl, commit)
+	return clone(ctx, repoUrl, opts...)
 }
 
 func open(repoUrl string) (*git.Repository, diag.Diagnostics) {
@@ -160,7 +161,31 @@ func open(repoUrl string) (*git.Repository, diag.Diagnostics) {
 	return repo, diags
 }
 
-func clone(ctx context.Context, repoUrl string, commit *string) (*git.Repository, diag.Diagnostics) {
+type CloneOpts func(context.Context, *git.CloneOptions)
+
+func WithBasicAuth(user, password *string) CloneOpts {
+	return func(ctx context.Context, co *git.CloneOptions) {
+		if user == nil || password == nil {
+			return
+		}
+
+		tflog.Debug(ctx, "Adding basic auth to clone", map[string]any{
+			"user":     user,
+			"password": password,
+		})
+		co.Auth = &http.BasicAuth{Username: *user, Password: *password}
+	}
+}
+
+func WithCommit(commit *string) CloneOpts {
+	return func(ctx context.Context, co *git.CloneOptions) {
+		if commit != nil && strings.HasPrefix(*commit, "refs/") {
+			co.ReferenceName = plumbing.ReferenceName(*commit)
+		}
+	}
+}
+
+func clone(ctx context.Context, repoUrl string, opts ...CloneOpts) (*git.Repository, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 	fs := memory.NewStorage()
 	wt := memfs.New()
@@ -170,9 +195,8 @@ func clone(ctx context.Context, repoUrl string, commit *string) (*git.Repository
 		RemoteName: "origin",
 		Progress:   os.Stdout,
 	}
-
-	if commit != nil && strings.HasPrefix(*commit, "refs/") {
-		cloneOpts.ReferenceName = plumbing.ReferenceName(*commit)
+	for _, opt := range opts {
+		opt(ctx, cloneOpts)
 	}
 
 	r, err := git.CloneContext(ctx, fs, wt, cloneOpts)
