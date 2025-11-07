@@ -37,11 +37,10 @@ type UpdateReq struct {
 }
 
 type Deployment struct {
-	CleverGitAuth  *http.BasicAuth
-	Repository     string
-	Commit         *string
-	User, Password *string
-	PrivateSSHKey  *string
+	CleverGitAuth      *http.BasicAuth
+	Repository         string
+	Commit             *string
+	Username, Password *string
 }
 
 type CreateRes struct {

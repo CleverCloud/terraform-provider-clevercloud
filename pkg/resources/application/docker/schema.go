@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"strconv"
+	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
@@ -210,9 +211,21 @@ func (p *Docker) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 		return nil
 	}
 
-	return &application.Deployment{
+	d := &application.Deployment{
 		Repository:    p.Deployment.Repository.ValueString(),
 		Commit:        p.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,
 	}
+
+	if !p.Deployment.BasicAuthentication.IsNull() && !p.Deployment.BasicAuthentication.IsUnknown() {
+		// Expect validation to be done in the schema valisation step
+		userPass := p.Deployment.BasicAuthentication.ValueString()
+		splits := strings.SplitN(userPass, ":", 2)
+		d.Username = &splits[0]
+		d.Password = &splits[1]
+	}
+	fmt.Printf("\n\nDEPLOY%+v\n\n", p.Deployment)
+	fmt.Printf("\n\nDEPLOY%+v\n\n", d)
+
+	return d
 }

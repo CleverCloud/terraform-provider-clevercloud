@@ -4,6 +4,7 @@ page_title: "clevercloud_php Resource - terraform-provider-clevercloud"
 description: |-
   Manage PHP with Apache https://www.php.net/ applications.
   See PHP with Apache product specification https://www.clever.cloud/developers/doc/applications/php/.
+  Note: For deploying from private GitHub repositories, see the private repository deployment guide https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-private-repository-deployment.
 ---
 
 # clevercloud_php (Resource)
@@ -11,6 +12,8 @@ description: |-
 Manage [PHP with Apache](https://www.php.net/) applications.
 
 See [PHP with Apache product specification](https://www.clever.cloud/developers/doc/applications/php/).
+
+**Note**: For deploying from private GitHub repositories, see the [private repository deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-private-repository-deployment).
 
 
 
@@ -55,6 +58,7 @@ Can be either app_xxx or postgres_yyy ID format
 
 Optional:
 
+- `authentication_basic` (String, Sensitive) user ans password ':' separated, (PersonalAccessToken in Github case)
 - `commit` (String) Support multiple syntax like `refs/heads/[BRANCH]` or `[COMMIT]`, in most of the case, you can use `refs/heads/master`
 - `repository` (String) The repository URL to deploy, can be 'https://...', 'file://...'
 

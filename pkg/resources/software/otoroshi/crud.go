@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -141,13 +140,10 @@ func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateReques
 }
 
 func (r *ResourceOtoroshi) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var otoroshi Otoroshi
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &otoroshi)...)
+	otoroshi := helper.StateFrom[Otoroshi](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "OTOROSHI DELETE", map[string]any{"otoroshi": otoroshi})
 
 	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), otoroshi.ID.ValueString())
 	if res.IsNotFoundError() {

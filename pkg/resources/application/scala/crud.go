@@ -89,9 +89,7 @@ func (r *ResourceScala) Create(ctx context.Context, req resource.CreateRequest, 
 
 // Read resource information
 func (r *ResourceScala) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	var state Scala
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	state := helper.StateFrom[Scala](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -218,13 +216,10 @@ func (r *ResourceScala) Update(ctx context.Context, req resource.UpdateRequest, 
 
 // Delete resource
 func (r *ResourceScala) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var state Scala
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	state := helper.StateFrom[Scala](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "SCALA DELETE", map[string]any{"state": state})
 
 	res := tmp.DeleteApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if res.IsNotFoundError() {

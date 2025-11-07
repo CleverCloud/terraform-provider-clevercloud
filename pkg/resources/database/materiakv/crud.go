@@ -15,9 +15,7 @@ import (
 
 // Create a new resource
 func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	kv := MateriaKV{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &kv)...)
+	kv := helper.PlanFrom[MateriaKV](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
