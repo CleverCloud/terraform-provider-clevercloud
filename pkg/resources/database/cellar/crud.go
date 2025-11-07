@@ -138,15 +138,13 @@ func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest,
 
 // Delete resource
 func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var cellar Cellar
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &cellar)...)
+	state := helper.StateFrom[Cellar](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "CELLAR DELETE", map[string]any{"cellar": cellar})
+	tflog.Debug(ctx, "CELLAR DELETE", map[string]any{"cellar": state})
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 	}

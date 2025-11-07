@@ -182,14 +182,10 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 
 // Delete resource
 func (r *ResourcePHP) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	tflog.Debug(ctx, "ResourcePHP.Delete()")
-	var state PHP
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	state := helper.StateFrom[PHP](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "PHP DELETE", map[string]any{"state": state})
 
 	res := tmp.DeleteApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if res.IsNotFoundError() {

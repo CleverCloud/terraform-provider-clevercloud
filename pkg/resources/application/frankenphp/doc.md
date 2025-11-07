@@ -6,3 +6,5 @@ FrankenPHP is a modern PHP application server, written in Go. It gives superpowe
 
 - [FrankenPHP Official Website](https://frankenphp.dev/)
 - [CleverCloud FrankenPHP Documentation](https://www.clever.cloud/developers/doc/applications/frankenphp/)
+
+**Note**: For deploying from private GitHub repositories, see the [private repository deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-private-repository-deployment).

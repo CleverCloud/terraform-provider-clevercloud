@@ -2,6 +2,7 @@ package attributes
 
 import (
 	"context"
+	"maps"
 	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing"
@@ -13,8 +14,9 @@ import (
 
 // Deployment block
 type Deployment struct {
-	Repository types.String `tfsdk:"repository"`
-	Commit     types.String `tfsdk:"commit"`
+	Repository          types.String `tfsdk:"repository"`
+	Commit              types.String `tfsdk:"commit"`
+	BasicAuthentication types.String `tfsdk:"authentication_basic"`
 }
 
 // Hooks block
@@ -57,6 +59,14 @@ var blocks = map[string]schema.Block{
 						}),
 				},
 			},
+			"authentication_basic": schema.StringAttribute{
+				Sensitive: true,
+				Optional:  true,
+				// TODO: investigate behaviour (not available in plan, but available in config ?)
+				//WriteOnly:           true,
+				MarkdownDescription: "user ans password ':' separated, (PersonalAccessToken in Github case)",
+				Validators:          []validator.String{UserPasswordInput},
+			},
 		},
 	},
 	"hooks": schema.SingleNestedBlock{
@@ -90,17 +100,26 @@ var blocks = map[string]schema.Block{
 	},
 }
 
+var UserPasswordInput = pkg.NewStringValidator("format must be 'user:password'", func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	v := req.ConfigValue.ValueString()
+	splits := strings.SplitN(v, ":", 2)
+	if len(splits) != 2 {
+		res.Diagnostics.AddError("invalid authenication value", "expect user:password")
+		return
+	}
+	if splits[0] == "" && splits[1] == "" {
+		res.Diagnostics.AddError("invalid authenication value", "user and password cannot be both empty")
+	}
+})
+
 func WithBlockRuntimeCommons(runtimeSpecifics map[string]schema.Block) map[string]schema.Block {
 	m := map[string]schema.Block{}
-
-	for blockName, block := range blocks {
-		m[blockName] = block
-	}
-
-	for blockName, block := range runtimeSpecifics {
-		m[blockName] = block
-	}
-
+	maps.Copy(m, blocks)
+	maps.Copy(m, runtimeSpecifics)
 	return m
 }
 
