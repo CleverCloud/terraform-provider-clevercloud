@@ -5,7 +5,7 @@ on:
   - pull_request
 
 jobs:
-  test:
+  acceptance:
     runs-on: ubuntu-latest
     #strategy:
     #  matrix:
@@ -23,6 +23,7 @@ jobs:
         CC_OAUTH_TOKEN: ${{ secrets.CC_OAUTH_TOKEN }}
         CC_OAUTH_SECRET: ${{ secrets.CC_OAUTH_SECRET }}
         ORGANISATION: ${{ secrets.ORGANISATION }}
+        CLONE_AUTH: ${{ secrets.CLONE_AUTH }}
     - name: Sweepers
       if: always()
       run: make sweep

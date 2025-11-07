@@ -166,6 +166,7 @@ type CloneOpts func(context.Context, *git.CloneOptions)
 func WithBasicAuth(user, password *string) CloneOpts {
 	return func(ctx context.Context, co *git.CloneOptions) {
 		if user == nil || password == nil {
+			tflog.Debug(ctx, "skipping adding auth on this repo")
 			return
 		}
 
