@@ -104,9 +104,6 @@ func TestAccDocker_privateRepository(t *testing.T) {
 			"authentication_basic": cloneAuth,
 		}))
 
-	config := providerBlock.Append(dockerBlock).String()
-	t.Logf("CONFIG: \n%+v", config)
-
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck: func() {
@@ -118,7 +115,7 @@ func TestAccDocker_privateRepository(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       config,
+			Config:       providerBlock.Append(dockerBlock).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),

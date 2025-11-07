@@ -224,8 +224,6 @@ func (p *Docker) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 		d.Username = &splits[0]
 		d.Password = &splits[1]
 	}
-	fmt.Printf("\n\nDEPLOY%+v\n\n", p.Deployment)
-	fmt.Printf("\n\nDEPLOY%+v\n\n", d)
 
 	return d
 }

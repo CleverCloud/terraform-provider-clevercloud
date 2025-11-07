@@ -3,6 +3,7 @@ package dotnet
 import (
 	"context"
 	_ "embed"
+	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
@@ -78,9 +79,19 @@ func (dotnetapp Dotnet) toDeployment(gitAuth *http.BasicAuth) *application.Deplo
 		return nil
 	}
 
-	return &application.Deployment{
+	d := &application.Deployment{
 		Repository:    dotnetapp.Deployment.Repository.ValueString(),
 		Commit:        dotnetapp.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,
 	}
+
+	if !dotnetapp.Deployment.BasicAuthentication.IsNull() && !dotnetapp.Deployment.BasicAuthentication.IsUnknown() {
+		// Expect validation to be done in the schema valisation step
+		userPass := dotnetapp.Deployment.BasicAuthentication.ValueString()
+		splits := strings.SplitN(userPass, ":", 2)
+		d.Username = &splits[0]
+		d.Password = &splits[1]
+	}
+
+	return d
 }

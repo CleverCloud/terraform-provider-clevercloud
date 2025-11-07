@@ -79,9 +79,19 @@ func (r Rust) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 		return nil
 	}
 
-	return &application.Deployment{
+	d := &application.Deployment{
 		Repository:    r.Deployment.Repository.ValueString(),
 		Commit:        r.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,
 	}
+
+	if !r.Deployment.BasicAuthentication.IsNull() && !r.Deployment.BasicAuthentication.IsUnknown() {
+		// Expect validation to be done in the schema valisation step
+		userPass := r.Deployment.BasicAuthentication.ValueString()
+		splits := strings.SplitN(userPass, ":", 2)
+		d.Username = &splits[0]
+		d.Password = &splits[1]
+	}
+
+	return d
 }

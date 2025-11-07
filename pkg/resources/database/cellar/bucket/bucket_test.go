@@ -1,12 +1,10 @@
 package bucket_test
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -22,74 +20,67 @@ func TestAccCellarBucket_basic(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("my-bucket")
+	fullName := "clevercloud_cellar_bucket." + rName
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
-	res := tmp.CreateAddon(ctx, cc, tests.ORGANISATION, tmp.AddonRequest{
-		Name:       acctest.RandomWithPrefix("tf-cellar-forbucket"),
-		ProviderID: "cellar-addon",
-		Plan:       "plan_84c85ee3-5fdb-4aca-a727-298ddc14b766",
-		Region:     "par",
-	})
-	if res.HasError() {
-		t.Fatalf("failed to create depdendence Cellar: %s", res.Error().Error())
-	}
-	cellar := res.Payload()
-
-	t.Logf("Using cellar: %+v", cellar)
-	defer func() {
-		rmRes := tmp.DeleteAddon(ctx, cc, tests.ORGANISATION, cellar.ID)
-		if rmRes.HasError() && !rmRes.IsNotFoundError() {
-			t.Fatalf("failed to destroy deps %s: %s", cellar.RealID, rmRes.Error().Error())
-		}
-	}()
+	cellarBlock := helper.NewRessource(
+		"clevercloud_cellar",
+		"cellar1",
+		helper.SetKeyValues(map[string]any{
+			"name": "cellar1",
+		}),
+	)
 
 	cellarBucketBlock := helper.NewRessource(
 		"clevercloud_cellar_bucket",
 		rName,
 		helper.SetKeyValues(map[string]any{
 			"id":        rName,
-			"cellar_id": cellar.RealID,
+			"cellar_id": "${clevercloud_cellar.cellar1.id}",
 		}))
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() {
-			if tests.ORGANISATION == "" {
-				t.Fatalf("missing ORGANISATION env var")
-			}
-			if cellar.RealID == "" {
-				t.Fatalf("missing CellarID")
-			}
-		},
+		PreCheck:                 tests.ExpectOrganisation(t),
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		Steps: []resource.TestStep{{
-			ResourceName:      "cellar_bucket_" + rName,
-			Config:            providerBlock.Append(cellarBucketBlock).String(),
-			ConfigStateChecks: []statecheck.StateCheck{},
+			ResourceName:      fullName,
+			Config:            providerBlock.Append(cellarBlock, cellarBucketBlock).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				// TODO
+			},
 		}},
 		CheckDestroy: func(state *terraform.State) error {
 			for resourceName, resourceState := range state.RootModule().Resources {
-				tflog.Debug(ctx, "TEST DESTROY", map[string]any{"bucket": resourceState})
-				res := tmp.GetAddonEnv(context.Background(), cc, tests.ORGANISATION, cellar.ID) // TODO: resourceState.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
+				switch resourceName {
+				case "clevercloud_cellar.cellar1":
+					t.Logf("skip cellar addon")
 
-				minioClient, err := s3.MinioClientFromEnvsFor(*res.Payload())
-				if err != nil {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
+				case fullName:
+					id := resourceState.Primary.Attributes["cellar_id"]
+					res := tmp.GetAddonEnv(ctx, cc, tests.ORGANISATION, id)
+					if res.IsNotFoundError() {
+						continue
+					}
+					if res.HasError() {
+						return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+					}
 
-				exists, err := minioClient.BucketExists(ctx, rName)
-				if err != nil {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
+					minioClient, err := s3.MinioClientFromEnvsFor(*res.Payload())
+					if err != nil {
+						return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+					}
 
-				if exists {
-					return fmt.Errorf("expect cellar bucket resource '%s' to be deleted", resourceName)
+					exists, err := minioClient.BucketExists(ctx, rName)
+					if err != nil {
+						return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+					}
+
+					if exists {
+						return fmt.Errorf("expect cellar bucket resource '%s' to be deleted", resourceName)
+					}
+				default:
+					return fmt.Errorf("unhandled resource: %s", resourceName)
 				}
 			}
 			return nil
