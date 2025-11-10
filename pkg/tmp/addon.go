@@ -449,6 +449,43 @@ func GetPostgresInfos(ctx context.Context, cc *client.Client) client.Response[Po
 	return client.Get[PostgresInfos](ctx, cc, path)
 }
 
+type AddonMigrationRequest struct {
+	PlanID  string  `json:"planId"`
+	Region  string  `json:"region"`
+	Version *string `json:"version"`
+}
+
+type AddonMigrationResponse struct {
+	MigrationID string               `json:"migrationId"`
+	RequestDate string               `json:"requestDate"`
+	Steps       []AddonMigrationStep `json:"steps"`
+	Status      string               `json:"status"`
+}
+
+type AddonMigrationStep struct {
+	Name      string `json:"name,omitempty"`
+	Value     string `json:"value,omitempty"`
+	Status    string `json:"status,omitempty"`
+	StartDate string `json:"startDate,omitempty"`
+	EndDate   string `json:"endDate,omitempty"`
+	Message   string `json:"message,omitempty"`
+}
+
+func MigrateAddon(ctx context.Context, cc *client.Client, organisationID string, addonID string, req AddonMigrationRequest) client.Response[AddonMigrationResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/addons/%s/migrations", organisationID, addonID)
+	return client.Post[AddonMigrationResponse](ctx, cc, path, req)
+}
+
+func ListAddonMigrations(ctx context.Context, cc *client.Client, organisationID string, addonID string) client.Response[[]AddonMigrationResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/addons/%s/migrations", organisationID, addonID)
+	return client.Get[[]AddonMigrationResponse](ctx, cc, path)
+}
+
+func GetAddonMigrations(ctx context.Context, cc *client.Client, organisationID, addonID, migrationID string) client.Response[AddonMigrationResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/addons/%s/migrations/%s", organisationID, addonID, migrationID)
+	return client.Get[AddonMigrationResponse](ctx, cc, path)
+}
+
 type MysqlInfos struct {
 	DefaultDedicatedVersion string         `json:"defaultDedicatedVersion"`
 	ProviderID              string         `json:"providerId"`

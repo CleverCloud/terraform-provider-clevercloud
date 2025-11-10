@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -187,5 +188,93 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 				ExpectNonEmptyPlan: true,
 			},
 		},
+	})
+}
+
+func TestAccPostgreSQL_migration(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-pg")
+	fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
+	cc := client.New(client.WithAutoOauthConfig())
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	postgresqlBlock := helper.NewRessource(
+		"clevercloud_postgresql",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+			"plan":   "xxs_sml",
+		}))
+	providerBlock2 := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	postgresqlBlock2 := helper.NewRessource(
+		"clevercloud_postgresql",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+			"plan":   "m_med",
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy: func(state *terraform.State) error {
+			for _, resource := range state.RootModule().Resources {
+				addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
+				if err != nil {
+					if strings.Contains(err.Error(), "not found") {
+						continue
+					}
+					return fmt.Errorf("failed to get addon ID: %s", err.Error())
+				}
+
+				res := tmp.GetPostgreSQL(ctx, cc, addonId)
+				if res.IsNotFoundError() {
+					continue
+				}
+				if res.HasError() {
+					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+				}
+				if res.Payload().Status == "TO_DELETE" {
+					continue
+				}
+
+				return fmt.Errorf("expect resource '%s' to be deleted", resource.Primary.ID)
+			}
+			return nil
+		},
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(postgresqlBlock).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^postgresql_.*`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("port"), knownvalue.NotNull()),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("database"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("user"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.StringExact("xxs_sml")),
+				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("password")),
+			},
+		}, {
+			ResourceName: rName,
+			PreConfig: func() {
+				// in order to test migrations, we must be sure the initial instance is started
+				// there is not available information to know that yet
+				time.Sleep(1 * time.Minute)
+			},
+			Config: providerBlock2.Append(postgresqlBlock2).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^postgresql_.*`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*-postgresql\.services\.clever-cloud\.com$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("port"), knownvalue.NotNull()),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("database"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("user"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.StringExact("m_med")),
+				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("password")),
+			},
+		}},
 	})
 }
