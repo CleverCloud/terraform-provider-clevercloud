@@ -95,26 +95,19 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 
 	r.readFromAddon(&plan, *addon)
 
-	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), addon.RealID)
-	if envRes.HasError() {
-		res.Diagnostics.AddError("failed to get addon env", envRes.Error().Error())
-	} else {
-		r.readFromEnv(&plan, *envRes.Payload())
-	}
-
 	esRes := tmp.GetElasticsearch(ctx, r.Client(), addon.ID)
 	if esRes.HasError() {
 		res.Diagnostics.AddError("failed to get Elasticsearch", esRes.Error().Error())
 	} else {
-		r.readFromAPI(&plan, *esRes.Payload())
+		r.readFromAPI(&plan, *esRes.Payload(), &res.Diagnostics)
 	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
 
 func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadRequest, res *resource.ReadResponse) {
-	state := helper.StateFrom[Elasticsearch](ctx, req.State, &res.Diagnostics)
 	identity := helper.IdentityFrom[ElasticsearchIdentity](ctx, *req.Identity, &res.Diagnostics)
+	state := helper.StateFrom[Elasticsearch](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -138,14 +131,14 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 		if elasticRes.HasError() {
 			res.Diagnostics.AddError("failed to get Elasticsearch resource", elasticRes.Error().Error())
 		} else {
-			r.readFromAPI(&state, *elasticRes.Payload())
+			r.readFromAPI(&state, *elasticRes.Payload(), &res.Diagnostics)
 		}
 	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }
 
-func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic tmp.Elasticsearch) {
+func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic tmp.Elasticsearch, diags *diag.Diagnostics) {
 	state.Host = pkg.FromStr(elastic.Host)
 	state.User = pkg.FromStr(elastic.User)
 	state.Password = pkg.FromStr(elastic.Password)
@@ -161,42 +154,38 @@ func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic tmp.El
 
 	state.KibanaUser = basetypes.NewStringNull()
 	state.KibanaPassword = basetypes.NewStringNull()
+	state.KibanaHost = basetypes.NewStringNull()
 	if features["kibana"] {
 		state.KibanaUser = pkg.FromStr(elastic.KibanaUser)
 		state.KibanaPassword = pkg.FromStr(elastic.KibanaPassword)
+	}
+	if elastic.KibanaHost != nil {
+		state.KibanaHost = pkg.FromStr(*elastic.KibanaHost)
 	}
 
 	state.ApmUser = basetypes.NewStringNull()
 	state.ApmPassword = basetypes.NewStringNull()
 	state.ApmToken = basetypes.NewStringNull()
+	state.ApmHost = basetypes.NewStringNull()
 	if features["apm"] {
 		state.ApmUser = pkg.FromStr(elastic.ApmUser)
 		state.ApmPassword = pkg.FromStr(elastic.ApmPassword)
 		state.ApmToken = pkg.FromStr(elastic.ApmAuthToken)
+		state.ApmHost = pkg.FromStr(*elastic.ApmHost)
 	}
 
 	state.Encryption = pkg.FromBool(features["encryption"])
+
 	state.Plugins = basetypes.NewSetNull(types.StringType)
+	if len(elastic.Plugins) > 0 {
+		state.Plugins = pkg.FromSetString(elastic.Plugins, diags)
+	}
 }
 
 func (r *ResourceElasticsearch) readFromAddon(state *Elasticsearch, addon tmp.AddonResponse) {
 	state.Plan = pkg.FromStr(addon.Plan.Slug)
 	state.Name = pkg.FromStr(addon.Name)
 	state.Region = pkg.FromStr(addon.Region)
-}
-
-func (r *ResourceElasticsearch) readFromEnv(state *Elasticsearch, env tmp.EnvVars) {
-	m := env.Map()
-
-	state.KibanaHost = basetypes.NewStringNull()
-	if kibanaHost := m["ES_ADDON_KIBANA_HOST"]; kibanaHost != "" {
-		state.KibanaHost = pkg.FromStr(kibanaHost)
-	}
-
-	state.ApmHost = basetypes.NewStringNull()
-	if apmHost := m["ES_ADDON_APM_HOST"]; apmHost != "" {
-		state.ApmHost = pkg.FromStr(apmHost)
-	}
 }
 
 func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {

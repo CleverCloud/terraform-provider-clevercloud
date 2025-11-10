@@ -131,12 +131,15 @@ type Elasticsearch struct {
 	Host           string                 `json:"host"`
 	User           string                 `json:"user"`
 	Password       string                 `json:"password"`
+	ApmHost        *string                `json:"apm_host"`
 	ApmUser        string                 `json:"apm_user"`
 	ApmPassword    string                 `json:"apm_password"`
 	ApmAuthToken   string                 `json:"apm_auth_token"`
+	KibanaHost     *string                `json:"kibana_host"`
 	KibanaUser     string                 `json:"kibana_user"`
 	KibanaPassword string                 `json:"kibana_password"`
 	Version        string                 `json:"version"`
+	Plugins        []string               `json:"plugins"`
 	Backups        ElasticsearchBackups   `json:"backups"`
 	Services       []ElasticsearchService `json:"services"`
 	Features       []ElasticsearchFeature `json:"features"`
