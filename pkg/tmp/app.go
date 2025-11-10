@@ -342,3 +342,30 @@ func ListApps(ctx context.Context, cc *client.Client, organisationID string) cli
 	path := fmt.Sprintf("/v2/organisations/%s/applications", organisationID)
 	return client.Get[[]CreatAppResponse](ctx, cc, path)
 }
+
+type InstanceFlavor struct {
+	Name  string  `json:"name"`
+	Mem   int     `json:"mem"`
+	Cpus  int     `json:"cpus"`
+	Price float64 `json:"price"`
+}
+
+type AppInstance struct {
+	ID             string          `json:"id"`
+	AppID          string          `json:"appId"`
+	IP             string          `json:"ip"`
+	AppPort        int             `json:"appPort"`
+	State          string          `json:"state"`
+	Flavor         InstanceFlavor  `json:"flavor"`
+	Commit         *string         `json:"commit"`
+	DeployNumber   *int            `json:"deployNumber"`
+	DeployID       string          `json:"deployId"`
+	InstanceNumber int             `json:"instanceNumber"`
+	DisplayName    string          `json:"displayName"`
+	CreationDate   int64           `json:"creationDate"`
+}
+
+func ListInstances(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[[]AppInstance] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/instances", organisationID, applicationID)
+	return client.Get[[]AppInstance](ctx, cc, path)
+}
