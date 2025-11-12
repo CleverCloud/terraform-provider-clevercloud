@@ -43,6 +43,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `dev_dependencies` (Boolean) Install development dependencies (Default: false)
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
+- `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
@@ -72,6 +73,15 @@ Optional:
 - `pre_run` (String) [CC_PRE_RUN_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#pre-run)
 - `run_failed` (String) [CC_RUN_FAILED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)
 - `run_succeed` (String) [CC_RUN_SUCCEEDED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)
+
+
+<a id="nestedatt--networkgroups"></a>
+### Nested Schema for `networkgroups`
+
+Required:
+
+- `fqdn` (String) domain name which will resolve to application instances inside the networkgroup
+- `networkgroup_id` (String) ID of the networkgroup
 
 
 <a id="nestedatt--vhosts"></a>

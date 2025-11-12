@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -68,6 +69,15 @@ func (r *ResourceDotnet) Create(ctx context.Context, req resource.CreateRequest,
 	plan.StickySessions = pkg.FromBool(createRes.Application.StickySessions)
 	plan.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(createRes.Application.ForceHTTPS))
 
+	application.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		createRes.Application.ID,
+		plan.Networkgroups,
+		&resp.Diagnostics,
+	)
+
 	deploy := plan.toDeployment(r.GitAuth())
 	if deploy != nil {
 		application.GitDeploy(ctx, *deploy, createRes.Application.DeployURL, &resp.Diagnostics)
@@ -110,6 +120,7 @@ func (r *ResourceDotnet) Read(ctx context.Context, req resource.ReadRequest, res
 	//state.DotnetVersion = pkg.FromStr(appRes.App.DotnetVersion)
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
+	state.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), state.ID.ValueString(), &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -185,6 +196,16 @@ func (r *ResourceDotnet) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
+
+	application.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		state.ID.ValueString(),
+		plan.Networkgroups,
+		&res.Diagnostics,
+	)
+
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
 

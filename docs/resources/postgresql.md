@@ -33,6 +33,7 @@ resource "clevercloud_postgresql" "postgresql_database" {
 ### Optional
 
 - `backup` (Boolean) Enable or disable backups for this PostgreSQL add-on. Since backups are included in the add-on price, disabling it has no impact on your billing.
+- `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `region` (String) Geographical region where the data will be stored
 - `version` (String) PostgreSQL version
 
@@ -46,3 +47,11 @@ resource "clevercloud_postgresql" "postgresql_database" {
 - `port` (Number) Database port
 - `uri` (String, Sensitive) Database connection string
 - `user` (String) Login username
+
+<a id="nestedatt--networkgroups"></a>
+### Nested Schema for `networkgroups`
+
+Required:
+
+- `fqdn` (String) domain name which will resolve to addon instances inside the networkgroup
+- `networkgroup_id` (String) ID of the networkgroup

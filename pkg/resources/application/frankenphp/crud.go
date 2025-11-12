@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -68,6 +69,15 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 	plan.StickySessions = pkg.FromBool(createAppRes.Application.StickySessions)
 	plan.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(createAppRes.Application.ForceHTTPS))
 
+	application.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		createAppRes.Application.ID,
+		plan.Networkgroups,
+		&resp.Diagnostics,
+	)
+
 	deploy := plan.toDeployment(r.GitAuth())
 	if deploy != nil {
 		application.GitDeploy(ctx, *deploy, createAppRes.Application.DeployURL, &resp.Diagnostics)
@@ -104,6 +114,7 @@ func (r *ResourceFrankenPHP) Read(ctx context.Context, req resource.ReadRequest,
 	state.DeployURL = pkg.FromStr(appFrankenPHP.App.DeployURL)
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appFrankenPHP.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
+	state.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), state.ID.ValueString(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -176,6 +187,15 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 
 	plan.ID = pkg.FromStr(updateAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(updateAppRes.Application.DeployURL)
+
+	application.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		state.ID.ValueString(),
+		plan.Networkgroups,
+		&res.Diagnostics,
+	)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }

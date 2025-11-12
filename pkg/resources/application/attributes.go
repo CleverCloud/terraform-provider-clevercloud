@@ -54,6 +54,7 @@ type Runtime struct {
 	VHosts           types.Set              `tfsdk:"vhosts"`
 	DeployURL        types.String           `tfsdk:"deploy_url"`
 	Dependencies     types.Set              `tfsdk:"dependencies"`
+	Networkgroups    types.Set              `tfsdk:"networkgroups"`
 	Deployment       *attributes.Deployment `tfsdk:"deployment"`
 	Hooks            *attributes.Hooks      `tfsdk:"hooks"`
 
@@ -256,6 +257,23 @@ var runtimeCommon = map[string]schema.Attribute{
 					}
 				}
 			}),
+		},
+	},
+	"networkgroups": schema.SetNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "List of networkgroups the application must be part of",
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: map[string]schema.Attribute{
+				"networkgroup_id": schema.StringAttribute{
+					Required:            true,
+					MarkdownDescription: "ID of the networkgroup",
+				},
+				"fqdn": schema.StringAttribute{
+					Required:            true,
+					MarkdownDescription: "domain name which will resolve to application instances inside the networkgroup",
+					//Default: stringdefault.StaticString(),
+				},
+			},
 		},
 	},
 }

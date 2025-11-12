@@ -219,3 +219,154 @@ func TestAccPython_basic(t *testing.T) {
 		}},
 	})
 }
+
+func TestAccPython_networkgroup(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-python")
+	ngName := acctest.RandomWithPrefix("tf-test-python-ng")
+	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
+	cc := client.New(client.WithAutoOauthConfig())
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock2 := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+
+	ngBlock := helper.NewRessource(
+		"clevercloud_networkgroup",
+		ngName,
+		helper.SetKeyValues(map[string]any{
+			"name":        ngName,
+			"description": "for ng tests",
+			"tags":        []string{"python"},
+		}),
+	)
+
+	pythonBlock := helper.NewRessource(
+		"clevercloud_python",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 2,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "M",
+			"networkgroups": []map[string]string{{
+				"networkgroup_id": fmt.Sprintf("${clevercloud_networkgroup.%s.id}", ngName),
+				"fqdn":            "myapp",
+			}}}),
+	)
+
+	pythonBlock2 := helper.NewRessource(
+		"clevercloud_python",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 2,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "M",
+			"networkgroups":      nil,
+		}),
+	)
+
+	config := providerBlock.Append(ngBlock, pythonBlock)
+	config2 := providerBlock2.Append(ngBlock, pythonBlock2)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 tests.ExpectOrganisation(t),
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		CheckDestroy: func(state *terraform.State) error {
+			for resourceName, resource := range state.RootModule().Resources {
+				if strings.HasPrefix(resourceName, "clevercloud_python") {
+					res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
+					if res.IsNotFoundError() {
+						continue
+					} else if res.HasError() {
+						return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+					} else {
+						return fmt.Errorf("resource still exists: %+v", resource.Primary)
+					}
+				} else if strings.HasPrefix(resourceName, "clevercloud_networkgroup") {
+					res := tmp.GetNetworkgroup(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
+					if res.IsNotFoundError() {
+						continue
+					} else if res.HasError() {
+						return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+					} else {
+						return fmt.Errorf("resource still exists: %+v", resource.Primary)
+					}
+				}
+			}
+			return nil
+		},
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			PreConfig: func() {
+				t.Logf("Config:\n%s", config)
+			},
+			Config: config.String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("networkgroups"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.ObjectExact(map[string]knownvalue.Check{
+						"networkgroup_id": knownvalue.StringRegexp(regexp.MustCompile("^ng_.*$")),
+						"fqdn":            knownvalue.StringExact("myapp"),
+					}),
+				})),
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(
+				func(s *terraform.State) error {
+					ngResource := s.RootModule().Resources["clevercloud_networkgroup."+ngName]
+					appResource := s.RootModule().Resources[fullName]
+					ngID := ngResource.Primary.ID
+
+					membersRes := tmp.ListMembers(ctx, cc, tests.ORGANISATION, ngID)
+					if membersRes.HasError() {
+						return fmt.Errorf("failed to list members: %w", membersRes.Error())
+					}
+					members := *membersRes.Payload()
+
+					if len(members) != 1 {
+						return fmt.Errorf("expect 1 member, got: %d", len(members))
+					}
+					member := members[0]
+
+					if member.ID != appResource.Primary.ID {
+						return fmt.Errorf("expect member to have ID %s, got: %s", appResource.Primary.ID, member.ID)
+					}
+					return nil
+				},
+			),
+		}, {
+			ResourceName: rName,
+			PreConfig: func() {
+				t.Logf("Config:\n%s", config2)
+			},
+			Config: config2.String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("networkgroups"), knownvalue.Null()),
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(
+				func(s *terraform.State) error {
+					time.Sleep(5 * time.Second) // NG API is asynchronous
+					ngResource := s.RootModule().Resources["clevercloud_networkgroup."+ngName]
+					ngID := ngResource.Primary.ID
+
+					membersRes := tmp.ListMembers(ctx, cc, tests.ORGANISATION, ngID)
+					if membersRes.HasError() {
+						return fmt.Errorf("failed to list members: %w", membersRes.Error())
+					}
+					members := *membersRes.Payload()
+
+					if len(members) != 0 {
+						return fmt.Errorf("expect 0 member, got: %+v", members)
+					}
+
+					return nil
+				},
+			),
+		}},
+	})
+}

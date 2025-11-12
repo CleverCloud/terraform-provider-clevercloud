@@ -1,6 +1,7 @@
 package helper
 
 import (
+	"maps"
 	"reflect"
 	"sort"
 	"strconv"
@@ -87,9 +88,7 @@ func (r *Ressource) UnsetOneValue(key string) *Ressource {
 //   - return: RessourceOption functions
 func SetKeyValues(newMap map[string]any) RessourceOption {
 	return func(r *Ressource) {
-		for key, value := range newMap {
-			r.keyValues[key] = value
-		}
+		maps.Copy(r.keyValues, newMap)
 	}
 }
 

@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
@@ -107,6 +109,15 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	pg.Version = pkg.FromStr(addonPG.Version)
 	pg.Uri = pkg.FromStr(addonPG.Uri())
 
+	addon.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		createdPg.ID,
+		pg.Networkgroups,
+		&resp.Diagnostics,
+	)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 }
 
@@ -143,7 +154,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 		resp.Diagnostics.AddError("failed to get Postgres resource", addonRes.Error().Error())
 		return
 	}
-	addon := addonRes.Payload()
+	addonInfo := addonRes.Payload()
 
 	addonPGRes := tmp.GetPostgreSQL(ctx, r.Client(), addonId)
 	if addonPGRes.IsNotFoundError() {
@@ -165,10 +176,10 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	tflog.Debug(ctx, "STATE", map[string]any{"pg": pg})
 	tflog.Debug(ctx, "API", map[string]any{"pg": addonPG})
 	pg.ID = pkg.FromStr(realID)
-	pg.Name = pkg.FromStr(addon.Name)
+	pg.Name = pkg.FromStr(addonInfo.Name)
 	pg.Plan = pkg.FromStr(addonPG.Plan)
 	pg.Region = pkg.FromStr(addonPG.Zone)
-	pg.CreationDate = pkg.FromI(addon.CreationDate)
+	pg.CreationDate = pkg.FromI(addonInfo.CreationDate)
 	pg.Host = pkg.FromStr(addonPG.Host)
 	pg.Port = pkg.FromI(int64(addonPG.Port))
 	pg.Database = pkg.FromStr(addonPG.Database)
@@ -182,6 +193,8 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 			pg.Backup = pkg.FromBool(feature.Enabled)
 		}
 	}
+
+	pg.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), addonId, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 }
@@ -212,6 +225,15 @@ func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 	state.Name = plan.Name
+
+	addon.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		plan.ID.ValueString(),
+		plan.Networkgroups,
+		&resp.Diagnostics,
+	)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

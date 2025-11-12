@@ -16,9 +16,10 @@ import (
 )
 
 type Elasticsearch struct {
-	Name   types.String `tfsdk:"name"`
-	Plan   types.String `tfsdk:"plan"`
-	Region types.String `tfsdk:"region"`
+	Name          types.String `tfsdk:"name"`
+	Plan          types.String `tfsdk:"plan"`
+	Region        types.String `tfsdk:"region"`
+	Networkgroups types.Set    `tfsdk:"networkgroups"`
 
 	Version    types.String `tfsdk:"version"`
 	Encryption types.Bool   `tfsdk:"encryption"`
@@ -98,6 +99,22 @@ func (r *ResourceElasticsearch) Schema(_ context.Context, req resource.SchemaReq
 			"apm_user":        schema.StringAttribute{Computed: true, MarkdownDescription: "APM user"},
 			"apm_password":    schema.StringAttribute{Computed: true, MarkdownDescription: "APM password", Sensitive: true},
 			"apm_token":       schema.StringAttribute{Computed: true, MarkdownDescription: "APM token", Sensitive: true},
+			"networkgroups": schema.SetNestedAttribute{
+				Optional:            true,
+				MarkdownDescription: "List of networkgroups the addon must be part of",
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"networkgroup_id": schema.StringAttribute{
+							Required:            true,
+							MarkdownDescription: "ID of the networkgroup",
+						},
+						"fqdn": schema.StringAttribute{
+							Required:            true,
+							MarkdownDescription: "domain name which will resolve to addon instances inside the networkgroup",
+						},
+					},
+				},
+			},
 		},
 	}
 }
