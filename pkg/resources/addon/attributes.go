@@ -11,11 +11,12 @@ import (
 )
 
 type CommonAttributes struct {
-	ID           types.String `tfsdk:"id"`
-	Name         types.String `tfsdk:"name"`
-	Plan         types.String `tfsdk:"plan"`
-	Region       types.String `tfsdk:"region"`
-	CreationDate types.Int64  `tfsdk:"creation_date"`
+	ID            types.String `tfsdk:"id"`
+	Name          types.String `tfsdk:"name"`
+	Plan          types.String `tfsdk:"plan"`
+	Region        types.String `tfsdk:"region"`
+	CreationDate  types.Int64  `tfsdk:"creation_date"`
+	Networkgroups types.Set    `tfsdk:"networkgroups"`
 }
 
 var addonCommon = map[string]schema.Attribute{
@@ -29,6 +30,22 @@ var addonCommon = map[string]schema.Attribute{
 		MarkdownDescription: "Geographical region where the data will be stored",
 	},
 	"creation_date": schema.Int64Attribute{Computed: true, MarkdownDescription: "Date of database creation", PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()}},
+	"networkgroups": schema.SetNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "List of networkgroups the addon must be part of",
+		NestedObject: schema.NestedAttributeObject{
+			Attributes: map[string]schema.Attribute{
+				"networkgroup_id": schema.StringAttribute{
+					Required:            true,
+					MarkdownDescription: "ID of the networkgroup",
+				},
+				"fqdn": schema.StringAttribute{
+					Required:            true,
+					MarkdownDescription: "domain name which will resolve to addon instances inside the networkgroup",
+				},
+			},
+		},
+	},
 }
 
 func WithAddonCommons(runtimeSpecifics map[string]schema.Attribute) map[string]schema.Attribute {

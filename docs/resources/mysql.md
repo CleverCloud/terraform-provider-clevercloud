@@ -25,6 +25,7 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 ### Optional
 
 - `backup` (Boolean) Enable or disable backups for this MySQL add-on. Since backups are included in the add-on price, disabling it has no impact on your billing.
+- `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `read_only_users` (Attributes List) MySQL users with read-only access (see [below for nested schema](#nestedatt--read_only_users))
 - `region` (String) Geographical region where the data will be stored
 - `version` (String) MySQL version
@@ -39,6 +40,15 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 - `port` (Number) Database port
 - `uri` (String, Sensitive) Database connection string
 - `user` (String) Login username
+
+<a id="nestedatt--networkgroups"></a>
+### Nested Schema for `networkgroups`
+
+Required:
+
+- `fqdn` (String) domain name which will resolve to addon instances inside the networkgroup
+- `networkgroup_id` (String) ID of the networkgroup
+
 
 <a id="nestedatt--read_only_users"></a>
 ### Nested Schema for `read_only_users`

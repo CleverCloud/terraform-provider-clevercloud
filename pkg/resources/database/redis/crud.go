@@ -12,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -78,6 +80,15 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 	rd.Port = pkg.FromI(port)
 	rd.Token = envAsMap["REDIS_PASSWORD"]
 
+	addon.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		res.Payload().ID,
+		rd.Networkgroups,
+		&resp.Diagnostics,
+	)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, rd)...)
 }
 
@@ -137,6 +148,8 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 	rd.Region = pkg.FromStr(addonRD.Region)
 	rd.Token = envAsMap["REDIS_PASSWORD"]
 
+	rd.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), rd.ID.ValueString(), &resp.Diagnostics)
+
 	diags = resp.State.Set(ctx, rd)
 	resp.Diagnostics.Append(diags...)
 }
@@ -167,6 +180,15 @@ func (r *ResourceRedis) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 	state.Name = plan.Name
+
+	addon.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		plan.ID.ValueString(),
+		plan.Networkgroups,
+		&resp.Diagnostics,
+	)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

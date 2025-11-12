@@ -172,6 +172,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `gzip_types` (String) Set the mime types to compress (default: 'text/* application/json application/xml application/javascript image/svg+xml')
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `http_basic_auth` (String, Sensitive) Restrict HTTP access to your application (format: 'login:password')
+- `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `nginx_proxy_buffer_size` (String) Sets the size of the buffer used for reading the first part of the response received from the proxied server
 - `nginx_proxy_buffers` (String) Sets the number and size of the buffers used for reading a response from the proxied server
 - `nginx_read_timeout` (Number) Read timeout in seconds (default: 300)
@@ -213,6 +214,15 @@ Optional:
 - `pre_run` (String) [CC_PRE_RUN_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#pre-run)
 - `run_failed` (String) [CC_RUN_FAILED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)
 - `run_succeed` (String) [CC_RUN_SUCCEEDED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)
+
+
+<a id="nestedatt--networkgroups"></a>
+### Nested Schema for `networkgroups`
+
+Required:
+
+- `fqdn` (String) domain name which will resolve to application instances inside the networkgroup
+- `networkgroup_id` (String) ID of the networkgroup
 
 
 <a id="nestedatt--vhosts"></a>

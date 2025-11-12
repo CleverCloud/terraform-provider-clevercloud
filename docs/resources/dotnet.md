@@ -97,6 +97,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `description` (String) Application description
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
+- `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `profile` (String) Override the build configuration settings in your project. Default: Release
 - `proj` (String) The name of your project file to use for the build, without the .csproj / .fsproj / .vbproj extension.
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
@@ -130,6 +131,15 @@ Optional:
 - `pre_run` (String) [CC_PRE_RUN_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#pre-run)
 - `run_failed` (String) [CC_RUN_FAILED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)
 - `run_succeed` (String) [CC_RUN_SUCCEEDED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)
+
+
+<a id="nestedatt--networkgroups"></a>
+### Nested Schema for `networkgroups`
+
+Required:
+
+- `fqdn` (String) domain name which will resolve to application instances inside the networkgroup
+- `networkgroup_id` (String) ID of the networkgroup
 
 
 <a id="nestedatt--vhosts"></a>

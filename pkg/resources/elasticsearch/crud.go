@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
@@ -88,19 +90,28 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 		res.Diagnostics.AddError("failed to create addon", addonRes.Error().Error())
 		return
 	}
-	addon := addonRes.Payload()
+	createdAddon := addonRes.Payload()
 
-	identity.ID = pkg.FromStr(addon.RealID)
+	identity.ID = pkg.FromStr(createdAddon.RealID)
 	res.Diagnostics.Append(res.Identity.Set(ctx, identity)...)
 
-	r.readFromAddon(&plan, *addon)
+	r.readFromAddon(&plan, *createdAddon)
 
-	esRes := tmp.GetElasticsearch(ctx, r.Client(), addon.ID)
+	esRes := tmp.GetElasticsearch(ctx, r.Client(), createdAddon.ID)
 	if esRes.HasError() {
 		res.Diagnostics.AddError("failed to get Elasticsearch", esRes.Error().Error())
 	} else {
 		r.readFromAPI(&plan, *esRes.Payload(), &res.Diagnostics)
 	}
+
+	addon.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		createdAddon.ID,
+		plan.Networkgroups,
+		&res.Diagnostics,
+	)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
@@ -134,6 +145,8 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 			r.readFromAPI(&state, *elasticRes.Payload(), &res.Diagnostics)
 		}
 	}
+
+	state.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), identity.ID.ValueString(), &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }
@@ -225,6 +238,15 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 	} else {
 		state.Name = plan.Name
 	}
+
+	addon.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		identity.ID.ValueString(),
+		plan.Networkgroups,
+		&res.Diagnostics,
+	)
 
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }

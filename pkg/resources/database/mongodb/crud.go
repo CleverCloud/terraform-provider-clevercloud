@@ -9,6 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -66,6 +68,15 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 	mg.Database = pkg.FromStr(addonMG.Database)
 	mg.Uri = pkg.FromStr(addonMG.Uri())
 
+	addon.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		res.Payload().ID,
+		mg.Networkgroups,
+		&resp.Diagnostics,
+	)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 }
 
@@ -116,6 +127,8 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 	mg.Database = pkg.FromStr(addonMG.Database)
 	mg.Uri = pkg.FromStr(addonMG.Uri())
 
+	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), addonId, &resp.Diagnostics)
+
 	diags := resp.State.Set(ctx, mg)
 	resp.Diagnostics.Append(diags...)
 }
@@ -146,6 +159,15 @@ func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 	state.Name = plan.Name
+
+	addon.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		plan.ID.ValueString(),
+		plan.Networkgroups,
+		&resp.Diagnostics,
+	)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

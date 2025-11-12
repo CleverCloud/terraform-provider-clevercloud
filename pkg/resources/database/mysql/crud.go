@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
@@ -112,6 +114,15 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 	my.Uri = pkg.FromStr(addonMy.Uri())
 	my.ReadOnlyUsers = tmp.FromMySQLReadOnlyUsers(addonMy.ReadOnlyUsers)
 
+	addon.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		createdMy.ID,
+		my.Networkgroups,
+		&resp.Diagnostics,
+	)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, my)...)
 }
 
@@ -142,7 +153,7 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 		resp.Diagnostics.AddError("failed to get Mysql resource", addonRes.Error().Error())
 		return
 	}
-	addon := addonRes.Payload()
+	addonInfo := addonRes.Payload()
 
 	addonMyRes := tmp.GetMySQL(ctx, r.Client(), addonId)
 	if addonMyRes.IsNotFoundError() {
@@ -163,11 +174,11 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	tflog.Debug(ctx, "STATE", map[string]any{"my": my})
 	tflog.Debug(ctx, "API", map[string]any{"my": addonMy})
-	my.ID = pkg.FromStr(addon.RealID)
-	my.Name = pkg.FromStr(addon.Name)
+	my.ID = pkg.FromStr(addonInfo.RealID)
+	my.Name = pkg.FromStr(addonInfo.Name)
 	my.Plan = pkg.FromStr(addonMy.Plan)
 	my.Region = pkg.FromStr(addonMy.Zone)
-	my.CreationDate = pkg.FromI(addon.CreationDate)
+	my.CreationDate = pkg.FromI(addonInfo.CreationDate)
 	my.Host = pkg.FromStr(addonMy.Host)
 	my.Port = pkg.FromI(int64(addonMy.Port))
 	my.Database = pkg.FromStr(addonMy.Database)
@@ -182,6 +193,8 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 			my.Backup = pkg.FromBool(feature.Enabled)
 		}
 	}
+
+	my.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), addonId, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, my)...)
 }
@@ -212,6 +225,15 @@ func (r *ResourceMySQL) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 	state.Name = plan.Name
+
+	addon.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		plan.ID.ValueString(),
+		plan.Networkgroups,
+		&resp.Diagnostics,
+	)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

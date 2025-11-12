@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -67,6 +68,15 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 	plan.StickySessions = pkg.FromBool(createRes.Application.StickySessions)
 	plan.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(createRes.Application.ForceHTTPS))
 
+	application.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		createRes.Application.ID,
+		plan.Networkgroups,
+		&resp.Diagnostics,
+	)
+
 	deploy := plan.toDeployment(r.GitAuth())
 	if deploy != nil {
 		application.GitDeploy(ctx, *deploy, createRes.Application.DeployURL, &resp.Diagnostics)
@@ -107,6 +117,7 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
+	state.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), state.ID.ValueString(), &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -114,13 +125,7 @@ func (r *ResourcePython) Read(ctx context.Context, req resource.ReadRequest, res
 
 // Update resource
 func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
-	tflog.Debug(ctx, "ResourcePython.Update()")
-
-	// Retrieve values from plan and state
 	plan := helper.PlanFrom[Python](ctx, req.Plan, &res.Diagnostics)
-	if res.Diagnostics.HasError() {
-		return
-	}
 	state := helper.StateFrom[Python](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
@@ -128,15 +133,7 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 
 	// Retrieve instance of the app from context
 	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "python", &res.Diagnostics)
-	if res.Diagnostics.HasError() {
-		return
-	}
-
-	// Retriev all env values by extracting ctx env viriables and merge it with the app env variables
 	planEnvironment := plan.toEnv(ctx, &res.Diagnostics)
-	if res.Diagnostics.HasError() {
-		return
-	}
 	stateEnvironment := state.toEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
@@ -183,6 +180,15 @@ func (r *ResourcePython) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
+
+	application.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		state.ID.ValueString(),
+		plan.Networkgroups,
+		&res.Diagnostics,
+	)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -64,6 +65,15 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 	createdVhosts := createAppRes.Application.Vhosts
 	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
 
+	application.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		createAppRes.Application.ID,
+		plan.Networkgroups,
+		&resp.Diagnostics,
+	)
+
 	deploy := plan.toDeployment(r.GitAuth())
 	if deploy != nil {
 		application.GitDeploy(ctx, *deploy, createAppRes.Application.DeployURL, &resp.Diagnostics)
@@ -102,6 +112,7 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 	state.BuildFlavor = app.GetBuildFlavor()
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, app.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
+	state.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), state.ID.ValueString(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -177,6 +188,15 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
+
+	application.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		state.ID.ValueString(),
+		plan.Networkgroups,
+		&res.Diagnostics,
+	)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }

@@ -5,16 +5,15 @@ import (
 	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 // Create a new resource
 func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	tflog.Debug(ctx, "ResourcePHP.Create()")
 	plan := helper.PlanFrom[PHP](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -69,6 +68,15 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 	plan.StickySessions = pkg.FromBool(createAppRes.Application.StickySessions)
 	plan.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(createAppRes.Application.ForceHTTPS))
 
+	application.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		createAppRes.Application.ID,
+		plan.Networkgroups,
+		&resp.Diagnostics,
+	)
+
 	deploy := plan.toDeployment(r.GitAuth())
 	if deploy != nil {
 		application.GitDeploy(ctx, *deploy, createAppRes.Application.DeployURL, &resp.Diagnostics)
@@ -79,7 +87,6 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 
 // Read resource information
 func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "ResourcePHP.Read()")
 	state := helper.StateFrom[PHP](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -106,24 +113,15 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 	state.BuildFlavor = appPHP.GetBuildFlavor()
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appPHP.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
+	state.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), state.ID.ValueString(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Update resource
 func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
-	tflog.Debug(ctx, "ResourcePHP.Update()")
-
 	plan := helper.PlanFrom[PHP](ctx, req.Plan, &res.Diagnostics)
-	if res.Diagnostics.HasError() {
-		return
-	}
-
 	state := helper.StateFrom[PHP](ctx, req.State, &res.Diagnostics)
-	if res.Diagnostics.HasError() {
-		return
-	}
-
 	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "php", &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
@@ -177,26 +175,27 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 
 	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
 
+	application.SyncNetworkGroups(
+		ctx,
+		r.Client(),
+		r.Organization(),
+		state.ID.ValueString(),
+		plan.Networkgroups,
+		&res.Diagnostics,
+	)
+
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
 
 // Delete resource
 func (r *ResourcePHP) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	tflog.Debug(ctx, "ResourcePHP.Delete()")
-	var state PHP
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	state := helper.StateFrom[PHP](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "PHP DELETE", map[string]any{"state": state})
 
 	res := tmp.DeleteApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
-	if res.IsNotFoundError() {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	if res.HasError() {
+	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete app", res.Error().Error())
 		return
 	}
