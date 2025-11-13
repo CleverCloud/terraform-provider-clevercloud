@@ -56,14 +56,12 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]any{})
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-
 	createdVhosts := createAppRes.Application.Vhosts
 	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
 	application.SyncNetworkGroups(
 		ctx,
@@ -74,11 +72,7 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		&resp.Diagnostics,
 	)
 
-	deploy := plan.toDeployment(r.GitAuth())
-	if deploy != nil {
-		application.GitDeploy(ctx, *deploy, createAppRes.Application.DeployURL, &resp.Diagnostics)
-	}
-
+	application.GitDeploy(ctx, plan.toDeployment(r.GitAuth()), createAppRes.Application.DeployURL, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
@@ -108,6 +102,9 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 	state.Region = pkg.FromStr(app.App.Zone)
 	state.DeployURL = pkg.FromStr(app.App.DeployURL)
 	state.BuildFlavor = app.GetBuildFlavor()
+	/*if app.App.WebhookURL != nil { // only true // TODO
+		state.Deployment.Repository =
+	}*/
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, app.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 	state.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), state.ID.ValueString(), &resp.Diagnostics)
@@ -117,13 +114,7 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 
 // Update resource
 func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
-	tflog.Debug(ctx, "ResourceDocker.Update()")
-
-	// Retrieve values from plan and state
 	plan := helper.PlanFrom[Docker](ctx, req.Plan, &res.Diagnostics)
-	if res.Diagnostics.HasError() {
-		return
-	}
 	state := helper.StateFrom[Docker](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
@@ -208,11 +199,7 @@ func (r *ResourceDocker) Delete(ctx context.Context, req resource.DeleteRequest,
 	tflog.Debug(ctx, "DOCKER DELETE", map[string]any{"state": state})
 
 	res := tmp.DeleteApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
-	if res.IsNotFoundError() {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	if res.HasError() {
+	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete app", res.Error().Error())
 		return
 	}

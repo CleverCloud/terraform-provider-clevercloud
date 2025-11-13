@@ -11,22 +11,23 @@ import (
 )
 
 type CreateAppRequest struct {
-	Name            string `json:"name" example:"SOME_NAME"`
-	Deploy          string `json:"deploy" example:"git"`
-	Description     string `json:"description" example:"SOME_DESC"`
-	InstanceType    string `json:"instanceType" example:"node"`
-	InstanceVariant string `json:"instanceVariant" example:"395103fb-d6e2-4fdd-93bc-bc99146f1ea2"`
-	InstanceVersion string `json:"instanceVersion" example:"20220330"`
-	MinFlavor       string `json:"minFlavor" example:"pico"`
-	MaxFlavor       string `json:"maxFlavor" example:"M"`
-	SeparateBuild   bool   `json:"separateBuild" example:"true"` // need to be true if BuildFlavor is set
-	BuildFlavor     string `json:"buildFlavor" example:"XL"`
-	MinInstances    int64  `json:"minInstances" example:"1"`
-	MaxInstances    int64  `json:"maxInstances" example:"4"`
-	Zone            string `json:"zone" example:"par"`
-	CancelOnPush    bool   `json:"cancelOnPush"`
-	StickySessions  bool   `json:"stickySessions"`
-	ForceHttps      string `json:"forceHttps"`
+	Name            string             `json:"name" example:"SOME_NAME"`
+	Deploy          string             `json:"deploy" example:"git"`
+	Description     string             `json:"description" example:"SOME_DESC"`
+	InstanceType    string             `json:"instanceType" example:"node"`
+	InstanceVariant string             `json:"instanceVariant" example:"395103fb-d6e2-4fdd-93bc-bc99146f1ea2"`
+	InstanceVersion string             `json:"instanceVersion" example:"20220330"`
+	MinFlavor       string             `json:"minFlavor" example:"pico"`
+	MaxFlavor       string             `json:"maxFlavor" example:"M"`
+	SeparateBuild   bool               `json:"separateBuild" example:"true"` // need to be true if BuildFlavor is set
+	BuildFlavor     string             `json:"buildFlavor" example:"XL"`
+	MinInstances    int64              `json:"minInstances" example:"1"`
+	MaxInstances    int64              `json:"maxInstances" example:"4"`
+	Zone            string             `json:"zone" example:"par"`
+	CancelOnPush    bool               `json:"cancelOnPush"`
+	StickySessions  bool               `json:"stickySessions"`
+	ForceHttps      string             `json:"forceHttps"`
+	GithubApp       *GithubApplication `json:"githubApp"`
 }
 
 type CreatAppResponse struct {
@@ -44,8 +45,8 @@ type CreatAppResponse struct {
 	Homogeneous    bool        `json:"homogeneous"`
 	Favourite      bool        `json:"favourite"`
 	CancelOnPush   bool        `json:"cancelOnPush"`
-	WebhookURL     string      `json:"webhookUrl"`
-	WebhookSecret  string      `json:"webhookSecret"`
+	WebhookURL     *string     `json:"webhookUrl"`
+	WebhookSecret  *string     `json:"webhookSecret"`
 	SeparateBuild  bool        `json:"separateBuild"`
 	BuildFlavor    BuildFlavor `json:"buildFlavor"`
 	OwnerID        string      `json:"ownerId"`
@@ -341,4 +342,19 @@ func RestartApp(ctx context.Context, cc *client.Client, organisationID, applicat
 func ListApps(ctx context.Context, cc *client.Client, organisationID string) client.Response[[]CreatAppResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications", organisationID)
 	return client.Get[[]CreatAppResponse](ctx, cc, path)
+}
+
+type GithubApplication struct {
+	ID            string  `json:"id"`
+	Owner         string  `json:"owner"`
+	Name          string  `json:"name"`
+	Description   *string `json:"description"`
+	GitURL        string  `json:"gitUrl"`
+	DefaultBranch string  `json:"defaultBranch"`
+	Priv          bool    `json:"priv"`
+}
+
+func ListGithubApplications(ctx context.Context, cc *client.Client) client.Response[[]GithubApplication] {
+	path := "/v2/github/applications"
+	return client.Get[[]GithubApplication](ctx, cc, path)
 }

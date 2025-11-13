@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
@@ -60,6 +61,29 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	res := &CreateRes{}
 
 	req.Application.SeparateBuild = req.Application.BuildFlavor != ""
+
+	if req.Deployment != nil &&
+		req.Deployment.Commit != nil &&
+		strings.HasPrefix(*req.Deployment.Commit, attributes.GITHUB_COMMIT_PREFIX) {
+
+		//grab some informations on the repo
+		appsRes := tmp.ListGithubApplications(ctx, req.Client)
+		if appsRes.HasError() {
+			diags.AddError("failed to list Github application", appsRes.Error().Error())
+			return res, diags
+		}
+		apps := *appsRes.Payload()
+
+		app := pkg.First(apps, func(app tmp.GithubApplication) bool {
+			return app.GitURL == req.Deployment.Repository
+		})
+		if app == nil {
+			diags.AddError("failed to get repository information", "requested repository does not exists or is not visible")
+			return res, diags
+		}
+
+		req.Application.GithubApp = app
+	}
 
 	appRes := tmp.CreateApp(ctx, req.Client, req.Organization, req.Application)
 	if appRes.HasError() {
