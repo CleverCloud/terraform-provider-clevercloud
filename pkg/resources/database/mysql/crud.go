@@ -13,7 +13,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
-	"go.clever-cloud.dev/client"
 )
 
 func (r *ResourceMySQL) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -22,9 +21,13 @@ func (r *ResourceMySQL) Configure(ctx context.Context, req resource.ConfigureReq
 }
 
 func (r *ResourceMySQL) FetchMysqlInfos(ctx context.Context, diags *diag.Diagnostics) {
-	cc := client.New()
+	// Skip fetching during schema validation (before provider is configured)
+	if r.Provider == nil || r.Client() == nil {
+		tflog.Debug(ctx, "Skipping mysql infos fetch - provider not configured yet")
+		return
+	}
 
-	res := tmp.GetMysqlInfos(ctx, cc)
+	res := tmp.GetMysqlInfos(ctx, r.Client())
 	if res.HasError() {
 		tflog.Error(ctx, "failed to get mysql infos", map[string]any{"error": res.Error().Error()})
 		return

@@ -100,6 +100,11 @@ func (r ResourceMySQL) validateMyVersion(ctx context.Context, req validator.Stri
 		return
 	}
 
+	// Skip validation if infos not available (provider not configured yet)
+	if infos == nil {
+		return
+	}
+
 	switch plan {
 	case "dev":
 		cluster := pkg.First(infos.Clusters, func(cluster tmp.MysqlCluster) bool {
