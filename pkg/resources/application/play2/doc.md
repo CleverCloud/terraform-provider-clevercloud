@@ -35,3 +35,5 @@ resource "clevercloud_play2" "myapp" {
     }
 }
 ```
+
+**Note**: For deploying from private GitHub repositories, see the [private repository deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-private-repository-deployment).

@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"maps"
+	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
@@ -65,9 +66,19 @@ func (play2 *Play2) toDeployment(gitAuth *http.BasicAuth) *application.Deploymen
 		return nil
 	}
 
-	return &application.Deployment{
+	d := &application.Deployment{
 		Repository:    play2.Deployment.Repository.ValueString(),
 		Commit:        play2.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,
 	}
+
+	if !play2.Deployment.BasicAuthentication.IsNull() && !play2.Deployment.BasicAuthentication.IsUnknown() {
+		// Expect validation to be done in the schema valisation step
+		userPass := play2.Deployment.BasicAuthentication.ValueString()
+		splits := strings.SplitN(userPass, ":", 2)
+		d.Username = &splits[0]
+		d.Password = &splits[1]
+	}
+
+	return d
 }

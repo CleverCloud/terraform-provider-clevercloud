@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	minio "github.com/minio/minio-go/v7"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/s3"
@@ -14,9 +13,7 @@ import (
 
 // Create a new resource
 func (r *ResourceCellarBucket) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	bucket := CellarBucket{}
-
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &bucket)...)
+	bucket := helper.PlanFrom[CellarBucket](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -44,10 +41,7 @@ func (r *ResourceCellarBucket) Create(ctx context.Context, req resource.CreateRe
 
 // Read resource information
 func (r *ResourceCellarBucket) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Cellar READ", map[string]any{"request": req})
-
-	var cellar CellarBucket
-	resp.Diagnostics.Append(req.State.Get(ctx, &cellar)...)
+	cellar := helper.StateFrom[CellarBucket](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -92,13 +86,10 @@ func (r *ResourceCellarBucket) Update(ctx context.Context, req resource.UpdateRe
 
 // Delete resource
 func (r *ResourceCellarBucket) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	var bucket CellarBucket
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &bucket)...)
+	bucket := helper.StateFrom[CellarBucket](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "CELLAR BUCKET DELETE", map[string]any{"bucket": bucket})
 
 	cellarEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), bucket.CellarID.ValueString())
 	if cellarEnvRes.HasError() {

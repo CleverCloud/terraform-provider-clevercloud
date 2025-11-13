@@ -3,6 +3,7 @@ package java
 import (
 	"context"
 	_ "embed"
+	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
@@ -80,9 +81,19 @@ func (java *Java) toDeployment(gitAuth *http.BasicAuth) *application.Deployment 
 		return nil
 	}
 
-	return &application.Deployment{
+	d := &application.Deployment{
 		Repository:    java.Deployment.Repository.ValueString(),
 		Commit:        java.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,
 	}
+
+	if !java.Deployment.BasicAuthentication.IsNull() && !java.Deployment.BasicAuthentication.IsUnknown() {
+		// Expect validation to be done in the schema valisation step
+		userPass := java.Deployment.BasicAuthentication.ValueString()
+		splits := strings.SplitN(userPass, ":", 2)
+		d.Username = &splits[0]
+		d.Password = &splits[1]
+	}
+
+	return d
 }
