@@ -79,9 +79,7 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 	)
 
 	deploy := plan.toDeployment(r.GitAuth())
-	if deploy != nil {
-		application.GitDeploy(ctx, *deploy, createRes.Application.DeployURL, &resp.Diagnostics)
-	}
+	application.GitDeploy(ctx, deploy, createRes.Application.DeployURL, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }

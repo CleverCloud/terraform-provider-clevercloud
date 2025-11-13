@@ -17,12 +17,22 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 )
 
-func GitDeploy(ctx context.Context, d Deployment, cleverRemote string, diags *diag.Diagnostics) {
+func GitDeploy(ctx context.Context, d *Deployment, cleverRemote string, diags *diag.Diagnostics) {
 	var errs diag.Diagnostics
+
+	if d == nil {
+		return
+	}
+	if d.Commit != nil && strings.HasPrefix(*d.Commit, attributes.GITHUB_COMMIT_PREFIX) {
+		tflog.Warn(ctx, "repository deployment is handled by Github, skipping deployment")
+		return
+	}
+
 	for range 5 {
-		errs = gitDeploy(ctx, d, cleverRemote)
+		errs = gitDeploy(ctx, *d, cleverRemote)
 		if !errs.HasError() {
 			break
 		}

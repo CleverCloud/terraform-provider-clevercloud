@@ -12,6 +12,10 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
+// used to identify when the repo deployment is handled by a Github hook
+// In this case, we must not deploy with Terraform
+const GITHUB_COMMIT_PREFIX = "github_hook"
+
 // Deployment block
 type Deployment struct {
 	Repository          types.String `tfsdk:"repository"`
@@ -39,12 +43,16 @@ var blocks = map[string]schema.Block{
 			"commit": schema.StringAttribute{
 				Optional:            true,
 				Description:         "The git reference you want to deploy",
-				MarkdownDescription: "Support multiple syntax like `refs/heads/[BRANCH]` or `[COMMIT]`, in most of the case, you can use `refs/heads/master`",
+				MarkdownDescription: "Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository",
 				Validators: []validator.String{
 					pkg.NewValidator(
 						"if reference (not commit hash) is provided test it's syntax",
 						func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
 							if req.ConfigValue.IsNull() || !strings.Contains(req.ConfigValue.ValueString(), "/") {
+								return
+							}
+
+							if req.ConfigValue.ValueString() == GITHUB_COMMIT_PREFIX {
 								return
 							}
 
