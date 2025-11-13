@@ -79,9 +79,7 @@ func (r *ResourceRust) Create(ctx context.Context, req resource.CreateRequest, r
 	)
 
 	deploy := plan.toDeployment(r.GitAuth())
-	if deploy != nil {
-		application.GitDeploy(ctx, *deploy, createRes.Application.DeployURL, &res.Diagnostics)
-	}
+	application.GitDeploy(ctx, deploy, createRes.Application.DeployURL, &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }

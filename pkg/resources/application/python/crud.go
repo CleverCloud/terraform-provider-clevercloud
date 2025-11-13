@@ -78,9 +78,7 @@ func (r *ResourcePython) Create(ctx context.Context, req resource.CreateRequest,
 	)
 
 	deploy := plan.toDeployment(r.GitAuth())
-	if deploy != nil {
-		application.GitDeploy(ctx, *deploy, createRes.Application.DeployURL, &resp.Diagnostics)
-	}
+	application.GitDeploy(ctx, deploy, createRes.Application.DeployURL, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
