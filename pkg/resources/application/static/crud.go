@@ -80,9 +80,7 @@ func (r *ResourceStatic) Create(ctx context.Context, req resource.CreateRequest,
 	)
 
 	deploy := plan.toDeployment(r.GitAuth())
-	if deploy != nil {
-		application.GitDeploy(ctx, *deploy, createAppRes.Application.DeployURL, &resp.Diagnostics)
-	}
+	application.GitDeploy(ctx, deploy, createAppRes.Application.DeployURL, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
