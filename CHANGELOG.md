@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.5.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.4.0...v1.5.0) (2025-11-13)
+
+
+### Features
+
+* **app/adons:** networkgroup support ([1052168](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1052168fb44847b99d1e8b08d9cf40783e4c3785))
+
+
+### Bug Fixes
+
+* **applications:** split app creation and deployment ([1b400e3](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1b400e39526dd19ab4afee280af5050366545782))
+
 ## [1.4.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.3.0...v1.4.0) (2025-11-05)
 
 
