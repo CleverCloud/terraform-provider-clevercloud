@@ -7,10 +7,26 @@ on:
 jobs:
   acceptance:
     runs-on: ubuntu-latest
-    #strategy:
-    #  matrix:
-    #    resource:
-    #      - configprovider
+    strategy:
+      max-parallel: 5
+      fail-fast: false
+      matrix:
+        resource:
+          - addon
+          - configprovider
+          - application
+          - database/cellar
+          - database/fsbucket
+          - database/materiakv
+          - database/mongodb
+          - database/mysql
+          - database/postgresql
+          - database/pulsar
+          - database/redis
+          - drain
+          - elasticsearch
+          - networkgroup
+          - software
     steps:
     - uses: actions/checkout@v4
     - name: Set up Go
@@ -18,12 +34,23 @@ jobs:
       with:
         go-version: '1.24'
     - name: Acceptance Tests
-      run: TF_ACC=1 go test ./... -v -timeout 12m ./...
+      run: go test ./pkg/resources/${{ matrix.resource }}/... -v -timeout 12m ./...
       env:
+        TF_ACC: 1
         CC_OAUTH_TOKEN: ${{ secrets.CC_OAUTH_TOKEN }}
         CC_OAUTH_SECRET: ${{ secrets.CC_OAUTH_SECRET }}
         ORGANISATION: ${{ secrets.ORGANISATION }}
         CLONE_AUTH: ${{ secrets.CLONE_AUTH }}
+  sweep:
+    runs-on: ubuntu-latest
+    needs: acceptance
+    if: ${{ always() }} # run even if acceptance job fail
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: '1.24'
     - name: Sweepers
       if: always()
       run: make sweep

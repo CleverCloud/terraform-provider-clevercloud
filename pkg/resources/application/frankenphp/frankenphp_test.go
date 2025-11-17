@@ -29,6 +29,8 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	domain := fmt.Sprintf("%s.com", rName)
+	domainEdit1 := rName + "-1.com"
+	domainEdit2 := rName + "-2.com"
 	frankenphpBlock := helper.NewRessource(
 		"clevercloud_frankenphp",
 		rName,
@@ -75,7 +77,7 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 					SetOneValue("min_instance_count", 2).
 					SetOneValue("max_instance_count", 6).
 					SetOneValue("dev_dependencies", true).
-					SetOneValue("vhosts", []map[string]string{{"fqdn": "test-frankenphp-1.com"}, {"fqdn": "test-frankenphp-2.com", "path_begin": "/test"}}),
+					SetOneValue("vhosts", []map[string]string{{"fqdn": domainEdit1}, {"fqdn": domainEdit2, "path_begin": "/test"}}),
 			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
@@ -88,7 +90,7 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 					}
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
-					expectedVhosts := []string{"test-frankenphp-1.com/", "test-frankenphp-2.com/test"}
+					expectedVhosts := []string{domainEdit1 + "/", domainEdit2 + "/test"}
 					if len(app.Vhosts) != len(expectedVhosts) {
 						return tests.AssertError("invalid vhost count", len(app.Vhosts), len(expectedVhosts))
 					}

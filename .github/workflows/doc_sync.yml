@@ -1,6 +1,6 @@
 # Check docs are up-to-date only on pull request.
 # Succeeds if it is.
-# Fail if not, generates a new version then commits it. 
+# Fail if not, generates a new version then commits it.
 
 name: Docs synchronizer
 
@@ -32,7 +32,7 @@ jobs:
         run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
       - name: Run tfplugindocs
         run: go generate ./... && make docs
-      
+
       - name: Fail if any files changed
         shell: bash
         run: |
@@ -43,7 +43,7 @@ jobs:
           git status docs/
           exit 1
           fi
-    
+
       - name: Commit docs update
         if: |
           failure()
