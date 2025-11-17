@@ -1,5 +1,22 @@
 # Changelog
 
+## [1.5.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.4.0...v1.5.0) (2025-11-17)
+
+
+### Features
+
+* **app/adons:** networkgroup support ([1052168](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1052168fb44847b99d1e8b08d9cf40783e4c3785))
+* **application:** allow authentication to clone private repositories ([56d182d](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/56d182d9a78f2dd5206ab5dee38d000b6d773c03))
+* **applications:** support Github applications ([6b0f22e](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/6b0f22ec5f69d9b3ed149b0e6d54d922bdde2394))
+* **postgres:** support migration ([aead77d](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/aead77d45cb62ed7798039ac904a79473ff702de))
+
+
+### Bug Fixes
+
+* **applications:** split app creation and deployment ([1b400e3](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1b400e39526dd19ab4afee280af5050366545782))
+* **cellar:** use resource instead of manually create dependencies ([f9ec529](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/f9ec529e497a726840a5a4512b8238f279e16ecf))
+* use configured endpoint instead of hardcoded default ([4e5dd8f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/4e5dd8faf426ddad65328c7e1c38b3b6ff9a35bf))
+
 ## [1.4.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.3.0...v1.4.0) (2025-11-05)
 
 
