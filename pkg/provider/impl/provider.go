@@ -8,10 +8,11 @@ import (
 )
 
 type Provider struct {
-	version      string
-	cc           *client.Client
-	gitAuth      *http.BasicAuth
-	organization string
+	version                string
+	cc                     *client.Client
+	gitAuth                *http.BasicAuth
+	organization           string
+	isNetwrkgroupsDisabled bool
 }
 
 func New(version string) func() provider.Provider {
@@ -29,4 +30,8 @@ func (p *Provider) Client() *client.Client {
 
 func (p *Provider) GitAuth() *http.BasicAuth {
 	return p.gitAuth
+}
+
+func (p *Provider) IsNetwrkgroupsDisabled() bool {
+	return p.isNetwrkgroupsDisabled
 }

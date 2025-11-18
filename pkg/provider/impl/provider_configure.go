@@ -21,6 +21,8 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 		return
 	}
 
+	p.isNetwrkgroupsDisabled = config.DisableNetworkgroup.ValueBool()
+
 	p.organization = os.Getenv("CC_ORGANISATION")
 	if !config.Organisation.IsUnknown() && !config.Organisation.IsNull() {
 		p.organization = config.Organisation.ValueString()

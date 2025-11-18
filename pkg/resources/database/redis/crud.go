@@ -80,8 +80,7 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 
 	addon.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		res.Payload().ID,
 		rd.Networkgroups,
 		&resp.Diagnostics,
@@ -146,7 +145,7 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 	rd.Region = pkg.FromStr(addonRD.Region)
 	rd.Token = envAsMap["REDIS_PASSWORD"]
 
-	rd.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), rd.ID.ValueString(), &resp.Diagnostics)
+	rd.Networkgroups = resources.ReadNetworkGroups(ctx, r, rd.ID.ValueString(), &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, rd)
 	resp.Diagnostics.Append(diags...)
@@ -181,8 +180,7 @@ func (r *ResourceRedis) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	addon.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		plan.ID.ValueString(),
 		plan.Networkgroups,
 		&resp.Diagnostics,

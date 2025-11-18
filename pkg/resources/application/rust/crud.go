@@ -71,8 +71,7 @@ func (r *ResourceRust) Create(ctx context.Context, req resource.CreateRequest, r
 
 	application.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		createRes.Application.ID,
 		plan.Networkgroups,
 		&res.Diagnostics,
@@ -114,7 +113,7 @@ func (r *ResourceRust) Read(ctx context.Context, req resource.ReadRequest, res *
 	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &res.Diagnostics)
-	state.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), state.ID.ValueString(), &res.Diagnostics)
+	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &res.Diagnostics)
 
 	if env := appRes.EnvAsMap(); env[CC_RUST_FEATURES] != "" {
 		state.Features = pkg.FromSetString(strings.Split(env[CC_RUST_FEATURES], ","), &res.Diagnostics)
@@ -194,8 +193,7 @@ func (r *ResourceRust) Update(ctx context.Context, req resource.UpdateRequest, r
 
 	application.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		state.ID.ValueString(),
 		plan.Networkgroups,
 		&res.Diagnostics,

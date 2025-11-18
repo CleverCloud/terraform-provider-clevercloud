@@ -9,8 +9,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/miton18/helper/set"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
-	"go.clever-cloud.dev/client"
 )
 
 type NetworkgroupConfig struct {
@@ -20,8 +20,8 @@ type NetworkgroupConfig struct {
 
 func SyncNetworkGroups(
 	ctx context.Context,
-	cc *client.Client,
-	kind, orgID, applicationID string, configs []NetworkgroupConfig,
+	prov provider.Provider,
+	kind, applicationID string, configs []NetworkgroupConfig,
 	diags *diag.Diagnostics,
 ) {
 	expectedNG := set.New(pkg.Map(
@@ -29,7 +29,12 @@ func SyncNetworkGroups(
 		func(member NetworkgroupConfig) string { return member.NetworkgroupID },
 	)...)
 
-	allngRes := tmp.ListNetworkgroups(ctx, cc, orgID)
+	if prov.IsNetwrkgroupsDisabled() {
+		tflog.Warn(ctx, "skipping Networkgroups synchronisation because feature is disabled at provider level")
+		return
+	}
+
+	allngRes := tmp.ListNetworkgroups(ctx, prov.Client(), prov.Organization())
 	if allngRes.HasError() {
 		diags.AddError("failed to list Networkgroups", allngRes.Error().Error())
 		return
@@ -53,7 +58,7 @@ func SyncNetworkGroups(
 
 	for inPlaceNG := range expectedNG.Intersection(currentNG).Iter() {
 		// a member for this app exists on the expected NG
-		memberRes := tmp.GetMember(ctx, cc, orgID, inPlaceNG, applicationID)
+		memberRes := tmp.GetMember(ctx, prov.Client(), prov.Organization(), inPlaceNG, applicationID)
 		if memberRes.HasError() {
 			diags.AddError("failed to get member", memberRes.Error().Error())
 			continue
@@ -64,7 +69,7 @@ func SyncNetworkGroups(
 		}
 
 		tflog.Warn(ctx, "a member exists on the expected NG but with an old FQDN, recreate it")
-		deleteRes := tmp.DeleteMember(ctx, cc, orgID, inPlaceNG, applicationID)
+		deleteRes := tmp.DeleteMember(ctx, prov.Client(), prov.Organization(), inPlaceNG, applicationID)
 		if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
 			diags.AddError("failed to remove member from NG", deleteRes.Error().Error())
 			continue
@@ -76,7 +81,7 @@ func SyncNetworkGroups(
 
 	for ng := range currentNG.Difference(expectedNG).Iter() {
 		// app is not in this NG anymore
-		deleteRes := tmp.DeleteMember(ctx, cc, orgID, ng, applicationID)
+		deleteRes := tmp.DeleteMember(ctx, prov.Client(), prov.Organization(), ng, applicationID)
 		if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
 			diags.AddError("failed to remove member from ng", deleteRes.Error().Error())
 		}
@@ -84,7 +89,7 @@ func SyncNetworkGroups(
 	}
 
 	for ng := range expectedNG.Difference(currentNG).Iter() {
-		addRes := tmp.AddMemberToNetworkgroup(ctx, cc, orgID, ng, tmp.Member{
+		addRes := tmp.AddMemberToNetworkgroup(ctx, prov.Client(), prov.Organization(), ng, tmp.Member{
 			ID:         applicationID,
 			Kind:       kind,
 			DomainName: ngIDToFQDN[ng],
@@ -98,8 +103,8 @@ func SyncNetworkGroups(
 // ReadNetworkGroups reads the current networkgroups for a resource and returns them as a types.Set
 func ReadNetworkGroups(
 	ctx context.Context,
-	cc *client.Client,
-	orgID, resourceID string,
+	prov provider.Provider,
+	resourceID string,
 	diags *diag.Diagnostics,
 ) types.Set {
 	schema := map[string]attr.Type{
@@ -108,7 +113,12 @@ func ReadNetworkGroups(
 	}
 	null := types.SetNull(types.ObjectType{AttrTypes: schema})
 
-	allngRes := tmp.ListNetworkgroups(ctx, cc, orgID)
+	if prov.IsNetwrkgroupsDisabled() {
+		tflog.Warn(ctx, "skipping Networkgroups synchronisation because feature is disabled at provider level")
+		return null
+	}
+
+	allngRes := tmp.ListNetworkgroups(ctx, prov.Client(), prov.Organization())
 	if allngRes.HasError() {
 		diags.AddError("failed to list Networkgroups", allngRes.Error().Error())
 		return null
