@@ -15,75 +15,17 @@ import (
 
 // Create a new resource
 func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
-	tflog.Debug(ctx, "Go CREATE")
+	tflog.Debug(ctx, "ResourceGo.Create()")
 
 	plan := helper.PlanFrom[Go](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "go", &res.Diagnostics)
-	environment := plan.toEnv(ctx, &res.Diagnostics)
-	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
+	res.Diagnostics.Append(application.GenericCreate(ctx, r, &plan)...)
 	if res.Diagnostics.HasError() {
 		return
 	}
-
-	createReq := application.CreateReq{
-		Client:       r.Client(),
-		Organization: r.Organization(),
-		Application: tmp.CreateAppRequest{
-			Name:            plan.Name.ValueString(),
-			Deploy:          "git",
-			Description:     plan.Description.ValueString(),
-			InstanceType:    instance.Type,
-			InstanceVariant: instance.Variant.ID,
-			InstanceVersion: instance.Version,
-			MinFlavor:       plan.SmallestFlavor.ValueString(),
-			MaxFlavor:       plan.BiggestFlavor.ValueString(),
-			MinInstances:    plan.MinInstanceCount.ValueInt64(),
-			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
-			BuildFlavor:     plan.BuildFlavor.ValueString(),
-			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
-			Zone:            plan.Region.ValueString(),
-		},
-		Environment:  environment,
-		VHosts:       vhosts,
-		Dependencies: dependencies,
-		Deployment:   plan.toDeployment(r.GitAuth()),
-	}
-
-	createRes, diags := application.CreateApp(ctx, createReq)
-	res.Diagnostics.Append(diags...)
-	if res.Diagnostics.HasError() {
-		return
-	}
-
-	plan.ID = pkg.FromStr(createRes.Application.ID)
-	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
-	plan.BuildFlavor = createRes.GetBuildFlavor()
-
-	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
-
-	createdVhosts := createRes.Application.Vhosts
-	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &res.Diagnostics)
-	plan.StickySessions = pkg.FromBool(createRes.Application.StickySessions)
-	plan.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(createRes.Application.ForceHTTPS))
-
-	application.SyncNetworkGroups(
-		ctx,
-		r,
-		createRes.Application.ID,
-		plan.Networkgroups,
-		&res.Diagnostics,
-	)
-
-	application.SyncExposedVariables(ctx, r, createRes.Application.ID, plan.ExposedEnvironment, &res.Diagnostics)
-
-	deploy := plan.toDeployment(r.GitAuth())
-	application.GitDeploy(ctx, deploy, createRes.Application.DeployURL, &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
@@ -97,7 +39,7 @@ func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *re
 		return
 	}
 
-	appRes, diags := application.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	appRes, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
@@ -147,11 +89,11 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 	}
 
 	// Retrieve all env values by extracting ctx env variables and merge it with the app env variables
-	planEnvironment := plan.toEnv(ctx, &res.Diagnostics)
+	planEnvironment := plan.ToEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	stateEnvironment := state.toEnv(ctx, &res.Diagnostics)
+	stateEnvironment := state.ToEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -185,12 +127,12 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
 		Dependencies:   dependencies,
-		Deployment:     plan.toDeployment(r.GitAuth()),
+		Deployment:     plan.ToDeployment(r.GitAuth()),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
 	// Correctly named: update the app (via PUT Method)
-	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.Update(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return

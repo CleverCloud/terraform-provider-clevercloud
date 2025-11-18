@@ -119,6 +119,29 @@ func (r Runtime) VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) [
 	return items
 }
 
+// GetRuntimePtr returns a pointer to the Runtime struct for modification
+func (r *Runtime) GetRuntimePtr() *Runtime {
+	return r
+}
+
+// SetFromCreateResponse maps API response fields to Runtime fields
+func (r *Runtime) SetFromCreateResponse(res *CreateRes, ctx context.Context, diags *diag.Diagnostics) {
+	r.ID = pkg.FromStr(res.Application.ID)
+	r.Name = pkg.FromStr(res.Application.Name)
+	r.Description = pkg.FromStr(res.Application.Description)
+	r.MinInstanceCount = pkg.FromI(int64(res.Application.Instance.MinInstances))
+	r.MaxInstanceCount = pkg.FromI(int64(res.Application.Instance.MaxInstances))
+	r.SmallestFlavor = pkg.FromStr(res.Application.Instance.MinFlavor.Name)
+	r.BiggestFlavor = pkg.FromStr(res.Application.Instance.MaxFlavor.Name)
+	r.BuildFlavor = res.GetBuildFlavor()
+	r.Region = pkg.FromStr(res.Application.Zone)
+	r.StickySessions = pkg.FromBool(res.Application.StickySessions)
+	r.RedirectHTTPS = pkg.FromBool(ToForceHTTPS(res.Application.ForceHTTPS))
+	r.DeployURL = pkg.FromStr(res.Application.DeployURL)
+
+	r.VHosts = helper.VHostsFromAPIHosts(ctx, res.Application.Vhosts.AsString(), r.VHosts, diags)
+}
+
 // This attributes are used on several runtimes
 var runtimeCommon = map[string]schema.Attribute{
 	// client provided

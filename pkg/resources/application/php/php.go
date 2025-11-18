@@ -74,3 +74,7 @@ func (r *ResourcePHP) UpgradeState(ctx context.Context) map[int64]resource.State
 		},
 	}
 }
+
+func (r *ResourcePHP) GetVariantSlug() string {
+	return "php"
+}

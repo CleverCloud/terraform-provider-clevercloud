@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
@@ -14,73 +15,17 @@ import (
 
 // Create a new resource
 func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourcePHP.Create()")
+
 	plan := helper.PlanFrom[PHP](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "php", &resp.Diagnostics)
-	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
-	environment := plan.toEnv(ctx, &resp.Diagnostics)
-	dependencies := plan.DependenciesAsString(ctx, &resp.Diagnostics)
+	resp.Diagnostics.Append(application.GenericCreate(ctx, r, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	createAppReq := application.CreateReq{
-		Client:       r.Client(),
-		Organization: r.Organization(),
-		Application: tmp.CreateAppRequest{
-			Name:            plan.Name.ValueString(),
-			Deploy:          "git",
-			Description:     plan.Description.ValueString(),
-			InstanceType:    instance.Type,
-			InstanceVariant: instance.Variant.ID,
-			InstanceVersion: instance.Version,
-			BuildFlavor:     plan.BuildFlavor.ValueString(),
-			MinFlavor:       plan.SmallestFlavor.ValueString(),
-			MaxFlavor:       plan.BiggestFlavor.ValueString(),
-			MinInstances:    plan.MinInstanceCount.ValueInt64(),
-			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
-			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
-			Zone:            plan.Region.ValueString(),
-			CancelOnPush:    false,
-		},
-		Environment:  environment,
-		VHosts:       vhosts,
-		Dependencies: dependencies,
-		Deployment:   plan.toDeployment(r.GitAuth()),
-	}
-
-	createAppRes, diags := application.CreateApp(ctx, createAppReq)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	plan.ID = pkg.FromStr(createAppRes.Application.ID)
-	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-
-	createdVhosts := createAppRes.Application.Vhosts
-	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
-	plan.StickySessions = pkg.FromBool(createAppRes.Application.StickySessions)
-	plan.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(createAppRes.Application.ForceHTTPS))
-
-	application.SyncNetworkGroups(
-		ctx,
-		r,
-		createAppRes.Application.ID,
-		plan.Networkgroups,
-		&resp.Diagnostics,
-	)
-
-	application.SyncExposedVariables(ctx, r, createAppRes.Application.ID, plan.ExposedEnvironment, &resp.Diagnostics)
-
-	deploy := plan.toDeployment(r.GitAuth())
-	application.GitDeploy(ctx, deploy, createAppRes.Application.DeployURL, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -92,7 +37,7 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 		return
 	}
 
-	appPHP, diags := application.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	appPHP, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -128,11 +73,11 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 		return
 	}
 
-	planEnvironment := plan.toEnv(ctx, &res.Diagnostics)
+	planEnvironment := plan.ToEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	stateEnvironment := state.toEnv(ctx, &res.Diagnostics)
+	stateEnvironment := state.ToEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -164,11 +109,11 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
 		Dependencies:   dependencies,
-		Deployment:     plan.toDeployment(r.GitAuth()),
+		Deployment:     plan.ToDeployment(r.GitAuth()),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
-	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.Update(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return

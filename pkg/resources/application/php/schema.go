@@ -91,7 +91,7 @@ var schemaPHPV0 = schema.Schema{
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (p *PHP) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (p *PHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -121,7 +121,7 @@ func (p *PHP) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (p *PHP) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (p *PHP) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if p.Deployment == nil || p.Deployment.Repository.IsNull() {
 		return nil
 	}

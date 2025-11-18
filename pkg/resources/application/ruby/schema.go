@@ -242,7 +242,7 @@ var schemaRubyV0 = schema.Schema{
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (ruby Ruby) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (ruby Ruby) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -284,7 +284,7 @@ func (ruby Ruby) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
-func (ruby Ruby) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (ruby Ruby) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if ruby.Deployment == nil || ruby.Deployment.Repository.IsNull() {
 		return nil
 	}

@@ -15,78 +15,33 @@ import (
 
 // Create a new resource
 func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceDocker.Create()")
+
 	plan := helper.PlanFrom[Docker](ctx, req.Plan, &resp.Diagnostics)
-
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "docker", &resp.Diagnostics)
-	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
-	environment := plan.toEnv(ctx, &resp.Diagnostics)
-	dependencies := plan.DependenciesAsString(ctx, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	createAppReq := application.CreateReq{
-		Client:       r.Client(),
-		Organization: r.Organization(),
-		Application: tmp.CreateAppRequest{
-			Name:            plan.Name.ValueString(),
-			Deploy:          "git",
-			Description:     plan.Description.ValueString(),
-			InstanceType:    instance.Type,
-			InstanceVariant: instance.Variant.ID,
-			InstanceVersion: instance.Version,
-			BuildFlavor:     plan.BuildFlavor.ValueString(),
-			MinFlavor:       plan.SmallestFlavor.ValueString(),
-			MaxFlavor:       plan.BiggestFlavor.ValueString(),
-			MinInstances:    plan.MinInstanceCount.ValueInt64(),
-			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
-			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
-			Zone:            plan.Region.ValueString(),
-			CancelOnPush:    false,
-		},
-		Environment:  environment,
-		VHosts:       vhosts,
-		Dependencies: dependencies,
-		Deployment:   plan.toDeployment(r.GitAuth()),
-	}
-
-	createAppRes, diags := application.CreateApp(ctx, createAppReq)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(application.GenericCreate(ctx, r, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	plan.ID = pkg.FromStr(createAppRes.Application.ID)
-	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-
-	createdVhosts := createAppRes.Application.Vhosts
-	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
-
-	application.SyncNetworkGroups(
-		ctx,
-		r,
-		createAppRes.Application.ID,
-		plan.Networkgroups,
-		&resp.Diagnostics,
-	)
-
-	application.SyncExposedVariables(ctx, r, createAppRes.Application.ID, plan.ExposedEnvironment, &resp.Diagnostics)
-
-	application.GitDeploy(ctx, plan.toDeployment(r.GitAuth()), createAppRes.Application.DeployURL, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 // Read resource information
 func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	state := helper.StateFrom[Docker](ctx, req.State, &resp.Diagnostics)
+	tflog.Debug(ctx, "ResourceDocker.Read()")
+
+	var state Docker
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	app, diags := application.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	app, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -131,11 +86,11 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Retriev all env values by extracting ctx env viriables and merge it with the app env variables
-	planEnvironment := plan.toEnv(ctx, &res.Diagnostics)
+	planEnvironment := plan.ToEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	stateEnvironment := state.toEnv(ctx, &res.Diagnostics)
+	stateEnvironment := state.ToEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -169,12 +124,12 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
 		Dependencies:   dependencies,
-		Deployment:     plan.toDeployment(r.GitAuth()),
+		Deployment:     plan.ToDeployment(r.GitAuth()),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
 	// Correctly named: update the app (via PUT Method)
-	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.Update(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
@@ -203,7 +158,11 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 
 // Delete resource
 func (r *ResourceDocker) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	state := helper.StateFrom[Docker](ctx, req.State, &resp.Diagnostics)
+	tflog.Debug(ctx, "ResourceDocker.Delete()")
+
+	var state Docker
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

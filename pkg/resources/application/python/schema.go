@@ -71,7 +71,7 @@ var schemaPythonV0 = schema.Schema{
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (py Python) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (py Python) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -91,7 +91,7 @@ func (py Python) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
-func (py Python) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (py Python) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if py.Deployment == nil || py.Deployment.Repository.IsNull() {
 		return nil
 	}
