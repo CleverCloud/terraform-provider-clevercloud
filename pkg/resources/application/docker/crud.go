@@ -58,10 +58,11 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 
 	plan.ID = pkg.FromStr(createAppRes.Application.ID)
 	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
-	createdVhosts := createAppRes.Application.Vhosts
-	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+
+	createdVhosts := createAppRes.Application.Vhosts
+	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
 
 	application.SyncNetworkGroups(
 		ctx,

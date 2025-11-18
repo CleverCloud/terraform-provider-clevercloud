@@ -93,20 +93,28 @@ func (r Runtime) DependenciesAsString(ctx context.Context, diags *diag.Diagnosti
 }
 
 func (r Runtime) VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) []string {
+	// If vhosts is null or unknown, return nil to indicate "not specified"
+	// This allows SyncVHostsOnCreate to keep the default vhosts from the API
+	if r.VHosts.IsNull() || r.VHosts.IsUnknown() {
+		return nil
+	}
+
 	vhosts := pkg.SetTo[VHost](ctx, r.VHosts, diags)
 	if diags.HasError() {
 		return []string{}
 	}
 
-	return pkg.Reduce(vhosts, []string{}, func(acc []string, s VHost) []string {
-		str := s.String()
-		if str == nil {
-			return acc
+	// If no vhosts are present, return an empty slice (not nil)
+	// This distinguishes "explicitly empty" from "not specified"
+	items := []string{}
+	for _, vhost := range vhosts {
+		s := vhost.String()
+		if s != nil {
+			items = append(items, *s)
 		}
+	}
 
-		acc = append(acc, *str)
-		return acc
-	})
+	return items
 }
 
 // This attributes are used on several runtimes
