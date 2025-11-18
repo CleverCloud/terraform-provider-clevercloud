@@ -106,8 +106,7 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 
 	addon.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		createdAddon.ID,
 		plan.Networkgroups,
 		&res.Diagnostics,
@@ -146,7 +145,7 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 		}
 	}
 
-	state.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), identity.ID.ValueString(), &res.Diagnostics)
+	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, identity.ID.ValueString(), &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }
@@ -241,8 +240,7 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 
 	addon.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		identity.ID.ValueString(),
 		plan.Networkgroups,
 		&res.Diagnostics,

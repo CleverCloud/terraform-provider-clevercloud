@@ -7,8 +7,7 @@ import (
 
 type Provider interface {
 	Organization() string
-
 	Client() *client.Client
-
 	GitAuth() *http.BasicAuth
+	IsNetwrkgroupsDisabled() bool
 }

@@ -70,8 +70,7 @@ func (r *ResourcePHP) Create(ctx context.Context, req resource.CreateRequest, re
 
 	application.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		createAppRes.Application.ID,
 		plan.Networkgroups,
 		&resp.Diagnostics,
@@ -111,7 +110,7 @@ func (r *ResourcePHP) Read(ctx context.Context, req resource.ReadRequest, resp *
 	state.BuildFlavor = appPHP.GetBuildFlavor()
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appPHP.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
-	state.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), state.ID.ValueString(), &resp.Diagnostics)
+	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -175,8 +174,7 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 
 	application.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		state.ID.ValueString(),
 		plan.Networkgroups,
 		&res.Diagnostics,

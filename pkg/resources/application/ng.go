@@ -6,14 +6,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
-	"go.clever-cloud.dev/client"
 )
 
 func SyncNetworkGroups(
 	ctx context.Context,
-	cc *client.Client,
-	orgID, applicationID string,
+	prov provider.Provider,
+	applicationID string,
 	ngSet types.Set,
 	diags *diag.Diagnostics,
 ) {
@@ -21,9 +21,8 @@ func SyncNetworkGroups(
 
 	resources.SyncNetworkGroups(
 		ctx,
-		cc,
+		prov,
 		"APPLICATION",
-		orgID,
 		applicationID,
 		ngConfigs,
 		diags)

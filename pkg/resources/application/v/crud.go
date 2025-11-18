@@ -71,8 +71,7 @@ func (r *ResourceV) Create(ctx context.Context, req resource.CreateRequest, resp
 
 	application.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		createRes.Application.ID,
 		plan.Networkgroups,
 		&resp.Diagnostics,
@@ -113,7 +112,7 @@ func (r *ResourceV) Read(ctx context.Context, req resource.ReadRequest, resp *re
 	state.BiggestFlavor = pkg.FromStr(appRes.App.Instance.MaxFlavor.Name)
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
-	state.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), state.ID.ValueString(), &resp.Diagnostics)
+	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -190,8 +189,7 @@ func (r *ResourceV) Update(ctx context.Context, req resource.UpdateRequest, res 
 
 	application.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		state.ID.ValueString(),
 		plan.Networkgroups,
 		&res.Diagnostics,

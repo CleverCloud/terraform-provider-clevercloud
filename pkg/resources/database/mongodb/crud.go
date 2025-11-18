@@ -70,8 +70,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 
 	addon.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		res.Payload().ID,
 		mg.Networkgroups,
 		&resp.Diagnostics,
@@ -127,7 +126,7 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 	mg.Database = pkg.FromStr(addonMG.Database)
 	mg.Uri = pkg.FromStr(addonMG.Uri())
 
-	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), addonId, &resp.Diagnostics)
+	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
 
 	diags := resp.State.Set(ctx, mg)
 	resp.Diagnostics.Append(diags...)
@@ -162,8 +161,7 @@ func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest
 
 	addon.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		plan.ID.ValueString(),
 		plan.Networkgroups,
 		&resp.Diagnostics,

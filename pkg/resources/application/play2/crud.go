@@ -71,8 +71,7 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 
 	application.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		createAppRes.Application.ID,
 		plan.Networkgroups,
 		&resp.Diagnostics,
@@ -113,7 +112,7 @@ func (r *ResourcePlay2) Read(ctx context.Context, req resource.ReadRequest, resp
 	state.BuildFlavor = readRes.GetBuildFlavor()
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, readRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
-	state.Networkgroups = resources.ReadNetworkGroups(ctx, r.Client(), r.Organization(), state.ID.ValueString(), &resp.Diagnostics)
+	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &resp.Diagnostics)
 
 	for envName, envValue := range readRes.EnvAsMap() {
 		switch envName {
@@ -202,8 +201,7 @@ func (r *ResourcePlay2) Update(ctx context.Context, req resource.UpdateRequest, 
 
 	application.SyncNetworkGroups(
 		ctx,
-		r.Client(),
-		r.Organization(),
+		r,
 		state.ID.ValueString(),
 		plan.Networkgroups,
 		&res.Diagnostics,
