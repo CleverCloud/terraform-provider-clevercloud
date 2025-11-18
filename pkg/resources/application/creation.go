@@ -221,8 +221,10 @@ func ToForceHTTPS(force string) bool {
 }
 
 func SyncVHostsOnCreate(ctx context.Context, client *client.Client, organization string, reqVhosts []string, diags *diag.Diagnostics, applicationID string) {
-	if len(reqVhosts) == 0 {
-		return // on creation keep default vhosts from API
+	// If reqVhosts is nil (not specified), keep default vhosts from API
+	// If reqVhosts is an empty slice (explicitly set to []), remove all vhosts
+	if reqVhosts == nil {
+		return
 	}
 
 	// Get current vhosts from remote
@@ -242,7 +244,7 @@ func SyncVHostsOnCreate(ctx context.Context, client *client.Client, organization
 		"toRemove": vhostsToRemove,
 		"toAdd":    vhostsToAdd})
 
-	// Delete vhosts that need to be removed
+	// Delete vhosts that need to be removed (including default vhost if user specified empty list)
 	for _, vhost := range vhostsToRemove {
 		deleteVhostRes := tmp.DeleteAppVHost(ctx, client, organization, applicationID, vhost)
 		if deleteVhostRes.HasError() {

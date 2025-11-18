@@ -200,9 +200,9 @@ func TestAccDotnet_basic(t *testing.T) {
 					if vhostsRes.HasError() {
 						return fmt.Errorf("failed to get application vhosts: %w", vhostsRes.Error())
 					}
-					vhosts := vhostsRes.Payload()
+					vhosts := *vhostsRes.Payload()
 
-					if len(*vhosts) == 0 {
+					if len(vhosts) == 0 {
 						return fmt.Errorf("there is no vhost for app: %s", id)
 					}
 
