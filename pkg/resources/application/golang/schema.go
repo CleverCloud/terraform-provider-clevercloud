@@ -44,7 +44,7 @@ var schemaGoV0 = schema.Schema{
 	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (g Go) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (g Go) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -62,7 +62,7 @@ func (g Go) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]strin
 	return env
 }
 
-func (g Go) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (g Go) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if g.Deployment == nil || g.Deployment.Repository.IsNull() {
 		return nil
 	}

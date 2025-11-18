@@ -46,7 +46,7 @@ func (r ResourceV) Schema(ctx context.Context, req resource.SchemaRequest, res *
 	}
 }
 
-func (vapp V) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (vapp V) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -70,7 +70,7 @@ func (vapp V) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (vapp V) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (vapp V) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if vapp.Deployment == nil || vapp.Deployment.Repository.IsNull() {
 		return nil
 	}

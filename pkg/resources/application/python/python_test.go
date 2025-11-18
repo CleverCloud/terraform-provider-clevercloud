@@ -439,9 +439,9 @@ func TestAccPython_networkgroup(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			PreConfig: func() {
-				t.Logf("Config:\n%s", config)
-			},
+			// PreConfig: func() {
+			// 	t.Logf("Config:\n%s", config)
+			// },
 			Config: config.String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
@@ -477,9 +477,9 @@ func TestAccPython_networkgroup(t *testing.T) {
 			),
 		}, {
 			ResourceName: rName,
-			PreConfig: func() {
-				t.Logf("Config:\n%s", config2)
-			},
+			// PreConfig: func() {
+			// 	t.Logf("Config:\n%s", config2)
+			// },
 			Config: config2.String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),

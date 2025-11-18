@@ -49,7 +49,7 @@ func (r ResourceRust) Schema(ctx context.Context, req resource.SchemaRequest, re
 	}
 }
 
-func (r Rust) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (r Rust) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -73,7 +73,7 @@ func (r Rust) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (r Rust) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (r Rust) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if r.Deployment == nil || r.Deployment.Repository.IsNull() {
 		return nil
 	}

@@ -16,71 +16,17 @@ import (
 
 // Create a new resource
 func (r *ResourceV) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceV.Create()")
+
 	plan := helper.PlanFrom[V](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "v", &resp.Diagnostics)
-	environment := plan.toEnv(ctx, &resp.Diagnostics)
-	dependencies := plan.DependenciesAsString(ctx, &resp.Diagnostics)
+	resp.Diagnostics.Append(application.GenericCreate(ctx, r, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	createReq := application.CreateReq{
-		Client:       r.Client(),
-		Organization: r.Organization(),
-		Application: tmp.CreateAppRequest{
-			Name:            plan.Name.ValueString(),
-			Deploy:          "git",
-			Description:     plan.Description.ValueString(),
-			InstanceType:    instance.Type,
-			InstanceVariant: instance.Variant.ID,
-			InstanceVersion: instance.Version,
-			MinFlavor:       plan.SmallestFlavor.ValueString(),
-			MaxFlavor:       plan.BiggestFlavor.ValueString(),
-			MinInstances:    plan.MinInstanceCount.ValueInt64(),
-			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
-			BuildFlavor:     plan.BuildFlavor.ValueString(),
-			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
-			Zone:            plan.Region.ValueString(),
-		},
-		Environment:  environment,
-		VHosts:       vhosts,
-		Dependencies: dependencies,
-	}
-
-	createRes, diags := application.CreateApp(ctx, createReq)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	plan.ID = pkg.FromStr(createRes.Application.ID)
-	plan.DeployURL = pkg.FromStr(createRes.Application.DeployURL)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-
-	createdVhosts := createRes.Application.Vhosts
-	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
-	plan.StickySessions = pkg.FromBool(createRes.Application.StickySessions)
-	plan.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(createRes.Application.ForceHTTPS))
-
-	application.SyncNetworkGroups(
-		ctx,
-		r,
-		createRes.Application.ID,
-		plan.Networkgroups,
-		&resp.Diagnostics,
-	)
-
-	application.SyncExposedVariables(ctx, r, createRes.Application.ID, plan.ExposedEnvironment, &resp.Diagnostics)
-
-	deploy := plan.toDeployment(r.GitAuth())
-	application.GitDeploy(ctx, deploy, createRes.Application.DeployURL, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -94,7 +40,7 @@ func (r *ResourceV) Read(ctx context.Context, req resource.ReadRequest, resp *re
 		return
 	}
 
-	appRes, diags := application.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	appRes, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -140,11 +86,11 @@ func (r *ResourceV) Update(ctx context.Context, req resource.UpdateRequest, res 
 		return
 	}
 
-	planEnvironment := plan.toEnv(ctx, &res.Diagnostics)
+	planEnvironment := plan.ToEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	stateEnvironment := state.toEnv(ctx, &res.Diagnostics)
+	stateEnvironment := state.ToEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -178,11 +124,11 @@ func (r *ResourceV) Update(ctx context.Context, req resource.UpdateRequest, res 
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
 		Dependencies:   dependencies,
-		Deployment:     plan.toDeployment(r.GitAuth()),
+		Deployment:     plan.ToDeployment(r.GitAuth()),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
-	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.Update(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return

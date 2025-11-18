@@ -47,7 +47,7 @@ var schemaScalaV0 = schema.Schema{
 	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (plan *Scala) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (plan *Scala) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -63,7 +63,7 @@ func (plan *Scala) toEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (java *Scala) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (java *Scala) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if java.Deployment == nil || java.Deployment.Repository.IsNull() {
 		return nil
 	}

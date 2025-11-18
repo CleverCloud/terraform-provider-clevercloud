@@ -109,7 +109,7 @@ var schemaNodeJSV0 = schema.Schema{
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (node NodeJS) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (node NodeJS) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -132,7 +132,7 @@ func (node NodeJS) toEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (node NodeJS) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (node NodeJS) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if node.Deployment == nil || node.Deployment.Repository.IsNull() {
 		return nil
 	}

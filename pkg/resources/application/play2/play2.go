@@ -72,3 +72,7 @@ func (r *ResourcePlay2) UpgradeState(ctx context.Context) map[int64]resource.Sta
 		},
 	}
 }
+
+func (r *ResourcePlay2) GetVariantSlug() string {
+	return "play2"
+}

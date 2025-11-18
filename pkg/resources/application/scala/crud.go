@@ -15,74 +15,17 @@ import (
 
 // Create a new resource
 func (r *ResourceScala) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceScala.Create()")
+
 	plan := helper.PlanFrom[Scala](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "sbt", &resp.Diagnostics)
-	vhosts := plan.VHostsAsStrings(ctx, &resp.Diagnostics)
-	environment := plan.toEnv(ctx, &resp.Diagnostics)
-	dependencies := plan.DependenciesAsString(ctx, &resp.Diagnostics)
+	resp.Diagnostics.Append(application.GenericCreate(ctx, r, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-
-	createAppReq := application.CreateReq{
-		Client:       r.Client(),
-		Organization: r.Organization(),
-		Application: tmp.CreateAppRequest{
-			Name:            plan.Name.ValueString(),
-			Deploy:          "git",
-			Description:     plan.Description.ValueString(),
-			InstanceType:    instance.Type,
-			InstanceVariant: instance.Variant.ID,
-			InstanceVersion: instance.Version,
-			BuildFlavor:     plan.BuildFlavor.ValueString(),
-			MinFlavor:       plan.SmallestFlavor.ValueString(),
-			MaxFlavor:       plan.BiggestFlavor.ValueString(),
-			MinInstances:    plan.MinInstanceCount.ValueInt64(),
-			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
-			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
-			Zone:            plan.Region.ValueString(),
-			CancelOnPush:    false,
-		},
-		Environment:  environment,
-		VHosts:       vhosts,
-		Dependencies: dependencies,
-		Deployment:   plan.toDeployment(r.GitAuth()),
-	}
-
-	createAppRes, diags := application.CreateApp(ctx, createAppReq)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	tflog.Debug(ctx, "BUILD FLAVOR RES"+createAppRes.Application.BuildFlavor.Name, map[string]any{})
-	plan.ID = pkg.FromStr(createAppRes.Application.ID)
-	plan.DeployURL = pkg.FromStr(createAppRes.Application.DeployURL)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
-
-	createdVhosts := createAppRes.Application.Vhosts
-	plan.VHosts = helper.VHostsFromAPIHosts(ctx, createdVhosts.AsString(), plan.VHosts, &resp.Diagnostics)
-	plan.StickySessions = pkg.FromBool(createAppRes.Application.StickySessions)
-	plan.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(createAppRes.Application.ForceHTTPS))
-
-	application.SyncNetworkGroups(
-		ctx,
-		r,
-		createAppRes.Application.ID,
-		plan.Networkgroups,
-		&resp.Diagnostics,
-	)
-
-	application.SyncExposedVariables(ctx, r, createAppRes.Application.ID, plan.ExposedEnvironment, &resp.Diagnostics)
-
-	deploy := plan.toDeployment(r.GitAuth())
-	application.GitDeploy(ctx, deploy, createAppRes.Application.DeployURL, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -94,7 +37,7 @@ func (r *ResourceScala) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	readRes, diags := application.ReadApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	readRes, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -152,11 +95,11 @@ func (r *ResourceScala) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Retriev all env values by extracting ctx env viriables and merge it with the app env variables
-	planEnvironment := plan.toEnv(ctx, &res.Diagnostics)
+	planEnvironment := plan.ToEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	stateEnvironment := state.toEnv(ctx, &res.Diagnostics)
+	stateEnvironment := state.ToEnv(ctx, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -190,12 +133,12 @@ func (r *ResourceScala) Update(ctx context.Context, req resource.UpdateRequest, 
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
 		Dependencies:   dependencies,
-		Deployment:     plan.toDeployment(r.GitAuth()),
+		Deployment:     plan.ToDeployment(r.GitAuth()),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
 
 	// Correctly named: update the app (via PUT Method)
-	updatedApp, diags := application.UpdateApp(ctx, updateAppReq)
+	updatedApp, diags := application.Update(ctx, updateAppReq)
 	res.Diagnostics.Append(diags...)
 	if res.Diagnostics.HasError() {
 		return
