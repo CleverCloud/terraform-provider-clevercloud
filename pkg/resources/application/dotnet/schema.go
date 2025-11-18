@@ -54,7 +54,7 @@ func (r ResourceDotnet) Schema(ctx context.Context, req resource.SchemaRequest, 
 	}
 }
 
-func (dotnetapp Dotnet) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (dotnetapp Dotnet) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -74,7 +74,7 @@ func (dotnetapp Dotnet) toEnv(ctx context.Context, diags *diag.Diagnostics) map[
 	return env
 }
 
-func (dotnetapp Dotnet) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (dotnetapp Dotnet) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if dotnetapp.Deployment == nil || dotnetapp.Deployment.Repository.IsNull() {
 		return nil
 	}

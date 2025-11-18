@@ -50,6 +50,23 @@ type CreateRes struct {
 
 var githubOAuthService = "github"
 
+// RuntimeResource interface defines methods required by resources to use GenericCreate
+type RuntimeResource interface {
+	GetVariantSlug() string
+	Client() *client.Client
+	Organization() string
+	GitAuth() *http.BasicAuth
+}
+
+// RuntimePlan interface defines methods required by plan types to use GenericCreate
+type RuntimePlan interface {
+	VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) []string
+	DependenciesAsString(ctx context.Context, diags *diag.Diagnostics) []string
+	ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string
+	ToDeployment(auth *http.BasicAuth) *Deployment
+	GetRuntimePtr() *Runtime
+}
+
 func (r *CreateRes) GetBuildFlavor() types.String {
 	if !r.Application.SeparateBuild {
 		return types.StringNull()
@@ -58,7 +75,7 @@ func (r *CreateRes) GetBuildFlavor() types.String {
 	return types.StringValue(r.Application.BuildFlavor.Name)
 }
 
-func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics) {
+func Create(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 	res := &CreateRes{}
 
@@ -134,7 +151,108 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	return res, diags
 }
 
-func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics) {
+// GenericCreate centralizes the common Create logic for all application runtimes
+func GenericCreate[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T) diag.Diagnostics {
+	diags := diag.Diagnostics{}
+
+	// Lookup instance by variant slug
+	instance := LookupInstanceByVariantSlug(ctx, resource.Client(), nil, resource.GetVariantSlug(), &diags)
+
+	// Extract vhosts, environment, and dependencies from plan
+	vhosts := plan.VHostsAsStrings(ctx, &diags)
+	environment := plan.ToEnv(ctx, &diags)
+	dependencies := plan.DependenciesAsString(ctx, &diags)
+	if diags.HasError() {
+		return diags
+	}
+
+	// Get runtime pointer to access common fields
+	runtime := plan.GetRuntimePtr()
+
+	// Build CreateReq
+	createReq := CreateReq{
+		Client:       resource.Client(),
+		Organization: resource.Organization(),
+		Application: tmp.CreateAppRequest{
+			Name:            runtime.Name.ValueString(),
+			Deploy:          "git",
+			Description:     runtime.Description.ValueString(),
+			InstanceType:    instance.Type,
+			InstanceVariant: instance.Variant.ID,
+			InstanceVersion: instance.Version,
+			BuildFlavor:     runtime.BuildFlavor.ValueString(),
+			MinFlavor:       runtime.SmallestFlavor.ValueString(),
+			MaxFlavor:       runtime.BiggestFlavor.ValueString(),
+			MinInstances:    runtime.MinInstanceCount.ValueInt64(),
+			MaxInstances:    runtime.MaxInstanceCount.ValueInt64(),
+			StickySessions:  runtime.StickySessions.ValueBool(),
+			ForceHttps:      FromForceHTTPS(runtime.RedirectHTTPS.ValueBool()),
+			Zone:            runtime.Region.ValueString(),
+			CancelOnPush:    false,
+		},
+		Environment:  environment,
+		VHosts:       vhosts,
+		Dependencies: dependencies,
+	}
+
+	// Call common Create function
+	createRes, createDiags := Create(ctx, createReq)
+	diags.Append(createDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	// Map API response to plan using SetFromCreateResponse
+	runtime.SetFromCreateResponse(createRes, ctx, &diags)
+
+	// Sync network groups
+	SyncNetworkGroups(
+		ctx,
+		resource.Client(),
+		resource.Organization(),
+		createRes.Application.ID,
+		runtime.Networkgroups,
+		&diags,
+	)
+
+	// Git deployment
+	GitDeploy(ctx, plan.ToDeployment(resource.GitAuth()), createRes.Application.DeployURL, &diags)
+
+	return diags
+}
+
+func Read(ctx context.Context, cc *client.Client, orgId, appId string) (*ReadAppRes, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
+	r := &ReadAppRes{}
+
+	appRes := tmp.GetApp(ctx, cc, orgId, appId)
+	if appRes.IsNotFoundError() {
+		r.AppIsDeleted = true
+		return r, diags
+	}
+	if appRes.HasError() {
+		diags.AddError("failed to get app", appRes.Error().Error())
+		return r, diags
+	}
+
+	r.App = *appRes.Payload()
+
+	envRes := tmp.GetAppEnv(ctx, cc, orgId, appId)
+	if envRes.IsNotFoundError() {
+		r.AppIsDeleted = true
+		return r, diags
+	}
+	if envRes.HasError() {
+		diags.AddError("failed to get app", appRes.Error().Error())
+		return r, diags
+	}
+
+	r.Env = *envRes.Payload()
+
+	return r, diags
+}
+
+func Update(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 
 	// Application
@@ -304,4 +422,27 @@ func SyncVHostsOnUpdate(ctx context.Context, client *client.Client, organization
 			diags.AddError(fmt.Sprintf("failed to add vhost \"%s\"", vhost), addVhostRes.Error().Error())
 		}
 	}
+}
+
+type ReadAppRes struct {
+	App          tmp.CreatAppResponse
+	AppIsDeleted bool
+	Env          []tmp.Env
+}
+
+func (res *ReadAppRes) GetBuildFlavor() types.String {
+	if !res.App.SeparateBuild {
+		return types.StringNull()
+	}
+	return types.StringValue(res.App.BuildFlavor.Name)
+}
+
+func (r ReadAppRes) EnvAsMap() map[string]string {
+	return pkg.Reduce(
+		r.Env,
+		map[string]string{},
+		func(acc map[string]string, entry tmp.Env) map[string]string {
+			acc[entry.Name] = entry.Value
+			return acc
+		})
 }

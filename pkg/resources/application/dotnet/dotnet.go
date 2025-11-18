@@ -18,3 +18,7 @@ func NewResourceDotnet() resource.Resource {
 func (r *ResourceDotnet) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_dotnet"
 }
+
+func (r *ResourceDotnet) GetVariantSlug() string {
+	return "dotnet"
+}

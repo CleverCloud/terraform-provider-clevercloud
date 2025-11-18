@@ -68,3 +68,7 @@ func (r *ResourcePython) UpgradeState(ctx context.Context) map[int64]resource.St
 		},
 	}
 }
+
+func (r *ResourcePython) GetVariantSlug() string {
+	return "python"
+}

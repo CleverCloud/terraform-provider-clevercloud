@@ -85,3 +85,7 @@ func (r *ResourceRuby) UpgradeState(ctx context.Context) map[int64]resource.Stat
 		},
 	}
 }
+
+func (r *ResourceRuby) GetVariantSlug() string {
+	return "ruby"
+}

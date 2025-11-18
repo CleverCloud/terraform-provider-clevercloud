@@ -79,3 +79,7 @@ func (r *ResourceDocker) UpgradeState(ctx context.Context) map[int64]resource.St
 		},
 	}
 }
+
+func (r *ResourceDocker) GetVariantSlug() string {
+	return "docker"
+}

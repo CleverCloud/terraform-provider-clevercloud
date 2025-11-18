@@ -177,7 +177,7 @@ var schemaDockerV0 = schema.Schema{
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (p *Docker) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (p *Docker) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -206,7 +206,7 @@ func (p *Docker) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
-func (p *Docker) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (p *Docker) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if p.Deployment == nil || p.Deployment.Repository.IsNull() {
 		return nil
 	}

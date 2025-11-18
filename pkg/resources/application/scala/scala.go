@@ -71,3 +71,7 @@ func (r *ResourceScala) UpgradeState(ctx context.Context) map[int64]resource.Sta
 		},
 	}
 }
+
+func (r *ResourceScala) GetVariantSlug() string {
+	return "sbt"
+}

@@ -18,3 +18,7 @@ func NewResourceV() resource.Resource {
 func (r *ResourceV) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_v"
 }
+
+func (r *ResourceV) GetVariantSlug() string {
+	return "v"
+}

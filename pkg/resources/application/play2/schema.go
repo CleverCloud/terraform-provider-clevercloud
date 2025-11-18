@@ -45,7 +45,7 @@ var schemaPlay2V0 = schema.Schema{
 	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (plan *Play2) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (plan *Play2) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -61,7 +61,7 @@ func (plan *Play2) toEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (play2 *Play2) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (play2 *Play2) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if play2.Deployment == nil || play2.Deployment.Repository.IsNull() {
 		return nil
 	}
