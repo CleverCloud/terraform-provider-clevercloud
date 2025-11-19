@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.6.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.5.0...v1.6.0) (2025-11-19)
+
+
+### Features
+
+* **provider:** allow to disable NG ([1275333](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1275333033dbe550a931d29d279a2255af9635f7))
+
+
+### Bug Fixes
+
+* **vhosts:** handle empty vhosts config ([1d4b880](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1d4b8807eb8372d0631dd3ed43b85cc42d274efc))
+
 ## [1.5.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.4.0...v1.5.0) (2025-11-17)
 
 
