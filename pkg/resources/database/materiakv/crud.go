@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
@@ -47,26 +45,37 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
 	}
+	addon := res.Payload()
 
-	kv.ID = pkg.FromStr(res.Payload().RealID)
+	kv.ID = pkg.FromStr(addon.RealID)
 	kv.CreationDate = pkg.FromI(res.Payload().CreationDate)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
 
-	kvInfoRes := tmp.GetMateriaKV(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
+	kvInfoRes := r.
+		SDK().
+		V4().
+		Materia().
+		Organisations().
+		Ownerid(r.Organization()).
+		Materia().
+		Databases().
+		Resourceid(addon.RealID).
+		Getmateriakvv4(ctx)
+	//kvInfoRes := tmp.GetMateriaKV(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
 	if kvInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get materia kv connection infos", kvInfoRes.Error().Error())
 		return
+	} else {
+
+		kvInfo := kvInfoRes.Payload()
+		tflog.Debug(ctx, "API response", map[string]any{
+			"payload": fmt.Sprintf("%+v", kvInfo),
+		})
+		kv.Host = pkg.FromStr(kvInfo.Host)
+		kv.Port = pkg.FromI(int64(kvInfo.Port))
+		kv.Token = pkg.FromStr(kvInfo.Token)
 	}
-
-	kvInfo := kvInfoRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]any{
-		"payload": fmt.Sprintf("%+v", kvInfo),
-	})
-	kv.Host = pkg.FromStr(kvInfo.Host)
-	kv.Port = pkg.FromI(int64(kvInfo.Port))
-	kv.Token = pkg.FromStr(kvInfo.Token)
-
 	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
 }
 
@@ -81,34 +90,35 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	addonKVRes := tmp.GetMateriaKV(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
+	addonKVRes := r.
+		SDK().
+		V4().
+		Materia().
+		Organisations().
+		Ownerid(r.Organization()).
+		Materia().
+		Databases().
+		Resourceid(kv.ID.ValueString()).
+		Getmateriakvv4(ctx)
 	if addonKVRes.IsNotFoundError() {
-		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
+		resp.State.RemoveResource(ctx)
+		return
+	} else if addonKVRes.HasError() {
+		resp.Diagnostics.AddError("failed to get materiakv resource", addonKVRes.Error().Error())
+	} else {
+		addonKV := addonKVRes.Payload()
+		if addonKV.Status == "TO_DELETE" {
+			resp.State.RemoveResource(ctx)
 			return
 		}
-	}
-	if addonKVRes.IsNotFoundError() {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	if addonKVRes.HasError() {
-		resp.Diagnostics.AddError("failed to get materiakv resource", addonKVRes.Error().Error())
-	}
 
-	addonKV := addonKVRes.Payload()
+		tflog.Debug(ctx, "STATE", map[string]any{"kv": kv})
+		tflog.Debug(ctx, "API", map[string]any{"kv": addonKV})
+		kv.Host = pkg.FromStr(addonKV.Host)
+		kv.Port = pkg.FromI(int64(addonKV.Port))
+		kv.Token = pkg.FromStr(addonKV.Token)
 
-	if addonKV.Status == "TO_DELETE" {
-		resp.State.RemoveResource(ctx)
-		return
 	}
-
-	tflog.Debug(ctx, "STATE", map[string]any{"kv": kv})
-	tflog.Debug(ctx, "API", map[string]any{"kv": addonKV})
-	kv.Host = pkg.FromStr(addonKV.Host)
-	kv.Port = pkg.FromI(int64(addonKV.Port))
-	kv.Token = pkg.FromStr(addonKV.Token)
 
 	diags = resp.State.Set(ctx, kv)
 	resp.Diagnostics.Append(diags...)
@@ -130,9 +140,9 @@ func (r *ResourceMateriaKV) Update(ctx context.Context, req resource.UpdateReque
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update MateriaKV", addonRes.Error().Error())
-		return
+	} else {
+		state.Name = plan.Name
 	}
-	state.Name = plan.Name
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 

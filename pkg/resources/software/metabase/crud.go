@@ -48,7 +48,14 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 	mb.ID = pkg.FromStr(addon.RealID)
 	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
 
-	metabaseRes := tmp.GetMetabase(ctx, r.Client(), addon.RealID)
+	metabaseRes := r.
+		SDK().
+		V4().
+		AddonProviders().
+		AddonMetabase().
+		Addons().
+		Addonmetabaseid(addon.RealID).
+		Getmetabase(ctx)
 	if metabaseRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Metabase", metabaseRes.Error().Error())
 	} else {
@@ -66,7 +73,14 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonMBRes := tmp.GetMetabase(ctx, r.Client(), state.ID.ValueString())
+	addonMBRes := r.
+		SDK().
+		V4().
+		AddonProviders().
+		AddonMetabase().
+		Addons().
+		Addonmetabaseid(state.ID.ValueString()).
+		Getmetabase(ctx)
 	if addonMBRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -83,10 +97,6 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 // Update resource
 func (r *ResourceMetabase) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	plan := helper.PlanFrom[Metabase](ctx, req.Plan, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	state := helper.StateFrom[Metabase](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -119,13 +129,13 @@ func (r *ResourceMetabase) Delete(ctx context.Context, req resource.DeleteReques
 
 	tflog.Debug(ctx, "Metabase DELETE", map[string]any{"mb": mb})
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), mb.ID.ValueString())
+	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), mb.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonID)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

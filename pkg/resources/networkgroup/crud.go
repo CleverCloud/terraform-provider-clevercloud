@@ -6,11 +6,11 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // Create a new resource
@@ -23,12 +23,19 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 	id := tmp.GenID()
 	plan.ID = basetypes.NewStringValue(id)
 
-	ngRes := tmp.CreateNetworkgroup(ctx, r.Client(), r.Organization(), tmp.NetworkgroupCreation{
-		ID:          id,
-		Label:       plan.Name.ValueString(),
-		Description: plan.Description.ValueString(),
-		Tags:        pkg.SetToStringSlice(ctx, plan.Tags, &resp.Diagnostics),
-	})
+	ngRes := r.
+		SDK().
+		V4().
+		Networkgroups().
+		Organisations().
+		Ownerid(r.Organization()).
+		Networkgroups().
+		Createnetworkgroup(ctx, &models.WannabeNetworkGroup{
+			ID:          &id,
+			Label:       plan.Name.ValueStringPointer(),
+			Description: plan.Description.ValueStringPointer(),
+			Tags:        pkg.SetToStringSlice(ctx, plan.Tags, &resp.Diagnostics),
+		})
 	if ngRes.HasError() {
 		resp.Diagnostics.AddError("failed to create networkgroup", ngRes.Error().Error())
 		return
@@ -50,14 +57,20 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 
 // Read resource information
 func (r *ResourceNG) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "ResourceNG READ", map[string]any{"request": req})
-
 	state := helper.StateFrom[Networkgroup](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	ngRes := tmp.GetNetworkgroup(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	ngRes := r.
+		SDK().
+		V4().
+		Networkgroups().
+		Organisations().
+		Ownerid(r.Organization()).
+		Networkgroups().
+		Networkgroupid(state.ID.ValueString()).
+		Getnetworkgroup(ctx)
 	if ngRes.HasError() {
 		resp.Diagnostics.AddError("failed to get networkgroup", ngRes.Error().Error())
 		return
@@ -79,14 +92,20 @@ func (r *ResourceNG) Update(ctx context.Context, req resource.UpdateRequest, res
 
 // Delete resource
 func (r *ResourceNG) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	tflog.Debug(ctx, "Networkgroup DELETE")
-
 	state := helper.StateFrom[Networkgroup](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	res := tmp.DeleteNetworkgroup(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	res := r.
+		SDK().
+		V4().
+		Networkgroups().
+		Organisations().
+		Ownerid(r.Organization()).
+		Networkgroups().
+		Networkgroupid(state.ID.ValueString()).
+		Deletenetworkgroup(ctx)
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete networkgroup", res.Error().Error())
 		return
@@ -95,7 +114,7 @@ func (r *ResourceNG) Delete(ctx context.Context, req resource.DeleteRequest, res
 	resp.State.RemoveResource(ctx)
 }
 
-func (r *ResourceNG) WaitForNG(ctx context.Context, cc *client.Client, organisationID, ngId string) (*tmp.Networkgroup, error) {
+func (r *ResourceNG) WaitForNG(ctx context.Context, cc *client.Client, organisationID, ngId string) (*models.NetworkGroup1, error) {
 	var lastErr error
 
 	for {
@@ -103,7 +122,15 @@ func (r *ResourceNG) WaitForNG(ctx context.Context, cc *client.Client, organisat
 		case <-ctx.Done():
 			return nil, lastErr
 		default:
-			res := tmp.GetNetworkgroup(ctx, cc, organisationID, ngId)
+			res := r.
+				SDK().
+				V4().
+				Networkgroups().
+				Organisations().
+				Ownerid(organisationID).
+				Networkgroups().
+				Networkgroupid(ngId).
+				Getnetworkgroup(ctx)
 			if res.HasError() {
 				lastErr = res.Error()
 				time.Sleep(1 * time.Second)
