@@ -49,7 +49,12 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 	appMatomo.ID = pkg.FromStr(addon.RealID)
 	res.Diagnostics.Append(res.State.Set(ctx, appMatomo)...)
 
-	matomoRes := tmp.GetMatomo(ctx, r.Client(), addon.RealID)
+	matomoRes := r.SDK.V4().
+		AddonProviders().
+		AddonMatomo().
+		Addons().
+		Addonmatomoid(addon.RealID).
+		Getmatomo(ctx)
 	if matomoRes.HasError() {
 		res.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
 	} else {
@@ -68,7 +73,12 @@ func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	matomoRes := tmp.GetMatomo(ctx, r.Client(), state.ID.ValueString())
+	matomoRes := r.SDK.V4().
+		AddonProviders().
+		AddonMatomo().
+		Addons().
+		Addonmatomoid(state.ID.ValueString()).
+		Getmatomo(ctx)
 	if matomoRes.HasError() {
 		resp.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
 	} else {
@@ -85,10 +95,6 @@ func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, res
 // Update resource
 func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	plan := helper.PlanFrom[Matomo](ctx, req.Plan, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	state := helper.StateFrom[Matomo](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return

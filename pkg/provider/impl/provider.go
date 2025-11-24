@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk"
 )
 
 type Provider struct {
@@ -26,6 +27,10 @@ func (p *Provider) Organization() string {
 }
 func (p *Provider) Client() *client.Client {
 	return p.cc
+}
+
+func (p *Provider) SDK() sdk.SDK {
+	return sdk.NewSDK(sdk.WithClient(p.Client()))
 }
 
 func (p *Provider) GitAuth() *http.BasicAuth {

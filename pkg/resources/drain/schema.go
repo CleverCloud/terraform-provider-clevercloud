@@ -3,7 +3,6 @@ package drain
 import (
 	"context"
 	_ "embed"
-	"encoding/json"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -14,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 //go:embed doc.md
@@ -65,8 +65,8 @@ func (r ResourceDrain[T]) Schema(_ context.Context, req resource.SchemaRequest, 
 // DrainAttributes interface for common drain attributes
 type DrainAttributes interface {
 	Attributes() map[string]schema.Attribute
-	ToRecipient() []byte
-	FromAPI(drain tmp.Drain) error
+	ToSDKRecipient() models.DrainRecipient
+	FromSDKRecipient(recipient models.DrainRecipientView)
 	GetDrain() Drain
 	SetDrain(common Drain)
 }
@@ -89,27 +89,17 @@ func (r DatadogDrain) Attributes() map[string]schema.Attribute {
 	}
 }
 
-func (r DatadogDrain) ToRecipient() []byte {
-	v, err := json.Marshal(tmp.RecipientDatadog{
-		Type: "DatadogRecipient",
+func (r DatadogDrain) ToSDKRecipient() models.DrainRecipient {
+	return models.DatadogRecipient{
+		Type: models.DatadogRecipientType,
 		URL:  r.URL.ValueString(),
-	})
-	if err != nil {
-		panic(err)
 	}
-	return v
 }
 
-func (r *DatadogDrain) FromAPI(drain tmp.Drain) error {
-	var recipient tmp.RecipientDatadog
-	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
+func (r *DatadogDrain) FromSDKRecipient(recipient models.DrainRecipientView) {
+	if v, ok := recipient.(models.DatadogRecipientView); ok {
+		r.URL = types.StringValue(v.URL)
 	}
-	r.URL = types.StringValue(recipient.URL)
-	r.ID = types.StringValue(drain.ID)
-	r.ResourceID = types.StringValue(drain.ApplicationID)
-	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 func (r DatadogDrain) GetDrain() Drain { return r.Drain }
@@ -143,34 +133,20 @@ func (r NewRelicDrain) Attributes() map[string]schema.Attribute {
 	}
 }
 
-func (r NewRelicDrain) ToRecipient() []byte {
-	v, err := json.Marshal(tmp.RecipientNewrelic{
-		Type:   "NewRelicRecipient",
+func (r NewRelicDrain) ToSDKRecipient() models.DrainRecipient {
+	return models.NewRelicRecipient{
+		Type:   models.NewRelicRecipientType,
 		URL:    r.URL.ValueString(),
 		APIKey: r.APIKey.ValueString(),
-	})
-	if err != nil {
-		panic(err)
 	}
-	return v
 }
 
-func (r *NewRelicDrain) FromAPI(drain tmp.Drain) error {
-	var recipient tmp.RecipientNewrelic
-	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
+func (r *NewRelicDrain) FromSDKRecipient(recipient models.DrainRecipientView) {
+	if v, ok := recipient.(models.NewRelicRecipientView); ok {
+		r.URL = types.StringValue(v.URL)
+		// For sensitive attributes, preserve current state value since API doesn't return it
+		// API key is not returned in the view, so we keep the existing value
 	}
-	r.URL = types.StringValue(recipient.URL)
-	// For sensitive attributes, preserve current state value since API doesn't return it
-	if !r.APIKey.IsUnknown() {
-		// Keep existing value
-	} else {
-		r.APIKey = types.StringValue(recipient.APIKey)
-	}
-	r.ID = types.StringValue(drain.ID)
-	r.ResourceID = types.StringValue(drain.ApplicationID)
-	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 func (r NewRelicDrain) GetDrain() Drain { return r.Drain }
@@ -230,40 +206,32 @@ func (r ElasticsearchDrain) Attributes() map[string]schema.Attribute {
 	}
 }
 
-func (r ElasticsearchDrain) ToRecipient() []byte {
-	v, err := json.Marshal(tmp.RecipientElasticsearch{
-		Type:            "ElasticsearchRecipient",
+func (r ElasticsearchDrain) ToSDKRecipient() models.DrainRecipient {
+	username := r.Username.ValueString()
+	password := r.Password.ValueString()
+	tlsMode := models.TLSMode(r.TLSVerification.ValueString())
+	return models.ElasticsearchRecipient{
+		Type:            models.ElasticsearchRecipientType,
 		URL:             r.URL.ValueString(),
-		Username:        r.Username.ValueString(),
-		Password:        r.Password.ValueString(),
+		Username:        &username,
+		Password:        &password,
 		Index:           r.Index.ValueString(),
-		TLSVerification: r.TLSVerification.ValueString(),
-	})
-	if err != nil {
-		panic(err)
+		TLSVerification: &tlsMode,
 	}
-	return v
 }
 
-func (r *ElasticsearchDrain) FromAPI(drain tmp.Drain) error {
-	var recipient tmp.RecipientElasticsearch
-	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
+func (r *ElasticsearchDrain) FromSDKRecipient(recipient models.DrainRecipientView) {
+	if v, ok := recipient.(models.ElasticsearchRecipientView); ok {
+		r.URL = types.StringValue(v.URL)
+		if v.Username != nil {
+			r.Username = types.StringValue(*v.Username)
+		}
+		// Password is sensitive and not returned in the view, so we keep the existing value
+		r.Index = types.StringValue(v.Index)
+		if v.TLSVerification != nil {
+			r.TLSVerification = types.StringValue(string(*v.TLSVerification))
+		}
 	}
-	r.URL = types.StringValue(recipient.URL)
-	r.Username = types.StringValue(recipient.Username)
-	// For sensitive attributes, preserve current state value since API doesn't return it
-	if !r.Password.IsUnknown() {
-		// Keep existing value
-	} else {
-		r.Password = types.StringValue(recipient.Password)
-	}
-	r.Index = types.StringValue(recipient.Index)
-	r.TLSVerification = types.StringValue(recipient.TLSVerification)
-	r.ID = types.StringValue(drain.ID)
-	r.ResourceID = types.StringValue(drain.ApplicationID)
-	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 func (r ElasticsearchDrain) GetDrain() Drain { return r.Drain }
@@ -273,8 +241,8 @@ func (r *ElasticsearchDrain) SetDrain(drain Drain) { r.Drain = drain }
 // Syslog UDP drain
 type SyslogUDPDrain struct {
 	Drain
-	URL   types.String `tfsdk:"url"`
-	Token types.String `tfsdk:"token"`
+	URL                         types.String `tfsdk:"url"`
+	RFC5424StructuredDataParams types.String `tfsdk:"rfc5424_structured_data_parameters"`
 }
 
 func (r SyslogUDPDrain) Attributes() map[string]schema.Attribute {
@@ -286,10 +254,9 @@ func (r SyslogUDPDrain) Attributes() map[string]schema.Attribute {
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"token": schema.StringAttribute{
+		"rfc5424_structured_data_parameters": schema.StringAttribute{
 			Optional:            true,
-			Sensitive:           true,
-			MarkdownDescription: "Authentication token",
+			MarkdownDescription: "RFC5424 structured data parameters",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 			},
@@ -297,38 +264,27 @@ func (r SyslogUDPDrain) Attributes() map[string]schema.Attribute {
 	}
 }
 
-func (r SyslogUDPDrain) ToRecipient() []byte {
-	v, err := json.Marshal(tmp.RecipientSyslogUDP{
-		Type:  "SyslogUDPRecipient",
-		URL:   r.URL.ValueString(),
-		Token: r.Token.ValueString(),
-	})
-	if err != nil {
-		panic(err)
+func (r SyslogUDPDrain) ToSDKRecipient() models.DrainRecipient {
+	var params *string
+	if !r.RFC5424StructuredDataParams.IsNull() && !r.RFC5424StructuredDataParams.IsUnknown() {
+		p := r.RFC5424StructuredDataParams.ValueString()
+		params = &p
 	}
-	return v
+	return models.SyslogUDPRecipient{
+		Type:                            models.SyslogUDPRecipientType,
+		URL:                             r.URL.ValueString(),
+		Rfc5424StructuredDataParameters: params,
+	}
 }
 
-func (r *SyslogUDPDrain) FromAPI(drain tmp.Drain) error {
-	var recipient tmp.RecipientSyslogUDP
-	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
-	}
-	r.URL = types.StringValue(recipient.URL)
-	// For sensitive attributes, preserve current state value since API doesn't return it
-	if !r.Token.IsUnknown() {
-		// Keep existing value
-	} else {
-		if recipient.Token != "" {
-			r.Token = types.StringValue(recipient.Token)
-		} else {
-			r.Token = types.StringNull()
+func (r *SyslogUDPDrain) FromSDKRecipient(recipient models.DrainRecipientView) {
+	if v, ok := recipient.(models.SyslogUDPRecipientView); ok {
+		r.URL = types.StringValue(v.URL)
+		if v.Rfc5424StructuredDataParameters != nil {
+			r.RFC5424StructuredDataParams = types.StringValue(*v.Rfc5424StructuredDataParameters)
 		}
+		// Don't modify RFC5424 params if not returned (preserve current state)
 	}
-	r.ID = types.StringValue(drain.ID)
-	r.ResourceID = types.StringValue(drain.ApplicationID)
-	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 func (r SyslogUDPDrain) GetDrain() Drain { return r.Drain }
@@ -338,8 +294,8 @@ func (r *SyslogUDPDrain) SetDrain(common Drain) { r.Drain = common }
 // Syslog TCP drain
 type SyslogTCPDrain struct {
 	Drain
-	URL   types.String `tfsdk:"url"`
-	Token types.String `tfsdk:"token"`
+	URL                         types.String `tfsdk:"url"`
+	RFC5424StructuredDataParams types.String `tfsdk:"rfc5424_structured_data_parameters"`
 }
 
 func (r SyslogTCPDrain) Attributes() map[string]schema.Attribute {
@@ -351,10 +307,9 @@ func (r SyslogTCPDrain) Attributes() map[string]schema.Attribute {
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
-		"token": schema.StringAttribute{
+		"rfc5424_structured_data_parameters": schema.StringAttribute{
 			Optional:            true,
-			Sensitive:           true,
-			MarkdownDescription: "Authentication token",
+			MarkdownDescription: "RFC5424 structured data parameters",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 			},
@@ -362,38 +317,27 @@ func (r SyslogTCPDrain) Attributes() map[string]schema.Attribute {
 	}
 }
 
-func (r SyslogTCPDrain) ToRecipient() []byte {
-	v, err := json.Marshal(tmp.RecipientSyslogTCP{
-		Type:  "SyslogTCPRecipient",
-		URL:   r.URL.ValueString(),
-		Token: r.Token.ValueString(),
-	})
-	if err != nil {
-		panic(err)
+func (r SyslogTCPDrain) ToSDKRecipient() models.DrainRecipient {
+	var params *string
+	if !r.RFC5424StructuredDataParams.IsNull() && !r.RFC5424StructuredDataParams.IsUnknown() {
+		p := r.RFC5424StructuredDataParams.ValueString()
+		params = &p
 	}
-	return v
+	return models.SyslogTCPRecipient{
+		Type:                            models.SyslogTCPRecipientType,
+		URL:                             r.URL.ValueString(),
+		Rfc5424StructuredDataParameters: params,
+	}
 }
 
-func (r *SyslogTCPDrain) FromAPI(drain tmp.Drain) error {
-	var recipient tmp.RecipientSyslogTCP
-	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
-	}
-	r.URL = types.StringValue(recipient.URL)
-	// For sensitive attributes, preserve current state value since API doesn't return it
-	if !r.Token.IsUnknown() {
-		// Keep existing value
-	} else {
-		if recipient.Token != "" {
-			r.Token = types.StringValue(recipient.Token)
-		} else {
-			r.Token = types.StringNull()
+func (r *SyslogTCPDrain) FromSDKRecipient(recipient models.DrainRecipientView) {
+	if v, ok := recipient.(models.SyslogTCPRecipientView); ok {
+		r.URL = types.StringValue(v.URL)
+		if v.Rfc5424StructuredDataParameters != nil {
+			r.RFC5424StructuredDataParams = types.StringValue(*v.Rfc5424StructuredDataParameters)
 		}
+		// Don't modify RFC5424 params if not returned (preserve current state)
 	}
-	r.ID = types.StringValue(drain.ID)
-	r.ResourceID = types.StringValue(drain.ApplicationID)
-	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 func (r SyslogTCPDrain) GetDrain() Drain { return r.Drain }
@@ -403,7 +347,9 @@ func (r *SyslogTCPDrain) SetDrain(common Drain) { r.Drain = common }
 // HTTP drain
 type HTTPDrain struct {
 	Drain
-	URL types.String `tfsdk:"url"`
+	URL      types.String `tfsdk:"url"`
+	Username types.String `tfsdk:"username"`
+	Password types.String `tfsdk:"password"`
 }
 
 func (r HTTPDrain) Attributes() map[string]schema.Attribute {
@@ -415,30 +361,51 @@ func (r HTTPDrain) Attributes() map[string]schema.Attribute {
 				stringplanmodifier.RequiresReplace(),
 			},
 		},
+		"username": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "HTTP basic auth username",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+		},
+		"password": schema.StringAttribute{
+			Optional:            true,
+			Sensitive:           true,
+			MarkdownDescription: "HTTP basic auth password",
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+		},
 	}
 }
 
-func (r HTTPDrain) ToRecipient() []byte {
-	v, err := json.Marshal(tmp.RecipientRaw{
-		Type: "RawRecipient",
-		URL:  r.URL.ValueString(),
-	})
-	if err != nil {
-		panic(err)
+func (r HTTPDrain) ToSDKRecipient() models.DrainRecipient {
+	var username, password *string
+	if !r.Username.IsNull() && !r.Username.IsUnknown() {
+		u := r.Username.ValueString()
+		username = &u
 	}
-	return v
+	if !r.Password.IsNull() && !r.Password.IsUnknown() {
+		p := r.Password.ValueString()
+		password = &p
+	}
+	return models.RawRecipient{
+		Type:     models.RawRecipientType,
+		URL:      r.URL.ValueString(),
+		Username: username,
+		Password: password,
+	}
 }
 
-func (r *HTTPDrain) FromAPI(drain tmp.Drain) error {
-	var recipient tmp.RecipientRaw
-	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
+func (r *HTTPDrain) FromSDKRecipient(recipient models.DrainRecipientView) {
+	if v, ok := recipient.(models.RawRecipientView); ok {
+		r.URL = types.StringValue(v.URL)
+		if v.Username != nil {
+			r.Username = types.StringValue(*v.Username)
+		}
+		// Don't modify username if not returned (preserve current state)
+		// Password is sensitive and not returned in the view (preserve current state)
 	}
-	r.URL = types.StringValue(recipient.URL)
-	r.ID = types.StringValue(drain.ID)
-	r.ResourceID = types.StringValue(drain.ApplicationID)
-	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 func (r HTTPDrain) GetDrain() Drain { return r.Drain }
@@ -480,40 +447,33 @@ func (r OVHDrain) Attributes() map[string]schema.Attribute {
 	}
 }
 
-func (r OVHDrain) ToRecipient() []byte {
-	v, err := json.Marshal(tmp.RecipientOVH{
-		Type:                        "OVHTCPRecipient",
-		URL:                         r.URL.ValueString(),
-		Token:                       r.Token.ValueString(),
-		RFC5424StructuredDataParams: r.RFC5424StructuredDataParams.ValueString(),
-	})
-	if err != nil {
-		panic(err)
+func (r OVHDrain) ToSDKRecipient() models.DrainRecipient {
+	var token, params *string
+	if !r.Token.IsNull() && !r.Token.IsUnknown() {
+		t := r.Token.ValueString()
+		token = &t
 	}
-	return v
+	if !r.RFC5424StructuredDataParams.IsNull() && !r.RFC5424StructuredDataParams.IsUnknown() {
+		p := r.RFC5424StructuredDataParams.ValueString()
+		params = &p
+	}
+	return models.OVHTCPRecipient{
+		Type:                            models.OVHTCPRecipientType,
+		URL:                             r.URL.ValueString(),
+		Token:                           token,
+		Rfc5424StructuredDataParameters: params,
+	}
 }
 
-func (r *OVHDrain) FromAPI(drain tmp.Drain) error {
-	var recipient tmp.RecipientOVH
-	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
+func (r *OVHDrain) FromSDKRecipient(recipient models.DrainRecipientView) {
+	if v, ok := recipient.(models.OVHTCPRecipientView); ok {
+		r.URL = types.StringValue(v.URL)
+		// Token is sensitive and not returned in the view (preserve current state)
+		if v.Rfc5424StructuredDataParameters != nil {
+			r.RFC5424StructuredDataParams = types.StringValue(*v.Rfc5424StructuredDataParameters)
+		}
+		// Don't modify RFC5424 params if not returned (preserve current state)
 	}
-	r.URL = types.StringValue(recipient.URL)
-	// For sensitive attributes, preserve current state value since API doesn't return it
-	if !r.Token.IsUnknown() {
-		// Keep existing value
-	} else {
-		r.Token = types.StringValue(recipient.Token)
-	}
-	if recipient.RFC5424StructuredDataParams != "" {
-		r.RFC5424StructuredDataParams = types.StringValue(recipient.RFC5424StructuredDataParams)
-	} else {
-		r.RFC5424StructuredDataParams = types.StringNull()
-	}
-	r.ID = types.StringValue(drain.ID)
-	r.ResourceID = types.StringValue(drain.ApplicationID)
-	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 func (r OVHDrain) GetDrain() Drain { return r.Drain }

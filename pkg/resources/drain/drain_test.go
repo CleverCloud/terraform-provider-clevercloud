@@ -159,7 +159,6 @@ func TestAccDrainSyslogTCP_basic(t *testing.T) {
 			"kind":        "LOG",
 			"resource_id": fmt.Sprintf("${clevercloud_static.%s.id}", rNameApp),
 			"url":         "tcp://test.example.com:514",
-			"token":       "test-token",
 		}),
 	)
 

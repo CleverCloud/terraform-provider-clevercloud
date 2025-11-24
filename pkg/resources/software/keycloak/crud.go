@@ -57,9 +57,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 
-	keycloakRes := r.SDK.
-		V4().
-		Keycloaks().
+	keycloakRes := r.SDK.V4().Keycloaks().
 		Organisations().
 		Ownerid(r.Organization()).
 		Keycloaks().
@@ -87,9 +85,7 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	keycloakRes := r.SDK.
-		V4().
-		Keycloaks().
+	keycloakRes := r.SDK.V4().Keycloaks().
 		Organisations().
 		Ownerid(r.Organization()).
 		Keycloaks().
@@ -116,7 +112,7 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 // Update resource
 func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	plan := helper.From[Keycloak](ctx, req.Plan, &resp.Diagnostics)
-	state := helper.StateFrom[Keycloak](ctx, req.State, &resp.Diagnostics)
+	state := helper.From[Keycloak](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

@@ -20,7 +20,7 @@ require (
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/miton18/helper v0.0.3
 	go.clever-cloud.dev/client v0.1.4
-	go.clever-cloud.dev/sdk v0.0.5
+	go.clever-cloud.dev/sdk v0.1.2-rc1
 	golang.org/x/exp v0.0.0-20251017212417-90e834f514db
 )
 
@@ -75,7 +75,6 @@ require (
 	github.com/golang/groupcache v0.0.0-20241129210726-2c02b8208cf8 // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/google/go-cmp v0.7.0 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/cli v1.1.7 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
@@ -181,6 +180,7 @@ require (
 replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20250106144421-5f5ef82da422
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/jlaffaye/ftp v0.2.0
 	github.com/lib/pq v1.10.9
