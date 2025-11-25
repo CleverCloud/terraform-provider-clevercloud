@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -49,7 +48,15 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 	kc.ID = pkg.FromStr(addon.RealID)
 	res.Diagnostics.Append(res.State.Set(ctx, kc)...)
 
-	keycloakRes := tmp.GetKeycloak(ctx, r.Client(), addon.RealID)
+	keycloakRes := r.
+		SDK().
+		V4().
+		Keycloaks().
+		Organisations().
+		Ownerid(r.Organization()).
+		Keycloaks().
+		Addonkeycloakid(addon.RealID).
+		Getkeycloak(ctx)
 	if keycloakRes.HasError() {
 		res.Diagnostics.AddError("failed to get Keycloak", keycloakRes.Error().Error())
 	} else {
@@ -62,14 +69,20 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 
 // Read resource information
 func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Keycloak READ", map[string]any{"request": req})
-
 	state := helper.StateFrom[Keycloak](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	keycloakRes := tmp.GetKeycloak(ctx, r.Client(), state.ID.ValueString())
+	keycloakRes := r.
+		SDK().
+		V4().
+		Keycloaks().
+		Organisations().
+		Ownerid(r.Organization()).
+		Keycloaks().
+		Addonkeycloakid(state.ID.ValueString()).
+		Getkeycloak(ctx)
 	if keycloakRes.HasError() {
 		resp.Diagnostics.AddError("failed to get keycloak", keycloakRes.Error().Error())
 	} else {
@@ -83,10 +96,6 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 // Update resource
 func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	plan := helper.PlanFrom[Keycloak](ctx, req.Plan, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	state := helper.StateFrom[Keycloak](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return

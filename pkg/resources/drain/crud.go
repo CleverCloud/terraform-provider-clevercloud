@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // Create drain resource
@@ -16,13 +16,23 @@ func (r *ResourceDrain[T]) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	// Create the drain via API
-	wannabeDrain := tmp.WannabeDrain{
-		Kind:      tmp.DRAIN_KIND(plan.GetDrain().Kind.ValueString()),
-		Recipient: plan.ToRecipient(),
+	// Create the drain via SDK
+	recipient := plan.ToSDKRecipient()
+	wannabeDrain := models.WannabeDrain{
+		Kind:      models.DrainKind(plan.GetDrain().Kind.ValueString()),
+		Recipient: recipient,
 	}
 
-	createRes := tmp.CreateDrain(ctx, r.Client(), r.Organization(), plan.GetDrain().ResourceID.ValueString(), wannabeDrain)
+	createRes := r.
+		SDK().
+		V4().
+		Drains().
+		Organisations().
+		Ownerid(r.Organization()).
+		Applications().
+		Applicationid(plan.GetDrain().ResourceID.ValueString()).
+		Drains().
+		Createdrain(ctx, &wannabeDrain)
 	if createRes.HasError() {
 		resp.Diagnostics.AddError("Failed to create drain", createRes.Error().Error())
 		return
@@ -31,11 +41,14 @@ func (r *ResourceDrain[T]) Create(ctx context.Context, req resource.CreateReques
 
 	// Update state with API response data
 	state := plan
+	// First update the common drain fields
 	state.SetDrain(Drain{
 		ID:         types.StringValue(drain.ID),
 		Kind:       types.StringValue(string(drain.Kind)),
-		ResourceID: types.StringValue(drain.ApplicationID),
+		ResourceID: types.StringValue(drain.ResourceID),
 	})
+	// Then update the recipient-specific fields from the API response
+	state.FromSDKRecipient(drain.Recipient)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -47,20 +60,33 @@ func (r *ResourceDrain[T]) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	// Get drain from API
-	drainRes := tmp.GetDrain(ctx, r.Client(), r.Organization(), state.GetDrain().ResourceID.ValueString(), state.GetDrain().ID.ValueString())
+	// Get drain from API via SDK
+	drainRes := r.
+		SDK().
+		V4().
+		Drains().
+		Organisations().
+		Ownerid(r.Organization()).
+		Applications().
+		Applicationid(state.GetDrain().ResourceID.ValueString()).
+		Drains().
+		Drainid(state.GetDrain().ID.ValueString()).
+		Getdrain(ctx)
 	if drainRes.HasError() {
 		resp.Diagnostics.AddError("Failed to read drain", drainRes.Error().Error())
 		return
 	}
 	drain := drainRes.Payload()
 
-	// Update state from API data while preserving sensitive values
-	err := state.FromAPI(*drain)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to parse drain data", err.Error())
-		return
-	}
+	// Update common drain fields
+	state.SetDrain(Drain{
+		ID:         types.StringValue(drain.ID),
+		Kind:       types.StringValue(string(drain.Kind)),
+		ResourceID: types.StringValue(drain.ResourceID),
+	})
+	// Update recipient-specific fields from API (non-sensitive fields only)
+	// Sensitive fields are automatically preserved by Terraform when marked as Sensitive: true
+	state.FromSDKRecipient(drain.Recipient)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -78,12 +104,21 @@ func (r *ResourceDrain[T]) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	deleteRes := tmp.DeleteDrain(ctx, r.Client(), r.Organization(), state.GetDrain().ResourceID.ValueString(), state.GetDrain().ID.ValueString())
+	deleteRes := r.
+		SDK().
+		V4().
+		Drains().
+		Organisations().
+		Ownerid(r.Organization()).
+		Applications().
+		Applicationid(state.GetDrain().ResourceID.ValueString()).
+		Drains().
+		Drainid(state.GetDrain().ID.ValueString()).
+		Deletedrain(ctx)
 	if !deleteRes.HasError() {
 		resp.State.RemoveResource(ctx)
 		return
 	}
 
 	resp.Diagnostics.AddError("Failed to delete drain", deleteRes.Error().Error())
-
 }
