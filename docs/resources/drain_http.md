@@ -249,6 +249,8 @@ terraform import clevercloud_drain_datadog.example drain_12345678-abcd-1234-5678
 ### Optional
 
 - `kind` (String) either LOG, ACCESSLOG or AUDITLOG
+- `password` (String, Sensitive) HTTP basic auth password
+- `username` (String) HTTP basic auth username
 
 ### Read-Only
 
