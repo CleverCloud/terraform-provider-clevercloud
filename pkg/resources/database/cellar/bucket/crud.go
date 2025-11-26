@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	minio "github.com/minio/minio-go/v7"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/s3"
@@ -102,6 +103,32 @@ func (r *ResourceCellarBucket) Delete(ctx context.Context, req resource.DeleteRe
 		resp.Diagnostics.AddError("failed to setup S3 client", err.Error())
 		return
 	}
+
+	toRemove := make(chan minio.ObjectInfo, 500)
+	objects := minioClient.ListObjectsIter(ctx, bucket.Name.ValueString(), minio.ListObjectsOptions{})
+	go func() {
+		for object := range objects {
+			if err := object.Err; err != nil {
+				resp.Diagnostics.AddError("failed to list bucket objects for deletion", err.Error())
+				continue
+			}
+
+			toRemove <- object
+			tflog.Debug(ctx, "sending object for deletion", map[string]any{
+				"key":            object.Key,
+				"isDeleteMarker": object.IsDeleteMarker,
+				"metas":          object.Metadata,
+			})
+		}
+		close(toRemove)
+		tflog.Debug(ctx, "All objects has been send for deletion")
+	}()
+
+	errs := minioClient.RemoveObjects(ctx, bucket.Name.ValueString(), toRemove, minio.RemoveObjectsOptions{})
+	for err := range errs {
+		resp.Diagnostics.AddError("failed to remove object", err.Error())
+	}
+	tflog.Debug(ctx, "all object has been deleted")
 
 	err = minioClient.RemoveBucket(ctx, bucket.Name.ValueString())
 	if err != nil {
