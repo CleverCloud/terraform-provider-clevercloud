@@ -234,3 +234,16 @@ func (r *ResourceJava) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	resp.State.RemoveResource(ctx)
 }
+
+func (r *ResourceJava) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	plan := helper.PlanFrom[Java](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	application.ValidateRuntimeFlavors(ctx, r, r.profile, plan.Runtime, &res.Diagnostics)
+}

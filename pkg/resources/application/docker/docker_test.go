@@ -141,3 +141,49 @@ func TestAccDocker_privateRepository(t *testing.T) {
 		},
 	})
 }
+
+func TestAccDocker_invalidFlavor(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-docker")
+	cc := client.New(client.WithAutoOauthConfig())
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	dockerBlock := helper.NewRessource(
+		"clevercloud_docker",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 2,
+			"smallest_flavor":    "something",
+			"biggest_flavor":     "M",
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(dockerBlock).String(),
+			ExpectError:  regexp.MustCompile("invalid flavor"),
+		}},
+		CheckDestroy: func(state *terraform.State) error {
+			for _, resource := range state.RootModule().Resources {
+				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
+				if res.IsNotFoundError() {
+					continue
+				}
+				if res.HasError() {
+					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+				}
+				if res.Payload().State == "TO_DELETE" {
+					continue
+				}
+
+				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
+			}
+			return nil
+		},
+	})
+}

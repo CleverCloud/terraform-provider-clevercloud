@@ -198,3 +198,16 @@ func (r *ResourcePHP) Delete(ctx context.Context, req resource.DeleteRequest, re
 
 	resp.State.RemoveResource(ctx)
 }
+
+func (r *ResourcePHP) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	plan := helper.PlanFrom[PHP](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	application.ValidateRuntimeFlavors(ctx, r, "php", plan.Runtime, &res.Diagnostics)
+}

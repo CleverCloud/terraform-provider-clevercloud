@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/miton18/helper/set"
 	"go.clever-cloud.dev/client"
 )
 
@@ -97,7 +98,7 @@ type MaxFlavor struct {
 	PriceID         string  `json:"price_id"`
 	Memory          Memory  `json:"memory"`
 }
-type Flavors struct {
+type Flavor struct {
 	Name            string  `json:"name"`
 	Mem             int     `json:"mem"`
 	Cpus            int     `json:"cpus"`
@@ -111,6 +112,17 @@ type Flavors struct {
 	PriceID         string  `json:"price_id"`
 	Memory          Memory  `json:"memory"`
 }
+type Flavors []Flavor
+
+func (fvs Flavors) NamesAsSet() *set.Set[string] {
+	s := set.New[string]()
+
+	for _, fv := range fvs {
+		s.Add(fv.Name)
+	}
+
+	return s
+}
 
 type Instance struct {
 	Type                string            `json:"type"`
@@ -121,7 +133,7 @@ type Instance struct {
 	MaxAllowedInstances int               `json:"maxAllowedInstances"`
 	MinFlavor           MinFlavor         `json:"minFlavor"`
 	MaxFlavor           MaxFlavor         `json:"maxFlavor"`
-	Flavors             []Flavors         `json:"flavors"`
+	Flavors             Flavors           `json:"flavors"`
 	DefaultEnv          map[string]string `json:"defaultEnv"`
 	Lifetime            string            `json:"lifetime"`
 	InstanceAndVersion  string            `json:"instanceAndVersion"`
@@ -248,7 +260,7 @@ type ProductInstance struct {
 	MaxInstances  int           `json:"maxInstances"`
 	Tags          []string      `json:"tags"`
 	Deployments   []string      `json:"deployments"`
-	Flavors       []Flavors     `json:"flavors"`
+	Flavors       Flavors       `json:"flavors"`
 	DefaultFlavor DefaultFlavor `json:"defaultFlavor"`
 	BuildFlavor   BuildFlavor   `json:"buildFlavor"`
 }

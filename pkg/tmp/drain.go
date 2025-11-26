@@ -23,7 +23,7 @@ type (
 		// backlog
 		// execution
 	}
-	
+
 	// DrainStatus represents the status object returned by the API
 	DrainStatus struct {
 		ID       string `json:"id"`

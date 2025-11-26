@@ -225,3 +225,16 @@ func (r *ResourceDotnet) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	resp.State.RemoveResource(ctx)
 }
+
+func (r *ResourceDotnet) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	plan := helper.PlanFrom[Dotnet](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	application.ValidateRuntimeFlavors(ctx, r, "dotnet", plan.Runtime, &res.Diagnostics)
+}

@@ -221,3 +221,16 @@ func (r *ResourceRust) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	res.State.RemoveResource(ctx)
 }
+
+func (r *ResourceRust) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	plan := helper.PlanFrom[Rust](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	application.ValidateRuntimeFlavors(ctx, r, "rust", plan.Runtime, &res.Diagnostics)
+}

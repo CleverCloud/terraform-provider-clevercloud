@@ -229,3 +229,16 @@ func (r *ResourceScala) Delete(ctx context.Context, req resource.DeleteRequest, 
 
 	resp.State.RemoveResource(ctx)
 }
+
+func (r *ResourceScala) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	plan := helper.PlanFrom[Scala](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	application.ValidateRuntimeFlavors(ctx, r, "sbt", plan.Runtime, &res.Diagnostics)
+}

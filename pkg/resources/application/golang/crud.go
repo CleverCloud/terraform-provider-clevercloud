@@ -226,3 +226,16 @@ func (r *ResourceGo) Delete(ctx context.Context, req resource.DeleteRequest, res
 
 	res.State.RemoveResource(ctx)
 }
+
+func (r *ResourceGo) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	plan := helper.PlanFrom[Go](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	application.ValidateRuntimeFlavors(ctx, r, "go", plan.Runtime, &res.Diagnostics)
+}
