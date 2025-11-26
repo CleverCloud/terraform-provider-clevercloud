@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 
@@ -17,7 +18,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
-	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/provider"
 )
 
 type VHost struct {
@@ -140,17 +141,14 @@ var runtimeCommon = map[string]schema.Attribute{
 	},
 	"smallest_flavor": schema.StringAttribute{
 		Required:            true,
-		Validators:          []validator.String{helper.UpperCaseValidator},
 		MarkdownDescription: "Smallest instance flavor",
 	},
 	"biggest_flavor": schema.StringAttribute{
 		Required:            true,
-		Validators:          []validator.String{helper.UpperCaseValidator},
 		MarkdownDescription: "Biggest instance flavor, if different from smallest, enable auto-scaling",
 	},
 	"build_flavor": schema.StringAttribute{
 		Optional:            true,
-		Validators:          []validator.String{helper.UpperCaseValidator},
 		MarkdownDescription: "Use dedicated instance with given flavor for build phase",
 	},
 	"region": schema.StringAttribute{
@@ -397,4 +395,51 @@ func WithRuntimeCommons(runtimeSpecifics map[string]schema.Attribute) map[string
 
 func WithRuntimeCommonsV0(runtimeSpecifics map[string]schema.Attribute) map[string]schema.Attribute {
 	return pkg.Merge(runtimeCommonV0, runtimeSpecifics)
+}
+
+// ValidateRuntimeFlavors validates that build_flavor, smallest_flavor, and biggest_flavor
+// are valid for the given application variant (docker, nodejs, etc.)
+func ValidateRuntimeFlavors(ctx context.Context, r provider.Provider, variantSlug string, runtime Runtime, diags *diag.Diagnostics) {
+	org := r.Organization()
+	instance := LookupInstanceByVariantSlug(ctx, r.Client(), &org, variantSlug, diags)
+	if instance == nil {
+		diags.AddError("failed to lookup instance", fmt.Sprintf("no instance named '%s'", variantSlug))
+		return
+	}
+	flavorSet := instance.Flavors.NamesAsSet()
+
+	availableFlavors := strings.Join(flavorSet.Slice(), ", ")
+
+	// Validate build_flavor
+	if !runtime.BuildFlavor.IsNull() && !runtime.BuildFlavor.IsUnknown() {
+		if !flavorSet.Contains(runtime.BuildFlavor.ValueString()) {
+			diags.AddAttributeError(
+				path.Root("build_flavor"),
+				"invalid flavor",
+				fmt.Sprintf("available flavors are: %s", availableFlavors),
+			)
+		}
+	}
+
+	// Validate smallest_flavor
+	if !runtime.SmallestFlavor.IsNull() && !runtime.SmallestFlavor.IsUnknown() {
+		if !flavorSet.Contains(runtime.SmallestFlavor.ValueString()) {
+			diags.AddAttributeError(
+				path.Root("smallest_flavor"),
+				"invalid flavor",
+				fmt.Sprintf("available flavors are: %s", availableFlavors),
+			)
+		}
+	}
+
+	// Validate biggest_flavor
+	if !runtime.BiggestFlavor.IsNull() && !runtime.BiggestFlavor.IsUnknown() {
+		if !flavorSet.Contains(runtime.BiggestFlavor.ValueString()) {
+			diags.AddAttributeError(
+				path.Root("biggest_flavor"),
+				"invalid flavor",
+				fmt.Sprintf("available flavors are: %s", availableFlavors),
+			)
+		}
+	}
 }

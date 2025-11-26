@@ -212,3 +212,16 @@ func (r *ResourcePython) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	resp.State.RemoveResource(ctx)
 }
+
+func (r *ResourcePython) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	plan := helper.PlanFrom[Python](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	application.ValidateRuntimeFlavors(ctx, r, "python", plan.Runtime, &res.Diagnostics)
+}

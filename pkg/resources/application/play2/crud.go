@@ -230,3 +230,16 @@ func (r *ResourcePlay2) Delete(ctx context.Context, req resource.DeleteRequest, 
 
 	resp.State.RemoveResource(ctx)
 }
+
+func (r *ResourcePlay2) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	plan := helper.PlanFrom[Play2](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	application.ValidateRuntimeFlavors(ctx, r, "play2", plan.Runtime, &res.Diagnostics)
+}

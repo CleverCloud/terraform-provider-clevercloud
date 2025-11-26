@@ -209,3 +209,16 @@ func (r *ResourceFrankenPHP) Delete(ctx context.Context, req resource.DeleteRequ
 		resp.Diagnostics.AddError("failed to delete app", deleteAppRes.Error().Error())
 	}
 }
+
+func (r *ResourceFrankenPHP) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	plan := helper.PlanFrom[FrankenPHP](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	application.ValidateRuntimeFlavors(ctx, r, "frankenphp", plan.Runtime, &res.Diagnostics)
+}

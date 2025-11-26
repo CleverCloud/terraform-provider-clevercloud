@@ -229,3 +229,16 @@ func (r *ResourceStatic) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	resp.State.RemoveResource(ctx)
 }
+
+func (r *ResourceStatic) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	plan := helper.PlanFrom[Static](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	application.ValidateRuntimeFlavors(ctx, r, "static-apache", plan.Runtime, &res.Diagnostics)
+}

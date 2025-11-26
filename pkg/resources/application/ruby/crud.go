@@ -215,3 +215,16 @@ func (r *ResourceRuby) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	resp.State.RemoveResource(ctx)
 }
+
+func (r *ResourceRuby) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() {
+		return
+	}
+
+	plan := helper.PlanFrom[Ruby](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	application.ValidateRuntimeFlavors(ctx, r, "ruby", plan.Runtime, &res.Diagnostics)
+}
