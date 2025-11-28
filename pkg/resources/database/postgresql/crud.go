@@ -70,9 +70,9 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		Options:    map[string]string{},
 	}
 
-	if !pg.Version.IsNull() && !pg.Version.IsUnknown() {
+	pkg.IfIsSetStr(pg.Version, func(s string) {
 		addonReq.Options["version"] = pg.Version.ValueString()
-	}
+	})
 
 	if !pg.Backup.IsNull() && !pg.Backup.IsUnknown() {
 		backupValue := fmt.Sprintf("%t", pg.Backup.ValueBool())
@@ -80,6 +80,11 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	} else {
 		addonReq.Options["do-backup"] = "true"
 	}
+
+	pkg.IfIsSetB(pg.Encryption, func(s bool) {
+		backupValue := fmt.Sprintf("%t", pg.Backup.ValueBool())
+		addonReq.Options["encryption"] = backupValue
+	})
 
 	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
@@ -111,6 +116,13 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	pg.Password = pkg.FromStr(addonPG.Password)
 	pg.Version = pkg.FromStr(addonPG.Version)
 	pg.Uri = pkg.FromStr(addonPG.Uri())
+
+	for _, option := range addonPG.Features {
+		switch option.Name {
+		case "encryption":
+			pg.Encryption = pkg.FromBool(option.Enabled)
+		}
+	}
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -181,6 +193,8 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 			switch feature.Name {
 			case "do-backup":
 				pg.Backup = pkg.FromBool(feature.Enabled)
+			case "encryption":
+				pg.Encryption = pkg.FromBool(feature.Enabled)
 			}
 		}
 	}

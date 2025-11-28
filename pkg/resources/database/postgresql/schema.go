@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -27,7 +29,8 @@ type PostgreSQL struct {
 	Version  types.String `tfsdk:"version"`
 	Uri      types.String `tfsdk:"uri"`
 
-	Backup types.Bool `tfsdk:"backup"`
+	Backup     types.Bool `tfsdk:"backup"`
+	Encryption types.Bool `tfsdk:"encryption"`
 }
 
 //go:embed doc.md
@@ -56,7 +59,14 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
 				MarkdownDescription: "Enable or disable backups for this PostgreSQL add-on. Since backups are included in the add-on price, disabling it has no impact on your billing.",
+			},
+			"encryption": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "Encrypt the hard drive at rest",
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
 			},
 		}),
 	}

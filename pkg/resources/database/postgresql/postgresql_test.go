@@ -170,24 +170,17 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 			}
 			return nil
 		},
-		Steps: []resource.TestStep{
-			// create a database instance on first step
-			{
-				ResourceName: rName,
-				Config:       providerBlock.Append(postgresqlBlock).String(),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(postgresqlBlock).String(),
+		}, {
+			ResourceName: rName,
+			PreConfig: func() {
+				tmp.DeleteAddon(context.Background(), cc, tests.ORGANISATION, rName)
 			},
-			{
-				ResourceName: rName,
-				PreConfig: func() {
-					// delete the database using an api call
-					tmp.DeleteAddon(context.Background(), cc, tests.ORGANISATION, rName)
-				},
-				// refreshing state
-				RefreshState: true,
-				// plan should contain database re-creation
-				ExpectNonEmptyPlan: true,
-			},
-		},
+			RefreshState:       true,
+			ExpectNonEmptyPlan: true,
+		}},
 	})
 }
 
