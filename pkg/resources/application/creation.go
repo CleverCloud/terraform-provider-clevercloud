@@ -48,6 +48,8 @@ type CreateRes struct {
 	Application tmp.CreatAppResponse
 }
 
+var githubOAuthService = "github"
+
 func (r *CreateRes) GetBuildFlavor() types.String {
 	if !r.Application.SeparateBuild {
 		return types.StringNull()
@@ -83,6 +85,8 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 		}
 
 		req.Application.GithubApp = app
+		req.Application.OAuthService = &githubOAuthService
+		req.Application.OAuthAppID = &app.ID
 	}
 
 	appRes := tmp.CreateApp(ctx, req.Client, req.Organization, req.Application)

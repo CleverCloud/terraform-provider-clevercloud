@@ -29,6 +29,8 @@ type CreateAppRequest struct {
 	StickySessions  bool               `json:"stickySessions"`
 	ForceHttps      string             `json:"forceHttps"`
 	GithubApp       *GithubApplication `json:"githubApp"`
+	OAuthService    *string            `json:"oauthService"`
+	OAuthAppID      *string            `json:"oauthAppId"`
 }
 
 type CreatAppResponse struct {
