@@ -51,6 +51,7 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 		Environment:  environment,
 		VHosts:       vhosts,
 		Dependencies: dependencies,
+		Deployment:   plan.toDeployment(r.GitAuth()),
 	}
 
 	createAppRes, diags := application.CreateApp(ctx, createAppReq)

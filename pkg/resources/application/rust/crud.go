@@ -50,6 +50,7 @@ func (r *ResourceRust) Create(ctx context.Context, req resource.CreateRequest, r
 		Environment:  environment,
 		VHosts:       vhosts,
 		Dependencies: dependencies,
+		Deployment:   plan.toDeployment(r.GitAuth()),
 	}
 
 	createRes, diags := application.CreateApp(ctx, createReq)
