@@ -1,5 +1,19 @@
 # Changelog
 
+## [1.7.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.6.0...v1.7.0) (2025-11-28)
+
+
+### Features
+
+* reboot action ([a3a335e](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/a3a335e75fb3cd26368cb3ab8e1e75e6911f3351))
+
+
+### Bug Fixes
+
+* **apps:** flavor validation ([0a9c3c4](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/0a9c3c40233feb3fcbb597d0c440f37599ca5488))
+* **apps:** missing parameters for github apps ([0bd8e24](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/0bd8e24086c0b52b62d31a83458b7e67bffecd03))
+* **cellar:** empty bucket before deletion ([0e54f46](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/0e54f46d13ac9e25b225eeec0fcdb938e4095e88))
+
 ## [1.6.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.5.0...v1.6.0) (2025-11-19)
 
 
