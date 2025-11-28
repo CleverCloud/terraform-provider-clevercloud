@@ -81,6 +81,11 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		addonReq.Options["do-backup"] = "true"
 	}
 
+	if !pg.Backup.IsNull() && !pg.Backup.IsUnknown() {
+		backupValue := fmt.Sprintf("%t", pg.Backup.ValueBool())
+		addonReq.Options["encryption"] = backupValue
+	}
+
 	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
@@ -181,6 +186,8 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 			switch feature.Name {
 			case "do-backup":
 				pg.Backup = pkg.FromBool(feature.Enabled)
+			case "encryption":
+				pg.Encryption = pkg.FromBool(feature.Enabled)
 			}
 		}
 	}
