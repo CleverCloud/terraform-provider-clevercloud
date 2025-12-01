@@ -22,7 +22,7 @@ func (r *ResourcePlay2) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	resp.Diagnostics.Append(application.GenericCreate(ctx, r, &plan)...)
+	resp.Diagnostics.Append(application.Create(ctx, r, &plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

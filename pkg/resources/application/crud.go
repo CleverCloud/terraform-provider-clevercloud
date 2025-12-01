@@ -58,7 +58,7 @@ type RuntimeResource interface {
 	GitAuth() *http.BasicAuth
 }
 
-// RuntimePlan interface defines methods required by plan types to use GenericCreate
+// RuntimePlan interface defines methods required by plan types to use Create
 type RuntimePlan interface {
 	VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) []string
 	DependenciesAsString(ctx context.Context, diags *diag.Diagnostics) []string
@@ -75,7 +75,7 @@ func (r *CreateRes) GetBuildFlavor() types.String {
 	return types.StringValue(r.Application.BuildFlavor.Name)
 }
 
-func Create(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics) {
+func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 	res := &CreateRes{}
 
@@ -151,8 +151,8 @@ func Create(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics) {
 	return res, diags
 }
 
-// GenericCreate centralizes the common Create logic for all application runtimes
-func GenericCreate[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T) diag.Diagnostics {
+// Create centralizes the common Create logic for all application runtimes
+func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	// Lookup instance by variant slug
@@ -196,7 +196,7 @@ func GenericCreate[T RuntimePlan](ctx context.Context, resource RuntimeResource,
 	}
 
 	// Call common Create function
-	createRes, createDiags := Create(ctx, createReq)
+	createRes, createDiags := CreateApp(ctx, createReq)
 	diags.Append(createDiags...)
 	if diags.HasError() {
 		return diags

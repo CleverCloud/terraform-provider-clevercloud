@@ -22,7 +22,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 		return
 	}
 
-	res.Diagnostics.Append(application.GenericCreate(ctx, r, &plan)...)
+	res.Diagnostics.Append(application.Create(ctx, r, &plan)...)
 	if res.Diagnostics.HasError() {
 		return
 	}
