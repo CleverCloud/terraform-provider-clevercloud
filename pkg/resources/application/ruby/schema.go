@@ -284,6 +284,62 @@ func (ruby Ruby) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
+func (ruby *Ruby) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
+	if val, ok := env["APP_FOLDER"]; ok {
+		ruby.AppFolder = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_RUBY_VERSION"]; ok {
+		ruby.RubyVersion = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_ENABLE_SIDEKIQ"]; ok && val == "true" {
+		ruby.EnableSidekiq = pkg.FromBool(true)
+	}
+	if val, ok := env["CC_RACKUP_SERVER"]; ok {
+		ruby.RackupServer = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_RAKEGOALS"]; ok {
+		ruby.RakeGoals = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_SIDEKIQ_FILES"]; ok {
+		ruby.SidekiqFiles = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_HTTP_BASIC_AUTH"]; ok {
+		ruby.HTTPBasicAuth = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_NGINX_PROXY_BUFFERS"]; ok {
+		ruby.NginxProxyBuffers = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_NGINX_PROXY_BUFFER_SIZE"]; ok {
+		ruby.NginxProxyBufferSize = pkg.FromStr(val)
+	}
+	if val, ok := env["ENABLE_GZIP_COMPRESSION"]; ok && val == "true" {
+		ruby.EnableGzipCompression = pkg.FromBool(true)
+	}
+	if val, ok := env["GZIP_TYPES"]; ok {
+		ruby.GzipTypes = pkg.FromStr(val)
+	}
+	if val, ok := env["NGINX_READ_TIMEOUT"]; ok {
+		if timeout, err := strconv.ParseInt(val, 10, 64); err == nil {
+			ruby.NginxReadTimeout = pkg.FromI(timeout)
+		}
+	}
+	if val, ok := env["RACK_ENV"]; ok {
+		ruby.RackEnv = pkg.FromStr(val)
+	}
+	if val, ok := env["RAILS_ENV"]; ok {
+		ruby.RailsEnv = pkg.FromStr(val)
+	}
+	if val, ok := env["STATIC_FILES_PATH"]; ok {
+		ruby.StaticFilesPath = pkg.FromStr(val)
+	}
+	if val, ok := env["STATIC_URL_PREFIX"]; ok {
+		ruby.StaticURLPrefix = pkg.FromStr(val)
+	}
+	if val, ok := env["STATIC_WEBROOT"]; ok {
+		ruby.StaticWebroot = pkg.FromStr(val)
+	}
+}
+
 func (ruby Ruby) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if ruby.Deployment == nil || ruby.Deployment.Repository.IsNull() {
 		return nil

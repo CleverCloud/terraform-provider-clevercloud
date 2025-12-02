@@ -91,6 +91,18 @@ func (py Python) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
+func (py *Python) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
+	if val, ok := env["APP_FOLDER"]; ok {
+		py.AppFolder = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_PYTHON_VERSION"]; ok {
+		py.PythonVersion = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_PIP_REQUIREMENTS_FILE"]; ok {
+		py.PipRequirements = pkg.FromStr(val)
+	}
+}
+
 func (py Python) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if py.Deployment == nil || py.Deployment.Repository.IsNull() {
 		return nil
