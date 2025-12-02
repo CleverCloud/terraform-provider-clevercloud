@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.7.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.7.0...v1.7.1) (2025-12-02)
+
+
+### Bug Fixes
+
+* **apps:** fill networkgroups on state-upgrader ([5254aa1](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5254aa1bd762ac05bcf69aa75e12b9de3ada9243))
+
 ## [1.7.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.6.0...v1.7.0) (2025-12-01)
 
 
