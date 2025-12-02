@@ -3,6 +3,7 @@ package docker
 import (
 	"context"
 
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
@@ -59,6 +60,7 @@ func (r *ResourceDocker) UpgradeState(ctx context.Context) map[int64]resource.St
 						Hooks:            old.Hooks,
 						AppFolder:        old.AppFolder,
 						Environment:      old.Environment,
+						Networkgroups:    resources.NullNetworkgroupConfig,
 					},
 					Dockerfile:        old.Dockerfile,
 					ContainerPort:     old.ContainerPort,
