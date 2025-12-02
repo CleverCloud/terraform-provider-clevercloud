@@ -620,3 +620,18 @@ func FromMySQLReadOnlyUsers(users []MySQLReadOnlyUser) types.List {
 
 	return types.ListValueMust(objectType, objects)
 }
+
+// SQLQueryResult represents the result of an SQL query execution
+type SQLQueryResult struct {
+	Rows     []map[string]interface{} `json:"rows"`
+	RowCount int                      `json:"rowCount"`
+}
+
+// ExecuteSQLQuery executes an SQL query on a database addon
+func ExecuteSQLQuery(ctx context.Context, cc *client.Client, organisation string, addonID string, query string) client.Response[SQLQueryResult] {
+	path := fmt.Sprintf("/v2/organisations/%s/addons/%s/database/query", organisation, addonID)
+	payload := map[string]string{
+		"query": query,
+	}
+	return client.Post[SQLQueryResult](ctx, cc, path, payload)
+}
