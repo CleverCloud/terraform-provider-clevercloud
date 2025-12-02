@@ -8,141 +8,18 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
-
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
-	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 )
 
-type VHost struct {
-	FQDN      types.String `tfsdk:"fqdn"`
-	PathBegin types.String `tfsdk:"path_begin"`
-}
-
-func (vh VHost) String() *string {
-	if vh.FQDN.IsNull() || vh.FQDN.IsUnknown() {
-		return nil
-	}
-
-	path := "/"
-	if !vh.PathBegin.IsNull() && !vh.PathBegin.IsUnknown() {
-		path = vh.PathBegin.ValueString()
-	}
-
-	vhost := fmt.Sprintf("%s%s", vh.FQDN.ValueString(), path)
-	return &vhost
-}
-
-type Runtime struct {
-	ID               types.String           `tfsdk:"id"`
-	Name             types.String           `tfsdk:"name"`
-	Description      types.String           `tfsdk:"description"`
-	MinInstanceCount types.Int64            `tfsdk:"min_instance_count"`
-	MaxInstanceCount types.Int64            `tfsdk:"max_instance_count"`
-	SmallestFlavor   types.String           `tfsdk:"smallest_flavor"`
-	BiggestFlavor    types.String           `tfsdk:"biggest_flavor"`
-	BuildFlavor      types.String           `tfsdk:"build_flavor"`
-	Region           types.String           `tfsdk:"region"`
-	StickySessions   types.Bool             `tfsdk:"sticky_sessions"`
-	RedirectHTTPS    types.Bool             `tfsdk:"redirect_https"`
-	VHosts           types.Set              `tfsdk:"vhosts"`
-	DeployURL        types.String           `tfsdk:"deploy_url"`
-	Dependencies     types.Set              `tfsdk:"dependencies"`
-	Networkgroups    types.Set              `tfsdk:"networkgroups"`
-	Deployment       *attributes.Deployment `tfsdk:"deployment"`
-	Hooks            *attributes.Hooks      `tfsdk:"hooks"`
-
-	// Env
-	AppFolder          types.String `tfsdk:"app_folder"`
-	Environment        types.Map    `tfsdk:"environment"`
-	ExposedEnvironment types.Map    `tfsdk:"exposed_environment"`
-}
-
-type RuntimeV0 struct {
-	ID               types.String           `tfsdk:"id"`
-	Name             types.String           `tfsdk:"name"`
-	Description      types.String           `tfsdk:"description"`
-	MinInstanceCount types.Int64            `tfsdk:"min_instance_count"`
-	MaxInstanceCount types.Int64            `tfsdk:"max_instance_count"`
-	SmallestFlavor   types.String           `tfsdk:"smallest_flavor"`
-	BiggestFlavor    types.String           `tfsdk:"biggest_flavor"`
-	BuildFlavor      types.String           `tfsdk:"build_flavor"`
-	Region           types.String           `tfsdk:"region"`
-	StickySessions   types.Bool             `tfsdk:"sticky_sessions"`
-	RedirectHTTPS    types.Bool             `tfsdk:"redirect_https"`
-	VHosts           types.Set              `tfsdk:"vhosts"`
-	DeployURL        types.String           `tfsdk:"deploy_url"`
-	Dependencies     types.Set              `tfsdk:"dependencies"`
-	Deployment       *attributes.Deployment `tfsdk:"deployment"`
-	Hooks            *attributes.Hooks      `tfsdk:"hooks"`
-
-	// Env
-	AppFolder   types.String `tfsdk:"app_folder"`
-	Environment types.Map    `tfsdk:"environment"`
-}
-
-func (r Runtime) DependenciesAsString(ctx context.Context, diags *diag.Diagnostics) []string {
-	dependencies := []string{}
-	diags.Append(r.Dependencies.ElementsAs(ctx, &dependencies, false)...)
-	return dependencies
-}
-
-func (r Runtime) VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) []string {
-	// If vhosts is null or unknown, return nil to indicate "not specified"
-	// This allows SyncVHostsOnCreate to keep the default vhosts from the API
-	if r.VHosts.IsNull() || r.VHosts.IsUnknown() {
-		return nil
-	}
-
-	vhosts := pkg.SetTo[VHost](ctx, r.VHosts, diags)
-	if diags.HasError() {
-		return []string{}
-	}
-
-	// If no vhosts are present, return an empty slice (not nil)
-	// This distinguishes "explicitly empty" from "not specified"
-	items := []string{}
-	for _, vhost := range vhosts {
-		s := vhost.String()
-		if s != nil {
-			items = append(items, *s)
-		}
-	}
-
-	return items
-}
-
-// GetRuntimePtr returns a pointer to the Runtime struct for modification
-func (r *Runtime) GetRuntimePtr() *Runtime {
-	return r
-}
-
-// SetFromCreateResponse maps API response fields to Runtime fields
-func (r *Runtime) SetFromCreateResponse(res *CreateRes, ctx context.Context, diags *diag.Diagnostics) {
-	r.ID = pkg.FromStr(res.Application.ID)
-	r.Name = pkg.FromStr(res.Application.Name)
-	r.Description = pkg.FromStr(res.Application.Description)
-	r.MinInstanceCount = pkg.FromI(int64(res.Application.Instance.MinInstances))
-	r.MaxInstanceCount = pkg.FromI(int64(res.Application.Instance.MaxInstances))
-	r.SmallestFlavor = pkg.FromStr(res.Application.Instance.MinFlavor.Name)
-	r.BiggestFlavor = pkg.FromStr(res.Application.Instance.MaxFlavor.Name)
-	r.BuildFlavor = res.GetBuildFlavor()
-	r.Region = pkg.FromStr(res.Application.Zone)
-	r.StickySessions = pkg.FromBool(res.Application.StickySessions)
-	r.RedirectHTTPS = pkg.FromBool(ToForceHTTPS(res.Application.ForceHTTPS))
-	r.DeployURL = pkg.FromStr(res.Application.DeployURL)
-
-	r.VHosts = helper.VHostsFromAPIHosts(ctx, res.Application.Vhosts.AsString(), r.VHosts, diags)
-}
-
-// This attributes are used on several runtimes
+// runtimeCommon defines common schema attributes for all application runtimes
 var runtimeCommon = map[string]schema.Attribute{
 	// client provided
 
@@ -265,6 +142,7 @@ var runtimeCommon = map[string]schema.Attribute{
 		Sensitive:   true,
 		Description: "Environment variables other linked applications will be able to use",
 	},
+
 	"dependencies": schema.SetAttribute{
 		Optional:            true,
 		MarkdownDescription: "A list of application or add-ons required to run this application.\nCan be either app_xxx or postgres_yyy ID format",
@@ -313,6 +191,7 @@ var runtimeCommon = map[string]schema.Attribute{
 	},
 }
 
+// runtimeCommonV0 defines common schema attributes for schema version 0 (for state upgrades)
 var runtimeCommonV0 = map[string]schema.Attribute{
 	"name": schema.StringAttribute{
 		Required:            true,
@@ -418,10 +297,12 @@ var runtimeCommonV0 = map[string]schema.Attribute{
 	},
 }
 
+// WithRuntimeCommons merges runtime-specific schema attributes with common ones
 func WithRuntimeCommons(runtimeSpecifics map[string]schema.Attribute) map[string]schema.Attribute {
 	return pkg.Merge(runtimeCommon, runtimeSpecifics)
 }
 
+// WithRuntimeCommonsV0 merges runtime-specific schema attributes with common V0 ones
 func WithRuntimeCommonsV0(runtimeSpecifics map[string]schema.Attribute) map[string]schema.Attribute {
 	return pkg.Merge(runtimeCommonV0, runtimeSpecifics)
 }
