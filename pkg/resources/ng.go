@@ -18,6 +18,12 @@ type NetworkgroupConfig struct {
 	FQDN           string `tfsdk:"fqdn"`
 }
 
+var networkgroupConfigSchema = map[string]attr.Type{
+	"networkgroup_id": types.StringType,
+	"fqdn":            types.StringType,
+}
+var NullNetworkgroupConfig = types.SetNull(types.ObjectType{AttrTypes: networkgroupConfigSchema})
+
 func SyncNetworkGroups(
 	ctx context.Context,
 	prov provider.Provider,
@@ -107,21 +113,16 @@ func ReadNetworkGroups(
 	resourceID string,
 	diags *diag.Diagnostics,
 ) types.Set {
-	schema := map[string]attr.Type{
-		"networkgroup_id": types.StringType,
-		"fqdn":            types.StringType,
-	}
-	null := types.SetNull(types.ObjectType{AttrTypes: schema})
 
 	if prov.IsNetwrkgroupsDisabled() {
 		tflog.Warn(ctx, "skipping Networkgroups synchronisation because feature is disabled at provider level")
-		return null
+		return NullNetworkgroupConfig
 	}
 
 	allngRes := tmp.ListNetworkgroups(ctx, prov.Client(), prov.Organization())
 	if allngRes.HasError() {
 		diags.AddError("failed to list Networkgroups", allngRes.Error().Error())
-		return null
+		return NullNetworkgroupConfig
 	}
 	allNG := *allngRes.Payload()
 
@@ -129,7 +130,7 @@ func ReadNetworkGroups(
 	for _, ng := range allNG {
 		for _, member := range ng.Members {
 			if member.ID == resourceID {
-				ngObj := types.ObjectValueMust(schema, map[string]attr.Value{
+				ngObj := types.ObjectValueMust(networkgroupConfigSchema, map[string]attr.Value{
 					"networkgroup_id": types.StringValue(ng.ID),
 					"fqdn":            types.StringValue(member.DomainName),
 				})
@@ -139,10 +140,10 @@ func ReadNetworkGroups(
 		}
 	}
 	if len(networkgroups) == 0 {
-		return null
+		return NullNetworkgroupConfig
 	}
 
-	result, d := types.SetValue(types.ObjectType{AttrTypes: schema}, networkgroups)
+	result, d := types.SetValue(types.ObjectType{AttrTypes: networkgroupConfigSchema}, networkgroups)
 	diags.Append(d...)
 	return result
 }

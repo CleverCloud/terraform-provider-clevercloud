@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -59,6 +60,7 @@ func (r *ResourcePHP) UpgradeState(ctx context.Context) map[int64]resource.State
 						Hooks:            old.Hooks,
 						AppFolder:        old.AppFolder,
 						Environment:      old.Environment,
+						Networkgroups:    resources.NullNetworkgroupConfig,
 					},
 					PHPVersion:      old.PHPVersion,
 					WebRoot:         old.WebRoot,

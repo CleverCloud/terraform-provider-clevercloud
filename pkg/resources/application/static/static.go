@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -61,6 +62,7 @@ func (r *ResourceStatic) UpgradeState(ctx context.Context) map[int64]resource.St
 						Hooks:            old.Hooks,
 						AppFolder:        old.AppFolder,
 						Environment:      old.Environment,
+						Networkgroups:    resources.NullNetworkgroupConfig,
 					},
 				}
 
