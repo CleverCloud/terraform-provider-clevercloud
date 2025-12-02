@@ -73,6 +73,21 @@ func (dotnetapp Dotnet) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[
 	return env
 }
 
+func (dotnetapp *Dotnet) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
+	if val, ok := env["CC_DOTNET_PROFILE"]; ok {
+		dotnetapp.DotnetProfile = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_DOTNET_PROJ"]; ok {
+		dotnetapp.DotnetProj = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_DOTNET_TFM"]; ok {
+		dotnetapp.DotnetTFM = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_DOTNET_VERSION"]; ok {
+		dotnetapp.DotnetVersion = pkg.FromStr(val)
+	}
+}
+
 func (dotnetapp Dotnet) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if dotnetapp.Deployment == nil || dotnetapp.Deployment.Repository.IsNull() {
 		return nil

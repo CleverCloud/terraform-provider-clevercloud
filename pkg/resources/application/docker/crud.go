@@ -2,15 +2,11 @@ package docker
 
 import (
 	"context"
-	"reflect"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 // Create a new resource
@@ -34,39 +30,21 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	tflog.Debug(ctx, "ResourceDocker.Read()")
 
-	var state Docker
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	state := helper.StateFrom[Docker](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	app, diags := application.Read(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	appIsDeleted, diags := application.Read(ctx, r, &state)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	if app.AppIsDeleted {
+
+	if appIsDeleted {
 		resp.State.RemoveResource(ctx)
 		return
 	}
-
-	state.Name = pkg.FromStr(app.App.Name)
-	state.Description = pkg.FromStr(app.App.Description)
-	state.MinInstanceCount = pkg.FromI(int64(app.App.Instance.MinInstances))
-	state.MaxInstanceCount = pkg.FromI(int64(app.App.Instance.MaxInstances))
-	state.SmallestFlavor = pkg.FromStr(app.App.Instance.MinFlavor.Name)
-	state.BiggestFlavor = pkg.FromStr(app.App.Instance.MaxFlavor.Name)
-	state.Region = pkg.FromStr(app.App.Zone)
-	state.DeployURL = pkg.FromStr(app.App.DeployURL)
-	state.BuildFlavor = app.GetBuildFlavor()
-	/*if app.App.WebhookURL != nil { // only true // TODO
-		state.Deployment.Repository =
-	}*/
-
-	state.VHosts = helper.VHostsFromAPIHosts(ctx, app.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
-	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &resp.Diagnostics)
-	state.ExposedEnvironment = application.ReadExposedVariables(ctx, r, app.App.ID, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -74,84 +52,18 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 // Update resource
 func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
 	plan := helper.PlanFrom[Docker](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
 	state := helper.StateFrom[Docker](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	// Retrieve instance of the app from context
-	instance := application.LookupInstanceByVariantSlug(ctx, r.Client(), nil, "docker", &res.Diagnostics)
+	res.Diagnostics.Append(application.Update(ctx, r, &plan, &state)...)
 	if res.Diagnostics.HasError() {
 		return
 	}
-
-	// Retriev all env values by extracting ctx env viriables and merge it with the app env variables
-	planEnvironment := plan.ToEnv(ctx, &res.Diagnostics)
-	if res.Diagnostics.HasError() {
-		return
-	}
-	stateEnvironment := state.ToEnv(ctx, &res.Diagnostics)
-	if res.Diagnostics.HasError() {
-		return
-	}
-
-	// Same as env but with vhosts
-	vhosts := plan.VHostsAsStrings(ctx, &res.Diagnostics)
-	dependencies := plan.DependenciesAsString(ctx, &res.Diagnostics)
-
-	// Get the updated values from plan and instance
-	updateAppReq := application.UpdateReq{
-		ID:           state.ID.ValueString(),
-		Client:       r.Client(),
-		Organization: r.Organization(),
-		Application: tmp.UpdateAppReq{
-			Name:            plan.Name.ValueString(),
-			Deploy:          "git",
-			Description:     plan.Description.ValueString(),
-			InstanceType:    instance.Type,
-			InstanceVariant: instance.Variant.ID,
-			InstanceVersion: instance.Version,
-			BuildFlavor:     plan.BuildFlavor.ValueString(),
-			MinFlavor:       plan.SmallestFlavor.ValueString(),
-			MaxFlavor:       plan.BiggestFlavor.ValueString(),
-			MinInstances:    plan.MinInstanceCount.ValueInt64(),
-			MaxInstances:    plan.MaxInstanceCount.ValueInt64(),
-			StickySessions:  plan.StickySessions.ValueBool(),
-			ForceHttps:      application.FromForceHTTPS(plan.RedirectHTTPS.ValueBool()),
-			Zone:            plan.Region.ValueString(),
-			CancelOnPush:    false,
-		},
-		Environment:    planEnvironment,
-		VHosts:         vhosts,
-		Dependencies:   dependencies,
-		Deployment:     plan.ToDeployment(r.GitAuth()),
-		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
-	}
-
-	// Correctly named: update the app (via PUT Method)
-	updatedApp, diags := application.Update(ctx, updateAppReq)
-	res.Diagnostics.Append(diags...)
-	if res.Diagnostics.HasError() {
-		return
-	}
-
-	plan.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), plan.VHosts, &res.Diagnostics)
-
-	application.SyncNetworkGroups(
-		ctx,
-		r,
-		state.ID.ValueString(),
-		plan.Networkgroups,
-		&res.Diagnostics,
-	)
-
-	application.SyncExposedVariables(
-		ctx,
-		r,
-		state.ID.ValueString(),
-		plan.ExposedEnvironment,
-		&res.Diagnostics,
-	)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
@@ -160,17 +72,13 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 func (r *ResourceDocker) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	tflog.Debug(ctx, "ResourceDocker.Delete()")
 
-	var state Docker
-
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
+	state := helper.StateFrom[Docker](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "DOCKER DELETE", map[string]any{"state": state})
 
-	res := tmp.DeleteApp(ctx, r.Client(), r.Organization(), state.ID.ValueString())
-	if res.HasError() && !res.IsNotFoundError() {
-		resp.Diagnostics.AddError("failed to delete app", res.Error().Error())
+	resp.Diagnostics.Append(application.Delete(ctx, r, &state)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
