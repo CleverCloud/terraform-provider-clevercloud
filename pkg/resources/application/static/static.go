@@ -71,3 +71,7 @@ func (r *ResourceStatic) UpgradeState(ctx context.Context) map[int64]resource.St
 		},
 	}
 }
+
+func (r *ResourceStatic) GetVariantSlug() string {
+	return "static-apache"
+}

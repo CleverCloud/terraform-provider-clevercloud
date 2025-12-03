@@ -41,7 +41,7 @@ func (r ResourceFrankenPHP) Schema(ctx context.Context, req resource.SchemaReque
 	}
 }
 
-func (fp *FrankenPHP) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (fp *FrankenPHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -63,7 +63,13 @@ func (fp *FrankenPHP) toEnv(ctx context.Context, diags *diag.Diagnostics) map[st
 	return env
 }
 
-func (fp *FrankenPHP) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (fp *FrankenPHP) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
+	if val, ok := env["CC_PHP_DEV_DEPENDENCIES"]; ok && val == "install" {
+		fp.DevDependencies = pkg.FromBool(true)
+	}
+}
+
+func (fp *FrankenPHP) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if fp.Deployment == nil || fp.Deployment.Repository.IsNull() {
 		return nil
 	}

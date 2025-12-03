@@ -20,3 +20,7 @@ func (r *ResourceRust) Metadata(ctx context.Context, req resource.MetadataReques
 }
 
 const CC_RUST_FEATURES = "CC_RUST_FEATURES"
+
+func (r *ResourceRust) GetVariantSlug() string {
+	return "rust"
+}

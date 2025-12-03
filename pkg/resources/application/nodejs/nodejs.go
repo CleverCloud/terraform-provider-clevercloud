@@ -74,3 +74,7 @@ func (r *ResourceNodeJS) UpgradeState(ctx context.Context) map[int64]resource.St
 		},
 	}
 }
+
+func (r *ResourceNodeJS) GetVariantSlug() string {
+	return "node"
+}

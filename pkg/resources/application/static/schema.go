@@ -46,7 +46,7 @@ var schemaStaticV0 = schema.Schema{
 	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (plan *Static) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (plan *Static) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -64,7 +64,13 @@ func (plan *Static) toEnv(ctx context.Context, diags *diag.Diagnostics) map[stri
 	return env
 }
 
-func (java *Static) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (static *Static) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
+	if val, ok := env["APP_FOLDER"]; ok {
+		static.AppFolder = pkg.FromStr(val)
+	}
+}
+
+func (java *Static) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if java.Deployment == nil || java.Deployment.Repository.IsNull() {
 		return nil
 	}

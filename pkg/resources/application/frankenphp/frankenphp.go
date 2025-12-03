@@ -18,3 +18,7 @@ func NewResourceFrankenPHP() resource.Resource {
 func (r *ResourceFrankenPHP) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_frankenphp"
 }
+
+func (r *ResourceFrankenPHP) GetVariantSlug() string {
+	return "frankenphp"
+}

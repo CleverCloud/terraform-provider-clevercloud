@@ -91,7 +91,7 @@ var schemaPHPV0 = schema.Schema{
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (p *PHP) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (p *PHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -121,7 +121,25 @@ func (p *PHP) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (p *PHP) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (p *PHP) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
+	if val, ok := env["APP_FOLDER"]; ok {
+		p.AppFolder = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_WEBROOT"]; ok {
+		p.WebRoot = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_PHP_VERSION"]; ok {
+		p.PHPVersion = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_PHP_DEV_DEPENDENCIES"]; ok && val == "install" {
+		p.DevDependencies = pkg.FromBool(true)
+	}
+	if val, ok := env["SESSION_TYPE"]; ok && val == "redis" {
+		p.RedisSessions = pkg.FromBool(true)
+	}
+}
+
+func (p *PHP) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if p.Deployment == nil || p.Deployment.Repository.IsNull() {
 		return nil
 	}

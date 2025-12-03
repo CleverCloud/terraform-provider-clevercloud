@@ -50,7 +50,7 @@ func (r ResourceRust) Schema(ctx context.Context, req resource.SchemaRequest, re
 	}
 }
 
-func (r Rust) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (r Rust) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -74,7 +74,16 @@ func (r Rust) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (r Rust) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (r *Rust) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
+	if val, ok := env["APP_FOLDER"]; ok {
+		r.AppFolder = pkg.FromStr(val)
+	}
+	if val, ok := env[CC_RUST_FEATURES]; ok && val != "" {
+		r.Features = pkg.FromSetString(strings.Split(val, ","), diags)
+	}
+}
+
+func (r Rust) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if r.Deployment == nil || r.Deployment.Repository.IsNull() {
 		return nil
 	}

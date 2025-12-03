@@ -69,3 +69,7 @@ func (r *ResourceGo) UpgradeState(ctx context.Context) map[int64]resource.StateU
 		},
 	}
 }
+
+func (r *ResourceGo) GetVariantSlug() string {
+	return "go"
+}

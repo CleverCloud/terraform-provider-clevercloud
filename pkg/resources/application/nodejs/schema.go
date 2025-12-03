@@ -109,7 +109,7 @@ var schemaNodeJSV0 = schema.Schema{
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (node NodeJS) toEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (node NodeJS) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -132,7 +132,28 @@ func (node NodeJS) toEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (node NodeJS) toDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (node *NodeJS) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
+	if val, ok := env["APP_FOLDER"]; ok {
+		node.AppFolder = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_NODE_DEV_DEPENDENCIES"]; ok && val == "install" {
+		node.DevDependencies = pkg.FromBool(true)
+	}
+	if val, ok := env["CC_RUN_COMMAND"]; ok {
+		node.StartScript = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_NODE_BUILD_TOOL"]; ok {
+		node.PackageManager = pkg.FromStr(val)
+	}
+	if val, ok := env["CC_NPM_REGISTRY"]; ok {
+		node.Registry = pkg.FromStr(val)
+	}
+	if val, ok := env["NPM_TOKEN"]; ok {
+		node.RegistryToken = pkg.FromStr(val)
+	}
+}
+
+func (node NodeJS) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if node.Deployment == nil || node.Deployment.Repository.IsNull() {
 		return nil
 	}
