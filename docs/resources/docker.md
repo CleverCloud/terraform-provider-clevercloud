@@ -57,6 +57,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `dockerfile` (String) The name of the Dockerfile to build
 - `enable_ipv6` (Boolean, Deprecated)
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
+- `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `ipv6_cidr` (String) Activate the support of IPv6 with an IPv6 subnet int the docker daemon
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))

@@ -73,6 +73,8 @@ func (r *ResourceDocker) Create(ctx context.Context, req resource.CreateRequest,
 		&resp.Diagnostics,
 	)
 
+	application.SyncExposedVariables(ctx, r, createAppRes.Application.ID, plan.ExposedEnvironment, &resp.Diagnostics)
+
 	application.GitDeploy(ctx, plan.toDeployment(r.GitAuth()), createAppRes.Application.DeployURL, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
@@ -109,6 +111,7 @@ func (r *ResourceDocker) Read(ctx context.Context, req resource.ReadRequest, res
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, app.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &resp.Diagnostics)
+	state.ExposedEnvironment = application.ReadExposedVariables(ctx, r, app.App.ID, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -184,6 +187,14 @@ func (r *ResourceDocker) Update(ctx context.Context, req resource.UpdateRequest,
 		r,
 		state.ID.ValueString(),
 		plan.Networkgroups,
+		&res.Diagnostics,
+	)
+
+	application.SyncExposedVariables(
+		ctx,
+		r,
+		state.ID.ValueString(),
+		plan.ExposedEnvironment,
 		&res.Diagnostics,
 	)
 

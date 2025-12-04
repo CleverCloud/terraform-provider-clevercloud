@@ -78,6 +78,8 @@ func (r *ResourceRust) Create(ctx context.Context, req resource.CreateRequest, r
 		&res.Diagnostics,
 	)
 
+	application.SyncExposedVariables(ctx, r, createRes.Application.ID, plan.ExposedEnvironment, &res.Diagnostics)
+
 	deploy := plan.toDeployment(r.GitAuth())
 	application.GitDeploy(ctx, deploy, createRes.Application.DeployURL, &res.Diagnostics)
 
@@ -115,6 +117,7 @@ func (r *ResourceRust) Read(ctx context.Context, req resource.ReadRequest, res *
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &res.Diagnostics)
 	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &res.Diagnostics)
+	state.ExposedEnvironment = application.ReadExposedVariables(ctx, r, appRes.App.ID, &res.Diagnostics)
 
 	if env := appRes.EnvAsMap(); env[CC_RUST_FEATURES] != "" {
 		state.Features = pkg.FromSetString(strings.Split(env[CC_RUST_FEATURES], ","), &res.Diagnostics)
@@ -197,6 +200,14 @@ func (r *ResourceRust) Update(ctx context.Context, req resource.UpdateRequest, r
 		r,
 		state.ID.ValueString(),
 		plan.Networkgroups,
+		&res.Diagnostics,
+	)
+
+	application.SyncExposedVariables(
+		ctx,
+		r,
+		state.ID.ValueString(),
+		plan.ExposedEnvironment,
 		&res.Diagnostics,
 	)
 

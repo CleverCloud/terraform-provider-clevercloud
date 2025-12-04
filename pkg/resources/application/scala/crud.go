@@ -79,6 +79,8 @@ func (r *ResourceScala) Create(ctx context.Context, req resource.CreateRequest, 
 		&resp.Diagnostics,
 	)
 
+	application.SyncExposedVariables(ctx, r, createAppRes.Application.ID, plan.ExposedEnvironment, &resp.Diagnostics)
+
 	deploy := plan.toDeployment(r.GitAuth())
 	application.GitDeploy(ctx, deploy, createAppRes.Application.DeployURL, &resp.Diagnostics)
 
@@ -115,6 +117,7 @@ func (r *ResourceScala) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, readRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &resp.Diagnostics)
+	state.ExposedEnvironment = application.ReadExposedVariables(ctx, r, readRes.App.ID, &resp.Diagnostics)
 
 	for envName, envValue := range readRes.EnvAsMap() {
 		switch envName {
@@ -205,6 +208,14 @@ func (r *ResourceScala) Update(ctx context.Context, req resource.UpdateRequest, 
 		r,
 		state.ID.ValueString(),
 		plan.Networkgroups,
+		&res.Diagnostics,
+	)
+
+	application.SyncExposedVariables(
+		ctx,
+		r,
+		state.ID.ValueString(),
+		plan.ExposedEnvironment,
 		&res.Diagnostics,
 	)
 

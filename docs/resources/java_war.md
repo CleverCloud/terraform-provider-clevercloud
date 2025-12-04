@@ -100,6 +100,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
+- `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `java_version` (String) Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))

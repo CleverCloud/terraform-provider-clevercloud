@@ -78,6 +78,8 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 		&resp.Diagnostics,
 	)
 
+	application.SyncExposedVariables(ctx, r, createAppRes.Application.ID, plan.ExposedEnvironment, &resp.Diagnostics)
+
 	deploy := plan.toDeployment(r.GitAuth())
 	application.GitDeploy(ctx, deploy, createAppRes.Application.DeployURL, &resp.Diagnostics)
 
@@ -113,6 +115,7 @@ func (r *ResourceFrankenPHP) Read(ctx context.Context, req resource.ReadRequest,
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appFrankenPHP.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &resp.Diagnostics)
+	state.ExposedEnvironment = application.ReadExposedVariables(ctx, r, appFrankenPHP.App.ID, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -191,6 +194,14 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 		r,
 		state.ID.ValueString(),
 		plan.Networkgroups,
+		&res.Diagnostics,
+	)
+
+	application.SyncExposedVariables(
+		ctx,
+		r,
+		state.ID.ValueString(),
+		plan.ExposedEnvironment,
 		&res.Diagnostics,
 	)
 

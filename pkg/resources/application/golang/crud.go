@@ -80,6 +80,8 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 		&res.Diagnostics,
 	)
 
+	application.SyncExposedVariables(ctx, r, createRes.Application.ID, plan.ExposedEnvironment, &res.Diagnostics)
+
 	deploy := plan.toDeployment(r.GitAuth())
 	application.GitDeploy(ctx, deploy, createRes.Application.DeployURL, &res.Diagnostics)
 
@@ -118,6 +120,7 @@ func (r *ResourceGo) Read(ctx context.Context, req resource.ReadRequest, res *re
 	state.RedirectHTTPS = pkg.FromBool(application.ToForceHTTPS(appRes.App.ForceHTTPS))
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &res.Diagnostics)
 	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &res.Diagnostics)
+	state.ExposedEnvironment = application.ReadExposedVariables(ctx, r, appRes.App.ID, &res.Diagnostics)
 
 	diags = res.State.Set(ctx, state)
 	res.Diagnostics.Append(diags...)
@@ -200,6 +203,14 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 		r,
 		state.ID.ValueString(),
 		plan.Networkgroups,
+		&res.Diagnostics,
+	)
+
+	application.SyncExposedVariables(
+		ctx,
+		r,
+		state.ID.ValueString(),
+		plan.ExposedEnvironment,
 		&res.Diagnostics,
 	)
 

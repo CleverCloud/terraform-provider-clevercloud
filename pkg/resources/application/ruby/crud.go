@@ -78,6 +78,8 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 		&resp.Diagnostics,
 	)
 
+	application.SyncExposedVariables(ctx, r, createRes.Application.ID, plan.ExposedEnvironment, &resp.Diagnostics)
+
 	deploy := plan.toDeployment(r.GitAuth())
 	application.GitDeploy(ctx, deploy, createRes.Application.DeployURL, &resp.Diagnostics)
 
@@ -107,6 +109,7 @@ func (r *ResourceRuby) Read(ctx context.Context, req resource.ReadRequest, resp 
 
 	state.VHosts = helper.VHostsFromAPIHosts(ctx, appRes.App.Vhosts.AsString(), state.VHosts, &resp.Diagnostics)
 	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &resp.Diagnostics)
+	state.ExposedEnvironment = application.ReadExposedVariables(ctx, r, appRes.App.ID, &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, state)
 	resp.Diagnostics.Append(diags...)
@@ -190,6 +193,14 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 		r,
 		state.ID.ValueString(),
 		plan.Networkgroups,
+		&res.Diagnostics,
+	)
+
+	application.SyncExposedVariables(
+		ctx,
+		r,
+		state.ID.ValueString(),
+		plan.ExposedEnvironment,
 		&res.Diagnostics,
 	)
 

@@ -220,6 +220,143 @@ func TestAccPython_basic(t *testing.T) {
 	})
 }
 
+func TestAccPython_exposedEnv(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-python")
+	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
+	cc := client.New(client.WithAutoOauthConfig())
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+
+	pythonBlock := helper.NewRessource(
+		"clevercloud_python",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 1,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "XS",
+			"exposed_environment": map[string]any{
+				"MY_EXPOSED_VAR": "initial_value",
+				"ANOTHER_VAR":    "test123",
+			},
+		}),
+	)
+
+	pythonBlockUpdated := helper.NewRessource(
+		"clevercloud_python",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 1,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "XS",
+			"exposed_environment": map[string]any{
+				"MY_EXPOSED_VAR": "updated_value",
+				"NEW_VAR":        "new_value",
+			},
+		}),
+	)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 tests.ExpectOrganisation(t),
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		CheckDestroy: func(state *terraform.State) error {
+			for _, resource := range state.RootModule().Resources {
+				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
+				if res.IsNotFoundError() {
+					continue
+				}
+				if res.HasError() {
+					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+				}
+				if res.Payload().State == "TO_DELETE" {
+					continue
+				}
+
+				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
+			}
+			return nil
+		},
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(pythonBlock).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("exposed_environment"), knownvalue.MapExact(map[string]knownvalue.Check{
+					"MY_EXPOSED_VAR": knownvalue.StringExact("initial_value"),
+					"ANOTHER_VAR":    knownvalue.StringExact("test123"),
+				})),
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(
+				func(s *terraform.State) error {
+					appResource := s.RootModule().Resources[fullName]
+					appID := appResource.Primary.ID
+
+					exposedEnvRes := tmp.GetExposedEnv(ctx, cc, tests.ORGANISATION, appID)
+					if exposedEnvRes.HasError() {
+						return fmt.Errorf("failed to get exposed env: %w", exposedEnvRes.Error())
+					}
+
+					exposedEnv := *exposedEnvRes.Payload()
+
+					if exposedEnv["MY_EXPOSED_VAR"] != "initial_value" {
+						return tests.AssertError("bad exposed env value for MY_EXPOSED_VAR", exposedEnv["MY_EXPOSED_VAR"], "initial_value")
+					}
+
+					if exposedEnv["ANOTHER_VAR"] != "test123" {
+						return tests.AssertError("bad exposed env value for ANOTHER_VAR", exposedEnv["ANOTHER_VAR"], "test123")
+					}
+
+					return nil
+				},
+			),
+		}, {
+			ResourceName: rName,
+			Config:       providerBlock.Append(pythonBlockUpdated).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("exposed_environment"), knownvalue.MapExact(map[string]knownvalue.Check{
+					"MY_EXPOSED_VAR": knownvalue.StringExact("updated_value"),
+					"NEW_VAR":        knownvalue.StringExact("new_value"),
+				})),
+			},
+			Check: resource.ComposeAggregateTestCheckFunc(
+				func(s *terraform.State) error {
+					appResource := s.RootModule().Resources[fullName]
+					appID := appResource.Primary.ID
+
+					exposedEnvRes := tmp.GetExposedEnv(ctx, cc, tests.ORGANISATION, appID)
+					if exposedEnvRes.HasError() {
+						return fmt.Errorf("failed to get exposed env: %w", exposedEnvRes.Error())
+					}
+
+					exposedEnv := *exposedEnvRes.Payload()
+
+					if exposedEnv["MY_EXPOSED_VAR"] != "updated_value" {
+						return tests.AssertError("bad exposed env value for MY_EXPOSED_VAR", exposedEnv["MY_EXPOSED_VAR"], "updated_value")
+					}
+
+					if exposedEnv["NEW_VAR"] != "new_value" {
+						return tests.AssertError("bad exposed env value for NEW_VAR", exposedEnv["NEW_VAR"], "new_value")
+					}
+
+					// Verify that ANOTHER_VAR was removed
+					if _, exists := exposedEnv["ANOTHER_VAR"]; exists {
+						return fmt.Errorf("ANOTHER_VAR should have been removed but still exists with value: %s", exposedEnv["ANOTHER_VAR"])
+					}
+
+					return nil
+				},
+			),
+		}},
+	})
+}
+
 func TestAccPython_networkgroup(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()

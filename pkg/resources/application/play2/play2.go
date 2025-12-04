@@ -63,6 +63,7 @@ func (r *ResourcePlay2) UpgradeState(ctx context.Context) map[int64]resource.Sta
 						AppFolder:        old.AppFolder,
 						Environment:      old.Environment,
 						Networkgroups:    resources.NullNetworkgroupConfig,
+						ExposedEnvironment: application.NullExposedEnv,
 					},
 				}
 

@@ -438,3 +438,19 @@ func GetDeployment(ctx context.Context, cc *client.Client, organisationID, appli
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/deployments/%s", organisationID, applicationID, deploymentID)
 	return client.Get[DeploymentResponse](ctx, cc, path)
 }
+
+type UpdateExposedEnvRes struct {
+	ID      int    `json:"id"`
+	Message string `json:"message"`
+	Type    string `json:"type"` // error / success
+}
+
+func GetExposedEnv(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[map[string]string] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/exposed_env", organisationID, applicationID)
+	return client.Get[map[string]string](ctx, cc, path)
+}
+
+func UpdateExposedEnv(ctx context.Context, cc *client.Client, organisationID, applicationID string, exposedEnvs map[string]string) client.Response[UpdateExposedEnvRes] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/exposed_env", organisationID, applicationID)
+	return client.Put[UpdateExposedEnvRes](ctx, cc, path, exposedEnvs)
+}

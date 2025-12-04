@@ -28,9 +28,8 @@ type Dotnet struct {
 var dotnetDoc string
 
 func (r ResourceDotnet) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-
 	res.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: dotnetDoc,
 		Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 			"profile": schema.StringAttribute{

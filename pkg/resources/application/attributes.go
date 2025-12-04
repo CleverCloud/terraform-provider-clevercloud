@@ -60,8 +60,9 @@ type Runtime struct {
 	Hooks            *attributes.Hooks      `tfsdk:"hooks"`
 
 	// Env
-	AppFolder   types.String `tfsdk:"app_folder"`
-	Environment types.Map    `tfsdk:"environment"`
+	AppFolder          types.String `tfsdk:"app_folder"`
+	Environment        types.Map    `tfsdk:"environment"`
+	ExposedEnvironment types.Map    `tfsdk:"exposed_environment"`
 }
 
 type RuntimeV0 struct {
@@ -235,7 +236,12 @@ var runtimeCommon = map[string]schema.Attribute{
 		Description: "Environment variables injected into the application",
 		ElementType: types.StringType,
 	},
-
+	"exposed_environment": schema.MapAttribute{
+		ElementType: types.StringType,
+		Optional:    true,
+		Sensitive:   true,
+		Description: "Environment variables other linked applications will be able to use",
+	},
 	"dependencies": schema.SetAttribute{
 		Optional:            true,
 		MarkdownDescription: "A list of application or add-ons required to run this application.\nCan be either app_xxx or postgres_yyy ID format",
