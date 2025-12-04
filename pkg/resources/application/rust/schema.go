@@ -31,7 +31,6 @@ func (r Rust) FeaturesAsStrings(ctx context.Context, diags *diag.Diagnostics) []
 var rustDoc string
 
 func (r ResourceRust) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-
 	res.Schema = schema.Schema{
 		Version:             1,
 		MarkdownDescription: rustDoc,

@@ -27,9 +27,8 @@ type V struct {
 var vDoc string
 
 func (r ResourceV) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-
 	res.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: vDoc,
 		Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 			"binary": schema.StringAttribute{

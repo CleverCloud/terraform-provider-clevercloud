@@ -173,6 +173,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `enable_gzip_compression` (Boolean) Set to true to gzip-compress through Nginx
 - `enable_sidekiq` (Boolean) Enable Sidekiq background process
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
+- `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `gzip_types` (String) Set the mime types to compress (default: 'text/* application/json application/xml application/javascript image/svg+xml')
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `http_basic_auth` (String, Sensitive) Restrict HTTP access to your application (format: 'login:password')

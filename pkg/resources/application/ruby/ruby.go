@@ -61,6 +61,7 @@ func (r *ResourceRuby) UpgradeState(ctx context.Context) map[int64]resource.Stat
 						AppFolder:        old.AppFolder,
 						Environment:      old.Environment,
 						Networkgroups:    resources.NullNetworkgroupConfig,
+						ExposedEnvironment: application.NullExposedEnv,
 					},
 					RubyVersion:           old.RubyVersion,
 					EnableSidekiq:         old.EnableSidekiq,

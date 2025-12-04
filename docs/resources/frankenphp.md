@@ -45,6 +45,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `description` (String) Application description
 - `dev_dependencies` (Boolean) Install development dependencies (Default: false)
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
+- `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
