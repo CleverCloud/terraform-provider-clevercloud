@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.8.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.7.1...v1.8.0) (2025-12-05)
+
+
+### Features
+
+* **apps:** support exposed env vars ([345d84c](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/345d84cd47916239b127cd0c11d779ad468a10a3))
+
 ## [1.7.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.7.0...v1.7.1) (2025-12-02)
 
 
