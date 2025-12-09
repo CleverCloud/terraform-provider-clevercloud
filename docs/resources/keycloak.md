@@ -23,7 +23,9 @@ See [Keycloak product specification](https://www.clever.cloud/developers/doc/add
 
 ### Optional
 
+- `access_domain` (String) Main domaine to access the instance
 - `region` (String) Geographical region where the data will be stored
+- `version` (String) Keycloak official version
 
 ### Read-Only
 

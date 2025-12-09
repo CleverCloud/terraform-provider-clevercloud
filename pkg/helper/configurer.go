@@ -7,10 +7,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
+	"go.clever-cloud.dev/sdk"
 )
 
 type Configurer struct {
 	provider.Provider
+	SDK sdk.SDK
 }
 
 func (c *Configurer) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -23,6 +25,7 @@ func (c *Configurer) Configure(ctx context.Context, req resource.ConfigureReques
 
 	if provider, ok := req.ProviderData.(provider.Provider); ok {
 		c.Provider = provider
+		c.SDK = sdk.NewSDK(sdk.WithClient(provider.Client()))
 	}
 
 	tflog.Debug(ctx, "Configured", map[string]any{"org": c.Organization()})

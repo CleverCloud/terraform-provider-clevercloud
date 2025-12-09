@@ -2,8 +2,6 @@ package application
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -21,8 +19,6 @@ func SyncExposedVariables(ctx context.Context, p provider.Provider, applicationI
 		diags.Append(env.ElementsAs(ctx, &m, false)...)
 	}
 
-	b, _ := json.Marshal(m)
-	fmt.Printf("ENV: %+v\n\n", string(b))
 	envRes := tmp.UpdateExposedEnv(ctx, p.Client(), p.Organization(), applicationID, m)
 	if envRes.HasError() {
 		diags.AddError("failed to update exposed configuration", envRes.Error().Error())
