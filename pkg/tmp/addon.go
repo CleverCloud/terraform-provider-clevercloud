@@ -284,19 +284,18 @@ func GetMongoDB(ctx context.Context, cc *client.Client, mongodbID string) client
 }
 
 type Keycloak struct {
-	ResourceID        string            `json:"resourceId"`
-	AddonID           string            `json:"addonId"`
-	Name              string            `json:"name"`
-	OwnerID           string            `json:"ownerId"`
-	Plan              string            `json:"plan"`
-	Version           string            `json:"version"`
-	AccessURL         string            `json:"accessUrl"`
-	AdminUsername     string            `json:"adminUsername"`
-	AdminPassword     string            `json:"adminPassword"`
-	AvailableVersions []string          `json:"availableVersions"`
-	Resources         KeycloakResources `json:"resources"`
-	Features          KeycloakFeatures  `json:"features"`
-	EnvVars           map[string]string `json:"envVars"`
+	ResourceID         string                     `json:"resourceId"`
+	AddonID            string                     `json:"addonId"`
+	Name               string                     `json:"name"`
+	OwnerID            string                     `json:"ownerId"`
+	Plan               string                     `json:"plan"`
+	Version            string                     `json:"version"`
+	AccessURL          string                     `json:"accessUrl"`
+	InitialCredentials KeycloakInitialCredentials `json:"initialCredentials"`
+	AvailableVersions  []string                   `json:"availableVersions"`
+	Resources          KeycloakResources          `json:"resources"`
+	Features           KeycloakFeatures           `json:"features"`
+	EnvVars            map[string]string          `json:"envVars"`
 }
 
 type KeycloakResources struct {
@@ -310,6 +309,11 @@ type KeycloakFeatures struct {
 
 type KeycloakNetworkGroup struct {
 	NetworkGroupID string `json:"networkGroupId"`
+}
+
+type KeycloakInitialCredentials struct {
+	AdminUsername     string            `json:"user"`
+	AdminPassword     string            `json:"password"`
 }
 
 // Use real ID

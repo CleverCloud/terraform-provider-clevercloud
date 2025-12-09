@@ -56,6 +56,8 @@ func TestAccKeycloak_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^keycloak_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*clever-cloud.com/admin$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("admin_username"), knownvalue.NotNull()),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("admin_password"), knownvalue.NotNull()),
 			},
 		}, {
 			ResourceName: rName,
@@ -64,6 +66,8 @@ func TestAccKeycloak_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rNameEdited)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^keycloak_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*clever-cloud.com/admin$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("admin_username"), knownvalue.NotNull()),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("admin_password"), knownvalue.NotNull()),
 			},
 		}},
 	})
