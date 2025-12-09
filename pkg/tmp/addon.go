@@ -17,6 +17,7 @@ type AddonRequest struct {
 	Options    map[string]string `json:"options"`
 	ProviderID string            `json:"providerId"`
 	Region     string            `json:"region"`
+	Version    string            `json:"version,omitempty"`
 }
 
 type AddonResponse struct {
@@ -312,8 +313,8 @@ type KeycloakNetworkGroup struct {
 }
 
 type KeycloakInitialCredentials struct {
-	AdminUsername     string            `json:"user"`
-	AdminPassword     string            `json:"password"`
+	AdminUsername string `json:"user"`
+	AdminPassword string `json:"password"`
 }
 
 // Use real ID

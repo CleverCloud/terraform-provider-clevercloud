@@ -12,19 +12,23 @@ type TFStruct interface {
 }
 
 func PlanFrom[T any](ctx context.Context, p tfsdk.Plan, diags *diag.Diagnostics) T {
-	return From[T](ctx, p, diags)
+	return *From[T](ctx, p, diags)
 }
 
 func StateFrom[T any](ctx context.Context, s tfsdk.State, diags *diag.Diagnostics) T {
-	return From[T](ctx, s, diags)
+	return *From[T](ctx, s, diags)
 }
 
 func IdentityFrom[T any](ctx context.Context, s tfsdk.ResourceIdentity, diags *diag.Diagnostics) T {
-	return From[T](ctx, s, diags)
+	return *From[T](ctx, s, diags)
 }
 
-func From[T any](ctx context.Context, src TFStruct, diags *diag.Diagnostics) T {
+func From[T any](ctx context.Context, src TFStruct, diags *diag.Diagnostics) *T {
+	if src == nil {
+		return nil
+	}
+
 	var t T
 	diags.Append(src.Get(ctx, &t)...)
-	return t
+	return &t
 }
