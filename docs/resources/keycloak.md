@@ -27,5 +27,7 @@ See [Keycloak product specification](https://www.clever.cloud/developers/doc/add
 
 ### Read-Only
 
+- `admin_password` (String, Sensitive) Initial admin password for Keycloak
+- `admin_username` (String) Initial admin username for Keycloak
 - `host` (String) URL to access Keycloak
 - `id` (String) Generated unique identifier
