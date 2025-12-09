@@ -13,10 +13,12 @@ import (
 )
 
 type Keycloak struct {
-	ID     types.String `tfsdk:"id"`
-	Name   types.String `tfsdk:"name"`
-	Region types.String `tfsdk:"region"`
-	Host   types.String `tfsdk:"host"`
+	ID            types.String `tfsdk:"id"`
+	Name          types.String `tfsdk:"name"`
+	Region        types.String `tfsdk:"region"`
+	Host          types.String `tfsdk:"host"`
+	AdminUsername types.String `tfsdk:"admin_username"`
+	AdminPassword types.String `tfsdk:"admin_password"`
 }
 
 //go:embed doc.md
@@ -35,7 +37,9 @@ func (r ResourceKeycloak) Schema(_ context.Context, req resource.SchemaRequest, 
 				Default:             stringdefault.StaticString("par"),
 				MarkdownDescription: "Geographical region where the data will be stored",
 			},
-			"host": schema.StringAttribute{Computed: true, MarkdownDescription: "URL to access Keycloak"},
+			"host":           schema.StringAttribute{Computed: true, MarkdownDescription: "URL to access Keycloak"},
+			"admin_username": schema.StringAttribute{Computed: true, MarkdownDescription: "Initial admin username for Keycloak"},
+			"admin_password": schema.StringAttribute{Computed: true, Sensitive: true, MarkdownDescription: "Initial admin password for Keycloak"},
 			// "name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
 			// "region": schema.StringAttribute{
 			// 	Optional:            true,

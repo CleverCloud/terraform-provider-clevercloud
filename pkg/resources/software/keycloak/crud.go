@@ -55,6 +55,8 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 	} else {
 		keycloak := keycloakRes.Payload()
 		kc.Host = pkg.FromStr(keycloak.AccessURL)
+		kc.AdminUsername = pkg.FromStr(keycloak.InitialCredentials.AdminUsername)
+		kc.AdminPassword = pkg.FromStr(keycloak.InitialCredentials.AdminPassword)
 	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, kc)...)
@@ -75,6 +77,8 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 	} else {
 		keycloak := keycloakRes.Payload()
 		state.Host = pkg.FromStr(keycloak.AccessURL)
+		state.AdminUsername = pkg.FromStr(keycloak.InitialCredentials.AdminUsername)
+		state.AdminPassword = pkg.FromStr(keycloak.InitialCredentials.AdminPassword)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
