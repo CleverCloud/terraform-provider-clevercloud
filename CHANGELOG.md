@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.8.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.7.1...v1.8.0) (2025-12-11)
+
+
+### Features
+
+* **apps:** support exposed env vars ([345d84c](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/345d84cd47916239b127cd0c11d779ad468a10a3))
+* **keycloak:** more stuff ([a565236](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/a565236aaa54f3995086a48cf92d9514a189439f))
+* **keycloak:** return user/pass for admin access, host already provided ([a0687d3](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/a0687d353889f052efc788f78c8b945dff450c3e))
+
 ## [1.7.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.7.0...v1.7.1) (2025-12-02)
 
 
