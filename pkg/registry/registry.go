@@ -88,4 +88,5 @@ var Resources = []func() resource.Resource{
 var Actions = []func() action.Action{
 	actions.RebootApplication,
 	actions.ExecuteDatabaseSQL,
+	actions.FSBucketUpload,
 }
