@@ -24,6 +24,7 @@ type Keycloak struct {
 	Host          types.String `tfsdk:"host"`
 	AdminUsername types.String `tfsdk:"admin_username"`
 	AdminPassword types.String `tfsdk:"admin_password"`
+	FSBucketID    types.String `tfsdk:"fsbucket_id"`
 }
 
 //go:embed doc.md
@@ -47,6 +48,7 @@ func (r ResourceKeycloak) Schema(_ context.Context, req resource.SchemaRequest, 
 			"host":           schema.StringAttribute{Computed: true, MarkdownDescription: "URL to access Keycloak"},
 			"admin_username": schema.StringAttribute{Computed: true, MarkdownDescription: "Initial admin username for Keycloak"},
 			"admin_password": schema.StringAttribute{Computed: true, Sensitive: true, MarkdownDescription: "Initial admin password for Keycloak"},
+			"fsbucket_id":    schema.StringAttribute{Computed: true, MarkdownDescription: "ID of the fsbucket subresource"},
 		},
 	}
 }
