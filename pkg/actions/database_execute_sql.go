@@ -113,12 +113,12 @@ func (a *ActionExecuteDatabaseSQL) Invoke(ctx context.Context, req action.Invoke
 
 	switch {
 	case strings.HasPrefix(cfg.DatabaseID.ValueString(), "postgresql_"):
-		a.InvokePG(ctx, cfg, res.SendProgress, &res.Diagnostics)
+		a.InvokePG(ctx, cfg, ProgressWrapper(res), &res.Diagnostics)
 	}
 }
 
-func (a *ActionExecuteDatabaseSQL) InvokePG(ctx context.Context, cfg *DatabaseQuery, progress func(event action.InvokeProgressEvent), diags *diag.Diagnostics) {
-	progress(action.InvokeProgressEvent{Message: "Resolving database ID"})
+func (a *ActionExecuteDatabaseSQL) InvokePG(ctx context.Context, cfg *DatabaseQuery, progress func(msg string, args ...any), diags *diag.Diagnostics) {
+	progress("Resolving database ID")
 
 	addonID, err := tmp.RealIDToAddonID(ctx, a.Client(), a.Organization(), cfg.DatabaseID.ValueString())
 	if err != nil {
@@ -126,7 +126,7 @@ func (a *ActionExecuteDatabaseSQL) InvokePG(ctx context.Context, cfg *DatabaseQu
 		return
 	}
 
-	progress(action.InvokeProgressEvent{Message: "Fetching database credentials"})
+	progress("Fetching database credentials")
 	pgRes := tmp.GetPostgreSQL(ctx, a.Client(), addonID)
 	if pgRes.HasError() {
 		diags.AddError("failed to get database credentials", pgRes.Error().Error())
@@ -137,14 +137,14 @@ func (a *ActionExecuteDatabaseSQL) InvokePG(ctx context.Context, cfg *DatabaseQu
 	query := cfg.Query.ValueString()
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%d/%s", pg.User, pg.Password, pg.Host, pg.Port, pg.Database)
 
-	progress(action.InvokeProgressEvent{Message: "Opening database connection"})
+	progress("Opening database connection")
 	conn, err := Connect(ctx, dsn)
 	if err != nil {
 		diags.AddError("failed to connect to databse", err.Error())
 		return
 	}
 	defer func() {
-		progress(action.InvokeProgressEvent{Message: "Closing database connection"})
+		progress("Closing database connection")
 		if err := conn.Close(ctx); err != nil {
 			diags.AddWarning("failed to close database connection", err.Error())
 		}
@@ -152,7 +152,7 @@ func (a *ActionExecuteDatabaseSQL) InvokePG(ctx context.Context, cfg *DatabaseQu
 
 	if cfg.OutputJSON.IsNull() || cfg.OutputJSON.IsUnknown() {
 		// no output, multiple statements allowed
-		progress(action.InvokeProgressEvent{Message: "Executing database query"})
+		progress("Executing database query")
 		result, err := conn.Exec(ctx, query)
 		if err != nil {
 			diags.AddError("failed execute query", err.Error())
@@ -164,7 +164,7 @@ func (a *ActionExecuteDatabaseSQL) InvokePG(ctx context.Context, cfg *DatabaseQu
 		})
 		return
 	} else {
-		progress(action.InvokeProgressEvent{Message: "Executing database query"})
+		progress("Executing database query")
 		result, err := conn.Query(ctx, query)
 		if err != nil {
 			diags.AddError("failed execute query", err.Error())
@@ -172,14 +172,14 @@ func (a *ActionExecuteDatabaseSQL) InvokePG(ctx context.Context, cfg *DatabaseQu
 		}
 		defer result.Close()
 
-		progress(action.InvokeProgressEvent{Message: "Serializing databse query results"})
+		progress("Serializing databse query results")
 		data, err := PgSqlRowsToJson(result)
 		if err != nil {
 			diags.AddError("failed to serialize result", err.Error())
 			return
 		}
 
-		progress(action.InvokeProgressEvent{Message: "Writing databse query results"})
+		progress("Writing databse query results")
 		file, err := os.OpenFile(
 			strings.TrimPrefix(cfg.OutputJSON.ValueString(), "file://"),
 			os.O_RDWR|os.O_CREATE|os.O_TRUNC, os.ModePerm,

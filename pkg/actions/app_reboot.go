@@ -85,6 +85,7 @@ func (ar *ActionRebootApplication) Invoke(ctx context.Context, req action.Invoke
 	tflog.Debug(ctx, "Invoke application_reboot", map[string]any{
 		"config": req.Config,
 	})
+	progress := ProgressWrapper(res)
 
 	cfg := helper.From[rebootApplication](ctx, req.Config, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
@@ -97,7 +98,7 @@ func (ar *ActionRebootApplication) Invoke(ctx context.Context, req action.Invoke
 	}
 	reboot := rebootRes.Payload()
 
-	res.SendProgress(action.InvokeProgressEvent{Message: "Restarting application"})
+	progress("Restarting application")
 
 	stateC := WatchDeployment(
 		ctx,
@@ -111,9 +112,9 @@ func (ar *ActionRebootApplication) Invoke(ctx context.Context, req action.Invoke
 	for deployment := range stateC {
 		switch deployment.State {
 		case "WIP":
-			res.SendProgress(action.InvokeProgressEvent{Message: "New deployment has started..."})
+			progress("New deployment has started...")
 		case "OK":
-			res.SendProgress(action.InvokeProgressEvent{Message: "Successfully rebooted"})
+			progress("Successfully rebooted")
 		case "FAIL":
 			res.Diagnostics.AddError("failed to reboot application", "see application logs for details")
 		}
