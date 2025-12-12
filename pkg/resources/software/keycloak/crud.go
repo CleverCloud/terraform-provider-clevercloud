@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
@@ -73,6 +74,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		plan.AdminPassword = pkg.FromStr(keycloak.InitialCredentials.Password)
 		plan.Version = pkg.FromStr(keycloak.Version)
 		plan.AccessDomain = pkg.FromStr(keycloak.EnvVars["CC_KEYCLOAK_HOSTNAME"])
+		plan.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
 	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
@@ -105,6 +107,7 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 		state.AdminPassword = pkg.FromStr(keycloak.InitialCredentials.Password)
 		state.Version = pkg.FromStr(keycloak.Version)
 		state.AccessDomain = pkg.FromStr(keycloak.EnvVars["CC_KEYCLOAK_HOSTNAME"])
+		state.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
