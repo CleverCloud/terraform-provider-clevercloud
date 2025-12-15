@@ -192,10 +192,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 
 	// Git Deployment (when commit change)
 	if req.Deployment != nil {
-		diags.Append(gitDeploy(ctx, *req.Deployment, res.Application.DeployURL)...)
-		if diags.HasError() {
-			return nil, diags
-		}
+		GitDeploy(ctx, req.Deployment, res.Application.DeployURL, &diags)
 	}
 
 	// trigger restart of the app if needed (when env change)
