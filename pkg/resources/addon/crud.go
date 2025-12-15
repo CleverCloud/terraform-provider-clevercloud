@@ -118,10 +118,6 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 // Update resource
 func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	plan := helper.PlanFrom[Addon](ctx, req.Plan, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	state := helper.StateFrom[Addon](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return

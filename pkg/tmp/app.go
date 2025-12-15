@@ -439,6 +439,11 @@ func GetDeployment(ctx context.Context, cc *client.Client, organisationID, appli
 	return client.Get[DeploymentResponse](ctx, cc, path)
 }
 
+func ListDeployments(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[[]DeploymentResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/deployments", organisationID, applicationID)
+	return client.Get[[]DeploymentResponse](ctx, cc, path)
+}
+
 type UpdateExposedEnvRes struct {
 	ID      int    `json:"id"`
 	Message string `json:"message"`

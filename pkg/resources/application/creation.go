@@ -191,13 +191,16 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	// TODO: unlink unneeded deps
 
 	// Git Deployment (when commit change)
+	gitDeployed := false
 	if req.Deployment != nil {
 		GitDeploy(ctx, req.Deployment, res.Application.DeployURL, &diags)
+		gitDeployed = true
 	}
 
 	// trigger restart of the app if needed (when env change)
+	// BUT only if we didn't already trigger a Git deployment (which deploys the new code + env)
 	// error id 4014 = cannot redeploy an application which has never been deployed yet (did you git push?)
-	if req.TriggerRestart {
+	if req.TriggerRestart && !gitDeployed {
 		restartRes := tmp.RestartApp(ctx, req.Client, req.Organization, res.Application.ID)
 		if restartRes.HasError() {
 			if apiErr, ok := restartRes.Error().(*client.APIError); !ok || apiErr.Code != "4014" {
