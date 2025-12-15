@@ -20,6 +20,7 @@ require (
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/miton18/helper v0.0.3
 	go.clever-cloud.dev/client v0.1.4
+	go.clever-cloud.dev/sdk v0.0.5
 	golang.org/x/exp v0.0.0-20251017212417-90e834f514db
 )
 
@@ -116,7 +117,6 @@ require (
 	github.com/yuin/goldmark-meta v1.1.0 // indirect
 	github.com/zclconf/go-cty v1.17.0 // indirect
 	go.abhg.dev/goldmark/frontmatter v0.2.0 // indirect
-	go.clever-cloud.dev/sdk v0.0.5 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/httptrace/otelhttptrace v0.64.0 // indirect
 	go.opentelemetry.io/otel v1.39.0 // indirect
