@@ -19,6 +19,9 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 	}
 
 	resp.Diagnostics.Append(application.Create(ctx, r, &plan)...)
+
+	// First save: persist ID even if there were partial errors
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -28,6 +31,7 @@ func (r *ResourceRuby) Create(ctx context.Context, req resource.CreateRequest, r
 	application.SyncExposedVariables(ctx, r, plan.ID.ValueString(), plan.ExposedEnvironment, &resp.Diagnostics)
 	application.GitDeploy(ctx, plan.ToDeployment(r.GitAuth()), plan.DeployURL.ValueString(), &resp.Diagnostics)
 
+	// Second save: persist secondary operations results
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
@@ -69,6 +73,9 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 	}
 
 	res.Diagnostics.Append(application.Update(ctx, r, &plan, &state)...)
+
+	// First save: persist changes even if there were partial errors
+	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -77,6 +84,7 @@ func (r *ResourceRuby) Update(ctx context.Context, req resource.UpdateRequest, r
 	application.SyncNetworkGroups(ctx, r, plan.ID.ValueString(), plan.Networkgroups, &res.Diagnostics)
 	application.SyncExposedVariables(ctx, r, plan.ID.ValueString(), plan.ExposedEnvironment, &res.Diagnostics)
 
+	// Second save: persist secondary operations results
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
 

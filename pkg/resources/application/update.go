@@ -47,7 +47,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	envRes := tmp.UpdateAppEnv(ctx, req.Client, req.Organization, res.Application.ID, req.Environment)
 	if envRes.HasError() {
 		diags.AddError("failed to configure application environment", envRes.Error().Error())
-		return nil, diags
+		return res, diags
 	}
 
 	// VHosts
@@ -57,7 +57,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	vhostsRes := tmp.GetAppVhosts(ctx, req.Client, req.Organization, res.Application.ID)
 	if vhostsRes.HasError() {
 		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
-		return nil, diags
+		return res, diags
 	}
 	res.Application.Vhosts = *vhostsRes.Payload()
 
@@ -65,7 +65,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	dependenciesWithAddonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, req.Dependencies...)
 	if err != nil {
 		diags.AddError("failed to get dependencies add-on IDs", err.Error())
-		return nil, diags
+		return res, diags
 	}
 
 	tflog.Debug(ctx, "[update] dependencies to link", map[string]any{"dependencies": req.Dependencies, "addonIds": dependenciesWithAddonIDs})
@@ -77,7 +77,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 		if depRes.HasError() {
 			tflog.Error(ctx, "ERROR: "+dependency, map[string]any{"err": depRes.Error().Error()})
 			diags.AddError("failed to add dependency", depRes.Error().Error())
-			return nil, diags
+			return res, diags
 		}
 	}
 	// TODO: unlink unneeded deps
@@ -87,7 +87,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	if req.Deployment != nil {
 		GitDeploy(ctx, req.Deployment, res.Application.DeployURL, &diags)
 		if diags.HasError() {
-			return nil, diags
+			return res, diags
 		}
 		gitDeployed = true
 	}
@@ -100,7 +100,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 		if restartRes.HasError() {
 			if apiErr, ok := restartRes.Error().(*client.APIError); !ok || apiErr.Code != "4014" {
 				diags.AddError("failed to restart app", restartRes.Error().Error())
-				return nil, diags
+				return res, diags
 			}
 		}
 	}
@@ -171,12 +171,11 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 	// Call common Update function
 	updatedApp, updateDiags := UpdateApp(ctx, updateReq)
 	diags.Append(updateDiags...)
-	if diags.HasError() {
-		return diags
-	}
 
-	// Update VHosts from API response
-	runtime.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), runtime.VHosts, &diags)
+	// Update VHosts even if there were errors (app might be updated)
+	if updatedApp != nil {
+		runtime.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), runtime.VHosts, &diags)
+	}
 
 	return diags
 }
