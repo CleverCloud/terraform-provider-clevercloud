@@ -102,7 +102,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	vhostsRes := tmp.GetAppVhosts(ctx, req.Client, req.Organization, res.Application.ID)
 	if vhostsRes.HasError() {
 		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
-		return nil, diags
+		return res, diags
 	}
 	res.Application.Vhosts = *vhostsRes.Payload()
 
@@ -110,7 +110,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	dependenciesWithAddonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, req.Dependencies...)
 	if err != nil {
 		diags.AddError("failed to get dependencies add-on IDs", err.Error())
-		return nil, diags
+		return res, diags
 	}
 	tflog.Debug(ctx, "[create] dependencies to link", map[string]any{"dependencies": req.Dependencies, "addonIds": dependenciesWithAddonIDs})
 	for _, dependency := range dependenciesWithAddonIDs {
@@ -174,12 +174,11 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 	// Call common Create function
 	createRes, createDiags := CreateApp(ctx, createReq)
 	diags.Append(createDiags...)
-	if diags.HasError() {
-		return diags
-	}
 
-	// Map API response to plan using SetFromCreateResponse
-	runtime.SetFromCreateResponse(createRes, ctx, &diags)
+	// Map response even if there were errors (app might be created)
+	if createRes != nil {
+		runtime.SetFromCreateResponse(createRes, ctx, &diags)
+	}
 
 	return diags
 }
