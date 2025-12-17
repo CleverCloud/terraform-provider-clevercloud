@@ -23,6 +23,11 @@ func (r *ResourceDotnet) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
+	// Secondary operations
+	application.SyncNetworkGroups(ctx, r, plan.ID.ValueString(), plan.Networkgroups, &resp.Diagnostics)
+	application.SyncExposedVariables(ctx, r, plan.ID.ValueString(), plan.ExposedEnvironment, &resp.Diagnostics)
+	application.GitDeploy(ctx, plan.ToDeployment(r.GitAuth()), plan.DeployURL.ValueString(), &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
@@ -67,6 +72,10 @@ func (r *ResourceDotnet) Update(ctx context.Context, req resource.UpdateRequest,
 	if res.Diagnostics.HasError() {
 		return
 	}
+
+	// Secondary operations
+	application.SyncNetworkGroups(ctx, r, plan.ID.ValueString(), plan.Networkgroups, &res.Diagnostics)
+	application.SyncExposedVariables(ctx, r, plan.ID.ValueString(), plan.ExposedEnvironment, &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }

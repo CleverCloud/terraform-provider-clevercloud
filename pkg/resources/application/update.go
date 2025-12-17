@@ -178,17 +178,5 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 	// Update VHosts from API response
 	runtime.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), runtime.VHosts, &diags)
 
-	// Sync network groups
-	SyncNetworkGroups(
-		ctx,
-		resource,
-		stateRuntime.ID.ValueString(),
-		runtime.Networkgroups,
-		&diags,
-	)
-
-	// Sync exposed environment variables
-	SyncExposedVariables(ctx, resource, stateRuntime.ID.ValueString(), runtime.ExposedEnvironment, &diags)
-
 	return diags
 }
