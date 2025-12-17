@@ -181,20 +181,5 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 	// Map API response to plan using SetFromCreateResponse
 	runtime.SetFromCreateResponse(createRes, ctx, &diags)
 
-	// Sync network groups
-	SyncNetworkGroups(
-		ctx,
-		resource,
-		createRes.Application.ID,
-		runtime.Networkgroups,
-		&diags,
-	)
-
-	// Sync exposed environment variables
-	SyncExposedVariables(ctx, resource, createRes.Application.ID, runtime.ExposedEnvironment, &diags)
-
-	// Git deployment
-	GitDeploy(ctx, plan.ToDeployment(resource.GitAuth()), createRes.Application.DeployURL, &diags)
-
 	return diags
 }
