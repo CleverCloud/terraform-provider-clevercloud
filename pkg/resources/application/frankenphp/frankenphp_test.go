@@ -57,13 +57,13 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(false)),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
 					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
 					if len(app.Vhosts) != 1 || app.Vhosts[0].Fqdn != (domain+"/") {
 						return tests.AssertError("invalid vhost list", app.Vhosts.AsString(), "1 cleverapps.io domain")
 					}
@@ -83,13 +83,13 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("max_instance_count"), knownvalue.Int64Exact(6)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(true)),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
 					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
 					expectedVhosts := []string{domainEdit1 + "/", domainEdit2 + "/test"}
 					if len(app.Vhosts) != len(expectedVhosts) {
 						return tests.AssertError("invalid vhost count", len(app.Vhosts), len(expectedVhosts))
@@ -130,13 +130,13 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("max_instance_count"), knownvalue.Int64Exact(6)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(true)),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
 					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
 					if len(app.Vhosts) != 2 {
 						return tests.AssertError("invalid vhost list", app.Vhosts.AsString(), "2 custom domain")
 					}

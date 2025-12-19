@@ -8,39 +8,23 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
-// SetFromCreateResponse maps API response fields to Runtime fields after Create operation
-func (r *Runtime) SetFromCreateResponse(res *CreateRes, ctx context.Context, diags *diag.Diagnostics) {
-	r.ID = pkg.FromStr(res.Application.ID)
-	r.Name = pkg.FromStr(res.Application.Name)
-	r.Description = pkg.FromStr(res.Application.Description)
-	r.MinInstanceCount = pkg.FromI(int64(res.Application.Instance.MinInstances))
-	r.MaxInstanceCount = pkg.FromI(int64(res.Application.Instance.MaxInstances))
-	r.SmallestFlavor = pkg.FromStr(res.Application.Instance.MinFlavor.Name)
-	r.BiggestFlavor = pkg.FromStr(res.Application.Instance.MaxFlavor.Name)
+// SetFromResponse maps API response fields to Runtime fields
+func (r *Runtime) SetFromResponse(res AppResponseProvider, ctx context.Context, diags *diag.Diagnostics) {
+	app := res.GetApp()
+
+	r.Name = pkg.FromStr(app.Name)
+	r.Description = pkg.FromStr(app.Description)
+	r.MinInstanceCount = pkg.FromI(int64(app.Instance.MinInstances))
+	r.MaxInstanceCount = pkg.FromI(int64(app.Instance.MaxInstances))
+	r.SmallestFlavor = pkg.FromStr(app.Instance.MinFlavor.Name)
+	r.BiggestFlavor = pkg.FromStr(app.Instance.MaxFlavor.Name)
 	r.BuildFlavor = res.GetBuildFlavor()
-	r.Region = pkg.FromStr(res.Application.Zone)
-	r.StickySessions = pkg.FromBool(res.Application.StickySessions)
-	r.RedirectHTTPS = pkg.FromBool(ToForceHTTPS(res.Application.ForceHTTPS))
-	r.DeployURL = pkg.FromStr(res.Application.DeployURL)
+	r.Region = pkg.FromStr(app.Zone)
+	r.StickySessions = pkg.FromBool(app.StickySessions)
+	r.RedirectHTTPS = pkg.FromBool(ToForceHTTPS(app.ForceHTTPS))
+	r.DeployURL = pkg.FromStr(app.DeployURL)
 
-	r.VHosts = helper.VHostsFromAPIHosts(ctx, res.Application.Vhosts.AsString(), r.VHosts, diags)
-}
-
-// SetFromReadResponse maps Read API response fields to Runtime fields after Read operation
-func (r *Runtime) SetFromReadResponse(res *ReadAppRes, ctx context.Context, diags *diag.Diagnostics) {
-	r.Name = pkg.FromStr(res.App.Name)
-	r.Description = pkg.FromStr(res.App.Description)
-	r.MinInstanceCount = pkg.FromI(int64(res.App.Instance.MinInstances))
-	r.MaxInstanceCount = pkg.FromI(int64(res.App.Instance.MaxInstances))
-	r.SmallestFlavor = pkg.FromStr(res.App.Instance.MinFlavor.Name)
-	r.BiggestFlavor = pkg.FromStr(res.App.Instance.MaxFlavor.Name)
-	r.BuildFlavor = res.GetBuildFlavor()
-	r.Region = pkg.FromStr(res.App.Zone)
-	r.StickySessions = pkg.FromBool(res.App.StickySessions)
-	r.RedirectHTTPS = pkg.FromBool(ToForceHTTPS(res.App.ForceHTTPS))
-	r.DeployURL = pkg.FromStr(res.App.DeployURL)
-
-	r.VHosts = helper.VHostsFromAPIHosts(ctx, res.App.Vhosts.AsString(), r.VHosts, diags)
+	r.VHosts = helper.VHostsFromAPIHosts(ctx, app.Vhosts.AsString(), r.VHosts, diags)
 }
 
 // FromForceHTTPS converts a boolean to Clever Cloud's ForceHTTPS enum
