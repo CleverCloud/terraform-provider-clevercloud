@@ -93,14 +93,14 @@ func TestAccGo_basic(t *testing.T) {
 				)),
 				tests.NewCheckRemoteResource(
 					fullName,
-					func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
+					func(ctx context.Context, id string) (*tmp.AppResponse, error) {
 						appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 						if appRes.HasError() {
 							return nil, appRes.Error()
 						}
 						return appRes.Payload(), nil
 					},
-					func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
+					func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
 						if app.Name != rName {
 							return tests.AssertError("invalid name", app.Name, rName)
 						}

@@ -13,9 +13,13 @@ import (
 
 // ReadAppRes represents the response from reading an application
 type ReadAppRes struct {
-	App          tmp.CreatAppResponse
+	App          tmp.AppResponse
 	AppIsDeleted bool
 	Env          []tmp.Env
+}
+
+func (res *ReadAppRes) GetApp() *tmp.AppResponse {
+	return &res.App
 }
 
 func (res *ReadAppRes) GetBuildFlavor() types.String {
@@ -85,8 +89,8 @@ func Read[T RuntimePlan](ctx context.Context, resource RuntimeResource, state T)
 		return true, diags
 	}
 
-	// Map API response to state using SetFromReadResponse
-	runtime.SetFromReadResponse(readRes, ctx, &diags)
+	// Map API response to state
+	runtime.SetFromResponse(readRes, ctx, &diags)
 
 	// Read network groups
 	runtime.Networkgroups = resources.ReadNetworkGroups(ctx, resource, runtime.ID.ValueString(), &diags)

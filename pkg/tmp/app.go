@@ -33,7 +33,7 @@ type CreateAppRequest struct {
 	OAuthAppID      *string            `json:"oauthAppId"`
 }
 
-type CreatAppResponse struct {
+type AppResponse struct {
 	ID             string      `json:"id"`
 	Name           string      `json:"name"`
 	Description    string      `json:"description"`
@@ -226,14 +226,14 @@ type Env struct {
 	Value string `json:"value"`
 }
 
-func CreateApp(ctx context.Context, cc *client.Client, organisationID string, app CreateAppRequest) client.Response[CreatAppResponse] {
+func CreateApp(ctx context.Context, cc *client.Client, organisationID string, app CreateAppRequest) client.Response[AppResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications", organisationID)
-	return client.Post[CreatAppResponse](ctx, cc, path, app)
+	return client.Post[AppResponse](ctx, cc, path, app)
 }
 
-func GetApp(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[CreatAppResponse] {
+func GetApp(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[AppResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s", organisationID, applicationID)
-	return client.Get[CreatAppResponse](ctx, cc, path)
+	return client.Get[AppResponse](ctx, cc, path)
 }
 
 func DeleteApp(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[any] {
@@ -309,9 +309,9 @@ type UpdateAppReq struct {
 	ForceHttps      string `json:"forceHttps"`
 }
 
-func UpdateApp(ctx context.Context, cc *client.Client, organisationID, applicationID string, req UpdateAppReq) client.Response[CreatAppResponse] {
+func UpdateApp(ctx context.Context, cc *client.Client, organisationID, applicationID string, req UpdateAppReq) client.Response[AppResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s", organisationID, applicationID)
-	return client.Put[CreatAppResponse](ctx, cc, path, req)
+	return client.Put[AppResponse](ctx, cc, path, req)
 }
 
 func GetAppVhosts(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[VHosts] {
@@ -358,9 +358,9 @@ func RestartApp(ctx context.Context, cc *client.Client, organisationID, applicat
 	return client.Post[RestartAppRes](ctx, cc, path, nil)
 }
 
-func ListApps(ctx context.Context, cc *client.Client, organisationID string) client.Response[[]CreatAppResponse] {
+func ListApps(ctx context.Context, cc *client.Client, organisationID string) client.Response[[]AppResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications", organisationID)
-	return client.Get[[]CreatAppResponse](ctx, cc, path)
+	return client.Get[[]AppResponse](ctx, cc, path)
 }
 
 type GithubApplication struct {

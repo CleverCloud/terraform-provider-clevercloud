@@ -28,7 +28,7 @@ type CreateReq struct {
 
 // CreateRes represents the response from creating an application
 type CreateRes struct {
-	Application tmp.CreatAppResponse
+	Application tmp.AppResponse
 }
 
 // Deployment contains git deployment configuration
@@ -37,6 +37,10 @@ type Deployment struct {
 	Repository         string
 	Commit             *string
 	Username, Password *string
+}
+
+func (r *CreateRes) GetApp() *tmp.AppResponse {
+	return &r.Application
 }
 
 func (r *CreateRes) GetBuildFlavor() types.String {
@@ -177,7 +181,8 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 
 	// Map response even if there were errors (app might be created)
 	if createRes != nil {
-		runtime.SetFromCreateResponse(createRes, ctx, &diags)
+		runtime.ID = pkg.FromStr(createRes.Application.ID)
+		runtime.SetFromResponse(createRes, ctx, &diags)
 	}
 
 	return diags

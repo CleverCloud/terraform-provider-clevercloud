@@ -90,13 +90,13 @@ func TestAccRuby_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("ruby_version"), knownvalue.StringExact("3.3")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("enable_sidekiq"), knownvalue.Bool(true)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("rails_env"), knownvalue.StringExact("production")),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
 					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
 					if app.Name != rName {
 						return tests.AssertError("invalid name", app.Name, rName)
 					}
@@ -226,13 +226,13 @@ func TestAccRuby_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("enable_sidekiq"), knownvalue.Bool(false)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("rackup_server"), knownvalue.StringExact("unicorn")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("nginx_read_timeout"), knownvalue.Int64Exact(900)),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
 					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
 					// Verify instance counts were updated
 					if app.Instance.MinInstances != 2 {
 						return tests.AssertError("invalid updated min instance count", app.Instance.MinInstances, 2)
