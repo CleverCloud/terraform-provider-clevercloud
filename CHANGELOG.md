@@ -1,5 +1,23 @@
 # Changelog
 
+## [1.8.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.7.1...v1.8.0) (2025-12-19)
+
+
+### Features
+
+* **actions:** clevercloud_database_query ([931895a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/931895a3dcdee820cd72454456654f12521c603a))
+* **apps:** support exposed env vars ([345d84c](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/345d84cd47916239b127cd0c11d779ad468a10a3))
+* **fsbucket:** upload action ([7047449](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/7047449faef90fd43322ad7883895b0751d25d02))
+* **keycloak:** more stuff ([a565236](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/a565236aaa54f3995086a48cf92d9514a189439f))
+* **keycloak:** return user/pass for admin access, host already provided ([a0687d3](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/a0687d353889f052efc788f78c8b945dff450c3e))
+
+
+### Bug Fixes
+
+* **applications:** sync dependencies using Set.Difference pattern ([404a905](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/404a90518777873f4bb29905180333c1cc47f785))
+* **apps:** double redeploy ([db0c8a3](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/db0c8a37dae23896ba7af189ce793eac7c9d0944))
+* **apps:** no redeploy for github apps ([5e01ff1](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5e01ff157913ee525c60e630ce783aa96d3d65a3))
+
 ## [1.7.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.7.0...v1.7.1) (2025-12-02)
 
 
