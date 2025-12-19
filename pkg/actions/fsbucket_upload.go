@@ -460,7 +460,7 @@ func createRemoteDir(conn *ftp.ServerConn, path string) error {
 			if err := conn.ChangeDir(currentPath); err != nil {
 				return fmt.Errorf("failed to create or access directory %s: %w", currentPath, err)
 			}
-			conn.ChangeDir("/")
+			_ = conn.ChangeDir("/")
 		}
 	}
 
