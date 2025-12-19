@@ -61,26 +61,19 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	}
 	res.Application.Vhosts = *vhostsRes.Payload()
 
-	// Dependencies
+	// Dependencies - sync using Set.Difference pattern (add new, remove old)
+	// TODO: support apps as dependencies
+	// see: https://www.clever.cloud/developers/doc/administrate/service-dependencies/
 	dependenciesWithAddonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, req.Dependencies...)
 	if err != nil {
 		diags.AddError("failed to get dependencies add-on IDs", err.Error())
 		return res, diags
 	}
 
-	tflog.Debug(ctx, "[update] dependencies to link", map[string]any{"dependencies": req.Dependencies, "addonIds": dependenciesWithAddonIDs})
-
-	for _, dependency := range dependenciesWithAddonIDs {
-		// TODO: support another apps as dependency
-
-		depRes := tmp.AddAppLinkedAddons(ctx, req.Client, req.Organization, res.Application.ID, dependency)
-		if depRes.HasError() {
-			tflog.Error(ctx, "ERROR: "+dependency, map[string]any{"err": depRes.Error().Error()})
-			diags.AddError("failed to add dependency", depRes.Error().Error())
-			return res, diags
-		}
+	SyncDependencies(ctx, req.Client, req.Organization, res.Application.ID, dependenciesWithAddonIDs, &diags)
+	if diags.HasError() {
+		return res, diags
 	}
-	// TODO: unlink unneeded deps
 
 	// Git Deployment (when commit change)
 	gitDeployed := false
