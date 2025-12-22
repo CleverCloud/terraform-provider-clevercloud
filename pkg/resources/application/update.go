@@ -7,7 +7,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
@@ -62,8 +61,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	res.Application.Vhosts = *vhostsRes.Payload()
 
 	// Dependencies - sync using Set.Difference pattern (add new, remove old)
-	// TODO: support apps as dependencies
-	// see: https://www.clever.cloud/developers/doc/administrate/service-dependencies/
+	// TODO(#322): support app-to-app dependencies
 	dependenciesWithAddonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, req.Dependencies...)
 	if err != nil {
 		diags.AddError("failed to get dependencies add-on IDs", err.Error())
@@ -165,9 +163,9 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 	updatedApp, updateDiags := UpdateApp(ctx, updateReq)
 	diags.Append(updateDiags...)
 
-	// Update VHosts even if there were errors (app might be updated)
+	// Sync response even if there were errors (app might be updated)
 	if updatedApp != nil {
-		runtime.VHosts = helper.VHostsFromAPIHosts(ctx, updatedApp.Application.Vhosts.AsString(), runtime.VHosts, &diags)
+		runtime.SetFromResponse(updatedApp, ctx, &diags)
 	}
 
 	return diags
