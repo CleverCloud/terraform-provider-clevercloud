@@ -3,6 +3,7 @@ package application
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -26,7 +27,9 @@ func SyncExposedVariables(ctx context.Context, p provider.Provider, applicationI
 	}
 }
 
-func ReadExposedVariables(ctx context.Context, p provider.Provider, applicationID string, diags *diag.Diagnostics) types.Map {
+// ReadExposedVariables reads exposed environment variables from API.
+// stateValue is used to preserve null vs empty semantics.
+func ReadExposedVariables(ctx context.Context, p provider.Provider, applicationID string, stateValue types.Map, diags *diag.Diagnostics) types.Map {
 	envRes := tmp.GetExposedEnv(ctx, p.Client(), p.Organization(), applicationID)
 	if envRes.HasError() {
 		diags.AddError("failed to list exposed configuration", envRes.Error().Error())
@@ -36,7 +39,10 @@ func ReadExposedVariables(ctx context.Context, p provider.Provider, applicationI
 	env := *envRes.Payload()
 
 	if len(env) == 0 {
-		return NullExposedEnv
+		if stateValue.IsNull() {
+			return NullExposedEnv
+		}
+		return types.MapValueMust(types.StringType, map[string]attr.Value{})
 	}
 
 	m, d := types.MapValueFrom(ctx, types.StringType, env)

@@ -118,7 +118,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	}
 	tflog.Debug(ctx, "[create] dependencies to link", map[string]any{"dependencies": req.Dependencies, "addonIds": dependenciesWithAddonIDs})
 	for _, dependency := range dependenciesWithAddonIDs {
-		// TODO: support another apps as dependency
+		// TODO(#322): support app-to-app dependencies
 
 		depRes := tmp.AddAppLinkedAddons(ctx, req.Client, req.Organization, res.Application.ID, dependency)
 		if depRes.HasError() {
