@@ -73,13 +73,9 @@ func (r Rust) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (r *Rust) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
-	if val, ok := env["APP_FOLDER"]; ok {
-		r.AppFolder = pkg.FromStr(val)
-	}
-	if val, ok := env[CC_RUST_FEATURES]; ok && val != "" {
-		r.Features = pkg.FromSetString(strings.Split(val, ","), diags)
-	}
+func (r *Rust) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
+	r.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
+	r.Features = pkg.FromSetSplit(env.Get(CC_RUST_FEATURES), ",", diags)
 }
 
 func (r Rust) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

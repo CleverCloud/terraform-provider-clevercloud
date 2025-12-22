@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"strconv"
 	"strings"
 	"time"
 
@@ -74,4 +75,66 @@ func SetTo[T any](ctx context.Context, items types.Set, diags *diag.Diagnostics)
 
 func SetToStringSlice(ctx context.Context, items types.Set, diags *diag.Diagnostics) []string {
 	return SetTo[string](ctx, items, diags)
+}
+
+// FromStrPtr converts *string to types.String.
+// Returns null if pointer is nil or string is empty.
+func FromStrPtr(s *string) types.String {
+	if s == nil || *s == "" {
+		return types.StringNull()
+	}
+	return types.StringValue(*s)
+}
+
+// FromIntPtr parses *string to types.Int64.
+// Returns null if pointer is nil or parsing fails.
+func FromIntPtr(s *string) types.Int64 {
+	if s == nil {
+		return types.Int64Null()
+	}
+	if i, err := strconv.ParseInt(*s, 10, 64); err == nil {
+		return types.Int64Value(i)
+	}
+	return types.Int64Null()
+}
+
+// FromBoolPtr parses *string to types.Bool using strconv.ParseBool.
+// Returns null if pointer is nil or parsing fails.
+func FromBoolPtr(s *string) types.Bool {
+	if s == nil {
+		return types.BoolNull()
+	}
+	if b, err := strconv.ParseBool(*s); err == nil {
+		return types.BoolValue(b)
+	}
+	return types.BoolNull()
+}
+
+// FromBoolIf returns types.Bool true if *string equals expected value.
+// Returns null otherwise.
+// WARNING: This overwrites the target. For "magic value" bools where you want
+// to preserve the existing value when condition doesn't match, use SetBoolIf instead.
+func FromBoolIf(s *string, expected string) types.Bool {
+	if s != nil && *s == expected {
+		return types.BoolValue(true)
+	}
+	return types.BoolNull()
+}
+
+// SetBoolIf sets target to true only if *string equals expected value.
+// If condition doesn't match, the target is left unchanged (preserving plan/state value).
+// Use this for "magic value" bools like CC_PHP_DEV_DEPENDENCIES="install".
+func SetBoolIf(target *types.Bool, s *string, expected string) {
+	if s != nil && *s == expected {
+		*target = types.BoolValue(true)
+	}
+}
+
+// FromSetSplit splits *string by separator and returns types.Set.
+// Returns null set if pointer is nil or string is empty.
+func FromSetSplit(s *string, sep string, diags *diag.Diagnostics) types.Set {
+	if s == nil || *s == "" {
+		return types.SetNull(types.StringType)
+	}
+	return FromSetString(strings.Split(*s, sep), diags)
 }

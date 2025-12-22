@@ -132,25 +132,13 @@ func (node NodeJS) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (node *NodeJS) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
-	if val, ok := env["APP_FOLDER"]; ok {
-		node.AppFolder = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_NODE_DEV_DEPENDENCIES"]; ok && val == "install" {
-		node.DevDependencies = pkg.FromBool(true)
-	}
-	if val, ok := env["CC_RUN_COMMAND"]; ok {
-		node.StartScript = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_NODE_BUILD_TOOL"]; ok {
-		node.PackageManager = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_NPM_REGISTRY"]; ok {
-		node.Registry = pkg.FromStr(val)
-	}
-	if val, ok := env["NPM_TOKEN"]; ok {
-		node.RegistryToken = pkg.FromStr(val)
-	}
+func (node *NodeJS) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
+	node.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
+	pkg.SetBoolIf(&node.DevDependencies, env.Get("CC_NODE_DEV_DEPENDENCIES"), "install")
+	node.StartScript = pkg.FromStrPtr(env.Get("CC_RUN_COMMAND"))
+	node.PackageManager = pkg.FromStrPtr(env.Get("CC_NODE_BUILD_TOOL"))
+	node.Registry = pkg.FromStrPtr(env.Get("CC_NPM_REGISTRY"))
+	node.RegistryToken = pkg.FromStrPtr(env.Get("NPM_TOKEN"))
 }
 
 func (node NodeJS) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

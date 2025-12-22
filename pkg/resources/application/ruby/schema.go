@@ -284,60 +284,24 @@ func (ruby Ruby) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
-func (ruby *Ruby) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
-	if val, ok := env["APP_FOLDER"]; ok {
-		ruby.AppFolder = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_RUBY_VERSION"]; ok {
-		ruby.RubyVersion = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_ENABLE_SIDEKIQ"]; ok && val == "true" {
-		ruby.EnableSidekiq = pkg.FromBool(true)
-	}
-	if val, ok := env["CC_RACKUP_SERVER"]; ok {
-		ruby.RackupServer = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_RAKEGOALS"]; ok {
-		ruby.RakeGoals = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_SIDEKIQ_FILES"]; ok {
-		ruby.SidekiqFiles = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_HTTP_BASIC_AUTH"]; ok {
-		ruby.HTTPBasicAuth = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_NGINX_PROXY_BUFFERS"]; ok {
-		ruby.NginxProxyBuffers = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_NGINX_PROXY_BUFFER_SIZE"]; ok {
-		ruby.NginxProxyBufferSize = pkg.FromStr(val)
-	}
-	if val, ok := env["ENABLE_GZIP_COMPRESSION"]; ok && val == "true" {
-		ruby.EnableGzipCompression = pkg.FromBool(true)
-	}
-	if val, ok := env["GZIP_TYPES"]; ok {
-		ruby.GzipTypes = pkg.FromStr(val)
-	}
-	if val, ok := env["NGINX_READ_TIMEOUT"]; ok {
-		if timeout, err := strconv.ParseInt(val, 10, 64); err == nil {
-			ruby.NginxReadTimeout = pkg.FromI(timeout)
-		}
-	}
-	if val, ok := env["RACK_ENV"]; ok {
-		ruby.RackEnv = pkg.FromStr(val)
-	}
-	if val, ok := env["RAILS_ENV"]; ok {
-		ruby.RailsEnv = pkg.FromStr(val)
-	}
-	if val, ok := env["STATIC_FILES_PATH"]; ok {
-		ruby.StaticFilesPath = pkg.FromStr(val)
-	}
-	if val, ok := env["STATIC_URL_PREFIX"]; ok {
-		ruby.StaticURLPrefix = pkg.FromStr(val)
-	}
-	if val, ok := env["STATIC_WEBROOT"]; ok {
-		ruby.StaticWebroot = pkg.FromStr(val)
-	}
+func (ruby *Ruby) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
+	ruby.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
+	ruby.RubyVersion = pkg.FromStrPtr(env.Get("CC_RUBY_VERSION"))
+	pkg.SetBoolIf(&ruby.EnableSidekiq, env.Get("CC_ENABLE_SIDEKIQ"), "true")
+	ruby.RackupServer = pkg.FromStrPtr(env.Get("CC_RACKUP_SERVER"))
+	ruby.RakeGoals = pkg.FromStrPtr(env.Get("CC_RAKEGOALS"))
+	ruby.SidekiqFiles = pkg.FromStrPtr(env.Get("CC_SIDEKIQ_FILES"))
+	ruby.HTTPBasicAuth = pkg.FromStrPtr(env.Get("CC_HTTP_BASIC_AUTH"))
+	ruby.NginxProxyBuffers = pkg.FromStrPtr(env.Get("CC_NGINX_PROXY_BUFFERS"))
+	ruby.NginxProxyBufferSize = pkg.FromStrPtr(env.Get("CC_NGINX_PROXY_BUFFER_SIZE"))
+	pkg.SetBoolIf(&ruby.EnableGzipCompression, env.Get("ENABLE_GZIP_COMPRESSION"), "true")
+	ruby.GzipTypes = pkg.FromStrPtr(env.Get("GZIP_TYPES"))
+	ruby.NginxReadTimeout = pkg.FromIntPtr(env.Get("NGINX_READ_TIMEOUT"))
+	ruby.RackEnv = pkg.FromStrPtr(env.Get("RACK_ENV"))
+	ruby.RailsEnv = pkg.FromStrPtr(env.Get("RAILS_ENV"))
+	ruby.StaticFilesPath = pkg.FromStrPtr(env.Get("STATIC_FILES_PATH"))
+	ruby.StaticURLPrefix = pkg.FromStrPtr(env.Get("STATIC_URL_PREFIX"))
+	ruby.StaticWebroot = pkg.FromStrPtr(env.Get("STATIC_WEBROOT"))
 }
 
 func (ruby Ruby) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
