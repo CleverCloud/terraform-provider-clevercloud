@@ -23,7 +23,6 @@ type CreateReq struct {
 	Environment  map[string]string
 	VHosts       []string
 	Deployment   *Deployment
-	Dependencies []string
 }
 
 // CreateRes represents the response from creating an application
@@ -110,40 +109,6 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	}
 	res.Application.Vhosts = *vhostsRes.Payload()
 
-	// Dependencies - split into apps and addons as they use different API endpoints
-	appDeps, addonDeps := splitDependencies(req.Dependencies)
-	tflog.Debug(ctx, "[create] dependencies to link", map[string]any{
-		"raw":    req.Dependencies,
-		"apps":   appDeps,
-		"addons": addonDeps,
-	})
-
-	// Link app dependencies using /dependencies endpoint
-	for _, appID := range appDeps {
-		depRes := tmp.AddAppDependency(ctx, req.Client, req.Organization, res.Application.ID, appID)
-		if depRes.HasError() {
-			tflog.Error(ctx, "ERROR linking app: "+appID, map[string]any{"err": depRes.Error().Error()})
-			diags.AddError("failed to add app dependency", depRes.Error().Error())
-		}
-	}
-
-	// Link addon dependencies using /addons endpoint
-	// Check avoids unnecessary API call to RealIDsToAddonIDs when no addons
-	if len(addonDeps) > 0 {
-		addonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, addonDeps...)
-		if err != nil {
-			diags.AddError("failed to get dependencies add-on IDs", err.Error())
-			return res, diags
-		}
-		for _, addonID := range addonIDs {
-			depRes := tmp.AddAppLinkedAddons(ctx, req.Client, req.Organization, res.Application.ID, addonID)
-			if depRes.HasError() {
-				tflog.Error(ctx, "ERROR linking addon: "+addonID, map[string]any{"err": depRes.Error().Error()})
-				diags.AddError("failed to add addon dependency", depRes.Error().Error())
-			}
-		}
-	}
-
 	return res, diags
 }
 
@@ -154,10 +119,9 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 	// Lookup instance by variant slug
 	instance := LookupInstanceByVariantSlug(ctx, resource.Client(), nil, resource.GetVariantSlug(), &diags)
 
-	// Extract vhosts, environment, and dependencies from plan
+	// Extract vhosts and environment from plan
 	vhosts := plan.VHostsAsStrings(ctx, &diags)
 	environment := plan.ToEnv(ctx, &diags)
-	dependencies := plan.DependenciesAsString(ctx, &diags)
 	if diags.HasError() {
 		return diags
 	}
@@ -186,10 +150,9 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 			Zone:            runtime.Region.ValueString(),
 			CancelOnPush:    false,
 		},
-		Environment:  environment,
-		VHosts:       vhosts,
-		Dependencies: dependencies,
-		Deployment:   plan.ToDeployment(resource.GitAuth()),
+		Environment: environment,
+		VHosts:      vhosts,
+		Deployment:  plan.ToDeployment(resource.GitAuth()),
 	}
 
 	// Call common Create function
