@@ -13,9 +13,13 @@ import (
 
 // ReadAppRes represents the response from reading an application
 type ReadAppRes struct {
-	App          tmp.CreatAppResponse
+	App          tmp.AppResponse
 	AppIsDeleted bool
 	Env          []tmp.Env
+}
+
+func (res *ReadAppRes) GetApp() *tmp.AppResponse {
+	return &res.App
 }
 
 func (res *ReadAppRes) GetBuildFlavor() types.String {
@@ -85,14 +89,17 @@ func Read[T RuntimePlan](ctx context.Context, resource RuntimeResource, state T)
 		return true, diags
 	}
 
-	// Map API response to state using SetFromReadResponse
-	runtime.SetFromReadResponse(readRes, ctx, &diags)
+	// Map API response to state
+	runtime.SetFromResponse(readRes, ctx, &diags)
 
 	// Read network groups
 	runtime.Networkgroups = resources.ReadNetworkGroups(ctx, resource, runtime.ID.ValueString(), &diags)
 
 	// Read exposed environment variables
-	runtime.ExposedEnvironment = ReadExposedVariables(ctx, resource, runtime.ID.ValueString(), &diags)
+	runtime.ExposedEnvironment = ReadExposedVariables(ctx, resource, runtime.ID.ValueString(), runtime.ExposedEnvironment, &diags)
+
+	// Read linked dependencies (addons)
+	runtime.Dependencies = ReadDependencies(ctx, resource.Client(), resource.Organization(), runtime.ID.ValueString(), runtime.Dependencies, &diags)
 
 	// Map environment variables to runtime-specific fields
 	state.FromEnv(ctx, readRes.EnvAsMap(), &diags)

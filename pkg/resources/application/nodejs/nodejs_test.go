@@ -95,13 +95,13 @@ func TestAccNodejs_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("build_flavor"), knownvalue.StringExact("XL")),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
 					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
 					if app.Name != rName {
 						return tests.AssertError("invalid name", app.Name, rName)
 					}
@@ -176,13 +176,13 @@ func TestAccNodejs_basic(t *testing.T) {
 			ResourceName: rName2,
 			Config:       providerBlock.Append(nodejsBlock2).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
-				tests.NewCheckRemoteResource(fullName2, func(ctx context.Context, id string) (*tmp.CreatAppResponse, error) {
+				tests.NewCheckRemoteResource(fullName2, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
 					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.CreatAppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
 					vhostsRes := tmp.GetAppVhosts(ctx, cc, tests.ORGANISATION, id)
 					if vhostsRes.HasError() {
 						return fmt.Errorf("failed to get application vhosts: %w", vhostsRes.Error())

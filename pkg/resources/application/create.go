@@ -28,7 +28,7 @@ type CreateReq struct {
 
 // CreateRes represents the response from creating an application
 type CreateRes struct {
-	Application tmp.CreatAppResponse
+	Application tmp.AppResponse
 }
 
 // Deployment contains git deployment configuration
@@ -37,6 +37,10 @@ type Deployment struct {
 	Repository         string
 	Commit             *string
 	Username, Password *string
+}
+
+func (r *CreateRes) GetApp() *tmp.AppResponse {
+	return &r.Application
 }
 
 func (r *CreateRes) GetBuildFlavor() types.String {
@@ -114,7 +118,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	}
 	tflog.Debug(ctx, "[create] dependencies to link", map[string]any{"dependencies": req.Dependencies, "addonIds": dependenciesWithAddonIDs})
 	for _, dependency := range dependenciesWithAddonIDs {
-		// TODO: support another apps as dependency
+		// TODO(#322): support app-to-app dependencies
 
 		depRes := tmp.AddAppLinkedAddons(ctx, req.Client, req.Organization, res.Application.ID, dependency)
 		if depRes.HasError() {
@@ -177,7 +181,8 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 
 	// Map response even if there were errors (app might be created)
 	if createRes != nil {
-		runtime.SetFromCreateResponse(createRes, ctx, &diags)
+		runtime.ID = pkg.FromStr(createRes.Application.ID)
+		runtime.SetFromResponse(createRes, ctx, &diags)
 	}
 
 	return diags

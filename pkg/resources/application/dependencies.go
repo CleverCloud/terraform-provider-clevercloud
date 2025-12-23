@@ -4,12 +4,45 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/miton18/helper/set"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
+
+// ReadDependencies reads the current linked addons from API and returns them as a Set of RealIDs.
+// stateValue is used to preserve null vs empty semantics.
+// TODO(#322): currently only reads addon dependencies, not app-to-app dependencies.
+func ReadDependencies(ctx context.Context, cc *client.Client, organization, applicationID string, stateValue types.Set, diags *diag.Diagnostics) types.Set {
+	addonsRes := tmp.GetAppLinkedAddons(ctx, cc, organization, applicationID)
+	if addonsRes.HasError() {
+		diags.AddError("failed to get linked addons", addonsRes.Error().Error())
+		return types.SetNull(types.StringType)
+	}
+
+	addons := *addonsRes.Payload()
+
+	if len(addons) == 0 {
+		if stateValue.IsNull() {
+			return types.SetNull(types.StringType)
+		}
+		result, d := types.SetValueFrom(ctx, types.StringType, []string{})
+		diags.Append(d...)
+		return result
+	}
+
+	// Extract RealIDs (postgres_xxx, mysql_xxx, etc.) - the canonical format used by the provider
+	realIDs := pkg.Map(addons, func(addon tmp.AddonResponse) string {
+		return addon.RealID
+	})
+
+	result, d := types.SetValueFrom(ctx, types.StringType, realIDs)
+	diags.Append(d...)
+
+	return result
+}
 
 // SyncDependencies synchronizes addon dependencies for an application.
 // It compares expected dependencies (from Terraform plan) with current dependencies (from API)
