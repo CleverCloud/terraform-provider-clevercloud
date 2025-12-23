@@ -29,6 +29,7 @@ func (r *ResourceGo) Create(ctx context.Context, req resource.CreateRequest, res
 	// Secondary operations
 	application.SyncNetworkGroups(ctx, r, plan.ID.ValueString(), plan.Networkgroups, &resp.Diagnostics)
 	application.SyncExposedVariables(ctx, r, plan.ID.ValueString(), plan.ExposedEnvironment, &resp.Diagnostics)
+	application.SyncDependencies(ctx, r, plan.ID.ValueString(), plan.Dependencies, &resp.Diagnostics)
 	application.GitDeploy(ctx, plan.ToDeployment(r.GitAuth()), plan.DeployURL.ValueString(), &resp.Diagnostics)
 
 	// Second save: persist secondary operations results
@@ -83,6 +84,7 @@ func (r *ResourceGo) Update(ctx context.Context, req resource.UpdateRequest, res
 	// Secondary operations
 	application.SyncNetworkGroups(ctx, r, plan.ID.ValueString(), plan.Networkgroups, &resp.Diagnostics)
 	application.SyncExposedVariables(ctx, r, plan.ID.ValueString(), plan.ExposedEnvironment, &resp.Diagnostics)
+	application.SyncDependencies(ctx, r, plan.ID.ValueString(), plan.Dependencies, &resp.Diagnostics)
 
 	// Second save: persist secondary operations results
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)

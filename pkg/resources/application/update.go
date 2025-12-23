@@ -20,7 +20,6 @@ type UpdateReq struct {
 	Environment    map[string]string
 	VHosts         []string
 	Deployment     *Deployment
-	Dependencies   []string
 	TriggerRestart bool // when env vars change for example
 }
 
@@ -59,13 +58,6 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 		return res, diags
 	}
 	res.Application.Vhosts = *vhostsRes.Payload()
-
-	// Dependencies - sync both app and addon dependencies
-	// see: https://www.clever.cloud/developers/doc/administrate/service-dependencies/
-	SyncDependencies(ctx, req.Client, req.Organization, res.Application.ID, req.Dependencies, &diags)
-	if diags.HasError() {
-		return res, diags
-	}
 
 	// Git Deployment (when commit change)
 	gitDeployed := false
@@ -113,9 +105,8 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 		return diags
 	}
 
-	// Extract vhosts and dependencies from plan
+	// Extract vhosts from plan
 	vhosts := plan.VHostsAsStrings(ctx, &diags)
-	dependencies := plan.DependenciesAsString(ctx, &diags)
 	if diags.HasError() {
 		return diags
 	}
@@ -148,7 +139,6 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 		},
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
-		Dependencies:   dependencies,
 		Deployment:     plan.ToDeployment(resource.GitAuth()),
 		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
 	}
