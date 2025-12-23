@@ -110,20 +110,37 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	}
 	res.Application.Vhosts = *vhostsRes.Payload()
 
-	// Dependencies
-	dependenciesWithAddonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, req.Dependencies...)
-	if err != nil {
-		diags.AddError("failed to get dependencies add-on IDs", err.Error())
-		return res, diags
-	}
-	tflog.Debug(ctx, "[create] dependencies to link", map[string]any{"dependencies": req.Dependencies, "addonIds": dependenciesWithAddonIDs})
-	for _, dependency := range dependenciesWithAddonIDs {
-		// TODO(#322): support app-to-app dependencies
+	// Dependencies - split into apps and addons as they use different API endpoints
+	appDeps, addonDeps := splitDependencies(req.Dependencies)
+	tflog.Debug(ctx, "[create] dependencies to link", map[string]any{
+		"raw":    req.Dependencies,
+		"apps":   appDeps,
+		"addons": addonDeps,
+	})
 
-		depRes := tmp.AddAppLinkedAddons(ctx, req.Client, req.Organization, res.Application.ID, dependency)
+	// Link app dependencies using /dependencies endpoint
+	for _, appID := range appDeps {
+		depRes := tmp.AddAppDependency(ctx, req.Client, req.Organization, res.Application.ID, appID)
 		if depRes.HasError() {
-			tflog.Error(ctx, "ERROR: "+dependency, map[string]any{"err": depRes.Error().Error()})
-			diags.AddError("failed to add dependency", depRes.Error().Error())
+			tflog.Error(ctx, "ERROR linking app: "+appID, map[string]any{"err": depRes.Error().Error()})
+			diags.AddError("failed to add app dependency", depRes.Error().Error())
+		}
+	}
+
+	// Link addon dependencies using /addons endpoint
+	// Check avoids unnecessary API call to RealIDsToAddonIDs when no addons
+	if len(addonDeps) > 0 {
+		addonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, addonDeps...)
+		if err != nil {
+			diags.AddError("failed to get dependencies add-on IDs", err.Error())
+			return res, diags
+		}
+		for _, addonID := range addonIDs {
+			depRes := tmp.AddAppLinkedAddons(ctx, req.Client, req.Organization, res.Application.ID, addonID)
+			if depRes.HasError() {
+				tflog.Error(ctx, "ERROR linking addon: "+addonID, map[string]any{"err": depRes.Error().Error()})
+				diags.AddError("failed to add addon dependency", depRes.Error().Error())
+			}
 		}
 	}
 
