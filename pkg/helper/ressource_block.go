@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
@@ -147,6 +148,9 @@ func map_String(m map[string]any, s, tab, separator string) string {
 `
 		case int:
 			return acc + tab + key + ` = ` + strconv.Itoa(m[key].(int)) + `
+`
+		case time.Time:
+			return acc + tab + key + ` = "` + m[key].(time.Time).Format(time.RFC3339) + `"
 `
 		case bool:
 			return acc + tab + key + ` = ` + strconv.FormatBool(m[key].(bool)) + `
