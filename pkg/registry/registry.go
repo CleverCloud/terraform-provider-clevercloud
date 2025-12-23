@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"go.clever-cloud.com/terraform-provider/pkg/actions"
 	"go.clever-cloud.com/terraform-provider/pkg/datasources/defaultloadbalancer"
+	"go.clever-cloud.com/terraform-provider/pkg/datasources/postgresqlbackup"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/docker"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/dotnet"
@@ -42,6 +43,7 @@ import (
 
 var Datasources = []func() datasource.DataSource{
 	defaultloadbalancer.NewDataSourceDefaultLoadBalancer,
+	postgresqlbackup.NewDataSourcePostgreSQLBackup,
 }
 
 var Resources = []func() resource.Resource{
