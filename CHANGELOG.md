@@ -1,5 +1,17 @@
 # Changelog
 
+## [1.9.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.8.0...v1.9.0) (2025-12-23)
+
+
+### Features
+
+* **applications:** support app-to-app dependencies ([8e20061](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/8e20061eba1651fbb931000d8673230efb945f0c))
+
+
+### Bug Fixes
+
+* **application:** read dependencies from API in Read flow ([1d34b78](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1d34b78cecbc3e569dbbec0b801ddc057a196a4f))
+
 ## [1.8.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.7.1...v1.8.0) (2025-12-19)
 
 
