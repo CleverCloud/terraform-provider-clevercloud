@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -85,6 +86,21 @@ func (p PostgreSQL) Uri() string {
 type PostgreSQLFeature struct {
 	Name    string `json:"name"`
 	Enabled bool   `json:"enabled"`
+}
+
+type PostgreSQLBackup struct {
+	BackupID     string    `json:"backup_id"`
+	EntityID     string    `json:"entity_id"`
+	Status       string    `json:"status"`
+	CreationDate time.Time `json:"creation_date"`
+	DeleteDate   time.Time `json:"delete_at"`
+	Filename     string    `json:"filename"`
+	DownloadURL  string    `json:"download_url"`
+}
+
+func GetPostgreSQLBackups(ctx context.Context, cc *client.Client, organisationID, postgresqlID string) client.Response[[]PostgreSQLBackup] {
+	path := fmt.Sprintf("/v2/backups/%s/%s", organisationID, postgresqlID)
+	return client.Get[[]PostgreSQLBackup](ctx, cc, path)
 }
 
 type MySQL struct {

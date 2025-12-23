@@ -2,6 +2,7 @@ package defaultloadbalancer
 
 import (
 	"context"
+	_ "embed"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
@@ -15,9 +16,13 @@ type DefaultLoadBalancer struct {
 	Servers       types.List   `tfsdk:"servers"`
 }
 
+//go:embed doc.md
+var loadbalancerDoc string
+
 func (d *DataSourceDefaultLoadBalancer) Schema(ctx context.Context, req datasource.SchemaRequest, resp *datasource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "Fetches information about the default load balancer for a Clever Cloud application",
+		Description:         "Fetches information about the default load balancer for a Clever Cloud application",
+		MarkdownDescription: loadbalancerDoc,
 		Attributes: map[string]schema.Attribute{
 			"application_id": schema.StringAttribute{
 				Required:    true,
