@@ -60,15 +60,9 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	}
 	res.Application.Vhosts = *vhostsRes.Payload()
 
-	// Dependencies - sync using Set.Difference pattern (add new, remove old)
-	// TODO(#322): support app-to-app dependencies
-	dependenciesWithAddonIDs, err := tmp.RealIDsToAddonIDs(ctx, req.Client, req.Organization, req.Dependencies...)
-	if err != nil {
-		diags.AddError("failed to get dependencies add-on IDs", err.Error())
-		return res, diags
-	}
-
-	SyncDependencies(ctx, req.Client, req.Organization, res.Application.ID, dependenciesWithAddonIDs, &diags)
+	// Dependencies - sync both app and addon dependencies
+	// see: https://www.clever.cloud/developers/doc/administrate/service-dependencies/
+	SyncDependencies(ctx, req.Client, req.Organization, res.Application.ID, req.Dependencies, &diags)
 	if diags.HasError() {
 		return res, diags
 	}

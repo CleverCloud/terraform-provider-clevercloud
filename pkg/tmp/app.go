@@ -464,3 +464,21 @@ func UpdateExposedEnv(ctx context.Context, cc *client.Client, organisationID, ap
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/exposed_env", organisationID, applicationID)
 	return client.Put[UpdateExposedEnvRes](ctx, cc, path, exposedEnvs)
 }
+
+// App-to-app dependencies use a different endpoint than addon dependencies
+// See: https://www.clever.cloud/developers/doc/administrate/service-dependencies/
+
+func AddAppDependency(ctx context.Context, cc *client.Client, organisationID, applicationID, dependencyAppID string) client.Response[client.Nothing] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/dependencies/%s", organisationID, applicationID, dependencyAppID)
+	return client.Put[client.Nothing](ctx, cc, path, nil)
+}
+
+func GetAppDependencies(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[[]AppResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/dependencies", organisationID, applicationID)
+	return client.Get[[]AppResponse](ctx, cc, path)
+}
+
+func RemoveAppDependency(ctx context.Context, cc *client.Client, organisationID, applicationID, dependencyAppID string) client.Response[client.Nothing] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/dependencies/%s", organisationID, applicationID, dependencyAppID)
+	return client.Delete[client.Nothing](ctx, cc, path)
+}
