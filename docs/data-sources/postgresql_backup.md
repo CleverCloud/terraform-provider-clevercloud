@@ -23,6 +23,6 @@ Retrieves information about a specific PostgreSQL backup from Clever Cloud.
 ### Read-Only
 
 - `creation_date` (String) The ISO8601 timestamp when the backup was created
-- `delete_at` (String) The ISO8601 timestamp when the backup will be deleted
+- `deletion_date` (String) The ISO8601 timestamp when the backup will be deleted
 - `download_url` (String) The signed S3 URL to download the backup archive. Note: This URL expires after 2 hours. Retrieve fresh datasource before downloading.
 - `id` (String) The backup UUID
