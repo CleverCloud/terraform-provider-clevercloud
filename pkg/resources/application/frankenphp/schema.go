@@ -63,10 +63,8 @@ func (fp *FrankenPHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[st
 	return env
 }
 
-func (fp *FrankenPHP) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
-	if val, ok := env["CC_PHP_DEV_DEPENDENCIES"]; ok && val == "install" {
-		fp.DevDependencies = pkg.FromBool(true)
-	}
+func (fp *FrankenPHP) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
+	pkg.SetBoolIf(&fp.DevDependencies, env.Get("CC_PHP_DEV_DEPENDENCIES"), "install")
 }
 
 func (fp *FrankenPHP) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

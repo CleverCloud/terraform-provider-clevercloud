@@ -206,40 +206,16 @@ func (p *Docker) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
-func (p *Docker) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
-	if val, ok := env["APP_FOLDER"]; ok {
-		p.AppFolder = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_DOCKERFILE"]; ok {
-		p.Dockerfile = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_DOCKER_EXPOSED_HTTP_PORT"]; ok {
-		if port, err := strconv.ParseInt(val, 10, 64); err == nil {
-			p.ContainerPort = pkg.FromI(port)
-		}
-	}
-	if val, ok := env["CC_DOCKER_EXPOSED_TCP_PORT"]; ok {
-		if port, err := strconv.ParseInt(val, 10, 64); err == nil {
-			p.ContainerPortTCP = pkg.FromI(port)
-		}
-	}
-	if val, ok := env["CC_DOCKER_FIXED_CIDR_V6"]; ok {
-		p.IPv6Cidr = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_DOCKER_LOGIN_SERVER"]; ok {
-		p.RegistryURL = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_DOCKER_LOGIN_USERNAME"]; ok {
-		p.RegistryUser = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_DOCKER_LOGIN_PASSWORD"]; ok {
-		p.RegistryPassword = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_MOUNT_DOCKER_SOCKET"]; ok {
-		if mount, err := strconv.ParseBool(val); err == nil {
-			p.DaemonSocketMount = pkg.FromBool(mount)
-		}
-	}
+func (p *Docker) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
+	p.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
+	p.Dockerfile = pkg.FromStrPtr(env.Get("CC_DOCKERFILE"))
+	p.ContainerPort = pkg.FromIntPtr(env.Get("CC_DOCKER_EXPOSED_HTTP_PORT"))
+	p.ContainerPortTCP = pkg.FromIntPtr(env.Get("CC_DOCKER_EXPOSED_TCP_PORT"))
+	p.IPv6Cidr = pkg.FromStrPtr(env.Get("CC_DOCKER_FIXED_CIDR_V6"))
+	p.RegistryURL = pkg.FromStrPtr(env.Get("CC_DOCKER_LOGIN_SERVER"))
+	p.RegistryUser = pkg.FromStrPtr(env.Get("CC_DOCKER_LOGIN_USERNAME"))
+	p.RegistryPassword = pkg.FromStrPtr(env.Get("CC_DOCKER_LOGIN_PASSWORD"))
+	p.DaemonSocketMount = pkg.FromBoolPtr(env.Get("CC_MOUNT_DOCKER_SOCKET"))
 }
 
 func (p *Docker) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

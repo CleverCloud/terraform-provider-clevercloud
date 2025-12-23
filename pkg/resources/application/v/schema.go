@@ -70,13 +70,9 @@ func (vapp V) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (vapp *V) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
-	if val, ok := env["CC_V_BINARY"]; ok {
-		vapp.Binary = pkg.FromStr(val)
-	}
-	if val, ok := env["ENVIRONMENT"]; ok && val == "development" {
-		vapp.DevelopmentBuild = pkg.FromBool(true)
-	}
+func (vapp *V) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
+	vapp.Binary = pkg.FromStrPtr(env.Get("CC_V_BINARY"))
+	pkg.SetBoolIf(&vapp.DevelopmentBuild, env.Get("ENVIRONMENT"), "development")
 }
 
 func (vapp V) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

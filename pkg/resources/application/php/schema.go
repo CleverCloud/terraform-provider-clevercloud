@@ -121,22 +121,12 @@ func (p *PHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (p *PHP) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
-	if val, ok := env["APP_FOLDER"]; ok {
-		p.AppFolder = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_WEBROOT"]; ok {
-		p.WebRoot = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_PHP_VERSION"]; ok {
-		p.PHPVersion = pkg.FromStr(val)
-	}
-	if val, ok := env["CC_PHP_DEV_DEPENDENCIES"]; ok && val == "install" {
-		p.DevDependencies = pkg.FromBool(true)
-	}
-	if val, ok := env["SESSION_TYPE"]; ok && val == "redis" {
-		p.RedisSessions = pkg.FromBool(true)
-	}
+func (p *PHP) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
+	p.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
+	p.WebRoot = pkg.FromStrPtr(env.Get("CC_WEBROOT"))
+	p.PHPVersion = pkg.FromStrPtr(env.Get("CC_PHP_VERSION"))
+	pkg.SetBoolIf(&p.DevDependencies, env.Get("CC_PHP_DEV_DEPENDENCIES"), "install")
+	pkg.SetBoolIf(&p.RedisSessions, env.Get("SESSION_TYPE"), "redis")
 }
 
 func (p *PHP) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

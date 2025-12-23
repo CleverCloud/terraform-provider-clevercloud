@@ -5,6 +5,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -23,7 +24,7 @@ type RuntimePlan interface {
 	ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string
 	ToDeployment(auth *http.BasicAuth) *Deployment
 	GetRuntimePtr() *Runtime
-	FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics)
+	FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics)
 }
 
 // AppResponseProvider abstracts access to the underlying AppResponse for response mapping

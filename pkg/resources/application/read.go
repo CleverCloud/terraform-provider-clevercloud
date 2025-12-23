@@ -29,11 +29,11 @@ func (res *ReadAppRes) GetBuildFlavor() types.String {
 	return types.StringValue(res.App.BuildFlavor.Name)
 }
 
-func (r ReadAppRes) EnvAsMap() map[string]string {
+func (r ReadAppRes) EnvAsMap() pkg.EnvMap {
 	return pkg.Reduce(
 		r.Env,
-		map[string]string{},
-		func(acc map[string]string, entry tmp.Env) map[string]string {
+		pkg.EnvMap{},
+		func(acc pkg.EnvMap, entry tmp.Env) pkg.EnvMap {
 			acc[entry.Name] = entry.Value
 			return acc
 		})

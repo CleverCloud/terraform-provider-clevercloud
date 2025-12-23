@@ -62,10 +62,8 @@ func (g Go) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]strin
 	return env
 }
 
-func (g *Go) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
-	if val, ok := env["APP_FOLDER"]; ok {
-		g.AppFolder = pkg.FromStr(val)
-	}
+func (g *Go) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
+	g.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
 }
 
 func (g Go) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

@@ -64,10 +64,8 @@ func (plan *Static) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[stri
 	return env
 }
 
-func (static *Static) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
-	if val, ok := env["APP_FOLDER"]; ok {
-		static.AppFolder = pkg.FromStr(val)
-	}
+func (static *Static) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
+	static.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
 }
 
 func (java *Static) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

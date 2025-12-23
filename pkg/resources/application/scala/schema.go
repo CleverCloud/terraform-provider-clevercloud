@@ -63,10 +63,8 @@ func (plan *Scala) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (scala *Scala) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
-	if val, ok := env["APP_FOLDER"]; ok {
-		scala.AppFolder = pkg.FromStr(val)
-	}
+func (scala *Scala) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
+	scala.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
 }
 
 func (java *Scala) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

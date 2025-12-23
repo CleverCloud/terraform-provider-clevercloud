@@ -61,10 +61,8 @@ func (plan *Play2) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (play2 *Play2) FromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
-	if val, ok := env["APP_FOLDER"]; ok {
-		play2.AppFolder = pkg.FromStr(val)
-	}
+func (play2 *Play2) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
+	play2.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
 }
 
 func (play2 *Play2) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
