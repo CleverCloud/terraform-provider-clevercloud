@@ -1170,8 +1170,8 @@ go.abhg.dev/goldmark/frontmatter v0.2.0 h1:P8kPG0YkL12+aYk2yU3xHv4tcXzeVnN+gU0tJ
 go.abhg.dev/goldmark/frontmatter v0.2.0/go.mod h1:XqrEkZuM57djk7zrlRUB02x8I5J0px76YjkOzhB4YlU=
 go.clever-cloud.dev/client v0.1.4 h1:WnDBRgFHwxNxj+NCzEUFakBrPBVhWJBANzm/Yd8smJY=
 go.clever-cloud.dev/client v0.1.4/go.mod h1:FbR9HINkEq3ilZoKOTWOLgtv5JdNZEggW8cGuRjtODc=
-go.clever-cloud.dev/sdk v0.0.5 h1:xoLR3/limOTZYhHP3q242BQmi7ha0qb1zU2w5FWDqms=
-go.clever-cloud.dev/sdk v0.0.5/go.mod h1:wTbSUEQLKgbBohz9OMya7bcjBrdoutdaC5JQM7LrXPE=
+go.clever-cloud.dev/sdk v0.1.2-rc1 h1:Djl0tP2UkagQw0IBmFR8TVFMCg1fg95Vn1+7Onwzu+I=
+go.clever-cloud.dev/sdk v0.1.2-rc1/go.mod h1:wTbSUEQLKgbBohz9OMya7bcjBrdoutdaC5JQM7LrXPE=
 go.einride.tech/aip v0.67.1/go.mod h1:ZGX4/zKw8dcgzdLsrvpOOGxfxI2QSk12SlP7d6c0/XI=
 go.einride.tech/aip v0.68.0/go.mod h1:7y9FF8VtPWqpxuAxl0KQWqaULxW4zFIesD6zF5RIHHg=
 go.opencensus.io v0.21.0/go.mod h1:mSImk1erAIZhrmZN+AvHh14ztQfjbGwt4TtuofqLduU=

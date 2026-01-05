@@ -11,12 +11,11 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // Create a new resource
 func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	tflog.Debug(ctx, "ResourcePulsar.Create()", map[string]any{"request": fmt.Sprintf("%+v", req.Plan)})
-
 	plan := helper.PlanFrom[Pulsar](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -54,7 +53,14 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
-	pulsarRes := tmp.GetPulsar(ctx, r.Client(), r.Organization(), addon.RealID)
+	pulsarRes := r.
+		SDK().
+		V4().
+		AddonProviders().
+		AddonPulsar().
+		Addons().
+		Addonid(addon.RealID).
+		Getpulsar(ctx) //tmp.GetPulsar(ctx, r.Client(), r.Organization(), addon.RealID)
 	if pulsarRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())
 		return
@@ -62,13 +68,20 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 	pulsar := pulsarRes.Payload()
 	readAddon(&plan, pulsar, &resp.Diagnostics)
 
-	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.Client(), pulsar.ClusterID)
+	pulsarClusterRes := r.
+		SDK().
+		V4().
+		AddonProviders().
+		AddonPulsar().
+		Clusters().
+		Clusterid(pulsar.ClusterID).
+		Getpulsarcluster(ctx)
 	if pulsarClusterRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar env", pulsarClusterRes.Error().Error())
-		return
+	} else {
+		pulsarCluster := pulsarClusterRes.Payload()
+		readCluster(&plan, pulsarCluster, &resp.Diagnostics)
 	}
-	pulsarCluster := pulsarClusterRes.Payload()
-	readCluster(&plan, pulsarCluster, &resp.Diagnostics)
 
 	setRetention(ctx, &plan, &resp.Diagnostics)
 
@@ -89,7 +102,14 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	pulsarRes := tmp.GetPulsar(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	pulsarRes := r.
+		SDK().
+		V4().
+		AddonProviders().
+		AddonPulsar().
+		Addons().
+		Addonid(state.ID.ValueString()).
+		Getpulsar(ctx)
 	if pulsarRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())
 		return
@@ -97,13 +117,20 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 	pulsar := pulsarRes.Payload()
 	readAddon(&state, pulsar, &resp.Diagnostics)
 
-	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.Client(), pulsar.ClusterID)
+	pulsarClusterRes := r.
+		SDK().
+		V4().
+		AddonProviders().
+		AddonPulsar().
+		Clusters().
+		Clusterid(pulsar.ClusterID).
+		Getpulsarcluster(ctx)
 	if pulsarClusterRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar env", pulsarClusterRes.Error().Error())
-		return
+	} else {
+		pulsarCluster := pulsarClusterRes.Payload()
+		readCluster(&state, pulsarCluster, &resp.Diagnostics)
 	}
-	pulsarCluster := pulsarClusterRes.Payload()
-	readCluster(&state, pulsarCluster, &resp.Diagnostics)
 
 	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if addonRes.HasError() {
@@ -118,7 +145,7 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
-func readAddon(state *Pulsar, addon *tmp.Pulsar, diags *diag.Diagnostics) {
+func readAddon(state *Pulsar, addon *models.Pulsar, diags *diag.Diagnostics) {
 	if addon == nil {
 		return
 	}
@@ -137,19 +164,19 @@ func readOldAddon(state *Pulsar, addon *tmp.AddonResponse, diags *diag.Diagnosti
 	state.Region = pkg.FromStr(addon.Region)
 }
 
-func readCluster(state *Pulsar, cluster *tmp.PulsarCluster, diags *diag.Diagnostics) {
+func readCluster(state *Pulsar, cluster *models.PulsarCluster, diags *diag.Diagnostics) {
 	if cluster == nil {
 		return
 	}
 
-	if cluster.PulsarTLSPort != 0 {
-		state.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar+ssl://%s:%d", cluster.URL, cluster.PulsarTLSPort))
+	if *cluster.PulsarTLSPort != 0 {
+		state.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar+ssl://%s:%d", cluster.URL, *cluster.PulsarTLSPort))
 	} else {
 		state.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar://%s:%d", cluster.URL, cluster.PulsarPort))
 	}
 
-	if cluster.WebTLSPort != 0 {
-		state.HTTPUrl = pkg.FromStr(fmt.Sprintf("https://%s:%d", cluster.URL, cluster.WebTLSPort))
+	if *cluster.WebTLSPort != 0 {
+		state.HTTPUrl = pkg.FromStr(fmt.Sprintf("https://%s:%d", cluster.URL, *cluster.WebTLSPort))
 	} else {
 		state.HTTPUrl = pkg.FromStr(fmt.Sprintf("http://%s:%d", cluster.URL, cluster.WebPort))
 	}
