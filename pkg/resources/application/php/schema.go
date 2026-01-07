@@ -117,6 +117,7 @@ func (p *PHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 		}
 	})
 	env = pkg.Merge(env, p.Hooks.ToEnv())
+	env = pkg.Merge(env, p.Integrations.ToEnv(ctx, diags))
 
 	return env
 }
@@ -127,6 +128,8 @@ func (p *PHP) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnosti
 	p.PHPVersion = pkg.FromStrPtr(env.Get("CC_PHP_VERSION"))
 	pkg.SetBoolIf(&p.DevDependencies, env.Get("CC_PHP_DEV_DEPENDENCIES"), "install")
 	pkg.SetBoolIf(&p.RedisSessions, env.Get("SESSION_TYPE"), "redis")
+
+	p.Integrations = attributes.FromEnvIntegrations(ctx, env, p.Integrations, diags)
 }
 
 func (p *PHP) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

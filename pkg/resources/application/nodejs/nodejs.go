@@ -58,6 +58,7 @@ func (r *ResourceNodeJS) UpgradeState(ctx context.Context) map[int64]resource.St
 						Dependencies:       old.Dependencies,
 						Deployment:         old.Deployment,
 						Hooks:              old.Hooks,
+						Integrations:       nil,
 						AppFolder:          old.AppFolder,
 						Environment:        old.Environment,
 						Networkgroups:      resources.NullNetworkgroupConfig,

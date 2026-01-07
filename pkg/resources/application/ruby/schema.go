@@ -280,6 +280,7 @@ func (ruby Ruby) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	pkg.IfIsSetStr(ruby.StaticURLPrefix, func(s string) { env["STATIC_URL_PREFIX"] = s })
 	pkg.IfIsSetStr(ruby.StaticWebroot, func(s string) { env["STATIC_WEBROOT"] = s })
 	env = pkg.Merge(env, ruby.Hooks.ToEnv())
+	env = pkg.Merge(env, ruby.Integrations.ToEnv(ctx, diags))
 
 	return env
 }
@@ -302,6 +303,8 @@ func (ruby *Ruby) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagn
 	ruby.StaticFilesPath = pkg.FromStrPtr(env.Get("STATIC_FILES_PATH"))
 	ruby.StaticURLPrefix = pkg.FromStrPtr(env.Get("STATIC_URL_PREFIX"))
 	ruby.StaticWebroot = pkg.FromStrPtr(env.Get("STATIC_WEBROOT"))
+
+	ruby.Integrations = attributes.FromEnvIntegrations(ctx, env, ruby.Integrations, diags)
 }
 
 func (ruby Ruby) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

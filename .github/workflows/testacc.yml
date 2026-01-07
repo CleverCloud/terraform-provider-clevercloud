@@ -34,7 +34,7 @@ jobs:
       with:
         go-version: '1.24'
     - name: Acceptance Tests
-      run: go test ./pkg/resources/${{ matrix.resource }}/... -v -timeout 12m ./...
+      run: go test ./pkg/resources/${{ matrix.resource }}/... -v -timeout 15m ./...
       env:
         TF_ACC: 1
         CC_OAUTH_TOKEN: ${{ secrets.CC_OAUTH_TOKEN }}

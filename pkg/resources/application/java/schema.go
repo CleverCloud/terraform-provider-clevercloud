@@ -73,12 +73,16 @@ func (plan *Java) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string
 
 	pkg.IfIsSetStr(plan.AppFolder, func(s string) { env["APP_FOLDER"] = s })
 	pkg.IfIsSetStr(plan.JavaVersion, func(s string) { env["CC_JAVA_VERSION"] = s })
+	env = pkg.Merge(env, plan.Hooks.ToEnv())
+	env = pkg.Merge(env, plan.Integrations.ToEnv(ctx, diags))
 	return env
 }
 
 func (java *Java) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
 	java.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
 	java.JavaVersion = pkg.FromStrPtr(env.Get("CC_JAVA_VERSION"))
+
+	java.Integrations = attributes.FromEnvIntegrations(ctx, env, java.Integrations, diags)
 }
 
 func (java *Java) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

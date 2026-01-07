@@ -60,11 +60,15 @@ func (plan *Scala) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	maps.Copy(env, customEnv)
 
 	pkg.IfIsSetStr(plan.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	env = pkg.Merge(env, plan.Hooks.ToEnv())
+	env = pkg.Merge(env, plan.Integrations.ToEnv(ctx, diags))
 	return env
 }
 
 func (scala *Scala) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
 	scala.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
+
+	scala.Integrations = attributes.FromEnvIntegrations(ctx, env, scala.Integrations, diags)
 }
 
 func (java *Scala) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
