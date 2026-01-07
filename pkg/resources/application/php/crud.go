@@ -87,23 +87,6 @@ func (r *ResourcePHP) Update(ctx context.Context, req resource.UpdateRequest, re
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
 
-// Delete resource
-func (r *ResourcePHP) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	tflog.Debug(ctx, "ResourcePHP.Delete()")
-
-	state := helper.StateFrom[PHP](ctx, req.State, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(application.Delete(ctx, r, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.State.RemoveResource(ctx)
-}
-
 func (r *ResourcePHP) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
 	if req.Plan.Raw.IsNull() {
 		return

@@ -13,7 +13,7 @@ import (
 )
 
 type ResourceDocker struct {
-	helper.Configurer
+	application.Configurer[*Docker]
 }
 
 func NewResourceDocker() resource.Resource {

@@ -12,7 +12,7 @@ import (
 )
 
 type ResourceGo struct {
-	helper.Configurer
+	application.Configurer[*Go]
 }
 
 func NewResourceGo() resource.Resource {

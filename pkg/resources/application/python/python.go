@@ -11,7 +11,7 @@ import (
 )
 
 type ResourcePython struct {
-	helper.Configurer
+	application.Configurer[*Python]
 }
 
 func NewResourcePython() resource.Resource {

@@ -12,7 +12,7 @@ import (
 )
 
 type ResourcePHP struct {
-	helper.Configurer
+	application.Configurer[*PHP]
 }
 
 func NewResourcePHP() resource.Resource {

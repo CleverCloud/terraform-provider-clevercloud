@@ -87,23 +87,6 @@ func (r *ResourceRust) Update(ctx context.Context, req resource.UpdateRequest, r
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
-// Delete resource
-func (r *ResourceRust) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	tflog.Debug(ctx, "ResourceRust.Delete()")
-
-	state := helper.StateFrom[Rust](ctx, req.State, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(application.Delete(ctx, r, &state)...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.State.RemoveResource(ctx)
-}
-
 func (r *ResourceRust) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
 	if req.Plan.Raw.IsNull() {
 		return

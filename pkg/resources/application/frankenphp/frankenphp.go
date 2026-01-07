@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 )
 
 type ResourceFrankenPHP struct {
-	helper.Configurer
+	application.Configurer[*FrankenPHP]
 }
 
 func NewResourceFrankenPHP() resource.Resource {
