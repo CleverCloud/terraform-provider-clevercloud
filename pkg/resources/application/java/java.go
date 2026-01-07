@@ -12,7 +12,7 @@ import (
 )
 
 type ResourceJava struct {
-	helper.Configurer
+	application.Configurer[*Java]
 	profile string
 }
 

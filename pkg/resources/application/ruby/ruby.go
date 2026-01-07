@@ -12,7 +12,7 @@ import (
 )
 
 type ResourceRuby struct {
-	helper.Configurer
+	application.Configurer[*Ruby]
 }
 
 func NewResourceRuby() resource.Resource {

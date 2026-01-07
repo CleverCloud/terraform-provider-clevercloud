@@ -12,7 +12,7 @@ import (
 )
 
 type ResourcePlay2 struct {
-	helper.Configurer
+	application.Configurer[*Play2]
 }
 
 func NewResourcePlay2() func() resource.Resource {

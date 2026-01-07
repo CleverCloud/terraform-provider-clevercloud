@@ -4,11 +4,11 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 )
 
 type ResourceDotnet struct {
-	helper.Configurer
+	application.Configurer[*Dotnet]
 }
 
 func NewResourceDotnet() resource.Resource {

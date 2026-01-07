@@ -12,7 +12,7 @@ import (
 )
 
 type ResourceNodeJS struct {
-	helper.Configurer
+	application.Configurer[*NodeJS]
 }
 
 func NewResourceNodeJS() resource.Resource {

@@ -12,7 +12,7 @@ import (
 )
 
 type ResourceScala struct {
-	helper.Configurer
+	application.Configurer[*Scala]
 }
 
 func NewResourceScala() func() resource.Resource {

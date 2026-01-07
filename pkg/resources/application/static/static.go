@@ -12,7 +12,7 @@ import (
 )
 
 type ResourceStatic struct {
-	helper.Configurer
+	application.Configurer[*Static]
 }
 
 func NewResourceStatic() func() resource.Resource {
