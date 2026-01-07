@@ -88,6 +88,7 @@ func (py Python) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	pkg.IfIsSetStr(py.PipRequirements, func(pipReqFile string) { env["CC_PIP_REQUIREMENTS_FILE"] = pipReqFile })
 
 	env = pkg.Merge(env, py.Hooks.ToEnv())
+	env = pkg.Merge(env, py.Integrations.ToEnv(ctx, diags))
 	return env
 }
 
@@ -95,6 +96,8 @@ func (py *Python) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagn
 	py.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
 	py.PythonVersion = pkg.FromStrPtr(env.Get("CC_PYTHON_VERSION"))
 	py.PipRequirements = pkg.FromStrPtr(env.Get("CC_PIP_REQUIREMENTS_FILE"))
+
+	py.Integrations = attributes.FromEnvIntegrations(ctx, env, py.Integrations, diags)
 }
 
 func (py Python) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

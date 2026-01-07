@@ -63,6 +63,7 @@ func (r Rust) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 
 	pkg.IfIsSetStr(r.AppFolder, func(s string) { env["APP_FOLDER"] = s })
 	env = pkg.Merge(env, r.Hooks.ToEnv())
+	env = pkg.Merge(env, r.Integrations.ToEnv(ctx, diags))
 
 	// Handle Rust features
 	features := r.FeaturesAsStrings(ctx, diags)
@@ -76,6 +77,8 @@ func (r Rust) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 func (r *Rust) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
 	r.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
 	r.Features = pkg.FromSetSplit(env.Get(CC_RUST_FEATURES), ",", diags)
+
+	r.Integrations = attributes.FromEnvIntegrations(ctx, env, r.Integrations, diags)
 }
 
 func (r Rust) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

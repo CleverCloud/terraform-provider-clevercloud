@@ -202,6 +202,7 @@ func (p *Docker) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	pkg.IfIsSetB(p.DaemonSocketMount, func(e bool) { env["CC_MOUNT_DOCKER_SOCKET"] = strconv.FormatBool(e) })
 
 	env = pkg.Merge(env, p.Hooks.ToEnv())
+	env = pkg.Merge(env, p.Integrations.ToEnv(ctx, diags))
 
 	return env
 }
@@ -216,6 +217,8 @@ func (p *Docker) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagno
 	p.RegistryUser = pkg.FromStrPtr(env.Get("CC_DOCKER_LOGIN_USERNAME"))
 	p.RegistryPassword = pkg.FromStrPtr(env.Get("CC_DOCKER_LOGIN_PASSWORD"))
 	p.DaemonSocketMount = pkg.FromBoolPtr(env.Get("CC_MOUNT_DOCKER_SOCKET"))
+
+	p.Integrations = attributes.FromEnvIntegrations(ctx, env, p.Integrations, diags)
 }
 
 func (p *Docker) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

@@ -1,8 +1,12 @@
 package pkg
 
 import (
+	"context"
+
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 func IfIsSetStr(v types.String, fn func(s string)) {
@@ -21,6 +25,21 @@ func IfIsSetI(v types.Int64, fn func(i int64)) {
 	if !v.IsNull() && !v.IsUnknown() {
 		fn(v.ValueInt64())
 	}
+}
+
+func IfSetObject[T any](ctx context.Context, diags *diag.Diagnostics, o types.Object, fn func(T)) {
+	if o.IsNull() || o.IsUnknown() {
+		return
+	}
+
+	var t T
+	d := o.As(ctx, &t, basetypes.ObjectAsOptions{})
+	diags.Append(d...)
+	if d.HasError() {
+		return
+	}
+
+	fn(t)
 }
 
 func AtLeastOneSet(v ...attr.Value) bool {

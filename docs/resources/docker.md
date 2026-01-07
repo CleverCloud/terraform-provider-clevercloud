@@ -59,6 +59,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
+- `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
 - `ipv6_cidr` (String) Activate the support of IPv6 with an IPv6 subnet int the docker daemon
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
@@ -94,6 +95,81 @@ Optional:
 - `pre_run` (String) [CC_PRE_RUN_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#pre-run)
 - `run_failed` (String) [CC_RUN_FAILED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)
 - `run_succeed` (String) [CC_RUN_SUCCEEDED_HOOK](https://www.clever.cloud/developers/doc/develop/build-hooks/#run-successfail)
+
+
+<a id="nestedatt--integrations"></a>
+### Nested Schema for `integrations`
+
+Optional:
+
+- `clamav` (Attributes) ClamAV antivirus integration for file scanning (see [below for nested schema](#nestedatt--integrations--clamav))
+- `newrelic` (Attributes) New Relic APM integration for application performance monitoring (see [below for nested schema](#nestedatt--integrations--newrelic))
+- `pgpoolii` (Attributes) PgPool-II configuration. [Learn more](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#pgpool-ii) (see [below for nested schema](#nestedatt--integrations--pgpoolii))
+- `prometheus` (Attributes) Prometheus metrics integration. See [Prometheus docs](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#prometheus) (see [below for nested schema](#nestedatt--integrations--prometheus))
+- `redirectionio` (Attributes) Redirection.io integration for URL redirection and traffic management. See [Redirection.io docs](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#redirectionio) (see [below for nested schema](#nestedatt--integrations--redirectionio))
+- `varnish` (Attributes) Varnish cache integration for HTTP acceleration. See [Varnish docs](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#varnish) (see [below for nested schema](#nestedatt--integrations--varnish))
+
+<a id="nestedatt--integrations--clamav"></a>
+### Nested Schema for `integrations.clamav`
+
+Optional:
+
+- `enabled` (Boolean) Enable ClamAV antivirus ([CC_CLAMAV](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#clamav))
+
+
+<a id="nestedatt--integrations--newrelic"></a>
+### Nested Schema for `integrations.newrelic`
+
+Required:
+
+- `license_key` (String, Sensitive) Your New Relic license key ([NEW_RELIC_LICENSE_KEY](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#new-relic))
+
+Optional:
+
+- `app_name` (String) Application name in New Relic ([NEW_RELIC_APP_NAME](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#new-relic))
+
+
+<a id="nestedatt--integrations--pgpoolii"></a>
+### Nested Schema for `integrations.pgpoolii`
+
+Optional:
+
+- `enabled` (Boolean) Enable PgPool-II connection pooler ([CC_ENABLE_PGPOOL](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#pgpool-ii))
+
+
+<a id="nestedatt--integrations--prometheus"></a>
+### Nested Schema for `integrations.prometheus`
+
+Optional:
+
+- `password` (String, Sensitive) Define the password for the basic auth of the Prometheus endpoint ([CC_METRICS_PROMETHEUS_PASSWORD](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#prometheus))
+- `path` (String) Define the path on which the Prometheus endpoint is available ([CC_METRICS_PROMETHEUS_PATH](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#prometheus)). Default: `/metrics`
+- `port` (Number) Define the port on which the Prometheus endpoint is available ([CC_METRICS_PROMETHEUS_PORT](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#prometheus)). Default: `9100`
+- `response_timeout` (Number) Define the timeout in seconds to collect the application metrics. This value must be below 60 seconds ([CC_METRICS_PROMETHEUS_RESPONSE_TIMEOUT](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#prometheus)). Default: `3`
+- `user` (String) Define the user for the basic auth of the Prometheus endpoint ([CC_METRICS_PROMETHEUS_USER](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#prometheus))
+
+
+<a id="nestedatt--integrations--redirectionio"></a>
+### Nested Schema for `integrations.redirectionio`
+
+Required:
+
+- `project_key` (String, Sensitive) Your Redirection.io project key ([CC_REDIRECTIONIO_PROJECT_KEY](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#redirectionio))
+
+Optional:
+
+- `backend_port` (Number) Backend application port ([CC_REDIRECTIONIO_BACKEND_PORT](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#redirectionio))
+- `instance_name` (String) Custom instance name for the Redirection.io agent ([CC_REDIRECTIONIO_INSTANCE_NAME](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#redirectionio))
+
+
+<a id="nestedatt--integrations--varnish"></a>
+### Nested Schema for `integrations.varnish`
+
+Optional:
+
+- `config_file` (String) Path to the Varnish configuration file, relative to your application root ([CC_VARNISH_FILE](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#varnish)). Default: `/clevercloud/varnish.vcl`
+- `storage_size` (String) Configure the size of the Varnish cache ([CC_VARNISH_STORAGE_SIZE](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#varnish)). Default: `1G`
+
 
 
 <a id="nestedatt--networkgroups"></a>

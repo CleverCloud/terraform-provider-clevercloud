@@ -16,13 +16,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 )
 
 // runtimeCommon defines common schema attributes for all application runtimes
 var runtimeCommon = map[string]schema.Attribute{
-	// client provided
-
 	"name": schema.StringAttribute{
 		Required:            true,
 		MarkdownDescription: "Application name",
@@ -189,6 +188,7 @@ var runtimeCommon = map[string]schema.Attribute{
 			},
 		},
 	},
+	"integrations": attributes.IntegrationsAttribute,
 }
 
 // runtimeCommonV0 defines common schema attributes for schema version 0 (for state upgrades)

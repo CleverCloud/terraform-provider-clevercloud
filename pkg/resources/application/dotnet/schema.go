@@ -69,6 +69,7 @@ func (dotnetapp Dotnet) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[
 	pkg.IfIsSetStr(dotnetapp.DotnetVersion, func(s string) { env["CC_DOTNET_VERSION"] = s })
 
 	env = pkg.Merge(env, dotnetapp.Hooks.ToEnv())
+	env = pkg.Merge(env, dotnetapp.Integrations.ToEnv(ctx, diags))
 
 	return env
 }
@@ -78,6 +79,8 @@ func (dotnetapp *Dotnet) FromEnv(ctx context.Context, env pkg.EnvMap, diags *dia
 	dotnetapp.DotnetProj = pkg.FromStrPtr(env.Get("CC_DOTNET_PROJ"))
 	dotnetapp.DotnetTFM = pkg.FromStrPtr(env.Get("CC_DOTNET_TFM"))
 	dotnetapp.DotnetVersion = pkg.FromStrPtr(env.Get("CC_DOTNET_VERSION"))
+
+	dotnetapp.Integrations = attributes.FromEnvIntegrations(ctx, env, dotnetapp.Integrations, diags)
 }
 
 func (dotnetapp Dotnet) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

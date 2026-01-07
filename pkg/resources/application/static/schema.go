@@ -61,11 +61,15 @@ func (plan *Static) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[stri
 	}
 
 	pkg.IfIsSetStr(plan.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	env = pkg.Merge(env, plan.Hooks.ToEnv())
+	env = pkg.Merge(env, plan.Integrations.ToEnv(ctx, diags))
 	return env
 }
 
 func (static *Static) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
 	static.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
+
+	static.Integrations = attributes.FromEnvIntegrations(ctx, env, static.Integrations, diags)
 }
 
 func (java *Static) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

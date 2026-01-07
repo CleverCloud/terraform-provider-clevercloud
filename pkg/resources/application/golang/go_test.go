@@ -189,7 +189,8 @@ func TestAccGo_basic(t *testing.T) {
 }
 
 // waitForDeploymentComplete waits for the most recent deployment to reach a terminal state (OK or FAIL)
-func waitForDeploymentComplete(ctx context.Context, cc *client.Client, orgID, appID string) error {
+func waitForDeploymentComplete(t *testing.T, cc *client.Client, orgID, appID string) error {
+	ctx := t.Context()
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
@@ -214,7 +215,7 @@ func waitForDeploymentComplete(ctx context.Context, cc *client.Client, orgID, ap
 			// Check the most recent deployment (first in the list)
 			deploying := false
 			for _, deployment := range deployments {
-				fmt.Printf("\nDEPLOY %s\t%s\n", deployment.UUID, deployment.State)
+				t.Logf("DEPLOY\t%s\t%s", deployment.UUID, deployment.State)
 				if deployment.State != "OK" && deployment.State != "FAIL" {
 					deploying = true
 				}
@@ -354,7 +355,7 @@ func TestAccGo_singleDeploymentOnEnvAndGitChange(t *testing.T) {
 
 					appID = rs.Primary.ID
 
-					if err := waitForDeploymentComplete(ctx, cc, tests.ORGANISATION, appID); err != nil {
+					if err := waitForDeploymentComplete(t, cc, tests.ORGANISATION, appID); err != nil {
 						t.Fatalf("failed waitin for deployment to end: %s", err.Error())
 					}
 
@@ -407,7 +408,7 @@ func TestAccGo_singleDeploymentOnEnvAndGitChange(t *testing.T) {
 					appID := rs.Primary.ID
 
 					time.Sleep(2 * time.Minute) // wait for the next deployment to appear (and unwanted too)
-					if err := waitForDeploymentComplete(ctx, cc, tests.ORGANISATION, appID); err != nil {
+					if err := waitForDeploymentComplete(t, cc, tests.ORGANISATION, appID); err != nil {
 						return fmt.Errorf("failed to wait for deployments to end: %s", err.Error())
 					}
 					// Get new deployment count

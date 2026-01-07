@@ -59,12 +59,15 @@ func (fp *FrankenPHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[st
 		}
 	})
 	env = pkg.Merge(env, fp.Hooks.ToEnv())
+	env = pkg.Merge(env, fp.Integrations.ToEnv(ctx, diags))
 
 	return env
 }
 
 func (fp *FrankenPHP) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
 	pkg.SetBoolIf(&fp.DevDependencies, env.Get("CC_PHP_DEV_DEPENDENCIES"), "install")
+
+	fp.Integrations = attributes.FromEnvIntegrations(ctx, env, fp.Integrations, diags)
 }
 
 func (fp *FrankenPHP) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

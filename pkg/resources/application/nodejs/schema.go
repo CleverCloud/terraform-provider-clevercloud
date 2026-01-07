@@ -128,6 +128,7 @@ func (node NodeJS) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	pkg.IfIsSetStr(node.Registry, func(s string) { env["CC_NPM_REGISTRY"] = s })
 	pkg.IfIsSetStr(node.RegistryToken, func(s string) { env["NPM_TOKEN"] = s })
 	env = pkg.Merge(env, node.Hooks.ToEnv())
+	env = pkg.Merge(env, node.Integrations.ToEnv(ctx, diags))
 
 	return env
 }
@@ -139,6 +140,8 @@ func (node *NodeJS) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Dia
 	node.PackageManager = pkg.FromStrPtr(env.Get("CC_NODE_BUILD_TOOL"))
 	node.Registry = pkg.FromStrPtr(env.Get("CC_NPM_REGISTRY"))
 	node.RegistryToken = pkg.FromStrPtr(env.Get("NPM_TOKEN"))
+
+	node.Integrations = attributes.FromEnvIntegrations(ctx, env, node.Integrations, diags)
 }
 
 func (node NodeJS) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

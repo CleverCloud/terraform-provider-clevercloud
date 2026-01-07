@@ -66,6 +66,7 @@ func (vapp V) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	})
 
 	env = pkg.Merge(env, vapp.Hooks.ToEnv())
+	env = pkg.Merge(env, vapp.Integrations.ToEnv(ctx, diags))
 
 	return env
 }
@@ -73,6 +74,8 @@ func (vapp V) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 func (vapp *V) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
 	vapp.Binary = pkg.FromStrPtr(env.Get("CC_V_BINARY"))
 	pkg.SetBoolIf(&vapp.DevelopmentBuild, env.Get("ENVIRONMENT"), "development")
+
+	vapp.Integrations = attributes.FromEnvIntegrations(ctx, env, vapp.Integrations, diags)
 }
 
 func (vapp V) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {

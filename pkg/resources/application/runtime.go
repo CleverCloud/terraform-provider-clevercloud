@@ -46,9 +46,10 @@ type Runtime struct {
 	VHosts           types.Set              `tfsdk:"vhosts"`
 	DeployURL        types.String           `tfsdk:"deploy_url"`
 	Dependencies     types.Set              `tfsdk:"dependencies"`
-	Networkgroups    types.Set              `tfsdk:"networkgroups"`
-	Deployment       *attributes.Deployment `tfsdk:"deployment"`
-	Hooks            *attributes.Hooks      `tfsdk:"hooks"`
+	Networkgroups    types.Set                 `tfsdk:"networkgroups"`
+	Deployment       *attributes.Deployment    `tfsdk:"deployment"`
+	Hooks            *attributes.Hooks         `tfsdk:"hooks"`
+	Integrations     *attributes.Integrations  `tfsdk:"integrations"`
 
 	// Env
 	AppFolder          types.String `tfsdk:"app_folder"`

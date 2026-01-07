@@ -58,12 +58,15 @@ func (g Go) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]strin
 
 	pkg.IfIsSetStr(g.AppFolder, func(s string) { env["APP_FOLDER"] = s })
 	env = pkg.Merge(env, g.Hooks.ToEnv())
+	env = pkg.Merge(env, g.Integrations.ToEnv(ctx, diags))
 
 	return env
 }
 
 func (g *Go) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
 	g.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
+
+	g.Integrations = attributes.FromEnvIntegrations(ctx, env, g.Integrations, diags)
 }
 
 func (g Go) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
