@@ -52,6 +52,7 @@ var Resources = []func() resource.Resource{
 	cellar.NewResourceCellar,
 	fsbucket.NewResourceFSBucket,
 	java.NewResourceJava("war"),
+	java.NewResourceJava("jar"),
 	materiakv.NewResourceMateriaKV,
 	metabase.NewResourceMetabase,
 	mongodb.NewResourceMongoDB,

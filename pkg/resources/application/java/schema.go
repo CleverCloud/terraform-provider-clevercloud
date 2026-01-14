@@ -78,27 +78,27 @@ func (plan *Java) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string
 	return env
 }
 
-func (java *Java) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
-	java.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
-	java.JavaVersion = pkg.FromStrPtr(env.Get("CC_JAVA_VERSION"))
+func (plan *Java) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
+	plan.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
+	plan.JavaVersion = pkg.FromStrPtr(env.Get("CC_JAVA_VERSION"))
 
-	java.Integrations = attributes.FromEnvIntegrations(ctx, env, java.Integrations, diags)
+	plan.Integrations = attributes.FromEnvIntegrations(ctx, env, plan.Integrations, diags)
 }
 
-func (java *Java) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
-	if java.Deployment == nil || java.Deployment.Repository.IsNull() {
+func (plan *Java) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+	if plan.Deployment == nil || plan.Deployment.Repository.IsNull() {
 		return nil
 	}
 
 	d := &application.Deployment{
-		Repository:    java.Deployment.Repository.ValueString(),
-		Commit:        java.Deployment.Commit.ValueStringPointer(),
+		Repository:    plan.Deployment.Repository.ValueString(),
+		Commit:        plan.Deployment.Commit.ValueStringPointer(),
 		CleverGitAuth: gitAuth,
 	}
 
-	if !java.Deployment.BasicAuthentication.IsNull() && !java.Deployment.BasicAuthentication.IsUnknown() {
+	if !plan.Deployment.BasicAuthentication.IsNull() && !plan.Deployment.BasicAuthentication.IsUnknown() {
 		// Expect validation to be done in the schema valisation step
-		userPass := java.Deployment.BasicAuthentication.ValueString()
+		userPass := plan.Deployment.BasicAuthentication.ValueString()
 		splits := strings.SplitN(userPass, ":", 2)
 		d.Username = &splits[0]
 		d.Password = &splits[1]
