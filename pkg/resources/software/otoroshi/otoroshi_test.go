@@ -19,7 +19,6 @@ import (
 )
 
 func TestAccOtoroshi_basic(t *testing.T) {
-	t.Parallel()
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-otoroshi")
 	rNameEdited := rName + "-edit"

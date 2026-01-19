@@ -269,11 +269,6 @@ type MetabaseNetworkGroup struct {
 	NetworkGroupID string `json:"networkGroupId"`
 }
 
-func CreateMetabase(ctx context.Context, cc *client.Client, organisation string, addon AddonRequest) client.Response[AddonResponse] {
-	path := "/v2/providers/addon-metabase/resources"
-	return client.Post[AddonResponse](ctx, cc, path, addon)
-}
-
 // Use real ID
 func GetMetabase(ctx context.Context, cc *client.Client, metabaseID string) client.Response[Metabase] {
 	path := fmt.Sprintf("/v4/addon-providers/addon-metabase/addons/%s", metabaseID)
@@ -330,12 +325,6 @@ type KeycloakNetworkGroup struct {
 type KeycloakInitialCredentials struct {
 	AdminUsername string `json:"user"`
 	AdminPassword string `json:"password"`
-}
-
-// Use real ID
-func GetKeycloak(ctx context.Context, cc *client.Client, keycloakID string) client.Response[Keycloak] {
-	path := fmt.Sprintf("/v4/addon-providers/addon-keycloak/addons/%s", keycloakID)
-	return client.Get[Keycloak](ctx, cc, path)
 }
 
 type Matomo struct {

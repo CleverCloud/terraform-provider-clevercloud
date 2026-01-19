@@ -11,6 +11,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 type NetworkgroupConfig struct {
@@ -40,6 +42,9 @@ func SyncNetworkGroups(
 		return
 	}
 
+	// Create SDK instance from provider client
+	sdkClient := sdk.NewSDK(sdk.WithClient(prov.Client()))
+
 	allngRes := tmp.ListNetworkgroups(ctx, prov.Client(), prov.Organization())
 	if allngRes.HasError() {
 		diags.AddError("failed to list Networkgroups", allngRes.Error().Error())
@@ -64,7 +69,16 @@ func SyncNetworkGroups(
 
 	for inPlaceNG := range expectedNG.Intersection(currentNG).Iter() {
 		// a member for this app exists on the expected NG
-		memberRes := tmp.GetMember(ctx, prov.Client(), prov.Organization(), inPlaceNG, applicationID)
+		memberRes := sdkClient.
+			V4().
+			Networkgroups().
+			Organisations().
+			Ownerid(prov.Organization()).
+			Networkgroups().
+			Networkgroupid(inPlaceNG).
+			Members().
+			Memberid(applicationID).
+			Getnetworkgroupmember(ctx)
 		if memberRes.HasError() {
 			diags.AddError("failed to get member", memberRes.Error().Error())
 			continue
@@ -75,7 +89,16 @@ func SyncNetworkGroups(
 		}
 
 		tflog.Warn(ctx, "a member exists on the expected NG but with an old FQDN, recreate it")
-		deleteRes := tmp.DeleteMember(ctx, prov.Client(), prov.Organization(), inPlaceNG, applicationID)
+		deleteRes := sdkClient.
+			V4().
+			Networkgroups().
+			Organisations().
+			Ownerid(prov.Organization()).
+			Networkgroups().
+			Networkgroupid(inPlaceNG).
+			Members().
+			Memberid(applicationID).
+			Deletenetworkgroupmember(ctx)
 		if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
 			diags.AddError("failed to remove member from NG", deleteRes.Error().Error())
 			continue
@@ -87,7 +110,16 @@ func SyncNetworkGroups(
 
 	for ng := range currentNG.Difference(expectedNG).Iter() {
 		// app is not in this NG anymore
-		deleteRes := tmp.DeleteMember(ctx, prov.Client(), prov.Organization(), ng, applicationID)
+		deleteRes := sdkClient.
+			V4().
+			Networkgroups().
+			Organisations().
+			Ownerid(prov.Organization()).
+			Networkgroups().
+			Networkgroupid(ng).
+			Members().
+			Memberid(applicationID).
+			Deletenetworkgroupmember(ctx)
 		if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
 			diags.AddError("failed to remove member from ng", deleteRes.Error().Error())
 		}
@@ -95,11 +127,19 @@ func SyncNetworkGroups(
 	}
 
 	for ng := range expectedNG.Difference(currentNG).Iter() {
-		addRes := tmp.AddMemberToNetworkgroup(ctx, prov.Client(), prov.Organization(), ng, tmp.Member{
-			ID:         applicationID,
-			Kind:       kind,
-			DomainName: ngIDToFQDN[ng],
-		})
+		addRes := sdkClient.
+			V4().
+			Networkgroups().
+			Organisations().
+			Ownerid(prov.Organization()).
+			Networkgroups().
+			Networkgroupid(ng).
+			Members().
+			Createnetworkgroupmember(ctx, &models.WannabeNetworkgroupMember{
+				ID:         applicationID,
+				Kind:       models.MemberKind(kind),
+				DomainName: ngIDToFQDN[ng],
+			})
 		if addRes.HasError() {
 			diags.AddError("failed to add member to NG", addRes.Error().Error())
 		}
