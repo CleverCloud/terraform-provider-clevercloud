@@ -19,7 +19,6 @@ import (
 )
 
 func TestAccMetabase_basic(t *testing.T) {
-	t.Parallel()
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-mb")
 	rNameEdited := rName + "-edit"

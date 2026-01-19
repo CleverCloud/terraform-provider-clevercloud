@@ -21,7 +21,6 @@ import (
 )
 
 func TestAccKeycloak_basic(t *testing.T) {
-	t.Parallel()
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-kc")
 	rNameEdited := rName + "-edit"

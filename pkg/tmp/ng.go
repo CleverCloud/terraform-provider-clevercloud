@@ -2,7 +2,6 @@ package tmp
 
 import (
 	"context"
-	"net/url"
 
 	"github.com/hashicorp/go-uuid"
 	"go.clever-cloud.dev/client"
@@ -68,11 +67,6 @@ func DeleteNetworkgroup(ctx context.Context, cc *client.Client, organisationID s
 	return client.Delete[client.Nothing](ctx, cc, path)
 }
 
-func SearchNetworkgroup(ctx context.Context, cc *client.Client, organisationID, query string) client.Response[[]any] {
-	path := fmt.Sprintf("/v4/networkgroups/organisations/%s/networkgroups/search?query=%s", organisationID, url.QueryEscape(query))
-	return client.Get[[]any](ctx, cc, path)
-}
-
 func GenID() string {
 	id, err := uuid.GenerateUUID()
 	if err != nil {
@@ -85,49 +79,6 @@ func GenID() string {
 func ListNetworkgroups(ctx context.Context, cc *client.Client, organisationID string) client.Response[[]Networkgroup] {
 	path := fmt.Sprintf("/v4/networkgroups/organisations/%s/networkgroups", organisationID)
 	return client.Get[[]Networkgroup](ctx, cc, path)
-}
-
-// UpdateNetworkgroup updates an existing networkgroup
-func UpdateNetworkgroup(ctx context.Context, cc *client.Client, organisationID, networkgroupID string, networkgroup Networkgroup) client.Response[client.Nothing] {
-	path := fmt.Sprintf("/v4/networkgroups/organisations/%s/networkgroups/%s", organisationID, networkgroupID)
-	return client.Put[client.Nothing](ctx, cc, path, networkgroup)
-}
-
-// PeerCreation represents a peer to be added to a networkgroup
-type PeerCreation struct {
-	Label     string       `json:"label"`
-	PublicKey string       `json:"publicKey"`
-	Hostname  string       `json:"hostname"`
-	Endpoint  PeerEndpoint `json:"endpoint"`
-}
-
-// PeerCreatedResponse represents the response when a peer is created
-type PeerCreatedResponse struct {
-	PeerID string `json:"peerId"`
-}
-
-// AddPeerToNetworkgroup adds a peer to a networkgroup
-func AddPeerToNetworkgroup(ctx context.Context, cc *client.Client, organisationID, networkgroupID string, peer PeerCreation) client.Response[PeerCreatedResponse] {
-	path := fmt.Sprintf("/v4/networkgroups/organisations/%s/networkgroups/%s/peers", organisationID, networkgroupID)
-	return client.Post[PeerCreatedResponse](ctx, cc, path, peer)
-}
-
-// GetPeer retrieves a specific peer from a networkgroup
-func GetPeer(ctx context.Context, cc *client.Client, organisationID, networkgroupID, peerID string) client.Response[Peer] {
-	path := fmt.Sprintf("/v4/networkgroups/organisations/%s/networkgroups/%s/peers/%s", organisationID, networkgroupID, peerID)
-	return client.Get[Peer](ctx, cc, path)
-}
-
-// DeletePeer removes a peer from a networkgroup
-func DeletePeer(ctx context.Context, cc *client.Client, organisationID, networkgroupID, peerID string) client.Response[client.Nothing] {
-	path := fmt.Sprintf("/v4/networkgroups/organisations/%s/networkgroups/%s/peers/%s", organisationID, networkgroupID, peerID)
-	return client.Delete[client.Nothing](ctx, cc, path)
-}
-
-// ListPeers lists all peers in a networkgroup
-func ListPeers(ctx context.Context, cc *client.Client, organisationID, networkgroupID string) client.Response[[]Peer] {
-	path := fmt.Sprintf("/v4/networkgroups/organisations/%s/networkgroups/%s/peers", organisationID, networkgroupID)
-	return client.Get[[]Peer](ctx, cc, path)
 }
 
 // AddMemberToNetworkgroup adds a member to a networkgroup
