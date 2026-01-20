@@ -93,7 +93,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	res.Application = *appRes.Payload()
 
 	// Environment
-	envRes := tmp.UpdateAppEnv(ctx, req.Client, req.Organization, res.Application.ID, req.Environment)
+	envRes := UpdateAppEnv(ctx, req.Client, req.Organization, res.Application.ID, req.Environment, &diags)
 	if envRes.HasError() {
 		diags.AddError("failed to configure application environment", envRes.Error().Error())
 	}
@@ -166,4 +166,39 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 	}
 
 	return diags
+}
+
+// this version of UpdateAppEnv first try with Env var validation reports warning
+// and perform the update without validation in order to not break anything
+// diag parameter only reports warnings, no error
+//
+//		{
+//		  "id":557,
+//		  "message":"Application environment is invalid",
+//		  "type":"error",
+//		  "fields":{
+//		    "CC_TROUBLESHOOT":"must be one of: [troubleshoot, true, 1, yes, enable, enabled, on] (= true) or [off, disable, no, false, disabled, 0] (= false)"
+//	   }
+//		}
+func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID, applicationID string, envs map[string]string, diags *diag.Diagnostics) client.Response[any] {
+	res := tmp.UpdateAppEnv(ctx, cc, organisationID, applicationID, envs, true)
+	if !res.HasError() {
+		return res
+	}
+
+	tflog.Info(ctx, "DEBUG")
+	// report errors
+	if apiErr, ok := res.Error().(*client.APIError); res.StatusCode() == 400 && ok {
+		tflog.Info(ctx, "ERR", map[string]any{"err": apiErr})
+		for key, value := range apiErr.Context {
+			if key == "type" {
+				continue
+			}
+
+			diags.AddWarning(
+				fmt.Sprintf("Invalid value for %s", key), fmt.Sprintf("%v", value))
+		}
+	}
+
+	return tmp.UpdateAppEnv(ctx, cc, organisationID, applicationID, envs, false)
 }

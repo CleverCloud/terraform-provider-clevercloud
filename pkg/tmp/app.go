@@ -246,8 +246,12 @@ func GetAppEnv(ctx context.Context, cc *client.Client, organisationID string, ap
 	return client.Get[[]Env](ctx, cc, path)
 }
 
-func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID string, applicationID string, envs map[string]string) client.Response[any] {
+func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID string, applicationID string, envs map[string]string, enforceValidation bool) client.Response[any] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/env", organisationID, applicationID)
+	if enforceValidation {
+		path = fmt.Sprintf("%s?check=true", path)
+	}
+
 	return client.Put[any](ctx, cc, path, envs)
 }
 
