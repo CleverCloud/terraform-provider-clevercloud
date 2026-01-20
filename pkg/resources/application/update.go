@@ -42,7 +42,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	res.Application = *appRes.Payload()
 
 	// Environment
-	envRes := tmp.UpdateAppEnv(ctx, req.Client, req.Organization, res.Application.ID, req.Environment)
+	envRes := UpdateAppEnv(ctx, req.Client, req.Organization, res.Application.ID, req.Environment, &diags)
 	if envRes.HasError() {
 		diags.AddError("failed to configure application environment", envRes.Error().Error())
 		return res, diags

@@ -289,7 +289,7 @@ func TestAccV_EnvironmentDriftDetection(t *testing.T) {
 					"MY_VAR":      "console_modified",
 					"ANOTHER_VAR": "stable_value",
 				}
-				envRes := tmp.UpdateAppEnv(ctx, cc, tests.ORGANISATION, appID, envUpdate)
+				envRes := tmp.UpdateAppEnv(ctx, cc, tests.ORGANISATION, appID, envUpdate, true)
 				if envRes.HasError() {
 					t.Fatalf("failed to update env via API: %v", envRes.Error())
 				}

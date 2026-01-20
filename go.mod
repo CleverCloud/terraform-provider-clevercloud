@@ -32,7 +32,6 @@ require (
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/Kunde21/markdownfmt/v3 v3.1.0 // indirect
 	github.com/Masterminds/goutils v1.1.1 // indirect
-	github.com/Masterminds/semver/v3 v3.2.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.1.6 // indirect
@@ -180,6 +179,7 @@ require (
 replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20250106144421-5f5ef82da422
 
 require (
+	github.com/Masterminds/semver/v3 v3.2.0
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/jlaffaye/ftp v0.2.0
