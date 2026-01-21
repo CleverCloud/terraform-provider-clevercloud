@@ -57,6 +57,7 @@ Can be either app_xxx or postgres_yyy ID format
 ### Read-Only
 
 - `deploy_url` (String) Git URL used to push source code
+- `deployed_commit` (String) The commit hash currently deployed on the application
 - `id` (String) Unique identifier generated during application creation
 
 <a id="nestedblock--deployment"></a>
