@@ -14,22 +14,26 @@ func TestMain(m *testing.M) {
 	resource.AddTestSweepers("clevercloud_networkgroup", &resource.Sweeper{
 		Name: "clevercloud_networkgroup",
 		F:    sweepers.SweepNetworkgroups,
+		Dependencies: []string{
+			"clevercloud_kubernetes",
+			"clevercloud_application",
+			"clevercloud_addon",
+		},
+	})
+
+	resource.AddTestSweepers("clevercloud_kubernetes", &resource.Sweeper{
+		Name: "clevercloud_kubernetes",
+		F:    sweepers.SweepKubernetes,
 	})
 
 	resource.AddTestSweepers("clevercloud_application", &resource.Sweeper{
 		Name: "clevercloud_application",
 		F:    sweepers.SweepApplications,
-		Dependencies: []string{
-			"clevercloud_networkgroup", // Apps might be in network groups
-		},
 	})
 
 	resource.AddTestSweepers("clevercloud_addon", &resource.Sweeper{
 		Name: "clevercloud_addon",
 		F:    sweepers.SweepAddons,
-		Dependencies: []string{
-			"clevercloud_application", // Apps might be linked to addons
-		},
 	})
 
 	fmt.Printf("sweepers added, running tests\n")

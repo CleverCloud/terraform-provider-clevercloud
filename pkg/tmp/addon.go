@@ -111,10 +111,9 @@ type MySQL struct {
 	Host string `json:"host" example:"bwf32ifhr5cofspgzrbb-postgresql.services.clever-cloud.com"`
 	// id:ea97919f-983b-4699-a673-2ed0668bf196
 	// owner_id:user_32114ae3-1716-4aa7-8d16-e664ca6ccd1f
-	Password string `json:"password" example:"omEbGQw628gIxHK9Bp8d"`
-	Plan     string `json:"plan" example:"xs_med"`
-	Port     int    `json:"port" example:"6388"`
-	// read_only_users:[]
+	Password      string              `json:"password" example:"omEbGQw628gIxHK9Bp8d"`
+	Plan          string              `json:"plan" example:"xs_med"`
+	Port          int                 `json:"port" example:"6388"`
 	Status        string              `json:"status" example:"ACTIVE"`
 	User          string              `json:"user" example:"uxw1ikwnp6gflbgp5iun"`
 	Version       string              `json:"version"` // 14
@@ -640,4 +639,165 @@ func FromMySQLReadOnlyUsers(users []MySQLReadOnlyUser) types.List {
 	}
 
 	return types.ListValueMust(objectType, objects)
+}
+
+type KubernetesInfo struct {
+	CreationDate string `json:"creationDate"`
+	Description  string `json:"description"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Status       string `json:"status"` // ACTIVE, DELETED, DELETING, DEPLOYING, FAILED
+	Tag          string `json:"tag"`
+	TenantID     string `json:"tenantId"`
+	Version      string `json:"version"`
+}
+
+// GetKubernetes retrieves Kubernetes cluster details using the cluster ID
+// This now returns the same structure as GetKubernetesCluster (ClusterView)
+func GetKubernetes(ctx context.Context, cc *client.Client, organisationID, clusterID string) client.Response[KubernetesInfo] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s", organisationID, clusterID)
+	return client.Get[KubernetesInfo](ctx, cc, path)
+}
+
+// GetKubeconfig retrieves the kubeconfig file for a Kubernetes cluster
+func GetKubeconfig(ctx context.Context, cc *client.Client, organisationID, addonClusterID string) client.Response[client.PlainTextString] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/kubeconfig.yaml", organisationID, addonClusterID)
+	return client.Get[client.PlainTextString](ctx, cc, path)
+}
+
+// KubernetesCreateRequest represents the request body for creating a Kubernetes cluster
+type KubernetesCreateRequest struct {
+	Description      string  `json:"description,omitempty"`
+	KubeMajorVersion string  `json:"kubeMajorVersion,omitempty"`
+	Name             string  `json:"name"`
+	NetworkGroupID   *string `json:"networkGroupId,omitempty"`
+	Tag              string  `json:"tag,omitempty"`
+}
+
+// ClusterView represents a Kubernetes cluster (same as KubernetesCreateResponse)
+type ClusterView struct {
+	CreationDate string `json:"creationDate"`
+	Description  string `json:"description"`
+	ID           string `json:"id"`
+	Name         string `json:"name"`
+	Status       string `json:"status"` // ACTIVE, DELETED, DELETING, DEPLOYING, FAILED
+	Tag          string `json:"tag"`
+	TenantID     string `json:"tenantId"`
+	Version      string `json:"version"`
+}
+
+// KubernetesCreateResponse is an alias for ClusterView
+type KubernetesCreateResponse = ClusterView
+
+// CreateKubernetes creates a new Kubernetes cluster in the specified organization
+func CreateKubernetes(ctx context.Context, cc *client.Client, organisationID string, req KubernetesCreateRequest) client.Response[KubernetesCreateResponse] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters", organisationID)
+	return client.Post[KubernetesCreateResponse](ctx, cc, path, req)
+}
+
+// ListKubernetesClusters lists all Kubernetes clusters in an organization
+func ListKubernetesClusters(ctx context.Context, cc *client.Client, organisationID string) client.Response[[]ClusterView] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters", organisationID)
+	return client.Get[[]ClusterView](ctx, cc, path)
+}
+
+// GetKubernetesCluster retrieves a specific Kubernetes cluster by ID
+func GetKubernetesCluster(ctx context.Context, cc *client.Client, organisationID, clusterID string) client.Response[ClusterView] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s", organisationID, clusterID)
+	return client.Get[ClusterView](ctx, cc, path)
+}
+
+// DeleteKubernetes deletes a Kubernetes cluster in the specified organization
+func DeleteKubernetes(ctx context.Context, cc *client.Client, organisationID, clusterID string) client.Response[ClusterView] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s", organisationID, clusterID)
+	return client.Delete[ClusterView](ctx, cc, path)
+}
+
+// NodeGroupCreationPayload represents the request body for creating a node group
+type NodeGroupCreationPayload struct {
+	Description     string            `json:"description,omitempty"`
+	Flavor          string            `json:"flavor"`          // xs, s, m, l, xl
+	Labels          map[string]string `json:"labels"`          // Required
+	MaxNodeCount    int32             `json:"maxNodeCount"`    // Required
+	MinNodeCount    int32             `json:"minNodeCount"`    // Required
+	Name            string            `json:"name"`            // Required
+	Tag             string            `json:"tag,omitempty"`   // Optional zone/region
+	Taints          string            `json:"taints"`          // Required
+	TargetNodeCount int32             `json:"targetNodeCount"` // Required
+}
+
+// NodeGroup represents a Kubernetes node group
+type NodeGroup struct {
+	ClusterID        string            `json:"clusterId"`
+	CreatedAt        string            `json:"createdAt"`
+	CurrentNodeCount int32             `json:"currentNodeCount"`
+	Description      string            `json:"description"`
+	Flavor           string            `json:"flavor"`
+	ID               string            `json:"id"`
+	Labels           map[string]string `json:"labels"`
+	MaxNodeCount     int32             `json:"maxNodeCount"`
+	MinNodeCount     int32             `json:"minNodeCount"`
+	Name             string            `json:"name"`
+	Status           string            `json:"status"` // CREATED, DELETED, DEPLOYED, DEPLOYING, FAILED, READY, RESIZING, TERMINATING
+	Tag              string            `json:"tag"`
+	Taints           string            `json:"taints"`
+	TargetNodeCount  int32             `json:"targetNodeCount"`
+	UpdatedAt        string            `json:"updatedAt"`
+}
+
+// NodeGroupPatchPayload represents the request body for updating a node group
+// Same structure as NodeGroupCreationPayload
+type NodeGroupPatchPayload = NodeGroupCreationPayload
+
+// CreateNodeGroup creates a new node group in a Kubernetes cluster
+func CreateNodeGroup(ctx context.Context, cc *client.Client, organisationID, clusterID string, req NodeGroupCreationPayload) client.Response[NodeGroup] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/node-groups", organisationID, clusterID)
+	return client.Post[NodeGroup](ctx, cc, path, req)
+}
+
+// ListNodeGroups lists all node groups in a Kubernetes cluster
+func ListNodeGroups(ctx context.Context, cc *client.Client, organisationID, clusterID string) client.Response[[]NodeGroup] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/node-groups", organisationID, clusterID)
+	return client.Get[[]NodeGroup](ctx, cc, path)
+}
+
+// GetNodeGroup retrieves a specific node group by ID
+func GetNodeGroup(ctx context.Context, cc *client.Client, organisationID, clusterID, nodeGroupID string) client.Response[NodeGroup] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/node-groups/%s", organisationID, clusterID, nodeGroupID)
+	return client.Get[NodeGroup](ctx, cc, path)
+}
+
+// UpdateNodeGroup updates a node group in a Kubernetes cluster
+func UpdateNodeGroup(ctx context.Context, cc *client.Client, organisationID, clusterID, nodeGroupID string, req NodeGroupPatchPayload) client.Response[NodeGroup] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/node-groups/%s", organisationID, clusterID, nodeGroupID)
+	return client.Patch[NodeGroup](ctx, cc, path, req)
+}
+
+// DeleteNodeGroup deletes a node group from a Kubernetes cluster
+func DeleteNodeGroup(ctx context.Context, cc *client.Client, organisationID, clusterID, nodeGroupID string) client.Response[NodeGroup] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/node-groups/%s", organisationID, clusterID, nodeGroupID)
+	return client.Delete[NodeGroup](ctx, cc, path)
+}
+
+// KubeconfigPresignedUrlResponse represents the response from getting a presigned URL for kubeconfig
+type KubeconfigPresignedUrlResponse struct {
+	URL string `json:"url"`
+}
+
+// GetKubeconfigPresignedUrl retrieves a presigned URL for downloading the kubeconfig
+func GetKubeconfigPresignedUrl(ctx context.Context, cc *client.Client, organisationID, clusterID string) client.Response[KubeconfigPresignedUrlResponse] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/kubeconfig/presigned-url", organisationID, clusterID)
+	return client.Get[KubeconfigPresignedUrlResponse](ctx, cc, path)
+}
+
+// CsiCephResponse represents the response from enabling CSI Ceph
+type CsiCephResponse struct {
+	Message string `json:"message"`
+	Status  string `json:"status"`
+}
+
+// EnableCsiCeph enables the CSI Ceph driver for a Kubernetes cluster
+func EnableCsiCeph(ctx context.Context, cc *client.Client, organisationID, clusterID string) client.Response[CsiCephResponse] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/csi/ceph", organisationID, clusterID)
+	return client.Post[CsiCephResponse](ctx, cc, path, nil)
 }

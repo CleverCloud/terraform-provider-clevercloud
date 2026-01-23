@@ -11,8 +11,9 @@ Sweepers are automated cleanup functions that remove test resources left behind 
 The following sweepers are available:
 
 1. **clevercloud_networkgroup** - Cleans up test network groups
-2. **clevercloud_application** - Cleans up test applications (nodejs, php, java, python, golang, rust, scala, etc.)
-3. **clevercloud_addon** - Cleans up test addons (postgresql, mysql, redis, pulsar, cellar, mongodb, keycloak, metabase, materiakv, otoroshi)
+2. **clevercloud_kubernetes** - Cleans up test Kubernetes clusters
+3. **clevercloud_application** - Cleans up test applications (nodejs, php, java, python, golang, rust, scala, etc.)
+4. **clevercloud_addon** - Cleans up test addons (postgresql, mysql, redis, pulsar, cellar, mongodb, keycloak, metabase, materiakv, otoroshi)
 
 ## Sweep Order
 
@@ -20,7 +21,8 @@ Sweepers are executed in the following order to respect dependencies:
 
 1. Addons (depends on applications being present)
 2. Applications (depends on network groups)
-3. Network groups
+3. Kubernetes clusters (depends on network groups)
+4. Network groups
 
 ## Resource Selection
 
@@ -55,6 +57,10 @@ To run a specific sweeper:
 # Clean up only network groups
 ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 go test ./... -sweep=par -sweep-run=clevercloud_networkgroup
+
+# Clean up only Kubernetes clusters
+ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
+go test ./... -sweep=par -sweep-run=clevercloud_kubernetes
 
 # Clean up only applications
 ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
@@ -118,6 +124,9 @@ Example output:
 [INFO] Sweeping networkgroups in organization: orga_12345678-1234-1234-1234-123456789012
 [INFO] Deleting networkgroup: tf-test-ng-abc123 (ng_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
 [INFO] Swept 5 networkgroups (errors: 0)
+[INFO] Sweeping Kubernetes clusters in organization: orga_12345678-1234-1234-1234-123456789012
+[INFO] Deleting Kubernetes cluster: tf-test-k8s-cluster (kubernetes_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx) - Status: ACTIVE
+[INFO] Swept 3 Kubernetes clusters (errors: 0)
 [INFO] Sweeping applications in organization: orga_12345678-1234-1234-1234-123456789012
 [INFO] Deleting application: tf-test-node-xyz789 (app_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
 [INFO] Swept 10 applications (errors: 0)
