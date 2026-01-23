@@ -14,3 +14,4 @@ jobs:
       - uses: googleapis/release-please-action@v4
         with:
           release-type: go
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
