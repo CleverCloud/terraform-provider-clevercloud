@@ -61,7 +61,6 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		}
 	}
 
-	// Get kubeconfig
 	kubeConfigRes := tmp.GetKubeconfig(ctx, r.Client(), r.Organization(), k8sCluster.ID)
 	if kubeConfigRes.HasError() {
 		resp.Diagnostics.AddWarning("failed to get kubeconfig", kubeConfigRes.Error().Error())
