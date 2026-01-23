@@ -10,18 +10,6 @@ import (
 )
 
 func (r *ResourceKubernetesNodegroup) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
-	// remove when going to beta public
-	res.Diagnostics.AddWarning(
-		"Did you request product activation ?",
-		"this product is not yet public and you need a support ticket to enable it on your organisation",
-	)
-
-	// remove when GA
-	res.Diagnostics.AddWarning(
-		"Kubernetes product support is in beta",
-		"It can break at any time, use it at your own risks",
-	)
-
 	plan := helper.PlanFrom[KubernetesNodegroup](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
