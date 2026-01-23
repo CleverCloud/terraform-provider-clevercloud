@@ -53,12 +53,11 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		Name: pkg.FromStr(k8sCluster.Name),
 	}
 
-	for state := range WaitForKubernetes(ctx, r.Client(), r.Organization(), k8sCluster.ID, 1*time.Second) {
-		tflog.Info(ctx, "cluster state changed", map[string]any{
-			"state": state.Status,
-		})
-		if state.Status == "FAILED" {
-			resp.Diagnostics.AddError("failed to provision kubernetes cluster", state.Status)
+	for k8sCluster := range WaitForKubernetes(ctx, r.Client(), r.Organization(), k8sCluster.ID, 1*time.Second) {
+		tflog.Info(ctx, "cluster state changed", map[string]any{"state": k8sCluster.Status})
+		if k8sCluster.Status == "FAILED" {
+			resp.Diagnostics.AddError("failed to provision kubernetes cluster", k8sCluster.Status)
+			return // without running k8s cluster, nothing possible
 		}
 	}
 
