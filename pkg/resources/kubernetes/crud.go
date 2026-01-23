@@ -70,7 +70,6 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-	fmt.Printf("\nCREATED: %s\n\n", k8sCluster.ID)
 }
 
 func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
