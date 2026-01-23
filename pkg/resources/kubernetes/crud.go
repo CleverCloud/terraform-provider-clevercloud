@@ -13,6 +13,13 @@ import (
 )
 
 func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	// remove when going to beta public
+	resp.Diagnostics.AddWarning(
+		"Did you request product activation ?",
+		"this product is not yet public and you need a support ticket to enable it on your organisation",
+	)
+
+	// remove when GA
 	resp.Diagnostics.AddWarning(
 		"Kubernetes product support is in beta",
 		"It can break at any time, use it at your own risks",
