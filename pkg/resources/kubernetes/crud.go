@@ -130,9 +130,9 @@ func (r *ResourceKubernetes) Delete(ctx context.Context, req resource.DeleteRequ
 	resp.State.RemoveResource(ctx)
 }
 
-// WaitForKubernetes surveille le status d'un cluster Kubernetes et renvoie un canal
-// qui émet le cluster au premier appel et à chaque changement du champ Status.
-// Le canal est fermé automatiquement quand le status devient ACTIVE ou FAILED (états terminaux).
+// WaitForKubernetes monitors a Kubernetes cluster status and returns a channel
+// that emits cluster object on the first call and whenever the Status field changes.
+// The channel is automatically closed when status becomes ACTIVE or FAILED (terminal states).
 func WaitForKubernetes(ctx context.Context, cc *client.Client, organisationID, clusterID string, pollInterval time.Duration) <-chan *tmp.ClusterView {
 	ch := make(chan *tmp.ClusterView)
 
