@@ -101,6 +101,13 @@ func Read[T RuntimePlan](ctx context.Context, resource RuntimeResource, state T)
 	// Read linked dependencies (addons)
 	runtime.Dependencies = ReadDependencies(ctx, resource.Client(), resource.Organization(), runtime.ID.ValueString(), runtime.Dependencies, &diags)
 
+	m, d := types.MapValueFrom(ctx, types.StringType, readRes.EnvAsMap())
+	diags.Append(d...)
+	if diags.HasError() {
+		return false, diags
+	}
+	runtime.Environment = m
+
 	// Map environment variables to runtime-specific fields
 	state.FromEnv(ctx, readRes.EnvAsMap(), &diags)
 
