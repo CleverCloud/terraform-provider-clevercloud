@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -50,7 +51,12 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 
 	plan.Name = basetypes.NewStringValue(ng.Label)
 	plan.Description = basetypes.NewStringPointerValue(ng.Description)
-	plan.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
+	// Preserve null if tags were not set by user and API returns empty slice
+	if len(ng.Tags) == 0 && plan.Tags.IsNull() {
+		plan.Tags = basetypes.NewSetNull(types.StringType)
+	} else {
+		plan.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
+	}
 	plan.Network = pkg.FromStr(ng.NetworkIP)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -81,7 +87,12 @@ func (r *ResourceNG) Read(ctx context.Context, req resource.ReadRequest, resp *r
 
 	state.Name = basetypes.NewStringValue(ng.Label)
 	state.Description = basetypes.NewStringPointerValue(ng.Description)
-	state.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
+	// Preserve null if tags were not set by user and API returns empty slice
+	if len(ng.Tags) == 0 && state.Tags.IsNull() {
+		state.Tags = basetypes.NewSetNull(types.StringType)
+	} else {
+		state.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
+	}
 	state.Network = pkg.FromStr(ng.NetworkIP)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

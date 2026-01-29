@@ -174,6 +174,16 @@ func map_String(m map[string]any, s, tab, separator string) string {
 				return "{ " + strings.Join(fields, ", ") + " }"
 			})
 			return acc + tab + key + separator + ` [ ` + strings.Join(strs, ", ") + " ]\n"
+		case []map[string]any:
+			// Convert each map to a formatted block using existing map_String logic
+			blocks := pkg.Map(c_type, func(m map[string]any) string {
+				// Build inline block for each map element
+				inner := map_String(m, "", "", " =")
+				// Remove trailing newline and trim spaces for inline formatting
+				inner = strings.TrimSpace(strings.ReplaceAll(inner, "\n", ", "))
+				return "{ " + inner + " }"
+			})
+			return acc + tab + key + separator + ` [ ` + strings.Join(blocks, ", ") + " ]\n"
 		default:
 			return acc + `// Type ` + reflect.TypeOf(c_type).String() + ` of key "` + key + `" not considered yet
 `
