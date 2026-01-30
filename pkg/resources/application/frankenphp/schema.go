@@ -14,6 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
@@ -64,8 +65,8 @@ func (fp *FrankenPHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[st
 	return env
 }
 
-func (fp *FrankenPHP) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
-	pkg.SetBoolIf(&fp.DevDependencies, env.Get("CC_PHP_DEV_DEPENDENCIES"), "install")
+func (fp *FrankenPHP) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	pkg.SetBoolIf(&fp.DevDependencies, env.PopPtr("CC_PHP_DEV_DEPENDENCIES"), "install")
 
 	fp.Integrations = attributes.FromEnvIntegrations(ctx, env, fp.Integrations, diags)
 }

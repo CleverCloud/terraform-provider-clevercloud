@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
@@ -74,9 +75,9 @@ func (r Rust) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (r *Rust) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
-	r.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
-	r.Features = pkg.FromSetSplit(env.Get(CC_RUST_FEATURES), ",", diags)
+func (r *Rust) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	r.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
+	r.Features = pkg.FromSetSplit(env.PopPtr(CC_RUST_FEATURES), ",", diags)
 
 	r.Integrations = attributes.FromEnvIntegrations(ctx, env, r.Integrations, diags)
 }
