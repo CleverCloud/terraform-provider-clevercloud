@@ -30,7 +30,7 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/elast
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `plugins` (Set of String) List of plugins to install
 - `region` (String) Geographical region where the data will be stored
-- `version` (String) Elasticsearch version
+- `version` (String) Elasticsearch major version (e.g., '7', '8'). Only the major version number is used by the API. Changing this requires replacing the resource.
 
 ### Read-Only
 
