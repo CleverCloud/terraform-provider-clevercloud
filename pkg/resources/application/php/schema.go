@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
@@ -122,12 +123,12 @@ func (p *PHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	return env
 }
 
-func (p *PHP) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
-	p.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
-	p.WebRoot = pkg.FromStrPtr(env.Get("CC_WEBROOT"))
-	p.PHPVersion = pkg.FromStrPtr(env.Get("CC_PHP_VERSION"))
-	pkg.SetBoolIf(&p.DevDependencies, env.Get("CC_PHP_DEV_DEPENDENCIES"), "install")
-	pkg.SetBoolIf(&p.RedisSessions, env.Get("SESSION_TYPE"), "redis")
+func (p *PHP) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	p.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
+	p.WebRoot = pkg.FromStrPtr(env.PopPtr("CC_WEBROOT"))
+	p.PHPVersion = pkg.FromStrPtr(env.PopPtr("CC_PHP_VERSION"))
+	pkg.SetBoolIf(&p.DevDependencies, env.PopPtr("CC_PHP_DEV_DEPENDENCIES"), "install")
+	pkg.SetBoolIf(&p.RedisSessions, env.PopPtr("SESSION_TYPE"), "redis")
 
 	p.Integrations = attributes.FromEnvIntegrations(ctx, env, p.Integrations, diags)
 }

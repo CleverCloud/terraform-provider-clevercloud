@@ -8,12 +8,13 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
-	"maps"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"maps"
+	helperMaps "github.com/miton18/helper/maps"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
@@ -78,9 +79,9 @@ func (plan *Java) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string
 	return env
 }
 
-func (plan *Java) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
-	plan.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
-	plan.JavaVersion = pkg.FromStrPtr(env.Get("CC_JAVA_VERSION"))
+func (plan *Java) FromEnv(ctx context.Context, env *helperMaps.Map[string, string], diags *diag.Diagnostics) {
+	plan.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
+	plan.JavaVersion = pkg.FromStrPtr(env.PopPtr("CC_JAVA_VERSION"))
 
 	plan.Integrations = attributes.FromEnvIntegrations(ctx, env, plan.Integrations, diags)
 }

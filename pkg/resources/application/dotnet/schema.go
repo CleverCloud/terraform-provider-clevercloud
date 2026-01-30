@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
@@ -74,11 +75,11 @@ func (dotnetapp Dotnet) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[
 	return env
 }
 
-func (dotnetapp *Dotnet) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
-	dotnetapp.DotnetProfile = pkg.FromStrPtr(env.Get("CC_DOTNET_PROFILE"))
-	dotnetapp.DotnetProj = pkg.FromStrPtr(env.Get("CC_DOTNET_PROJ"))
-	dotnetapp.DotnetTFM = pkg.FromStrPtr(env.Get("CC_DOTNET_TFM"))
-	dotnetapp.DotnetVersion = pkg.FromStrPtr(env.Get("CC_DOTNET_VERSION"))
+func (dotnetapp *Dotnet) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	dotnetapp.DotnetProfile = pkg.FromStrPtr(env.PopPtr("CC_DOTNET_PROFILE"))
+	dotnetapp.DotnetProj = pkg.FromStrPtr(env.PopPtr("CC_DOTNET_PROJ"))
+	dotnetapp.DotnetTFM = pkg.FromStrPtr(env.PopPtr("CC_DOTNET_TFM"))
+	dotnetapp.DotnetVersion = pkg.FromStrPtr(env.PopPtr("CC_DOTNET_VERSION"))
 
 	dotnetapp.Integrations = attributes.FromEnvIntegrations(ctx, env, dotnetapp.Integrations, diags)
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
@@ -207,16 +208,16 @@ func (p *Docker) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
-func (p *Docker) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
-	p.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
-	p.Dockerfile = pkg.FromStrPtr(env.Get("CC_DOCKERFILE"))
-	p.ContainerPort = pkg.FromIntPtr(env.Get("CC_DOCKER_EXPOSED_HTTP_PORT"))
-	p.ContainerPortTCP = pkg.FromIntPtr(env.Get("CC_DOCKER_EXPOSED_TCP_PORT"))
-	p.IPv6Cidr = pkg.FromStrPtr(env.Get("CC_DOCKER_FIXED_CIDR_V6"))
-	p.RegistryURL = pkg.FromStrPtr(env.Get("CC_DOCKER_LOGIN_SERVER"))
-	p.RegistryUser = pkg.FromStrPtr(env.Get("CC_DOCKER_LOGIN_USERNAME"))
-	p.RegistryPassword = pkg.FromStrPtr(env.Get("CC_DOCKER_LOGIN_PASSWORD"))
-	p.DaemonSocketMount = pkg.FromBoolPtr(env.Get("CC_MOUNT_DOCKER_SOCKET"))
+func (p *Docker) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	p.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
+	p.Dockerfile = pkg.FromStrPtr(env.PopPtr("CC_DOCKERFILE"))
+	p.ContainerPort = pkg.FromIntPtr(env.PopPtr("CC_DOCKER_EXPOSED_HTTP_PORT"))
+	p.ContainerPortTCP = pkg.FromIntPtr(env.PopPtr("CC_DOCKER_EXPOSED_TCP_PORT"))
+	p.IPv6Cidr = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_FIXED_CIDR_V6"))
+	p.RegistryURL = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_LOGIN_SERVER"))
+	p.RegistryUser = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_LOGIN_USERNAME"))
+	p.RegistryPassword = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_LOGIN_PASSWORD"))
+	p.DaemonSocketMount = pkg.FromBoolPtr(env.PopPtr("CC_MOUNT_DOCKER_SOCKET"))
 
 	p.Integrations = attributes.FromEnvIntegrations(ctx, env, p.Integrations, diags)
 }
