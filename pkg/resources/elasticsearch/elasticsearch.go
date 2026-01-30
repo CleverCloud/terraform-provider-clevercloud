@@ -6,19 +6,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/miton18/helper/set"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
 type ResourceElasticsearch struct {
 	helper.Configurer
-	versions *set.Set[string]
 }
 
 func NewResourceElasticsearch() resource.Resource {
-	return &ResourceElasticsearch{
-		versions: set.New[string](),
-	}
+	return &ResourceElasticsearch{}
 }
 
 func (r *ResourceElasticsearch) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
