@@ -2,8 +2,10 @@ package elasticsearch
 
 import (
 	"context"
+	"fmt"
 	"strings"
 
+	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -13,26 +15,10 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
-	"go.clever-cloud.dev/client"
 )
 
 func (r *ResourceElasticsearch) Configure(ctx context.Context, req resource.ConfigureRequest, res *resource.ConfigureResponse) {
-	r.fetchElasticsearchInfos(ctx, &res.Diagnostics)
 	r.Configurer.Configure(ctx, req, res)
-}
-
-func (r *ResourceElasticsearch) fetchElasticsearchInfos(ctx context.Context, diags *diag.Diagnostics) {
-	cc := client.New()
-
-	res := tmp.GetElasticsearchInfos(ctx, cc)
-	if res.HasError() {
-		diags.AddError("failed to get elasticsearch infos", res.Error().Error())
-		return
-	}
-
-	for k := range res.Payload().Dedicated {
-		r.versions.Add(k)
-	}
 }
 
 func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
@@ -154,7 +140,20 @@ func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic tmp.El
 	state.Host = pkg.FromStr(elastic.Host)
 	state.User = pkg.FromStr(elastic.User)
 	state.Password = pkg.FromStr(elastic.Password)
-	state.Version = pkg.FromStr(elastic.Version)
+
+	if elastic.Version != "" {
+		v, err := semver.NewVersion(elastic.Version)
+		if err != nil {
+			parts := strings.Split(elastic.Version, ".")
+			if len(parts) > 0 {
+				state.Version = pkg.FromStr(parts[0])
+			} else {
+				state.Version = pkg.FromStr(elastic.Version)
+			}
+		} else {
+			state.Version = pkg.FromStr(fmt.Sprintf("%d", v.Major()))
+		}
+	}
 
 	features := pkg.Reduce(
 		elastic.Features,

@@ -110,6 +110,171 @@ func TestAccElasticsearch_basic(t *testing.T) {
 	})
 }
 
+// Issue #338: Test that version handling works correctly
+// The version field accepts only major version numbers (e.g., "8").
+// The API may return "8" or "8.19.9" but we always extract and store the major version.
+func TestAccElasticsearch_VersionDrift(t *testing.T) {
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-es")
+	fullName := fmt.Sprintf("clevercloud_elasticsearch.%s", rName)
+	cc := client.New(client.WithAutoOauthConfig())
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+
+	elasticsearchBlock := helper.NewRessource(
+		"clevercloud_elasticsearch",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":    rName,
+			"region":  "par",
+			"plan":    "xs",
+			"version": "8",
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy: func(state *terraform.State) error {
+			for _, resource := range state.RootModule().Resources {
+				addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
+				if err != nil {
+					if strings.Contains(err.Error(), "not found") {
+						continue
+					}
+					return fmt.Errorf("failed to get addon ID: %s", err.Error())
+				}
+
+				res := tmp.GetElasticsearch(ctx, cc, addonId)
+				if res.IsNotFoundError() {
+					continue
+				}
+				if res.HasError() {
+					return fmt.Errorf("unexpected error: %s", res.Error().Error())
+				}
+				if res.Payload().Status == "TO_DELETE" {
+					continue
+				}
+
+				return fmt.Errorf("expect resource '%s' to be deleted", resource.Primary.ID)
+			}
+			return nil
+		},
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(elasticsearchBlock).String(),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				func(s *terraform.State) error {
+					rs, ok := s.RootModule().Resources[fullName]
+					if !ok {
+						return fmt.Errorf("resource %s not found", fullName)
+					}
+					version := rs.Primary.Attributes["version"]
+
+					if version != "8" {
+						return fmt.Errorf("expected version to be '8', got: %s", version)
+					}
+					return nil
+				},
+				resource.TestCheckResourceAttr(fullName, "version", "8"),
+			),
+		}, {
+			ResourceName: rName,
+			Config:       providerBlock.Append(elasticsearchBlock).String(),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				func(s *terraform.State) error {
+					rs, ok := s.RootModule().Resources[fullName]
+					if !ok {
+						return fmt.Errorf("resource %s not found", fullName)
+					}
+					version := rs.Primary.Attributes["version"]
+
+					if version != "8" {
+						return fmt.Errorf("expected version to remain '8', got: %s", version)
+					}
+					return nil
+				},
+				resource.TestCheckResourceAttr(fullName, "version", "8"),
+			),
+		}, {
+			ResourceName:       rName,
+			Config:             providerBlock.Append(elasticsearchBlock).String(),
+			PlanOnly:           true,
+			ExpectNonEmptyPlan: false,
+		}, {
+			ResourceName: rName,
+			Config:       providerBlock.Append(elasticsearchBlock).String(),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				func(s *terraform.State) error {
+					rs, ok := s.RootModule().Resources[fullName]
+					if !ok {
+						return fmt.Errorf("resource %s not found", fullName)
+					}
+					version := rs.Primary.Attributes["version"]
+					if version != "8" {
+						return fmt.Errorf("expected final version to be '8', got: %s", version)
+					}
+					return nil
+				},
+				resource.TestCheckResourceAttr(fullName, "version", "8"),
+				resource.TestCheckResourceAttrSet(fullName, "host"),
+				resource.TestCheckResourceAttrSet(fullName, "user"),
+				resource.TestCheckResourceAttrSet(fullName, "password"),
+			),
+		}},
+	})
+}
+
+func TestAccElasticsearch_InvalidVersion(t *testing.T) {
+	rName := acctest.RandomWithPrefix("tf-test-es")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+
+	// Try to create with an invalid version (should fail validation)
+	elasticsearchBlock := helper.NewRessource(
+		"clevercloud_elasticsearch",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":    rName,
+			"region":  "par",
+			"plan":    "xs",
+			"version": "999", // Invalid version that doesn't exist
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(elasticsearchBlock).String(),
+			ExpectError:  regexp.MustCompile("version '999' is not available"),
+		}},
+	})
+}
+
+func TestAccElasticsearch_InvalidVersionFormat(t *testing.T) {
+	rName := acctest.RandomWithPrefix("tf-test-es")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+
+	// Try to create with a full semver instead of major version (should fail format validation)
+	elasticsearchBlock := helper.NewRessource(
+		"clevercloud_elasticsearch",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":    rName,
+			"region":  "par",
+			"plan":    "xs",
+			"version": "8.19.7", // Invalid: should be just "8"
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(elasticsearchBlock).String(),
+			ExpectError:  regexp.MustCompile("version must be a major version number"),
+		}},
+	})
+}
+
 func TestAccElasticsearch_RefreshDeleted(t *testing.T) {
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-es")
