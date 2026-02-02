@@ -3,16 +3,24 @@ package elasticsearch
 import (
 	"context"
 	_ "embed"
+	"fmt"
+	"regexp"
+	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"go.clever-cloud.com/terraform-provider/pkg"
+	"github.com/miton18/helper/set"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type Elasticsearch struct {
@@ -58,9 +66,16 @@ func (r *ResourceElasticsearch) Schema(_ context.Context, req resource.SchemaReq
 			"version": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Elasticsearch version",
+				MarkdownDescription: "Elasticsearch major version (e.g., '7', '8'). Only the major version number is used by the API. Changing this requires replacing the resource.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
+				},
 				Validators: []validator.String{
-					pkg.NewStringValidator("Match existing Elasticsearch version", r.validateESVersion),
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^\d+$`),
+						"version must be a major version number (e.g., '7', '8')",
+					),
 				},
 			},
 			"encryption": schema.BoolAttribute{
@@ -119,18 +134,40 @@ func (r *ResourceElasticsearch) Schema(_ context.Context, req resource.SchemaReq
 	}
 }
 
-func (r *ResourceElasticsearch) validateESVersion(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
-	// TODO
-	/*version := req.ConfigValue.ValueString()
-	//for v := range r.versions.Iter() {
+func (r *ResourceElasticsearch) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() { // Skip validation when deleting
+		return
+	}
 
-	fmt.Printf("\n\nversion: %+v\n\n", r.versions)
-	//}
-	if req.ConfigValue.IsNull() || !r.versions.Contains(version) {
-		versions := r.versions.Slice()
-		res.Diagnostics.AddError(
-			"invalid Elastic version",
-			fmt.Sprintf("available versions are: %s", strings.Join(versions, ", ")),
-		)
-	}*/
+	plan := helper.From[Elasticsearch](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	if !plan.Version.IsNull() && !plan.Version.IsUnknown() {
+		infosRes := tmp.GetElasticsearchInfos(ctx, r.Client())
+		if infosRes.HasError() {
+			res.Diagnostics.AddError("failed to get Elasticsearch provider info", infosRes.Error().Error())
+			return
+		}
+		infos := infosRes.Payload()
+
+		availableVersions := set.New[string]()
+		for majorVersion := range infos.Dedicated {
+			availableVersions.Add(majorVersion)
+		}
+
+		requestedVersion := plan.Version.ValueString()
+		if !availableVersions.Contains(requestedVersion) {
+			res.Diagnostics.AddAttributeError(
+				path.Root("version"),
+				"Elasticsearch version not available",
+				fmt.Sprintf(
+					"version '%s' is not available. Available major versions: %s",
+					requestedVersion,
+					strings.Join(availableVersions.Slice(), ", "),
+				),
+			)
+		}
+	}
 }

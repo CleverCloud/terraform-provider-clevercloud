@@ -3,7 +3,6 @@ package scala
 import (
 	"context"
 	_ "embed"
-	"maps"
 	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
@@ -13,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"maps"
+	helperMaps "github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
@@ -65,8 +66,8 @@ func (plan *Scala) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (scala *Scala) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
-	scala.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
+func (scala *Scala) FromEnv(ctx context.Context, env *helperMaps.Map[string, string], diags *diag.Diagnostics) {
+	scala.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 
 	scala.Integrations = attributes.FromEnvIntegrations(ctx, env, scala.Integrations, diags)
 }

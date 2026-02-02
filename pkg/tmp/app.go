@@ -3,7 +3,6 @@ package tmp
 import (
 	"context"
 	"fmt"
-	"iter"
 	"net/url"
 	"strings"
 
@@ -164,33 +163,6 @@ func (vhosts VHosts) AsString() []string {
 	for i, vhost := range vhosts {
 		result[i] = vhost.Fqdn
 	}
-	return result
-}
-
-func (vhosts VHosts) AllAsString() iter.Seq[string] {
-	return func(yield func(string) bool) {
-		for _, vhost := range vhosts {
-			if !yield(vhost.Fqdn) {
-				return
-			}
-		}
-	}
-}
-
-// remove default domain (cleverapps one)
-// Ex: app-7a1f2c81-bb18-4682-95fc-b7187a056150.cleverapps.io
-func (vhosts VHosts) WithoutCleverApps(appId string) VHosts {
-	cleverapps := fmt.Sprintf("%s.cleverapps.io/", strings.ReplaceAll(appId, "_", "-"))
-	result := []VHost{}
-
-	for _, vhost := range vhosts {
-		if vhost.Fqdn == cleverapps {
-			continue
-		}
-
-		result = append(result, vhost)
-	}
-
 	return result
 }
 

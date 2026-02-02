@@ -3,7 +3,6 @@ package play2
 import (
 	"context"
 	_ "embed"
-	"maps"
 	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
@@ -13,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"maps"
+	helperMaps "github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
@@ -63,8 +64,8 @@ func (plan *Play2) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (play2 *Play2) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
-	play2.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
+func (play2 *Play2) FromEnv(ctx context.Context, env *helperMaps.Map[string, string], diags *diag.Diagnostics) {
+	play2.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 	play2.Integrations = attributes.FromEnvIntegrations(ctx, env, play2.Integrations, diags)
 }
 

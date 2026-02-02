@@ -53,7 +53,9 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
 
-	kvInfoRes := tmp.GetMateriaKV(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
+	kvInfoRes := r.SDK.V4().Materia().
+		Organisations().Ownerid(r.Organization()).Materia().
+		Databases().Resourceid(kv.ID.ValueString()).Getmateriakvv4(ctx)
 	if kvInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get materia kv connection infos", kvInfoRes.Error().Error())
 		return
@@ -81,7 +83,9 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	addonKVRes := tmp.GetMateriaKV(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
+	addonKVRes := r.SDK.V4().Materia().
+		Organisations().Ownerid(r.Organization()).Materia().
+		Databases().Resourceid(kv.ID.ValueString()).Getmateriakvv4(ctx)
 	if addonKVRes.IsNotFoundError() {
 		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
 		resp.Diagnostics.Append(diags...)
@@ -138,10 +142,7 @@ func (r *ResourceMateriaKV) Update(ctx context.Context, req resource.UpdateReque
 
 // Delete resource
 func (r *ResourceMateriaKV) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	kv := MateriaKV{}
-
-	diags := req.State.Get(ctx, &kv)
-	resp.Diagnostics.Append(diags...)
+	kv := helper.StateFrom[MateriaKV](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

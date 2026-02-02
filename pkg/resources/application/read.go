@@ -2,10 +2,14 @@ package application
 
 import (
 	"context"
+	"maps"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	helpermaps "github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
@@ -29,12 +33,12 @@ func (res *ReadAppRes) GetBuildFlavor() types.String {
 	return types.StringValue(res.App.BuildFlavor.Name)
 }
 
-func (r ReadAppRes) EnvAsMap() pkg.EnvMap {
+func (r ReadAppRes) EnvAsMap() *helpermaps.Map[string, string] {
 	return pkg.Reduce(
 		r.Env,
-		pkg.EnvMap{},
-		func(acc pkg.EnvMap, entry tmp.Env) pkg.EnvMap {
-			acc[entry.Name] = entry.Value
+		helpermaps.NewMap(map[string]string{}),
+		func(acc *helpermaps.Map[string, string], entry tmp.Env) *helpermaps.Map[string, string] {
+			acc.Set(entry.Name, entry.Value)
 			return acc
 		})
 }
@@ -89,8 +93,8 @@ func Read[T RuntimePlan](ctx context.Context, resource RuntimeResource, state T)
 		return true, diags
 	}
 
-	// Map API response to state
-	runtime.SetFromResponse(readRes, ctx, &diags)
+	// mutable env map, which will be subset by next reader
+	env := readRes.EnvAsMap()
 
 	// Read network groups
 	runtime.Networkgroups = resources.ReadNetworkGroups(ctx, resource, runtime.ID.ValueString(), &diags)
@@ -109,7 +113,25 @@ func Read[T RuntimePlan](ctx context.Context, resource RuntimeResource, state T)
 	runtime.Environment = m
 
 	// Map environment variables to runtime-specific fields
-	state.FromEnv(ctx, readRes.EnvAsMap(), &diags)
+	state.FromEnv(ctx, env, &diags)
+
+	runtime.Hooks = attributes.FromEnvHooks(env, runtime.Hooks)
+
+	if env.Size() > 0 {
+		nativeEnvMap := maps.Collect(env.All)
+		m, d := types.MapValueFrom(ctx, types.StringType, nativeEnvMap)
+		diags.Append(d...)
+		runtime.Environment = m
+	} else {
+		if runtime.Environment.IsNull() {
+			runtime.Environment = types.MapNull(types.StringType)
+		} else {
+			runtime.Environment = types.MapValueMust(types.StringType, map[string]attr.Value{})
+		}
+	}
+
+	// Map API response to state
+	runtime.SetFromResponse(readRes, ctx, &diags)
 
 	return false, diags
 }

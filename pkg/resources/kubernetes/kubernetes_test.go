@@ -1,12 +1,13 @@
-package metabase_test
+package kubernetes_test
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"regexp"
 	"testing"
+	"time"
 
-	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
@@ -18,17 +19,17 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-func TestAccMetabase_basic(t *testing.T) {
-	ctx := t.Context()
-	rName := acctest.RandomWithPrefix("tf-test-mb")
-	rNameEdited := rName + "-edit"
-	fullName := fmt.Sprintf("clevercloud_metabase.%s", rName)
+func TestAccKubernetes_basic(t *testing.T) {
+	rName := fmt.Sprintf("tf-test-kubernetes-%d", time.Now().UnixMilli())
+	fullName := fmt.Sprintf("clevercloud_kubernetes.%s", rName)
 	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
-	metabaseBlock := helper.NewRessource(
-		"clevercloud_metabase",
+	kubernetesBlock := helper.NewRessource(
+		"clevercloud_kubernetes",
 		rName,
-		helper.SetKeyValues(map[string]any{"name": rName, "region": "par"}),
+		helper.SetKeyValues(map[string]any{
+			"name": rName,
+		}),
 	)
 
 	resource.Test(t, resource.TestCase{
@@ -36,7 +37,7 @@ func TestAccMetabase_basic(t *testing.T) {
 		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy: func(state *terraform.State) error {
 			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetMetabase(ctx, cc, resource.Primary.ID)
+				res := tmp.GetAddon(context.Background(), cc, tests.ORGANISATION, resource.Primary.ID)
 				if res.IsNotFoundError() {
 					continue
 				}
@@ -50,17 +51,10 @@ func TestAccMetabase_basic(t *testing.T) {
 		},
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       providerBlock.Append(metabaseBlock).String(),
+			Config:       providerBlock.Append(kubernetesBlock).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectIdentityValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^kubernetes_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^metabase_.*`))),
-			},
-		}, {
-			ResourceName: rName,
-			Config:       providerBlock.Append(metabaseBlock.SetOneValue("name", rNameEdited)).String(),
-			ConfigStateChecks: []statecheck.StateCheck{
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rNameEdited)),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^metabase_.*`))),
 			},
 		}},
 	})

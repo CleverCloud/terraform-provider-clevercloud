@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
@@ -92,10 +93,10 @@ func (py Python) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	return env
 }
 
-func (py *Python) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
-	py.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
-	py.PythonVersion = pkg.FromStrPtr(env.Get("CC_PYTHON_VERSION"))
-	py.PipRequirements = pkg.FromStrPtr(env.Get("CC_PIP_REQUIREMENTS_FILE"))
+func (py *Python) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	py.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
+	py.PythonVersion = pkg.FromStrPtr(env.PopPtr("CC_PYTHON_VERSION"))
+	py.PipRequirements = pkg.FromStrPtr(env.PopPtr("CC_PIP_REQUIREMENTS_FILE"))
 
 	py.Integrations = attributes.FromEnvIntegrations(ctx, env, py.Integrations, diags)
 }

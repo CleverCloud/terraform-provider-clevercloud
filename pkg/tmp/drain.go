@@ -85,13 +85,6 @@ const (
 	DRAIN_KIND_AUDITLOG  DRAIN_KIND = "AUDITLOG"
 )
 
-// ListDrains lists drains for a given organisation and application.
-// GET /v4/drains/organisations/{ownerId}/applications/{applicationId}/drains
-func ListDrains(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[Drains] {
-	path := fmt.Sprintf("/v4/drains/organisations/%s/applications/%s/drains", organisationID, applicationID)
-	return client.Get[Drains](ctx, cc, path)
-}
-
 // WannabeDrain is the minimal payload to create a drain.
 // It primarily carries the recipient configuration and optional kind.
 type WannabeDrain struct {
@@ -111,13 +104,6 @@ func CreateDrain(ctx context.Context, cc *client.Client, organisationID, applica
 func GetDrain(ctx context.Context, cc *client.Client, organisationID, applicationID, drainID string) client.Response[Drain] {
 	path := fmt.Sprintf("/v4/drains/organisations/%s/applications/%s/drains/%s", organisationID, applicationID, drainID)
 	return client.Get[Drain](ctx, cc, path)
-}
-
-// DisableDrain disables a specific drain.
-// PUT /v4/drains/organisations/{ownerId}/applications/{applicationId}/drains/{drainId}/disable
-func DisableDrain(ctx context.Context, cc *client.Client, organisationID, applicationID, drainID string) client.Response[Drain] {
-	path := fmt.Sprintf("/v4/drains/organisations/%s/applications/%s/drains/%s/disable", organisationID, applicationID, drainID)
-	return client.Put[Drain](ctx, cc, path, nil)
 }
 
 // DeleteDrain deletes a specific drain.

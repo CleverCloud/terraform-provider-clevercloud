@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
@@ -133,13 +134,13 @@ func (node NodeJS) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	return env
 }
 
-func (node *NodeJS) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
-	node.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
-	pkg.SetBoolIf(&node.DevDependencies, env.Get("CC_NODE_DEV_DEPENDENCIES"), "install")
-	node.StartScript = pkg.FromStrPtr(env.Get("CC_RUN_COMMAND"))
-	node.PackageManager = pkg.FromStrPtr(env.Get("CC_NODE_BUILD_TOOL"))
-	node.Registry = pkg.FromStrPtr(env.Get("CC_NPM_REGISTRY"))
-	node.RegistryToken = pkg.FromStrPtr(env.Get("NPM_TOKEN"))
+func (node *NodeJS) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	node.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
+	pkg.SetBoolIf(&node.DevDependencies, env.PopPtr("CC_NODE_DEV_DEPENDENCIES"), "install")
+	node.StartScript = pkg.FromStrPtr(env.PopPtr("CC_RUN_COMMAND"))
+	node.PackageManager = pkg.FromStrPtr(env.PopPtr("CC_NODE_BUILD_TOOL"))
+	node.Registry = pkg.FromStrPtr(env.PopPtr("CC_NPM_REGISTRY"))
+	node.RegistryToken = pkg.FromStrPtr(env.PopPtr("NPM_TOKEN"))
 
 	node.Integrations = attributes.FromEnvIntegrations(ctx, env, node.Integrations, diags)
 }

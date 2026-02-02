@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
@@ -66,8 +67,8 @@ func (plan *Static) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[stri
 	return env
 }
 
-func (static *Static) FromEnv(ctx context.Context, env pkg.EnvMap, diags *diag.Diagnostics) {
-	static.AppFolder = pkg.FromStrPtr(env.Get("APP_FOLDER"))
+func (static *Static) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	static.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 
 	static.Integrations = attributes.FromEnvIntegrations(ctx, env, static.Integrations, diags)
 }
