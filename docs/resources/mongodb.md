@@ -20,11 +20,11 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mongo
 ### Required
 
 - `name` (String) Name of the service
-- `plan` (String) Database size and spec
 
 ### Optional
 
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
+- `plan` (String) Database size and spec
 - `region` (String) Geographical region where the data will be stored
 
 ### Read-Only

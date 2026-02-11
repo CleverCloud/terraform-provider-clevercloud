@@ -24,13 +24,13 @@ List of available providers:
 ### Required
 
 - `name` (String) Name of the service
-- `plan` (String) Database size and spec
-- `third_party_provider` (String) Provider ID
 
 ### Optional
 
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
+- `plan` (String) Database size and spec
 - `region` (String) Geographical region where the data will be stored
+- `third_party_provider` (String) Provider ID
 
 ### Read-Only
 
