@@ -100,5 +100,7 @@ func (r *ResourceRuby) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 		return
 	}
 
-	application.ValidateRuntimeFlavors(ctx, r, "ruby", plan.Runtime, &res.Diagnostics)
+	if application.DefaultAndValidateRuntimePlan(ctx, r, "ruby", &plan.Runtime, &res.Diagnostics) {
+		res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+	}
 }

@@ -97,5 +97,7 @@ func (r *ResourcePython) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 		return
 	}
 
-	application.ValidateRuntimeFlavors(ctx, r, "python", plan.Runtime, &res.Diagnostics)
+	if application.DefaultAndValidateRuntimePlan(ctx, r, "python", &plan.Runtime, &res.Diagnostics) {
+		res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+	}
 }

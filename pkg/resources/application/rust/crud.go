@@ -97,5 +97,7 @@ func (r *ResourceRust) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 		return
 	}
 
-	application.ValidateRuntimeFlavors(ctx, r, "rust", plan.Runtime, &res.Diagnostics)
+	if application.DefaultAndValidateRuntimePlan(ctx, r, "rust", &plan.Runtime, &res.Diagnostics) {
+		res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+	}
 }

@@ -100,5 +100,7 @@ func (r *ResourceJava) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 		return
 	}
 
-	application.ValidateRuntimeFlavors(ctx, r, r.profile, plan.Runtime, &res.Diagnostics)
+	if application.DefaultAndValidateRuntimePlan(ctx, r, r.profile, &plan.Runtime, &res.Diagnostics) {
+		res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+	}
 }

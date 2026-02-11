@@ -324,20 +324,41 @@ func WithRuntimeCommonsV0(runtimeSpecifics map[string]schema.Attribute) map[stri
 	return pkg.Merge(runtimeCommonV0, runtimeSpecifics)
 }
 
-// ValidateRuntimeFlavors validates that build_flavor, smallest_flavor, and biggest_flavor
-// are valid for the given application variant (docker, nodejs, etc.)
-func ValidateRuntimeFlavors(ctx context.Context, r provider.Provider, variantSlug string, runtime Runtime, diags *diag.Diagnostics) {
+// DefaultAndValidateRuntimePlan sets dynamic defaults for Optional+Computed fields
+// and validates that flavor values are valid for the given application variant.
+// It modifies runtime in place and returns true if the plan was modified.
+func DefaultAndValidateRuntimePlan(ctx context.Context, r provider.Provider, variantSlug string, runtime *Runtime, diags *diag.Diagnostics) (modified bool) {
 	org := r.Organization()
 	instance := LookupInstanceByVariantSlug(ctx, r.Client(), &org, variantSlug, diags)
 	if instance == nil {
 		diags.AddError("failed to lookup instance", fmt.Sprintf("no instance named '%s'", variantSlug))
-		return
+		return false
 	}
-	flavorSet := instance.Flavors.NamesAsSet()
 
+	// Set defaults for unset fields
+	defaultFlavor := instance.DefaultFlavor.Name
+
+	if runtime.MinInstanceCount.IsNull() || runtime.MinInstanceCount.IsUnknown() {
+		runtime.MinInstanceCount = types.Int64Value(1)
+		modified = true
+	}
+	if runtime.MaxInstanceCount.IsNull() || runtime.MaxInstanceCount.IsUnknown() {
+		runtime.MaxInstanceCount = types.Int64Value(1)
+		modified = true
+	}
+	if runtime.SmallestFlavor.IsNull() || runtime.SmallestFlavor.IsUnknown() {
+		runtime.SmallestFlavor = types.StringValue(defaultFlavor)
+		modified = true
+	}
+	if runtime.BiggestFlavor.IsNull() || runtime.BiggestFlavor.IsUnknown() {
+		runtime.BiggestFlavor = types.StringValue(defaultFlavor)
+		modified = true
+	}
+
+	// Validate flavors
+	flavorSet := instance.Flavors.NamesAsSet()
 	availableFlavors := strings.Join(flavorSet.Slice(), ", ")
 
-	// Validate build_flavor
 	if !runtime.BuildFlavor.IsNull() && !runtime.BuildFlavor.IsUnknown() {
 		if !flavorSet.Contains(runtime.BuildFlavor.ValueString()) {
 			diags.AddAttributeError(
@@ -347,8 +368,6 @@ func ValidateRuntimeFlavors(ctx context.Context, r provider.Provider, variantSlu
 			)
 		}
 	}
-
-	// Validate smallest_flavor
 	if !runtime.SmallestFlavor.IsNull() && !runtime.SmallestFlavor.IsUnknown() {
 		if !flavorSet.Contains(runtime.SmallestFlavor.ValueString()) {
 			diags.AddAttributeError(
@@ -358,8 +377,6 @@ func ValidateRuntimeFlavors(ctx context.Context, r provider.Provider, variantSlu
 			)
 		}
 	}
-
-	// Validate biggest_flavor
 	if !runtime.BiggestFlavor.IsNull() && !runtime.BiggestFlavor.IsUnknown() {
 		if !flavorSet.Contains(runtime.BiggestFlavor.ValueString()) {
 			diags.AddAttributeError(
@@ -369,4 +386,7 @@ func ValidateRuntimeFlavors(ctx context.Context, r provider.Provider, variantSlu
 			)
 		}
 	}
+
+	return modified
 }
+

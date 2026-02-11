@@ -100,5 +100,7 @@ func (r *ResourceStatic) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 		return
 	}
 
-	application.ValidateRuntimeFlavors(ctx, r, "static-apache", plan.Runtime, &res.Diagnostics)
+	if application.DefaultAndValidateRuntimePlan(ctx, r, "static-apache", &plan.Runtime, &res.Diagnostics) {
+		res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+	}
 }

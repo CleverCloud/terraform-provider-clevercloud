@@ -99,5 +99,7 @@ func (r *ResourceFrankenPHP) ModifyPlan(ctx context.Context, req resource.Modify
 		return
 	}
 
-	application.ValidateRuntimeFlavors(ctx, r, "frankenphp", plan.Runtime, &res.Diagnostics)
+	if application.DefaultAndValidateRuntimePlan(ctx, r, "frankenphp", &plan.Runtime, &res.Diagnostics) {
+		res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+	}
 }
