@@ -47,6 +47,7 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 	addon := createAddonRes.Payload()
 
 	appMatomo.ID = pkg.FromStr(addon.RealID)
+	appMatomo.Region = pkg.FromStr(addon.Region)
 	res.Diagnostics.Append(res.State.Set(ctx, appMatomo)...)
 
 	matomoRes := tmp.GetMatomo(ctx, r.Client(), addon.RealID)
@@ -74,9 +75,22 @@ func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, res
 	} else {
 		matomo := matomoRes.Payload()
 		state.Name = pkg.FromStr(matomo.Name)
-		// region ?
 		state.Host = pkg.FromStr(matomo.AccessURL)
 		state.Version = pkg.FromStr(matomo.Version)
+	}
+
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to get Matomo addon", addonRes.Error().Error())
+	} else {
+		addon := addonRes.Payload()
+		state.Region = pkg.FromStr(addon.Region)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
@@ -106,7 +120,7 @@ func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest,
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Matomo", addonRes.Error().Error())
 	} else {
-		state.Name = plan.Name
+		state.Name = pkg.FromStr(addonRes.Payload().Name)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

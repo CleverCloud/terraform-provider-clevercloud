@@ -131,7 +131,7 @@ func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest,
 		resp.Diagnostics.AddError("failed to update Cellar", addonRes.Error().Error())
 		return
 	}
-	state.Name = plan.Name
+	state.Name = pkg.FromStr(addonRes.Payload().Name)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

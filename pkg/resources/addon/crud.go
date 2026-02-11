@@ -136,7 +136,7 @@ func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, 
 		resp.Diagnostics.AddError("failed to update Addon", addonRes.Error().Error())
 		return
 	}
-	state.Name = plan.Name
+	state.Name = pkg.FromStr(addonRes.Payload().Name)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

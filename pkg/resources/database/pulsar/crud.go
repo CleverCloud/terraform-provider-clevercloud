@@ -237,7 +237,7 @@ func (r *ResourcePulsar) Update(ctx context.Context, req resource.UpdateRequest,
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Pulsar", addonRes.Error().Error())
 	} else {
-		state.Name = plan.Name
+		state.Name = pkg.FromStr(addonRes.Payload().Name)
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 	}
 
