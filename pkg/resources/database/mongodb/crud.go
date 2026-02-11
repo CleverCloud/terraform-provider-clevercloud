@@ -110,15 +110,20 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	realID, err := tmp.AddonIDToRealID(ctx, r.Client(), r.Organization(), mg.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to get MongoDB addon", addonRes.Error().Error())
 		return
 	}
+	addonInfo := addonRes.Payload()
 
 	tflog.Debug(ctx, "STATE", map[string]any{"mg": mg})
 	tflog.Debug(ctx, "API", map[string]any{"mg": addonMG})
-	mg.ID = pkg.FromStr(realID)
+	mg.ID = pkg.FromStr(addonInfo.RealID)
+	mg.Name = pkg.FromStr(addonInfo.Name)
+	mg.Region = pkg.FromStr(addonInfo.Region)
+	mg.Plan = pkg.FromStr(addonInfo.Plan.Slug)
+	mg.CreationDate = pkg.FromI(addonInfo.CreationDate)
 	mg.Host = pkg.FromStr(addonMG.Host)
 	mg.Port = pkg.FromI(int64(addonMG.Port))
 	mg.User = pkg.FromStr(addonMG.User)
@@ -157,7 +162,7 @@ func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest
 		resp.Diagnostics.AddError("failed to update MongoDB", addonRes.Error().Error())
 		return
 	}
-	state.Name = plan.Name
+	state.Name = pkg.FromStr(addonRes.Payload().Name)
 
 	addon.SyncNetworkGroups(
 		ctx,

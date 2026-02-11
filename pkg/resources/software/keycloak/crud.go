@@ -69,6 +69,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		res.Diagnostics.AddError("failed to get Keycloak", keycloakRes.Error().Error())
 	} else {
 		keycloak := keycloakRes.Payload()
+		plan.Name = pkg.FromStr(keycloak.Name)
 		plan.Host = pkg.FromStr(keycloak.AccessURL)
 		plan.AdminUsername = pkg.FromStr(keycloak.InitialCredentials.User)
 		plan.AdminPassword = pkg.FromStr(keycloak.InitialCredentials.Password)
@@ -85,6 +86,18 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 	state := helper.From[Keycloak](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	if addonRes.IsNotFoundError() {
+		resp.State.RemoveResource(ctx)
+		return
+	} else if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to get Keycloak addon", addonRes.Error().Error())
+	} else {
+		addon := addonRes.Payload()
+		state.Name = pkg.FromStr(addon.Name)
+		state.Region = pkg.FromStr(addon.Region)
 	}
 
 	keycloakRes := r.SDK.
@@ -128,7 +141,7 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Keycloak", addonRes.Error().Error())
 	} else {
-		state.Name = plan.Name
+		state.Name = pkg.FromStr(addonRes.Payload().Name)
 	}
 
 	// Handle version upgrade
@@ -159,9 +172,8 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 			state.Host = pkg.FromStr(kc.AccessURL)
 			state.AdminUsername = pkg.FromStr(kc.InitialCredentials.User)
 			state.AdminPassword = pkg.FromStr(kc.InitialCredentials.Password)
-			state.Version = pkg.FromStr(kc.Version)
 			state.AccessDomain = pkg.FromStr(kc.EnvVars["CC_KEYCLOAK_HOSTNAME"])
-
+			state.FSBucketID = types.StringPointerValue(kc.Resources.FsbucketID)
 		}
 	}
 

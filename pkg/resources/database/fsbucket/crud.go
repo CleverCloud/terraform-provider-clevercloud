@@ -137,7 +137,7 @@ func (r *ResourceFSBucket) Update(ctx context.Context, req resource.UpdateReques
 		resp.Diagnostics.AddError("failed to update FSBucket", addonRes.Error().Error())
 		return
 	}
-	state.Name = plan.Name
+	state.Name = pkg.FromStr(addonRes.Payload().Name)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

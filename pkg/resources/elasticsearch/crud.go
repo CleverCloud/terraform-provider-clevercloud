@@ -232,9 +232,9 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
-		res.Diagnostics.AddError("failed to update Cellar", addonRes.Error().Error())
+		res.Diagnostics.AddError("failed to update Elasticsearch", addonRes.Error().Error())
 	} else {
-		state.Name = plan.Name
+		state.Name = pkg.FromStr(addonRes.Payload().Name)
 	}
 
 	addon.SyncNetworkGroups(

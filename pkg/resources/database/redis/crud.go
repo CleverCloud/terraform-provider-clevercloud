@@ -176,7 +176,7 @@ func (r *ResourceRedis) Update(ctx context.Context, req resource.UpdateRequest, 
 		resp.Diagnostics.AddError("failed to update Redis", addonRes.Error().Error())
 		return
 	}
-	state.Name = plan.Name
+	state.Name = pkg.FromStr(addonRes.Payload().Name)
 
 	addon.SyncNetworkGroups(
 		ctx,
