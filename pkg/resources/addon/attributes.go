@@ -22,7 +22,7 @@ type CommonAttributes struct {
 var addonCommon = map[string]schema.Attribute{
 	"id":   schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 	"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
-	"plan": schema.StringAttribute{Required: true, MarkdownDescription: "Database size and spec"},
+	"plan": schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Database size and spec", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 	"region": schema.StringAttribute{
 		Optional:            true,
 		Computed:            true,

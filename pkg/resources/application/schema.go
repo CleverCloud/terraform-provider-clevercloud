@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -31,21 +32,29 @@ var runtimeCommon = map[string]schema.Attribute{
 		MarkdownDescription: "Application description",
 	},
 	"min_instance_count": schema.Int64Attribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Minimum instance count",
+		PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 		//Default:             int64default.StaticInt64(1), // TODO: setup all defaults
 	},
 	"max_instance_count": schema.Int64Attribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Maximum instance count, if different from min value, enable auto-scaling",
+		PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 	},
 	"smallest_flavor": schema.StringAttribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Smallest instance flavor",
+		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 	},
 	"biggest_flavor": schema.StringAttribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Biggest instance flavor, if different from smallest, enable auto-scaling",
+		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 	},
 	"build_flavor": schema.StringAttribute{
 		Optional:            true,
@@ -202,21 +211,29 @@ var runtimeCommonV0 = map[string]schema.Attribute{
 		MarkdownDescription: "Application description",
 	},
 	"min_instance_count": schema.Int64Attribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Minimum instance count",
+		PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 		//Default:             int64default.StaticInt64(1), // TODO: setup all defaults
 	},
 	"max_instance_count": schema.Int64Attribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Maximum instance count, if different from min value, enable auto-scaling",
+		PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 	},
 	"smallest_flavor": schema.StringAttribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Smallest instance flavor",
+		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 	},
 	"biggest_flavor": schema.StringAttribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Biggest instance flavor, if different from smallest, enable auto-scaling",
+		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 	},
 	"build_flavor": schema.StringAttribute{
 		Optional:            true,
