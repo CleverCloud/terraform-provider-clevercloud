@@ -103,5 +103,7 @@ func (r *ResourceLinux) ModifyPlan(ctx context.Context, req resource.ModifyPlanR
 		return
 	}
 
-	application.ValidateRuntimeFlavors(ctx, r, "linux", plan.Runtime, &res.Diagnostics)
+	if application.DefaultAndValidateRuntimePlan(ctx, r, "linux", &plan.Runtime, &res.Diagnostics) {
+		res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+	}
 }
