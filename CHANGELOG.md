@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.9.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.9.0...v1.9.1) (2026-02-12)
+
+
+### Bug Fixes
+
+* **addons:** use API response instead of plan values ([0e6c0fa](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/0e6c0fac723467c0d0b4fd965e08f4dd49cddceb)), closes [#267](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/267)
+* **elasticsearch:** validate version on apply ([de57abb](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/de57abbb15772152f8b2bd25c40278dd24d7c32d)), closes [#338](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/338)
+
 ## [1.9.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.8.0...v1.9.0) (2026-01-23)
 
 
