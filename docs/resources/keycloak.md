@@ -3,14 +3,46 @@
 page_title: "clevercloud_keycloak Resource - terraform-provider-clevercloud"
 description: |-
   Manage Keycloak https://www.keycloak.org/ product.
-  See Keycloak product specification https://www.clever.cloud/developers/doc/addons/keycloak/.
+  See Keycloak product specification https://www.clever-cloud.com/developers/doc/addons/keycloak/.
+  Realms Management
+  The realms attribute allows you to create additional Keycloak realms beyond the default master realm.
+  Important notes:
+  Realms can only be added, not removed once createdRealm names must contain only alphanumeric characters, underscores and hyphensWhen you add new realms to an existing Keycloak instance, the underlying Java application will be restarted automaticallyRemoving realms from the configuration will not delete them from Keycloak, they will remain in the state
+  Example:
+  
+  resource "clevercloud_keycloak" "example" {
+    name   = "my-keycloak"
+    region = "par"
+    realms = ["production", "staging", "dev"]
+  }
 ---
 
 # clevercloud_keycloak (Resource)
 
 Manage [Keycloak](https://www.keycloak.org/) product.
 
-See [Keycloak product specification](https://www.clever.cloud/developers/doc/addons/keycloak/).
+See [Keycloak product specification](https://www.clever-cloud.com/developers/doc/addons/keycloak/).
+
+## Realms Management
+
+The `realms` attribute allows you to create additional Keycloak realms beyond the default `master` realm.
+
+**Important notes:**
+
+- Realms can only be **added**, not removed once created
+- Realm names must contain only alphanumeric characters, underscores and hyphens
+- When you add new realms to an existing Keycloak instance, the underlying Java application will be restarted automatically
+- Removing realms from the configuration will not delete them from Keycloak, they will remain in the state
+
+**Example:**
+
+```hcl
+resource "clevercloud_keycloak" "example" {
+  name   = "my-keycloak"
+  region = "par"
+  realms = ["production", "staging", "dev"]
+}
+```
 
 
 
@@ -24,6 +56,7 @@ See [Keycloak product specification](https://www.clever.cloud/developers/doc/add
 ### Optional
 
 - `access_domain` (String) Main domaine to access the instance
+- `realms` (Set of String) List of realms to create. Note: realms can only be added, not removed once created.
 - `region` (String) Geographical region where the data will be stored
 - `version` (String) Keycloak official version
 
