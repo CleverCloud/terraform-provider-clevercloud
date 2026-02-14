@@ -105,6 +105,9 @@ func Read[T RuntimePlan](ctx context.Context, resource RuntimeResource, state T)
 	// Read linked dependencies (addons)
 	runtime.Dependencies = ReadDependencies(ctx, resource.Client(), resource.Organization(), runtime.ID.ValueString(), runtime.Dependencies, &diags)
 
+	// Read deployed commit
+	runtime.DeployedCommit = ReadDeployedCommit(ctx, resource, runtime.ID.ValueString(), &diags)
+
 	// Map environment variables to runtime-specific fields
 	state.FromEnv(ctx, env, &diags)
 

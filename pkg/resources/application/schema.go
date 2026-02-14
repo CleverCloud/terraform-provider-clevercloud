@@ -129,6 +129,10 @@ var runtimeCommon = map[string]schema.Attribute{
 		MarkdownDescription: "Git URL used to push source code",
 		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 	},
+	"deployed_commit": schema.StringAttribute{
+		Computed:            true,
+		MarkdownDescription: "The commit hash currently deployed on the application",
+	},
 	"environment": schema.MapAttribute{
 		Optional:    true,
 		Sensitive:   true,
