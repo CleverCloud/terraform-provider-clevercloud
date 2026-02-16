@@ -87,7 +87,13 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -134,7 +140,13 @@ func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), addonId, map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -154,7 +166,13 @@ func (r *ResourceOtoroshi) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), otoroshi.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), otoroshi.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

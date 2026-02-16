@@ -32,6 +32,7 @@ func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.AddError("failed to find fs-bucket provider", "")
 		return
 	}
+
 	plan := prov.FirstPlan()
 	if plan == nil {
 		resp.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
@@ -87,7 +88,13 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), fsbucket.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), fsbucket.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -98,7 +105,7 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 	addon := addonRes.Payload()
 
-	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), fsbucket.ID.ValueString())
+	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), addonId)
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon env", addonEnvRes.Error().Error())
 		return
@@ -137,8 +144,14 @@ func (r *ResourceFSBucket) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), addonId, map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -158,7 +171,13 @@ func (r *ResourceFSBucket) Delete(ctx context.Context, req resource.DeleteReques
 	}
 	tflog.Debug(ctx, "ResourceFSBucket.Delete()")
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), fsbucket.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), fsbucket.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

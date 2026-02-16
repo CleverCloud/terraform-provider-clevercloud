@@ -113,7 +113,13 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	if err != nil {
+		res.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
 	if addonRes.IsNotFoundError() {
 		res.State.RemoveResource(ctx)
 		return
@@ -124,19 +130,14 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 		r.readFromAddon(&state, *addonRes.Payload())
 	}
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
-	if err != nil {
-		res.Diagnostics.AddError("failed to get addon ID", err.Error())
+	elasticRes := tmp.GetElasticsearch(ctx, r.Client(), addonId)
+	if elasticRes.HasError() {
+		res.Diagnostics.AddError("failed to get Elasticsearch resource", elasticRes.Error().Error())
 	} else {
-		elasticRes := tmp.GetElasticsearch(ctx, r.Client(), addonId)
-		if elasticRes.HasError() {
-			res.Diagnostics.AddError("failed to get Elasticsearch resource", elasticRes.Error().Error())
-		} else {
-			r.readFromAPI(&state, *elasticRes.Payload(), &res.Diagnostics)
-		}
+		r.readFromAPI(&state, *elasticRes.Payload(), &res.Diagnostics)
 	}
 
-	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, identity.ID.ValueString(), &res.Diagnostics)
+	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }
@@ -234,8 +235,14 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 		return
 	}
 
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	if err != nil {
+		res.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), identity.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), addonId, map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -247,7 +254,7 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 	addon.SyncNetworkGroups(
 		ctx,
 		r,
-		identity.ID.ValueString(),
+		addonId,
 		plan.Networkgroups,
 		&res.Diagnostics,
 	)
@@ -263,7 +270,13 @@ func (r *ResourceElasticsearch) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	deleteRes := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	if err != nil {
+		res.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	deleteRes := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
 	if deleteRes.IsNotFoundError() {
 		res.State.RemoveResource(ctx)
 		return

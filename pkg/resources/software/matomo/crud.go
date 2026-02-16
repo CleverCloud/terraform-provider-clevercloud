@@ -127,8 +127,14 @@ func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), addonId, map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {

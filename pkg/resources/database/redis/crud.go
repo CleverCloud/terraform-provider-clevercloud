@@ -99,7 +99,13 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), rd.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), rd.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -110,7 +116,7 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 	addonRD := addonRes.Payload()
 
-	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), rd.ID.ValueString())
+	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), addonId)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Redis connection infos", envRes.Error().Error())
 		return
@@ -133,7 +139,7 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 	rd.Region = pkg.FromStr(addonRD.Region)
 	rd.Token = envAsMap["REDIS_PASSWORD"]
 
-	rd.Networkgroups = resources.ReadNetworkGroups(ctx, r, rd.ID.ValueString(), &resp.Diagnostics)
+	rd.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, rd)...)
 }
@@ -157,8 +163,14 @@ func (r *ResourceRedis) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), addonId, map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -170,7 +182,7 @@ func (r *ResourceRedis) Update(ctx context.Context, req resource.UpdateRequest, 
 	addon.SyncNetworkGroups(
 		ctx,
 		r,
-		plan.ID.ValueString(),
+		addonId,
 		plan.Networkgroups,
 		&resp.Diagnostics,
 	)
@@ -186,7 +198,13 @@ func (r *ResourceRedis) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 	tflog.Debug(ctx, "ResourceRedis.Delete()")
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), rd.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), rd.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

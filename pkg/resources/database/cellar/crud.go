@@ -52,6 +52,7 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 	addonRes := res.Payload()
+
 	tflog.Debug(ctx, "get add-on env vars", map[string]any{"cellar": addonRes.RealID})
 
 	cellar.ID = pkg.FromStr(addonRes.RealID)
@@ -80,7 +81,13 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -91,7 +98,7 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 	addon := addonRes.Payload()
 
-	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
+	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), addonId)
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
@@ -127,8 +134,14 @@ func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), plan.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), addonId, map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -148,19 +161,13 @@ func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 	tflog.Debug(ctx, "ResourceCellar.Delete()")
 
-	// Cellar uses RealID in state but DeleteAddon needs the legacy addon ID,
-	// so we resolve it via GetAddon first.
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
-	if addonRes.IsNotFoundError() {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	if addonRes.HasError() {
-		resp.Diagnostics.AddError("failed to get Add-on", addonRes.Error().Error())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonRes.Payload().ID)
+	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
