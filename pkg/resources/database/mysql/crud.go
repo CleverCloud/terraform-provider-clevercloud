@@ -138,6 +138,11 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
+	if my.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	// IDs
 	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), my.ID.ValueString())
 	if err != nil {

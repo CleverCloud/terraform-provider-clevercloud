@@ -20,7 +20,10 @@ func (r *ResourceStatic) Create(ctx context.Context, req resource.CreateRequest,
 
 	resp.Diagnostics.Append(application.Create(ctx, r, &plan)...)
 
-	// First save: persist ID even if there were partial errors
+	// Only save state if the app was created (has valid ID)
+	if plan.ID.IsUnknown() || plan.ID.IsNull() {
+		return
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
 		return

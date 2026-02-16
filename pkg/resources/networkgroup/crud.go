@@ -65,6 +65,11 @@ func (r *ResourceNG) Read(ctx context.Context, req resource.ReadRequest, resp *r
 		return
 	}
 
+	if state.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	ngRes := r.SDK.
 		V4().
 		Networkgroups().

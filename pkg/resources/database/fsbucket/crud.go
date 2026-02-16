@@ -81,6 +81,11 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	if fsbucket.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), fsbucket.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)

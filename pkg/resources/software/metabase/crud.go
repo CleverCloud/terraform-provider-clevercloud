@@ -67,6 +67,11 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	if state.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	addonMBRes := tmp.GetMetabase(ctx, r.Client(), state.ID.ValueString())
 	if addonMBRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)

@@ -85,6 +85,11 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
+	if addonConfigProvider.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	addonEnvRes := tmp.GetConfigProviderEnv(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString())
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())

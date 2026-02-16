@@ -55,6 +55,11 @@ func (r *ResourceKubernetesNodegroup) Read(ctx context.Context, req resource.Rea
 		return
 	}
 
+	if identity.ID.ValueString() == "" {
+		res.State.RemoveResource(ctx)
+		return
+	}
+
 	ngRes := r.SDK.V4().Kubernetes().
 		Organisations().Ownerid(r.Organization()).
 		Clusters().Clusterid(state.KubernetesID.ValueString()).
