@@ -100,6 +100,11 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
+	if rd.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), rd.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
