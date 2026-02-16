@@ -48,6 +48,12 @@ func ReadApp(ctx context.Context, cc *client.Client, orgId, appId string) (*Read
 	diags := diag.Diagnostics{}
 	r := &ReadAppRes{}
 
+	// Guard: empty ID means resource was never fully created (fix #351)
+	if appId == "" {
+		r.AppIsDeleted = true
+		return r, diags
+	}
+
 	appRes := tmp.GetApp(ctx, cc, orgId, appId)
 	if appRes.IsNotFoundError() {
 		r.AppIsDeleted = true

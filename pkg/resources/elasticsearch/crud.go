@@ -108,6 +108,11 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
+	if identity.ID.ValueString() == "" {
+		res.State.RemoveResource(ctx)
+		return
+	}
+
 	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		res.State.RemoveResource(ctx)

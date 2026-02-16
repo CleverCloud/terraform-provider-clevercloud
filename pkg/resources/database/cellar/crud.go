@@ -78,6 +78,11 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
+	if cellar.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)

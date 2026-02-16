@@ -76,6 +76,11 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 	identity := helper.From[KubernetesIdentity](ctx, req.Identity, &resp.Diagnostics)
 	state := Kubernetes{}
 
+	if identity.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	kubernetesRes := tmp.GetKubernetes(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
 	if kubernetesRes.HasError() {
 		resp.Diagnostics.AddError("Failed to get kubernetes instance", kubernetesRes.Error().Error())

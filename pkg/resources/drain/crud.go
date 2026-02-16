@@ -47,6 +47,11 @@ func (r *ResourceDrain[T]) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	if state.GetDrain().ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	// Get drain from API
 	drainRes := tmp.GetDrain(ctx, r.Client(), r.Organization(), state.GetDrain().ResourceID.ValueString(), state.GetDrain().ID.ValueString())
 	if drainRes.HasError() {
