@@ -100,5 +100,7 @@ func (r *ResourceNodeJS) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 		return
 	}
 
-	application.ValidateRuntimeFlavors(ctx, r, "node", plan.Runtime, &res.Diagnostics)
+	if application.DefaultAndValidateRuntimePlan(ctx, r, "node", &plan.Runtime, &res.Diagnostics) {
+		res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+	}
 }

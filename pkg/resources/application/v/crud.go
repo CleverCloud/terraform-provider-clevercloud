@@ -100,5 +100,7 @@ func (r *ResourceV) ModifyPlan(ctx context.Context, req resource.ModifyPlanReque
 		return
 	}
 
-	application.ValidateRuntimeFlavors(ctx, r, "v", plan.Runtime, &res.Diagnostics)
+	if application.DefaultAndValidateRuntimePlan(ctx, r, "v", &plan.Runtime, &res.Diagnostics) {
+		res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+	}
 }

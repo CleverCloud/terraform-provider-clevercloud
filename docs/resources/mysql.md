@@ -20,12 +20,12 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 ### Required
 
 - `name` (String) Name of the service
-- `plan` (String) Database size and spec
 
 ### Optional
 
 - `backup` (Boolean) Enable or disable backups for this MySQL add-on. Since backups are included in the add-on price, disabling it has no impact on your billing.
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
+- `plan` (String) Database size and spec
 - `read_only_users` (Attributes List) MySQL users with read-only access (see [below for nested schema](#nestedatt--read_only_users))
 - `region` (String) Geographical region where the data will be stored
 - `version` (String) MySQL version

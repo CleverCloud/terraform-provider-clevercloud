@@ -97,5 +97,7 @@ func (r *ResourceDocker) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 		return
 	}
 
-	application.ValidateRuntimeFlavors(ctx, r, "docker", plan.Runtime, &res.Diagnostics)
+	if application.DefaultAndValidateRuntimePlan(ctx, r, "docker", &plan.Runtime, &res.Diagnostics) {
+		res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+	}
 }
