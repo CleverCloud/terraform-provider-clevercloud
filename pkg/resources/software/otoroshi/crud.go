@@ -82,6 +82,11 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
+	if state.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)

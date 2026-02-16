@@ -83,6 +83,11 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
+	if kv.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	addonKVRes := r.SDK.V4().Materia().
 		Organisations().Ownerid(r.Organization()).Materia().
 		Databases().Resourceid(kv.ID.ValueString()).Getmateriakvv4(ctx)

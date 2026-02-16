@@ -89,6 +89,11 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
+	if state.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	pulsarRes := tmp.GetPulsar(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if pulsarRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())

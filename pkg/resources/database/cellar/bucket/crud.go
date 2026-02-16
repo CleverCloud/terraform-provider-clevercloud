@@ -47,6 +47,11 @@ func (r *ResourceCellarBucket) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
+	if cellar.Name.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	// nothing to update yet
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)

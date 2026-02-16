@@ -69,6 +69,11 @@ func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
+	if state.ID.ValueString() == "" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
 	matomoRes := tmp.GetMatomo(ctx, r.Client(), state.ID.ValueString())
 	if matomoRes.HasError() {
 		resp.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
