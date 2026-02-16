@@ -16,7 +16,12 @@ import (
 
 // Create a new resource
 func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceMongoDB.Create()")
+
 	mg := helper.PlanFrom[MongoDB](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
@@ -81,7 +86,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 
 // Read resource information
 func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "MongoDB READ", map[string]any{"request": req})
+	tflog.Debug(ctx, "ResourceMongoDB.Read()")
 
 	mg := helper.StateFrom[MongoDB](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -94,6 +99,22 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
+	if addonRes.IsNotFoundError() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to get MongoDB addon", addonRes.Error().Error())
+		return
+	}
+	addonInfo := addonRes.Payload()
+	mg.ID = pkg.FromStr(addonInfo.RealID)
+	mg.Name = pkg.FromStr(addonInfo.Name)
+	mg.Region = pkg.FromStr(addonInfo.Region)
+	mg.Plan = pkg.FromStr(addonInfo.Plan.Slug)
+	mg.CreationDate = pkg.FromI(addonInfo.CreationDate)
+
 	addonMGRes := tmp.GetMongoDB(ctx, r.Client(), addonId)
 	if addonMGRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
@@ -101,8 +122,8 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 	if addonMGRes.HasError() {
 		resp.Diagnostics.AddError("failed to get MongoDB resource", addonMGRes.Error().Error())
+		return
 	}
-
 	addonMG := addonMGRes.Payload()
 
 	if addonMG.Status == "TO_DELETE" {
@@ -110,20 +131,6 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
-	if addonRes.HasError() {
-		resp.Diagnostics.AddError("failed to get MongoDB addon", addonRes.Error().Error())
-		return
-	}
-	addonInfo := addonRes.Payload()
-
-	tflog.Debug(ctx, "STATE", map[string]any{"mg": mg})
-	tflog.Debug(ctx, "API", map[string]any{"mg": addonMG})
-	mg.ID = pkg.FromStr(addonInfo.RealID)
-	mg.Name = pkg.FromStr(addonInfo.Name)
-	mg.Region = pkg.FromStr(addonInfo.Region)
-	mg.Plan = pkg.FromStr(addonInfo.Plan.Slug)
-	mg.CreationDate = pkg.FromI(addonInfo.CreationDate)
 	mg.Host = pkg.FromStr(addonMG.Host)
 	mg.Port = pkg.FromI(int64(addonMG.Port))
 	mg.User = pkg.FromStr(addonMG.User)
@@ -133,12 +140,13 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 
 	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
 
-	diags := resp.State.Set(ctx, mg)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 }
 
 // Update resource
 func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceMongoDB.Update()")
+
 	plan := helper.PlanFrom[MongoDB](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -182,7 +190,7 @@ func (r *ResourceMongoDB) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	tflog.Debug(ctx, "MongoDB DELETE", map[string]any{"mg": mg})
+	tflog.Debug(ctx, "ResourceMongoDB.Delete()")
 
 	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), mg.ID.ValueString())
 	if err != nil {

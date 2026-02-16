@@ -13,6 +13,8 @@ import (
 
 // Create a new resource
 func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceFSBucket.Create()")
+
 	fsbucket := helper.PlanFrom[FSBucket](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -30,7 +32,11 @@ func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.AddError("failed to find fs-bucket provider", "")
 		return
 	}
-	plan := prov.Plans[0]
+	plan := prov.FirstPlan()
+	if plan == nil {
+		resp.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
+		return
+	}
 
 	addonReq := tmp.AddonRequest{
 		Name:       fsbucket.Name.ValueString(),
@@ -74,7 +80,7 @@ func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateReques
 
 // Read resource information
 func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "FSBucket READ", map[string]any{"request": req})
+	tflog.Debug(ctx, "ResourceFSBucket.Read()")
 
 	fsbucket := helper.StateFrom[FSBucket](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -114,6 +120,8 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 
 // Update resource
 func (r *ResourceFSBucket) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceFSBucket.Update()")
+
 	plan := helper.PlanFrom[FSBucket](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -124,7 +132,7 @@ func (r *ResourceFSBucket) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	if plan.ID != state.ID {
+	if plan.ID.ValueString() != state.ID.ValueString() {
 		resp.Diagnostics.AddError("fsbucket cannot be updated", "mismatched IDs")
 		return
 	}
@@ -148,16 +156,7 @@ func (r *ResourceFSBucket) Delete(ctx context.Context, req resource.DeleteReques
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "FSBUCKET DELETE", map[string]any{"fsbucket": fsbucket})
-
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), fsbucket.ID.ValueString())
-	if addonRes.IsNotFoundError() {
-		resp.State.RemoveResource(ctx)
-	}
-	if addonRes.HasError() {
-		resp.Diagnostics.AddError("failed to get Addon", addonRes.Error().Error())
-		return
-	}
+	tflog.Debug(ctx, "ResourceFSBucket.Delete()")
 
 	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), fsbucket.ID.ValueString())
 	if res.IsNotFoundError() {

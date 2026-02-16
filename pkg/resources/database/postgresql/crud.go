@@ -43,6 +43,8 @@ func (r *ResourcePostgreSQL) Infos(ctx context.Context, diags *diag.Diagnostics)
 }
 
 func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourcePostgreSQL.Create()")
+
 	pg := helper.PlanFrom[PostgreSQL](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -136,6 +138,8 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 }
 
 func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	tflog.Debug(ctx, "ResourcePostgreSQL.Read()")
+
 	pg := helper.StateFrom[PostgreSQL](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -204,6 +208,8 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 }
 
 func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourcePostgreSQL.Update()")
+
 	plan := helper.PlanFrom[PostgreSQL](ctx, req.Plan, &resp.Diagnostics)
 	state := helper.StateFrom[PostgreSQL](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -216,18 +222,14 @@ func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequ
 	}
 
 	// Only name can be edited
-	if !plan.Name.Equal(state.Name) {
-		addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-			"name": plan.Name.ValueString(),
-		})
-		if addonRes.HasError() {
-			resp.Diagnostics.AddError("failed to update PostgreSQL", addonRes.Error().Error())
-		} else {
-			addon := addonRes.Payload()
-			state.Name = pkg.FromStr(addon.Name)
-			resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-		}
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
+		"name": plan.Name.ValueString(),
+	})
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to update PostgreSQL", addonRes.Error().Error())
+		return
 	}
+	state.Name = pkg.FromStr(addonRes.Payload().Name)
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -391,7 +393,7 @@ func (r *ResourcePostgreSQL) Delete(ctx context.Context, req resource.DeleteRequ
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "PostgreSQL DELETE", map[string]any{"pg": pg})
+	tflog.Debug(ctx, "ResourcePostgreSQL.Delete()")
 
 	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), pg.ID.ValueString())
 	if err != nil {
@@ -400,9 +402,14 @@ func (r *ResourcePostgreSQL) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 
 	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonID)
-	if res.HasError() && !res.IsNotFoundError() {
-		resp.Diagnostics.AddError("failed to delete addon", res.Error().Error())
-	} else {
+	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
+		return
 	}
+	if res.HasError() {
+		resp.Diagnostics.AddError("failed to delete addon", res.Error().Error())
+		return
+	}
+
+	resp.State.RemoveResource(ctx)
 }

@@ -4,9 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
@@ -15,6 +13,8 @@ import (
 
 // Create a new resource
 func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceMateriaKV.Create()")
+
 	kv := helper.PlanFrom[MateriaKV](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -74,31 +74,37 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 
 // Read resource information
 func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "MateriaKV READ", map[string]any{"request": req})
+	tflog.Debug(ctx, "ResourceMateriaKV.Read()")
 
-	var kv MateriaKV
-	diags := req.State.Get(ctx, &kv)
-	resp.Diagnostics.Append(diags...)
+	kv := helper.StateFrom[MateriaKV](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
+	if addonRes.IsNotFoundError() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to get MateriaKV addon", addonRes.Error().Error())
+		return
+	}
+	addon := addonRes.Payload()
+	kv.Name = pkg.FromStr(addon.Name)
+	kv.Region = pkg.FromStr(addon.Region)
+	kv.CreationDate = pkg.FromI(addon.CreationDate)
+
 	addonKVRes := r.SDK.V4().Materia().
 		Organisations().Ownerid(r.Organization()).Materia().
 		Databases().Resourceid(kv.ID.ValueString()).Getmateriakvv4(ctx)
-	if addonKVRes.IsNotFoundError() {
-		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
 	if addonKVRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
 	}
 	if addonKVRes.HasError() {
 		resp.Diagnostics.AddError("failed to get materiakv resource", addonKVRes.Error().Error())
+		return
 	}
 
 	addonKV := addonKVRes.Payload()
@@ -108,28 +114,30 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	tflog.Debug(ctx, "STATE", map[string]any{"kv": kv})
-	tflog.Debug(ctx, "API", map[string]any{"kv": addonKV})
 	kv.Host = pkg.FromStr(addonKV.Host)
 	kv.Port = pkg.FromI(int64(addonKV.Port))
 	kv.Token = pkg.FromStr(addonKV.Token)
 
-	diags = resp.State.Set(ctx, kv)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
 }
 
 // Update resource
 func (r *ResourceMateriaKV) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceMateriaKV.Update()")
+
 	plan := helper.PlanFrom[MateriaKV](ctx, req.Plan, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
 	state := helper.StateFrom[MateriaKV](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	if plan.ID.ValueString() != state.ID.ValueString() {
+		resp.Diagnostics.AddError("materiakv cannot be updated", "mismatched IDs")
+		return
+	}
+
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -137,6 +145,7 @@ func (r *ResourceMateriaKV) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 	state.Name = pkg.FromStr(addonRes.Payload().Name)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
@@ -146,7 +155,7 @@ func (r *ResourceMateriaKV) Delete(ctx context.Context, req resource.DeleteReque
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "MateriaKV DELETE", map[string]any{"kv": kv})
+	tflog.Debug(ctx, "ResourceMateriaKV.Delete()")
 
 	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
 	if res.IsNotFoundError() {

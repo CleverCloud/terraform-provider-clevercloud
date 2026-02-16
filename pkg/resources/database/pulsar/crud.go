@@ -15,7 +15,7 @@ import (
 
 // Create a new resource
 func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	tflog.Debug(ctx, "ResourcePulsar.Create()", map[string]any{"request": fmt.Sprintf("%+v", req.Plan)})
+	tflog.Debug(ctx, "ResourcePulsar.Create()")
 
 	plan := helper.PlanFrom[Pulsar](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -82,12 +82,24 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 
 // Read resource information
 func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Pulsar READ", map[string]any{"request": req})
+	tflog.Debug(ctx, "ResourcePulsar.Read()")
 
 	state := helper.StateFrom[Pulsar](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	if addonRes.IsNotFoundError() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to get add-on", addonRes.Error().Error())
+		return
+	}
+	addon := addonRes.Payload()
+	readOldAddon(&state, addon, &resp.Diagnostics)
 
 	pulsarRes := tmp.GetPulsar(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if pulsarRes.HasError() {
@@ -104,14 +116,6 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 	pulsarCluster := pulsarClusterRes.Payload()
 	readCluster(&state, pulsarCluster, &resp.Diagnostics)
-
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
-	if addonRes.HasError() {
-		resp.Diagnostics.AddError("failed to get add-on", addonRes.Error().Error())
-		return
-	}
-	addon := addonRes.Payload()
-	readOldAddon(&state, addon, &resp.Diagnostics)
 
 	readRetention(ctx, &state, &resp.Diagnostics)
 
@@ -220,13 +224,16 @@ func setRetention(ctx context.Context, plan *Pulsar, diags *diag.Diagnostics) {
 
 // Update resource
 func (r *ResourcePulsar) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourcePulsar.Update()")
+
 	plan := helper.PlanFrom[Pulsar](ctx, req.Plan, &resp.Diagnostics)
 	state := helper.StateFrom[Pulsar](ctx, req.State, &resp.Diagnostics)
-	if plan.ID.ValueString() != state.ID.ValueString() {
-		resp.Diagnostics.AddError("pulsar cannot be updated", "mismatched IDs")
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
-	if resp.Diagnostics.HasError() {
+	if plan.ID.ValueString() != state.ID.ValueString() {
+		resp.Diagnostics.AddError("pulsar cannot be updated", "mismatched IDs")
 		return
 	}
 
@@ -236,19 +243,19 @@ func (r *ResourcePulsar) Update(ctx context.Context, req resource.UpdateRequest,
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Pulsar", addonRes.Error().Error())
-	} else {
-		state.Name = pkg.FromStr(addonRes.Payload().Name)
-		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+		return
 	}
+	state.Name = pkg.FromStr(addonRes.Payload().Name)
 
+	// Retention hook
 	state.RetentionPeriod = plan.RetentionPeriod
 	state.RetentionSize = plan.RetentionSize
 	setRetention(ctx, &state, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
-	} else {
-		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Delete resource
@@ -257,7 +264,7 @@ func (r *ResourcePulsar) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Pulsar DELETE", map[string]any{"pulsar": state})
+	tflog.Debug(ctx, "ResourcePulsar.Delete()")
 
 	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if res.IsNotFoundError() {

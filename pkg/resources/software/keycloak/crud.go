@@ -14,7 +14,13 @@ import (
 
 // Create a new resource
 func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
-	plan := helper.From[Keycloak](ctx, req.Plan, &res.Diagnostics)
+	tflog.Debug(ctx, "ResourceKeycloak.Create()")
+
+	plan := helper.PlanFrom[Keycloak](ctx, req.Plan, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
 	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		res.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
@@ -83,7 +89,9 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 
 // Read resource information
 func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	state := helper.From[Keycloak](ctx, req.State, &resp.Diagnostics)
+	tflog.Debug(ctx, "ResourceKeycloak.Read()")
+
+	state := helper.StateFrom[Keycloak](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -92,13 +100,14 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
-	} else if addonRes.HasError() {
-		resp.Diagnostics.AddError("failed to get Keycloak addon", addonRes.Error().Error())
-	} else {
-		addon := addonRes.Payload()
-		state.Name = pkg.FromStr(addon.Name)
-		state.Region = pkg.FromStr(addon.Region)
 	}
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to get Keycloak addon", addonRes.Error().Error())
+		return
+	}
+	addon := addonRes.Payload()
+	state.Name = pkg.FromStr(addon.Name)
+	state.Region = pkg.FromStr(addon.Region)
 
 	keycloakRes := r.SDK.
 		V4().
@@ -111,24 +120,27 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 	if keycloakRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
-	} else if keycloakRes.HasError() {
-		resp.Diagnostics.AddError("failed to get keycloak", keycloakRes.Error().Error())
-	} else {
-		keycloak := keycloakRes.Payload()
-		state.Host = pkg.FromStr(keycloak.AccessURL)
-		state.AdminUsername = pkg.FromStr(keycloak.InitialCredentials.User)
-		state.AdminPassword = pkg.FromStr(keycloak.InitialCredentials.Password)
-		state.Version = pkg.FromStr(keycloak.Version)
-		state.AccessDomain = pkg.FromStr(keycloak.EnvVars["CC_KEYCLOAK_HOSTNAME"])
-		state.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
 	}
+	if keycloakRes.HasError() {
+		resp.Diagnostics.AddError("failed to get keycloak", keycloakRes.Error().Error())
+		return
+	}
+	keycloak := keycloakRes.Payload()
+	state.Host = pkg.FromStr(keycloak.AccessURL)
+	state.AdminUsername = pkg.FromStr(keycloak.InitialCredentials.User)
+	state.AdminPassword = pkg.FromStr(keycloak.InitialCredentials.Password)
+	state.Version = pkg.FromStr(keycloak.Version)
+	state.AccessDomain = pkg.FromStr(keycloak.EnvVars["CC_KEYCLOAK_HOSTNAME"])
+	state.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Update resource
 func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
-	plan := helper.From[Keycloak](ctx, req.Plan, &resp.Diagnostics)
+	tflog.Debug(ctx, "ResourceKeycloak.Update()")
+
+	plan := helper.PlanFrom[Keycloak](ctx, req.Plan, &resp.Diagnostics)
 	state := helper.StateFrom[Keycloak](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -182,15 +194,22 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 
 // Delete resource
 func (r *ResourceKeycloak) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	state := helper.From[Keycloak](ctx, req.State, &resp.Diagnostics)
+	tflog.Debug(ctx, "ResourceKeycloak.Delete()")
+
+	state := helper.StateFrom[Keycloak](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
-	if res.HasError() && !res.IsNotFoundError() {
-		resp.Diagnostics.AddError("failed to delete addon", res.Error().Error())
-	} else {
+	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
+		return
 	}
+	if res.HasError() {
+		resp.Diagnostics.AddError("failed to delete addon", res.Error().Error())
+		return
+	}
+
+	resp.State.RemoveResource(ctx)
 }

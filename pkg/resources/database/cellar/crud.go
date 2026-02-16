@@ -13,6 +13,8 @@ import (
 
 // Create a new resource
 func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceCellar.Create()")
+
 	cellar := helper.PlanFrom[Cellar](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -71,7 +73,7 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 
 // Read resource information
 func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Cellar READ", map[string]any{"request": req})
+	tflog.Debug(ctx, "ResourceCellar.Read()")
 
 	cellar := helper.StateFrom[Cellar](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
@@ -108,6 +110,8 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 
 // Update resource
 func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceCellar.Update()")
+
 	plan := helper.PlanFrom[Cellar](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -118,7 +122,7 @@ func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	if plan.ID != state.ID {
+	if plan.ID.ValueString() != state.ID.ValueString() {
 		resp.Diagnostics.AddError("cellar cannot be updated", "mismatched IDs")
 		return
 	}
@@ -142,19 +146,20 @@ func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "CELLAR DELETE", map[string]any{"cellar": state})
+	tflog.Debug(ctx, "ResourceCellar.Delete()")
 
+	// Cellar uses RealID in state but DeleteAddon needs the legacy addon ID,
+	// so we resolve it via GetAddon first.
 	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
+		return
 	}
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Add-on", addonRes.Error().Error())
 		return
 	}
 
-	// TODO: Use real ID when API supports it
-	// res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
 	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonRes.Payload().ID)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)

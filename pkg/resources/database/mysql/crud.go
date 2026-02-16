@@ -48,6 +48,8 @@ func (r *ResourceMySQL) Infos(ctx context.Context, diags *diag.Diagnostics) *tmp
 
 // Create a new resource
 func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceMySQL.Create()")
+
 	my := helper.PlanFrom[MySQL](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -130,7 +132,7 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 
 // Read resource information
 func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Mysql READ", map[string]any{"request": req})
+	tflog.Debug(ctx, "ResourceMySQL.Read()")
 
 	// State
 	my := helper.StateFrom[MySQL](ctx, req.State, &resp.Diagnostics)
@@ -203,6 +205,8 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 
 // Update resource
 func (r *ResourceMySQL) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceMySQL.Update()")
+
 	plan := helper.PlanFrom[MySQL](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -245,7 +249,7 @@ func (r *ResourceMySQL) Delete(ctx context.Context, req resource.DeleteRequest, 
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "MySQL DELETE", map[string]any{"my": my})
+	tflog.Debug(ctx, "ResourceMySQL.Delete()")
 
 	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), my.ID.ValueString())
 	if err != nil {

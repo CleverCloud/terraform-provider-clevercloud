@@ -8,6 +8,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -22,6 +23,8 @@ func (r *ResourceElasticsearch) Configure(ctx context.Context, req resource.Conf
 }
 
 func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceElasticsearch.Create()")
+
 	identity := ElasticsearchIdentity{}
 	plan := helper.PlanFrom[Elasticsearch](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
@@ -102,6 +105,8 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 }
 
 func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadRequest, res *resource.ReadResponse) {
+	tflog.Debug(ctx, "ResourceElasticsearch.Read()")
+
 	identity := helper.IdentityFrom[ElasticsearchIdentity](ctx, *req.Identity, &res.Diagnostics)
 	state := helper.StateFrom[Elasticsearch](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
@@ -200,6 +205,8 @@ func (r *ResourceElasticsearch) readFromAddon(state *Elasticsearch, addon tmp.Ad
 }
 
 func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceElasticsearch.Update()")
+
 	// TODO
 	// during upgrade, give new plan, new version, new zone
 	// 8 -> 7 = Version changes are not supported
@@ -249,10 +256,19 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 }
 
 func (r *ResourceElasticsearch) Delete(ctx context.Context, req resource.DeleteRequest, res *resource.DeleteResponse) {
+	tflog.Debug(ctx, "ResourceElasticsearch.Delete()")
+
 	identity := helper.IdentityFrom[ElasticsearchIdentity](ctx, *req.Identity, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
 
 	deleteRes := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
-	if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
+	if deleteRes.IsNotFoundError() {
+		res.State.RemoveResource(ctx)
+		return
+	}
+	if deleteRes.HasError() {
 		res.Diagnostics.AddError("failed to delete addon", deleteRes.Error().Error())
 		return
 	}

@@ -6,12 +6,15 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceOtoroshi.Create()")
+
 	state := helper.PlanFrom[Otoroshi](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -77,6 +80,8 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 }
 
 func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	tflog.Debug(ctx, "ResourceOtoroshi.Read()")
+
 	state := helper.StateFrom[Otoroshi](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -112,6 +117,8 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 }
 
 func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceOtoroshi.Update()")
+
 	plan := helper.PlanFrom[Otoroshi](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -122,7 +129,7 @@ func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	if plan.ID != state.ID {
+	if plan.ID.ValueString() != state.ID.ValueString() {
 		resp.Diagnostics.AddError("otoroshi cannot be updated", "mismatched IDs")
 		return
 	}
@@ -140,6 +147,8 @@ func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateReques
 }
 
 func (r *ResourceOtoroshi) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	tflog.Debug(ctx, "ResourceOtoroshi.Delete()")
+
 	otoroshi := helper.StateFrom[Otoroshi](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return

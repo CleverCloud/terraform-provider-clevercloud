@@ -12,6 +12,8 @@ import (
 
 // Create a new resource
 func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceMatomo.Create()")
+
 	appMatomo := helper.PlanFrom[Matomo](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
@@ -64,19 +66,11 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 
 // Read resource information
 func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	tflog.Debug(ctx, "ResourceMatomo.Read()")
+
 	state := helper.StateFrom[Matomo](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	matomoRes := tmp.GetMatomo(ctx, r.Client(), state.ID.ValueString())
-	if matomoRes.HasError() {
-		resp.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
-	} else {
-		matomo := matomoRes.Payload()
-		state.Name = pkg.FromStr(matomo.Name)
-		state.Host = pkg.FromStr(matomo.AccessURL)
-		state.Version = pkg.FromStr(matomo.Version)
 	}
 
 	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
@@ -86,18 +80,38 @@ func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 
 	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
+	if addonRes.IsNotFoundError() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Matomo addon", addonRes.Error().Error())
-	} else {
-		addon := addonRes.Payload()
-		state.Region = pkg.FromStr(addon.Region)
+		return
 	}
+	addon := addonRes.Payload()
+	state.Name = pkg.FromStr(addon.Name)
+	state.Region = pkg.FromStr(addon.Region)
+
+	matomoRes := tmp.GetMatomo(ctx, r.Client(), state.ID.ValueString())
+	if matomoRes.IsNotFoundError() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	if matomoRes.HasError() {
+		resp.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
+		return
+	}
+	matomo := matomoRes.Payload()
+	state.Host = pkg.FromStr(matomo.AccessURL)
+	state.Version = pkg.FromStr(matomo.Version)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
 // Update resource
 func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceMatomo.Update()")
+
 	plan := helper.PlanFrom[Matomo](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -119,9 +133,9 @@ func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest,
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Matomo", addonRes.Error().Error())
-	} else {
-		state.Name = pkg.FromStr(addonRes.Payload().Name)
+		return
 	}
+	state.Name = pkg.FromStr(addonRes.Payload().Name)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -132,11 +146,12 @@ func (r *ResourceMatomo) Delete(ctx context.Context, req resource.DeleteRequest,
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Matomo DELETE", map[string]any{"matomo": state})
+	tflog.Debug(ctx, "ResourceMatomo.Delete()")
 
 	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("cannot get ID of matomo", err.Error())
+		return
 	}
 
 	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonID)

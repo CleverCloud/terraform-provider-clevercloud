@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -19,6 +18,8 @@ import (
 
 // Create a new resource
 func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceRedis.Create()")
+
 	rd := helper.PlanFrom[Redis](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -91,33 +92,23 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 
 // Read resource information
 func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "Redis READ", map[string]any{"request": req})
+	tflog.Debug(ctx, "ResourceRedis.Read()")
 
-	var rd Redis
-	diags := req.State.Get(ctx, &rd)
-	resp.Diagnostics.Append(diags...)
+	rd := helper.StateFrom[Redis](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
 	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), rd.ID.ValueString())
 	if addonRes.IsNotFoundError() {
-		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
-		resp.Diagnostics.Append(diags...)
-		if resp.Diagnostics.HasError() {
-			return
-		}
-	}
-	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
 	}
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Redis resource", addonRes.Error().Error())
+		return
 	}
-
 	addonRD := addonRes.Payload()
-	tflog.Debug(ctx, "redis", map[string]any{"payload": fmt.Sprintf("%+v", addonRD)})
 
 	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), rd.ID.ValueString())
 	if envRes.HasError() {
@@ -129,9 +120,6 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 	envAsMap := pkg.Reduce(env, map[string]types.String{}, func(acc map[string]types.String, v tmp.EnvVar) map[string]types.String {
 		acc[v.Name] = pkg.FromStr(v.Value)
 		return acc
-	})
-	tflog.Debug(ctx, "API response", map[string]any{
-		"payload": fmt.Sprintf("%+v", envAsMap),
 	})
 	port, err := strconv.ParseInt(envAsMap["REDIS_PORT"].ValueString(), 10, 64)
 	if err != nil {
@@ -147,12 +135,13 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	rd.Networkgroups = resources.ReadNetworkGroups(ctx, r, rd.ID.ValueString(), &resp.Diagnostics)
 
-	diags = resp.State.Set(ctx, rd)
-	resp.Diagnostics.Append(diags...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, rd)...)
 }
 
 // Update resource
 func (r *ResourceRedis) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceRedis.Update()")
+
 	plan := helper.PlanFrom[Redis](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
@@ -191,14 +180,11 @@ func (r *ResourceRedis) Update(ctx context.Context, req resource.UpdateRequest, 
 
 // Delete resource
 func (r *ResourceRedis) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	rd := Redis{}
-
-	diags := req.State.Get(ctx, &rd)
-	resp.Diagnostics.Append(diags...)
+	rd := helper.StateFrom[Redis](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	tflog.Debug(ctx, "Redis DELETE", map[string]any{"rd": rd})
+	tflog.Debug(ctx, "ResourceRedis.Delete()")
 
 	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), rd.ID.ValueString())
 	if res.IsNotFoundError() {
