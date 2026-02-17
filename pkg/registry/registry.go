@@ -13,6 +13,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/frankenphp"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/golang"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/java"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/application/linux"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/nodejs"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/php"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/play2"
@@ -56,6 +57,7 @@ var Resources = []func() resource.Resource{
 	fsbucket.NewResourceFSBucket,
 	java.NewResourceJava("war"),
 	java.NewResourceJava("jar"),
+	linux.NewResourceLinux,
 	materiakv.NewResourceMateriaKV,
 	metabase.NewResourceMetabase,
 	mongodb.NewResourceMongoDB,
