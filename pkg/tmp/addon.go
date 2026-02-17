@@ -276,12 +276,18 @@ func GetMetabase(ctx context.Context, cc *client.Client, metabaseID string) clie
 }
 
 type MongoDB struct {
-	Host     string `json:"host"`
-	Port     int64  `json:"port"`
-	Status   string `json:"status" example:"ACTIVE"`
-	User     string `tfsdk:"user"`
-	Password string `tfsdk:"password"`
-	Database string `tfsdk:"database"`
+	Host     string           `json:"host"`
+	Port     int64            `json:"port"`
+	Status   string           `json:"status" example:"ACTIVE"`
+	User     string           `json:"user"`
+	Password string           `json:"password"`
+	Database string           `json:"database"`
+	Features []MongoDBFeature `json:"features"`
+}
+
+type MongoDBFeature struct {
+	Name    string `json:"name"`
+	Enabled bool   `json:"enabled"`
 }
 
 func (mg MongoDB) Uri() string {

@@ -81,10 +81,17 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		addonReq.Options["do-backup"] = "true"
 	}
 
-	pkg.IfIsSetB(pg.Encryption, func(s bool) {
-		backupValue := fmt.Sprintf("%t", pg.Backup.ValueBool())
-		addonReq.Options["encryption"] = backupValue
-	})
+	if !pg.Encryption.IsNull() && !pg.Encryption.IsUnknown() {
+		addonReq.Options["encryption"] = fmt.Sprintf("%t", pg.Encryption.ValueBool())
+	}
+
+	if !pg.DirectHostOnly.IsNull() && !pg.DirectHostOnly.IsUnknown() {
+		addonReq.Options["direct-host-only"] = fmt.Sprintf("%t", pg.DirectHostOnly.ValueBool())
+	}
+
+	if !pg.Locale.IsNull() && !pg.Locale.IsUnknown() {
+		addonReq.Options["locale"] = fmt.Sprintf("%t", pg.Locale.ValueBool())
+	}
 
 	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
@@ -117,10 +124,23 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	pg.Version = pkg.FromStr(addonPG.Version)
 	pg.Uri = pkg.FromStr(addonPG.Uri())
 
+	if pg.Encryption.IsUnknown() {
+		pg.Encryption = pkg.FromBool(false)
+	}
+	if pg.DirectHostOnly.IsUnknown() {
+		pg.DirectHostOnly = pkg.FromBool(false)
+	}
+	if pg.Locale.IsUnknown() {
+		pg.Locale = pkg.FromBool(false)
+	}
 	for _, option := range addonPG.Features {
 		switch option.Name {
 		case "encryption":
 			pg.Encryption = pkg.FromBool(option.Enabled)
+		case "direct-host-only":
+			pg.DirectHostOnly = pkg.FromBool(option.Enabled)
+		case "locale":
+			pg.Locale = pkg.FromBool(option.Enabled)
 		}
 	}
 
@@ -195,6 +215,10 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 				pg.Backup = pkg.FromBool(feature.Enabled)
 			case "encryption":
 				pg.Encryption = pkg.FromBool(feature.Enabled)
+			case "direct-host-only":
+				pg.DirectHostOnly = pkg.FromBool(feature.Enabled)
+			case "locale":
+				pg.Locale = pkg.FromBool(feature.Enabled)
 			}
 		}
 	}

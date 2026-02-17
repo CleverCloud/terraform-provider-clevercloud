@@ -37,6 +37,15 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		Plan:       plan.ID,
 		ProviderID: "mongodb-addon",
 		Region:     mg.Region.ValueString(),
+		Options:    map[string]string{},
+	}
+
+	if !mg.Encryption.IsNull() && !mg.Encryption.IsUnknown() {
+		addonReq.Options["encryption"] = fmt.Sprintf("%t", mg.Encryption.ValueBool())
+	}
+
+	if !mg.DirectHostOnly.IsNull() && !mg.DirectHostOnly.IsUnknown() {
+		addonReq.Options["direct-host-only"] = fmt.Sprintf("%t", mg.DirectHostOnly.ValueBool())
 	}
 
 	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
@@ -67,6 +76,21 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 	mg.Password = pkg.FromStr(addonMG.Password)
 	mg.Database = pkg.FromStr(addonMG.Database)
 	mg.Uri = pkg.FromStr(addonMG.Uri())
+
+	if mg.Encryption.IsUnknown() {
+		mg.Encryption = pkg.FromBool(false)
+	}
+	if mg.DirectHostOnly.IsUnknown() {
+		mg.DirectHostOnly = pkg.FromBool(false)
+	}
+	for _, feature := range addonMG.Features {
+		switch feature.Name {
+		case "encryption":
+			mg.Encryption = pkg.FromBool(feature.Enabled)
+		case "direct-host-only":
+			mg.DirectHostOnly = pkg.FromBool(feature.Enabled)
+		}
+	}
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -130,6 +154,15 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 	mg.Password = pkg.FromStr(addonMG.Password)
 	mg.Database = pkg.FromStr(addonMG.Database)
 	mg.Uri = pkg.FromStr(addonMG.Uri())
+
+	for _, feature := range addonMG.Features {
+		switch feature.Name {
+		case "encryption":
+			mg.Encryption = pkg.FromBool(feature.Enabled)
+		case "direct-host-only":
+			mg.DirectHostOnly = pkg.FromBool(feature.Enabled)
+		}
+	}
 
 	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
 
