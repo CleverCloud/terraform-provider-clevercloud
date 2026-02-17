@@ -81,8 +81,19 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 
 	addonReq.Options["do-backup"] = "true"
 	if !my.Backup.IsNull() && !my.Backup.IsUnknown() {
-		backupValue := fmt.Sprintf("%t", my.Backup.ValueBool())
-		addonReq.Options["do-backup"] = backupValue
+		addonReq.Options["do-backup"] = fmt.Sprintf("%t", my.Backup.ValueBool())
+	}
+
+	if !my.Encryption.IsNull() && !my.Encryption.IsUnknown() {
+		addonReq.Options["encryption"] = fmt.Sprintf("%t", my.Encryption.ValueBool())
+	}
+
+	if !my.DirectHostOnly.IsNull() && !my.DirectHostOnly.IsUnknown() {
+		addonReq.Options["direct-host-only"] = fmt.Sprintf("%t", my.DirectHostOnly.ValueBool())
+	}
+
+	if !my.SkipLogBin.IsNull() && !my.SkipLogBin.IsUnknown() {
+		addonReq.Options["skip-log-bin"] = fmt.Sprintf("%t", my.SkipLogBin.ValueBool())
 	}
 
 	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
@@ -116,6 +127,28 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 	my.Version = pkg.FromStr(addonMy.Version)
 	my.Uri = pkg.FromStr(addonMy.Uri())
 	my.ReadOnlyUsers = tmp.FromMySQLReadOnlyUsers(addonMy.ReadOnlyUsers)
+
+	if my.Encryption.IsUnknown() {
+		my.Encryption = pkg.FromBool(false)
+	}
+	if my.DirectHostOnly.IsUnknown() {
+		my.DirectHostOnly = pkg.FromBool(false)
+	}
+	if my.SkipLogBin.IsUnknown() {
+		my.SkipLogBin = pkg.FromBool(false)
+	}
+	for _, feature := range addonMy.Features {
+		switch feature.Name {
+		case "do-backup":
+			my.Backup = pkg.FromBool(feature.Enabled)
+		case "encryption":
+			my.Encryption = pkg.FromBool(feature.Enabled)
+		case "direct-host-only":
+			my.DirectHostOnly = pkg.FromBool(feature.Enabled)
+		case "skip-log-bin":
+			my.SkipLogBin = pkg.FromBool(feature.Enabled)
+		}
+	}
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -191,8 +224,15 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 	my.ReadOnlyUsers = tmp.FromMySQLReadOnlyUsers(addonMy.ReadOnlyUsers)
 
 	for _, feature := range addonMy.Features {
-		if feature.Name == "do-backup" {
+		switch feature.Name {
+		case "do-backup":
 			my.Backup = pkg.FromBool(feature.Enabled)
+		case "encryption":
+			my.Encryption = pkg.FromBool(feature.Enabled)
+		case "direct-host-only":
+			my.DirectHostOnly = pkg.FromBool(feature.Enabled)
+		case "skip-log-bin":
+			my.SkipLogBin = pkg.FromBool(feature.Enabled)
 		}
 	}
 

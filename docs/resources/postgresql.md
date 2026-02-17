@@ -33,7 +33,9 @@ resource "clevercloud_postgresql" "postgresql_database" {
 ### Optional
 
 - `backup` (Boolean) Enable or disable backups for this PostgreSQL add-on. Since backups are included in the add-on price, disabling it has no impact on your billing.
+- `direct_host_only` (Boolean) Connect directly to the database host, bypassing the reverse proxy. Lower latency but no automatic failover on migration.
 - `encryption` (Boolean) Encrypt the hard drive at rest
+- `locale` (Boolean) Enable locale support for collation and character classification
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `region` (String) Geographical region where the data will be stored
 - `version` (String) PostgreSQL version
