@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -28,6 +30,9 @@ type MySQL struct {
 	Uri      types.String `tfsdk:"uri"`
 
 	Backup        types.Bool `tfsdk:"backup"`
+	Encryption    types.Bool `tfsdk:"encryption"`
+	DirectHostOnly types.Bool `tfsdk:"direct_host_only"`
+	SkipLogBin    types.Bool `tfsdk:"skip_log_bin"`
 	ReadOnlyUsers types.List `tfsdk:"read_only_users"`
 }
 
@@ -58,6 +63,25 @@ func (r ResourceMySQL) Schema(_ context.Context, req resource.SchemaRequest, res
 				Computed:            true,
 				Default:             booldefault.StaticBool(true),
 				MarkdownDescription: "Enable or disable backups for this MySQL add-on. Since backups are included in the add-on price, disabling it has no impact on your billing.",
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
+			},
+			"encryption": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "Encrypt the hard drive at rest",
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
+			},
+			"direct_host_only": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "Connect directly to the database host, bypassing the reverse proxy. Lower latency but no automatic failover on migration.",
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
+			},
+			"skip_log_bin": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "Disable binary logging. Saves disk space but prevents point-in-time recovery and replication.",
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
 			},
 			"read_only_users": schema.ListNestedAttribute{
 				Optional:            true,
