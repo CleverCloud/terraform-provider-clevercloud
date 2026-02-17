@@ -29,8 +29,10 @@ type PostgreSQL struct {
 	Version  types.String `tfsdk:"version"`
 	Uri      types.String `tfsdk:"uri"`
 
-	Backup     types.Bool `tfsdk:"backup"`
-	Encryption types.Bool `tfsdk:"encryption"`
+	Backup         types.Bool `tfsdk:"backup"`
+	Encryption     types.Bool `tfsdk:"encryption"`
+	DirectHostOnly types.Bool `tfsdk:"direct_host_only"`
+	Locale         types.Bool `tfsdk:"locale"`
 }
 
 //go:embed doc.md
@@ -66,6 +68,18 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 				Optional:            true,
 				Computed:            true,
 				MarkdownDescription: "Encrypt the hard drive at rest",
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
+			},
+			"direct_host_only": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "Connect directly to the database host, bypassing the reverse proxy. Lower latency but no automatic failover on migration.",
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
+			},
+			"locale": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "Enable locale support for collation and character classification",
 				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
 			},
 		}),

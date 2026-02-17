@@ -24,6 +24,8 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mongo
 
 ### Optional
 
+- `direct_host_only` (Boolean) Connect directly to the database host, bypassing the reverse proxy. Lower latency but no automatic failover on migration.
+- `encryption` (Boolean) Encrypt the hard drive at rest
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `region` (String) Geographical region where the data will be stored
 

@@ -25,9 +25,12 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 ### Optional
 
 - `backup` (Boolean) Enable or disable backups for this MySQL add-on. Since backups are included in the add-on price, disabling it has no impact on your billing.
+- `direct_host_only` (Boolean) Connect directly to the database host, bypassing the reverse proxy. Lower latency but no automatic failover on migration.
+- `encryption` (Boolean) Encrypt the hard drive at rest
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `read_only_users` (Attributes List) MySQL users with read-only access (see [below for nested schema](#nestedatt--read_only_users))
 - `region` (String) Geographical region where the data will be stored
+- `skip_log_bin` (Boolean) Disable binary logging. Saves disk space but prevents point-in-time recovery and replication.
 - `version` (String) MySQL version
 
 ### Read-Only
