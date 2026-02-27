@@ -2,6 +2,7 @@ package keycloak
 
 import (
 	"context"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -9,7 +10,12 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/models"
+)
+
+const (
+	envVarKeycloakRealms = "CC_KEYCLOAK_REALMS"
 )
 
 // Create a new resource
@@ -44,6 +50,10 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 	if !plan.Version.IsNull() && !plan.Version.IsUnknown() {
 		addonReq.Options["version"] = plan.Version.ValueString()
 	}
+	// Handle realms option
+	if realmsCommaSeparated := plan.GetRealmsCommaSeparated(ctx); realmsCommaSeparated != "" {
+		addonReq.Options["realms"] = realmsCommaSeparated
+	}
 
 	createAddonRes := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if createAddonRes.HasError() {
@@ -76,6 +86,13 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		plan.Version = pkg.FromStr(keycloak.Version)
 		plan.AccessDomain = pkg.FromStr(keycloak.EnvVars["CC_KEYCLOAK_HOSTNAME"])
 		plan.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
+
+		// Read realms from env vars if available
+		if realmsValue, ok := keycloak.EnvVars[envVarKeycloakRealms]; ok && realmsValue != "" {
+			realmsList := strings.Split(realmsValue, ",")
+			plan.SetRealms(ctx, realmsList, &res.Diagnostics)
+		}
+		// If envVarKeycloakRealms not present, keep plan value (API doesn't confirm creation)
 	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
@@ -121,6 +138,14 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 		state.Version = pkg.FromStr(keycloak.Version)
 		state.AccessDomain = pkg.FromStr(keycloak.EnvVars["CC_KEYCLOAK_HOSTNAME"])
 		state.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
+
+		// Read realms from env vars if available
+		if realmsValue, ok := keycloak.EnvVars[envVarKeycloakRealms]; ok && realmsValue != "" {
+			realmsList := strings.Split(realmsValue, ",")
+			state.SetRealms(ctx, realmsList, &resp.Diagnostics)
+		}
+		// If envVarKeycloakRealms is not present, keep existing state value
+		// This is necessary because we can't detect which realms actually exist
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
@@ -177,6 +202,75 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 		}
 	}
 
+	// Handle realms update
+	planRealms := plan.GetRealms(ctx)
+	stateRealms := state.GetRealms(ctx)
+
+	if !areRealmsEqual(planRealms, stateRealms) {
+		tflog.Debug(ctx, "realms changed, updating via env var", map[string]any{
+			"old_realms": stateRealms,
+			"new_realms": planRealms,
+		})
+
+		// Get the latest keycloak info to ensure we have entrypoint ID
+		keycloakRes := r.SDK.
+			V4().
+			Keycloaks().
+			Organisations().
+			Ownerid(r.Organization()).
+			Keycloaks().
+			Addonkeycloakid(state.ID.ValueString()).
+			Getkeycloak(ctx)
+
+		if keycloakRes.HasError() {
+			resp.Diagnostics.AddError("failed to get keycloak for realm update", keycloakRes.Error().Error())
+			return
+		}
+
+		keycloak := keycloakRes.Payload()
+		entrypointAppID := keycloak.Resources.Entrypoint
+
+		if entrypointAppID == "" {
+			resp.Diagnostics.AddError("missing entrypoint app", "cannot update realms without entrypoint app ID")
+			return
+		}
+
+		// Get current env vars from the entrypoint app
+		envRes := tmp.GetAppEnv(ctx, r.Client(), r.Organization(), entrypointAppID)
+		if envRes.HasError() {
+			resp.Diagnostics.AddError("failed to get app env vars", envRes.Error().Error())
+			return
+		}
+
+		// Convert env vars to map using pkg.Reduce
+		currentEnvs := pkg.Reduce(*envRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
+			acc[e.Name] = e.Value
+			return acc
+		})
+
+		// Update realms environment variable
+		currentEnvs[envVarKeycloakRealms] = strings.Join(planRealms, ",")
+
+		// Apply updated env vars
+		updateEnvRes := tmp.UpdateAppEnv(ctx, r.Client(), r.Organization(), entrypointAppID, currentEnvs)
+		if updateEnvRes.HasError() {
+			resp.Diagnostics.AddError("failed to update app env vars", updateEnvRes.Error().Error())
+			return
+		}
+
+		// Restart the entrypoint app to apply changes
+		restartRes := tmp.RestartApp(ctx, r.Client(), r.Organization(), entrypointAppID)
+		if restartRes.HasError() {
+			// Error 4014 = app never deployed, can be ignored
+			if apiErr, ok := restartRes.Error().(*client.APIError); !ok || apiErr.Code != "4014" {
+				resp.Diagnostics.AddError("failed to restart app", restartRes.Error().Error())
+				return
+			}
+		}
+
+		state.SetRealms(ctx, planRealms, &resp.Diagnostics)
+	}
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
@@ -193,4 +287,24 @@ func (r *ResourceKeycloak) Delete(ctx context.Context, req resource.DeleteReques
 	} else {
 		resp.State.RemoveResource(ctx)
 	}
+}
+
+// areRealmsEqual compares two realm slices for equality (order-independent)
+func areRealmsEqual(a, b []string) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	aSet := make(map[string]bool, len(a))
+	for _, realm := range a {
+		aSet[realm] = true
+	}
+
+	for _, realm := range b {
+		if !aSet[realm] {
+			return false
+		}
+	}
+
+	return true
 }

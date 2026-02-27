@@ -180,3 +180,87 @@ func TestAccKeycloak_versionUpgrade(t *testing.T) {
 		}},
 	})
 }
+
+func TestAccKeycloak_withRealms(t *testing.T) {
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skip("no flag for running acceptance tests")
+	}
+
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-kc-realms")
+	fullName := fmt.Sprintf("clevercloud_keycloak.%s", rName)
+	cc := client.New(client.WithAutoOauthConfig())
+
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	keycloakBlock := helper.NewRessource(
+		"clevercloud_keycloak",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+			"realms": []string{"realm1"},
+		}),
+	)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy: func(state *terraform.State) error {
+			for _, resource := range state.RootModule().Resources {
+				res := tmp.GetAddon(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
+				if res.IsNotFoundError() {
+					continue
+				}
+				if res.HasError() {
+					return fmt.Errorf("unexpected error: %s", res.Error().Error())
+				}
+
+				return fmt.Errorf("expect resource '%s' to be deleted: %+v", resource.Primary.ID, res.Payload())
+			}
+			return nil
+		},
+		Steps: []resource.TestStep{{
+			// Step 1: Create with one realm
+			ResourceName: rName,
+			Config:       providerBlock.Append(keycloakBlock).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^keycloak_.*`))),
+			},
+		}, {
+			// Step 2: Add more realms
+			ResourceName: rName,
+			Config: providerBlock.Append(keycloakBlock.SetOneValue("realms", []string{"realm1", "realm2", "realm3"})).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^keycloak_.*`))),
+			},
+		}},
+	})
+}
+
+func TestAccKeycloak_invalidRealmName(t *testing.T) {
+	t.Parallel()
+	rName := acctest.RandomWithPrefix("tf-test-kc")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	keycloakBlock := helper.NewRessource(
+		"clevercloud_keycloak",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+			"realms": []string{"realm@invalid!"}, // Invalid characters
+		}),
+	)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(keycloakBlock).String(),
+			ExpectError:  regexp.MustCompile("invalid realm name"),
+		}},
+	})
+}

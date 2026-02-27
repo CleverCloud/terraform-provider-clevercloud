@@ -4,8 +4,10 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"regexp"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -25,10 +27,43 @@ type Keycloak struct {
 	AdminUsername types.String `tfsdk:"admin_username"`
 	AdminPassword types.String `tfsdk:"admin_password"`
 	FSBucketID    types.String `tfsdk:"fsbucket_id"`
+	Realms        types.Set    `tfsdk:"realms"`
 }
 
 //go:embed doc.md
 var resourceKeycloakDoc string
+
+// GetRealms extracts realms from the Set as a string slice
+func (k *Keycloak) GetRealms(ctx context.Context) []string {
+	if k.Realms.IsNull() || k.Realms.IsUnknown() {
+		return []string{}
+	}
+
+	var realms []string
+	k.Realms.ElementsAs(ctx, &realms, false)
+	return realms
+}
+
+// SetRealms converts a string slice to a Set and assigns it to Realms
+func (k *Keycloak) SetRealms(ctx context.Context, realms []string, diags *diag.Diagnostics) {
+	if len(realms) == 0 {
+		k.Realms = types.SetNull(types.StringType)
+		return
+	}
+
+	realmsSet, d := types.SetValueFrom(ctx, types.StringType, realms)
+	diags.Append(d...)
+	k.Realms = realmsSet
+}
+
+// GetRealmsCommaSeparated returns realms as comma-separated string for API
+func (k *Keycloak) GetRealmsCommaSeparated(ctx context.Context) string {
+	realms := k.GetRealms(ctx)
+	if len(realms) == 0 {
+		return ""
+	}
+	return strings.Join(realms, ",")
+}
 
 func (r ResourceKeycloak) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
@@ -49,6 +84,11 @@ func (r ResourceKeycloak) Schema(_ context.Context, req resource.SchemaRequest, 
 			"admin_username": schema.StringAttribute{Computed: true, MarkdownDescription: "Initial admin username for Keycloak"},
 			"admin_password": schema.StringAttribute{Computed: true, Sensitive: true, MarkdownDescription: "Initial admin password for Keycloak"},
 			"fsbucket_id":    schema.StringAttribute{Computed: true, MarkdownDescription: "ID of the fsbucket subresource"},
+			"realms": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "List of realms to create. Note: realms can only be added, not removed once created.",
+			},
 		},
 	}
 }
@@ -80,6 +120,21 @@ func (r ResourceKeycloak) ModifyPlan(ctx context.Context, req resource.ModifyPla
 				res.Diagnostics.AddError(
 					"unavailable version",
 					fmt.Sprintf("available versions are: %s", strings.Join(versions, ", ")),
+				)
+			}
+		}
+	}
+
+	// Validate realms names (no special characters)
+	if !plan.Realms.IsNull() && !plan.Realms.IsUnknown() {
+		realms := plan.GetRealms(ctx)
+		realmNamePattern := regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
+
+		for _, realm := range realms {
+			if !realmNamePattern.MatchString(realm) {
+				res.Diagnostics.AddError(
+					"invalid realm name",
+					fmt.Sprintf("realm '%s' contains invalid characters. Only alphanumeric, underscore and hyphen are allowed", realm),
 				)
 			}
 		}
