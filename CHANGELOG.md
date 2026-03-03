@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.10.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.9.0...v1.10.0) (2026-03-03)
+
+
+### Features
+
+* **addons:** add missing feature flags for MySQL, PostgreSQL, MongoDB ([bc9a8aa](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/bc9a8aa2aa56a77ff9bf46f2d5a0b7e982ee4604))
+* **apps:** add Linux runtime support ([797aeb2](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/797aeb2bc113869d02cbf9fbc052d106929952cd))
+
+
+### Bug Fixes
+
+* **addons:** use API response instead of plan values ([0e6c0fa](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/0e6c0fac723467c0d0b4fd965e08f4dd49cddceb)), closes [#267](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/267)
+* **apps:** guard against empty ID in state on Read and Create ([e8c9983](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/e8c99837d9bb26e2c080d0b5b46b90674aa15146)), closes [#351](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/351)
+* **elasticsearch:** validate version on apply ([de57abb](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/de57abbb15772152f8b2bd25c40278dd24d7c32d)), closes [#338](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/338)
+* use PLAINTEXT as oauth signature ([81dbfe1](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/81dbfe1069663ebc61ee17cc3b2a9947913a1cca))
+
 ## [1.9.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.8.0...v1.9.0) (2026-01-23)
 
 
