@@ -74,14 +74,25 @@ type DrainAttributes interface {
 // Datadog drain
 type DatadogDrain struct {
 	Drain
-	URL types.String `tfsdk:"url"`
+	Endpoint types.String `tfsdk:"endpoint"`
+	APIKey   types.String `tfsdk:"api_key"`
 }
 
 func (r DatadogDrain) Attributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"url": schema.StringAttribute{
+		"endpoint": schema.StringAttribute{
+			Optional:            true,
+			Computed:            true,
+			MarkdownDescription: "Datadog log intake endpoint URL (without the API key). Defaults to US1 region.",
+			Default:             stringdefault.StaticString("https://http-intake.logs.datadoghq.com/v1/input"),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+		},
+		"api_key": schema.StringAttribute{
 			Required:            true,
-			MarkdownDescription: "Datadog log intake URL",
+			Sensitive:           true,
+			MarkdownDescription: "Datadog API key for log ingestion",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 			},
@@ -90,9 +101,15 @@ func (r DatadogDrain) Attributes() map[string]schema.Attribute {
 }
 
 func (r DatadogDrain) ToRecipient() []byte {
+	// Build the full URL by concatenating endpoint and API key
+	// This avoids URL encoding issues with the path
+	endpoint := r.Endpoint.ValueString()
+	apiKey := r.APIKey.ValueString()
+	fullURL := endpoint + "/" + apiKey
+
 	v, err := json.Marshal(tmp.RecipientDatadog{
 		Type: "DatadogRecipient",
-		URL:  r.URL.ValueString(),
+		URL:  fullURL,
 	})
 	if err != nil {
 		panic(err)
@@ -105,7 +122,31 @@ func (r *DatadogDrain) FromAPI(drain tmp.Drain) error {
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
 		return err
 	}
-	r.URL = types.StringValue(recipient.URL)
+
+	// Parse the URL to extract endpoint and API key
+	// URL format: https://http-intake.logs.datadoghq.com/v1/input/<API_KEY>
+	url := recipient.URL
+	lastSlash := len(url) - 1
+	for lastSlash >= 0 && url[lastSlash] != '/' {
+		lastSlash--
+	}
+
+	if lastSlash > 0 {
+		r.Endpoint = types.StringValue(url[:lastSlash])
+		// For sensitive attributes, preserve current state value since API doesn't return it
+		if !r.APIKey.IsUnknown() {
+			// Keep existing value
+		} else {
+			r.APIKey = types.StringValue(url[lastSlash+1:])
+		}
+	} else {
+		// Fallback if URL doesn't contain a slash (shouldn't happen)
+		r.Endpoint = types.StringValue(url)
+		if r.APIKey.IsUnknown() {
+			r.APIKey = types.StringNull()
+		}
+	}
+
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))

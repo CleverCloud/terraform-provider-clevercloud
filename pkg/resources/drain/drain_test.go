@@ -48,8 +48,9 @@ func TestAccDrainDatadog_basic(t *testing.T) {
 			"kind": "LOG",
 			// Reference the application ID created above
 			"resource_id": fmt.Sprintf("${clevercloud_static.%s.id}", rNameApp),
-			// Provide a placeholder URL for the datadog recipient
-			"url": "https://example.com/datadog",
+			// Provide a test API key for the datadog recipient
+			"api_key": "test-datadog-api-key-abc123",
+			// endpoint defaults to US1: https://http-intake.logs.datadoghq.com/v1/input
 		}),
 	)
 
