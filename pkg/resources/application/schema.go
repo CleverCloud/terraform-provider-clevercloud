@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -31,21 +32,29 @@ var runtimeCommon = map[string]schema.Attribute{
 		MarkdownDescription: "Application description",
 	},
 	"min_instance_count": schema.Int64Attribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Minimum instance count",
+		PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 		//Default:             int64default.StaticInt64(1), // TODO: setup all defaults
 	},
 	"max_instance_count": schema.Int64Attribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Maximum instance count, if different from min value, enable auto-scaling",
+		PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 	},
 	"smallest_flavor": schema.StringAttribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Smallest instance flavor",
+		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 	},
 	"biggest_flavor": schema.StringAttribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Biggest instance flavor, if different from smallest, enable auto-scaling",
+		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 	},
 	"build_flavor": schema.StringAttribute{
 		Optional:            true,
@@ -202,21 +211,29 @@ var runtimeCommonV0 = map[string]schema.Attribute{
 		MarkdownDescription: "Application description",
 	},
 	"min_instance_count": schema.Int64Attribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Minimum instance count",
+		PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 		//Default:             int64default.StaticInt64(1), // TODO: setup all defaults
 	},
 	"max_instance_count": schema.Int64Attribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Maximum instance count, if different from min value, enable auto-scaling",
+		PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
 	},
 	"smallest_flavor": schema.StringAttribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Smallest instance flavor",
+		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 	},
 	"biggest_flavor": schema.StringAttribute{
-		Required:            true,
+		Optional:            true,
+		Computed:            true,
 		MarkdownDescription: "Biggest instance flavor, if different from smallest, enable auto-scaling",
+		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 	},
 	"build_flavor": schema.StringAttribute{
 		Optional:            true,
@@ -307,20 +324,41 @@ func WithRuntimeCommonsV0(runtimeSpecifics map[string]schema.Attribute) map[stri
 	return pkg.Merge(runtimeCommonV0, runtimeSpecifics)
 }
 
-// ValidateRuntimeFlavors validates that build_flavor, smallest_flavor, and biggest_flavor
-// are valid for the given application variant (docker, nodejs, etc.)
-func ValidateRuntimeFlavors(ctx context.Context, r provider.Provider, variantSlug string, runtime Runtime, diags *diag.Diagnostics) {
+// DefaultAndValidateRuntimePlan sets dynamic defaults for Optional+Computed fields
+// and validates that flavor values are valid for the given application variant.
+// It modifies runtime in place and returns true if the plan was modified.
+func DefaultAndValidateRuntimePlan(ctx context.Context, r provider.Provider, variantSlug string, runtime *Runtime, diags *diag.Diagnostics) (modified bool) {
 	org := r.Organization()
 	instance := LookupInstanceByVariantSlug(ctx, r.Client(), &org, variantSlug, diags)
 	if instance == nil {
 		diags.AddError("failed to lookup instance", fmt.Sprintf("no instance named '%s'", variantSlug))
-		return
+		return false
 	}
-	flavorSet := instance.Flavors.NamesAsSet()
 
+	// Set defaults for unset fields
+	defaultFlavor := instance.DefaultFlavor.Name
+
+	if runtime.MinInstanceCount.IsNull() || runtime.MinInstanceCount.IsUnknown() {
+		runtime.MinInstanceCount = types.Int64Value(1)
+		modified = true
+	}
+	if runtime.MaxInstanceCount.IsNull() || runtime.MaxInstanceCount.IsUnknown() {
+		runtime.MaxInstanceCount = types.Int64Value(1)
+		modified = true
+	}
+	if runtime.SmallestFlavor.IsNull() || runtime.SmallestFlavor.IsUnknown() {
+		runtime.SmallestFlavor = types.StringValue(defaultFlavor)
+		modified = true
+	}
+	if runtime.BiggestFlavor.IsNull() || runtime.BiggestFlavor.IsUnknown() {
+		runtime.BiggestFlavor = types.StringValue(defaultFlavor)
+		modified = true
+	}
+
+	// Validate flavors
+	flavorSet := instance.Flavors.NamesAsSet()
 	availableFlavors := strings.Join(flavorSet.Slice(), ", ")
 
-	// Validate build_flavor
 	if !runtime.BuildFlavor.IsNull() && !runtime.BuildFlavor.IsUnknown() {
 		if !flavorSet.Contains(runtime.BuildFlavor.ValueString()) {
 			diags.AddAttributeError(
@@ -330,8 +368,6 @@ func ValidateRuntimeFlavors(ctx context.Context, r provider.Provider, variantSlu
 			)
 		}
 	}
-
-	// Validate smallest_flavor
 	if !runtime.SmallestFlavor.IsNull() && !runtime.SmallestFlavor.IsUnknown() {
 		if !flavorSet.Contains(runtime.SmallestFlavor.ValueString()) {
 			diags.AddAttributeError(
@@ -341,8 +377,6 @@ func ValidateRuntimeFlavors(ctx context.Context, r provider.Provider, variantSlu
 			)
 		}
 	}
-
-	// Validate biggest_flavor
 	if !runtime.BiggestFlavor.IsNull() && !runtime.BiggestFlavor.IsUnknown() {
 		if !flavorSet.Contains(runtime.BiggestFlavor.ValueString()) {
 			diags.AddAttributeError(
@@ -352,4 +386,7 @@ func ValidateRuntimeFlavors(ctx context.Context, r provider.Provider, variantSlu
 			)
 		}
 	}
+
+	return modified
 }
+

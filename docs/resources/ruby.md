@@ -156,15 +156,12 @@ resource "clevercloud_ruby" "custom_ruby_app" {
 
 ### Required
 
-- `biggest_flavor` (String) Biggest instance flavor, if different from smallest, enable auto-scaling
-- `max_instance_count` (Number) Maximum instance count, if different from min value, enable auto-scaling
-- `min_instance_count` (Number) Minimum instance count
 - `name` (String) Application name
-- `smallest_flavor` (String) Smallest instance flavor
 
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `biggest_flavor` (String) Biggest instance flavor, if different from smallest, enable auto-scaling
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
@@ -178,6 +175,8 @@ Can be either app_xxx or postgres_yyy ID format
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `http_basic_auth` (String, Sensitive) Restrict HTTP access to your application (format: 'login:password')
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
+- `max_instance_count` (Number) Maximum instance count, if different from min value, enable auto-scaling
+- `min_instance_count` (Number) Minimum instance count
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `nginx_proxy_buffer_size` (String) Sets the size of the buffer used for reading the first part of the response received from the proxied server
 - `nginx_proxy_buffers` (String) Sets the number and size of the buffers used for reading a response from the proxied server
@@ -190,6 +189,7 @@ Can be either app_xxx or postgres_yyy ID format
 - `region` (String) Geographical region where the database will be deployed
 - `ruby_version` (String) Ruby version to use (e.g., '3.3', '3.3.1')
 - `sidekiq_files` (String) Specify a list of Sidekiq configuration files (e.g., './config/sidekiq_1.yml,./config/sidekiq_2.yml')
+- `smallest_flavor` (String) Smallest instance flavor
 - `static_files_path` (String) Relative path to where your static files are stored
 - `static_url_prefix` (String) The URL path under which you want to serve static files, usually /public
 - `static_webroot` (String) Path to the web content to serve, relative to the root of your application

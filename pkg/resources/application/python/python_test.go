@@ -65,7 +65,7 @@ func TestAccPython_basic(t *testing.T) {
 					continue
 				}
 				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+					return fmt.Errorf("unexpected error: %s", res.Error().Error())
 				}
 				if res.Payload().State == "TO_DELETE" {
 					continue
@@ -272,7 +272,7 @@ func TestAccPython_exposedEnv(t *testing.T) {
 					continue
 				}
 				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+					return fmt.Errorf("unexpected error: %s", res.Error().Error())
 				}
 				if res.Payload().State == "TO_DELETE" {
 					continue
@@ -420,7 +420,7 @@ func TestAccPython_networkgroup(t *testing.T) {
 					if res.IsNotFoundError() {
 						continue
 					} else if res.HasError() {
-						return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+						return fmt.Errorf("unexpected error: %s", res.Error().Error())
 					} else {
 						return fmt.Errorf("resource still exists: %+v", resource.Primary)
 					}
@@ -429,7 +429,7 @@ func TestAccPython_networkgroup(t *testing.T) {
 					if res.IsNotFoundError() {
 						continue
 					} else if res.HasError() {
-						return fmt.Errorf("unexpectd error: %s", res.Error().Error())
+						return fmt.Errorf("unexpected error: %s", res.Error().Error())
 					} else {
 						return fmt.Errorf("resource still exists: %+v", resource.Primary)
 					}
@@ -505,5 +505,68 @@ func TestAccPython_networkgroup(t *testing.T) {
 				},
 			),
 		}},
+	})
+}
+
+func TestAccPython_import(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-python-import")
+	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
+	cc := client.New(client.WithAutoOauthConfig())
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	pythonBlock := helper.NewRessource(
+		"clevercloud_python",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 2,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "M",
+			"environment": map[string]any{
+				"MY_KEY": "myval",
+			},
+		}),
+	)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 tests.ExpectOrganisation(t),
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		CheckDestroy: func(state *terraform.State) error {
+			for _, resource := range state.RootModule().Resources {
+				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
+				if res.IsNotFoundError() {
+					continue
+				}
+				if res.HasError() {
+					return fmt.Errorf("unexpected error: %s", res.Error().Error())
+				}
+				if res.Payload().State == "TO_DELETE" {
+					continue
+				}
+
+				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
+			}
+			return nil
+		},
+		Steps: []resource.TestStep{
+			// Step 1: Create the resource
+			{
+				ResourceName: rName,
+				Config:       providerBlock.Append(pythonBlock).String(),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+				},
+			},
+			// Step 2: Import and verify state matches
+			{
+				ResourceName:            fullName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"environment"},
+			},
+		},
 	})
 }

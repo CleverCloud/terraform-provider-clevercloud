@@ -20,7 +20,6 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 ### Required
 
 - `name` (String) Name of the service
-- `plan` (String) Database size and spec
 
 ### Optional
 
@@ -28,6 +27,7 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 - `direct_host_only` (Boolean) Connect directly to the database host, bypassing the reverse proxy. Lower latency but no automatic failover on migration.
 - `encryption` (Boolean) Encrypt the hard drive at rest
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
+- `plan` (String) Database size and spec
 - `read_only_users` (Attributes List) MySQL users with read-only access (see [below for nested schema](#nestedatt--read_only_users))
 - `region` (String) Geographical region where the data will be stored
 - `skip_log_bin` (Boolean) Disable binary logging. Saves disk space but prevents point-in-time recovery and replication.

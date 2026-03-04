@@ -85,15 +85,12 @@ resource "clevercloud_java_war" "myapp" {
 
 ### Required
 
-- `biggest_flavor` (String) Biggest instance flavor, if different from smallest, enable auto-scaling
-- `max_instance_count` (Number) Maximum instance count, if different from min value, enable auto-scaling
-- `min_instance_count` (Number) Minimum instance count
 - `name` (String) Application name
-- `smallest_flavor` (String) Smallest instance flavor
 
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `biggest_flavor` (String) Biggest instance flavor, if different from smallest, enable auto-scaling
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
@@ -104,9 +101,12 @@ Can be either app_xxx or postgres_yyy ID format
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
 - `java_version` (String) Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).
+- `max_instance_count` (Number) Maximum instance count, if different from min value, enable auto-scaling
+- `min_instance_count` (Number) Minimum instance count
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
+- `smallest_flavor` (String) Smallest instance flavor
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
 
