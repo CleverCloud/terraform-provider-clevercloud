@@ -94,6 +94,28 @@ func NewStringEnumValidator(description string, values ...string) validator.Stri
 	}
 }
 
+// NewLowercaseValidator creates a validator that ensures the string value is lowercase
+func NewLowercaseValidator() validator.String {
+	return &stringValidator{
+		"value must be lowercase",
+		func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
+			if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+				return
+			}
+
+			value := req.ConfigValue.ValueString()
+			valueLower := strings.ToLower(value)
+			if value != valueLower {
+				res.Diagnostics.AddAttributeError(
+					req.Path,
+					"Value must be lowercase",
+					fmt.Sprintf("The value '%s' must be lowercase. Use '%s' instead.", value, valueLower),
+				)
+			}
+		},
+	}
+}
+
 func (sv *stringValidator) Description(context.Context) string {
 	return sv.description
 }
