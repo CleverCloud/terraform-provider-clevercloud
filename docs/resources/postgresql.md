@@ -28,7 +28,7 @@ resource "clevercloud_postgresql" "postgresql_database" {
 ### Required
 
 - `name` (String) Name of the service
-- `plan` (String) Database size and spec
+- `plan` (String) Database size and spec (must be lowercase)
 
 ### Optional
 
