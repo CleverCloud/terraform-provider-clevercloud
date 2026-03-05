@@ -20,7 +20,7 @@ See [Redis product specification](https://www.clever.cloud/developers/doc/addons
 ### Required
 
 - `name` (String) Name of the service
-- `plan` (String) Database size and spec
+- `plan` (String) Database size and spec (must be lowercase)
 
 ### Optional
 

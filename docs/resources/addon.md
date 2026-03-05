@@ -24,7 +24,7 @@ List of available providers:
 ### Required
 
 - `name` (String) Name of the service
-- `plan` (String) Database size and spec
+- `plan` (String) Database size and spec (must be lowercase)
 - `third_party_provider` (String) Provider ID
 
 ### Optional
