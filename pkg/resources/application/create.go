@@ -84,7 +84,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 		req.Application.OAuthAppID = &app.ID
 	}
 
-	appRes := tmp.CreateApp(ctx, req.Client, req.Organization, req.Application)
+	appRes := tmp.CreateAppWithRetry(ctx, req.Client, req.Organization, req.Application)
 	if appRes.HasError() {
 		diags.AddError("failed to create application", appRes.Error().Error())
 		tflog.Error(ctx, "failed to create app", map[string]any{"error": appRes.Error().Error(), "payload": fmt.Sprintf("%+v", req.Application)})
