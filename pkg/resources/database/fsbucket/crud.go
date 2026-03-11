@@ -39,7 +39,7 @@ func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateReques
 		Region:     fsbucket.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := tmp.CreateAddonWithRetry(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return

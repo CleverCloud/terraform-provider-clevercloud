@@ -45,7 +45,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		addonReq.Options["version"] = plan.Version.ValueString()
 	}
 
-	createAddonRes := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	createAddonRes := tmp.CreateAddonWithRetry(ctx, r.Client(), r.Organization(), addonReq)
 	if createAddonRes.HasError() {
 		res.Diagnostics.AddError("failed to create Keycloak", createAddonRes.Error().Error())
 		return

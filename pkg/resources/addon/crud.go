@@ -47,7 +47,7 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 		Region:     ad.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := tmp.CreateAddonWithRetry(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create add-on", res.Error().Error())
 		return

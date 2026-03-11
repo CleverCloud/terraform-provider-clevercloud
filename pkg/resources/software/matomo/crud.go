@@ -39,7 +39,7 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 		Region:     appMatomo.Region.ValueString(),
 	}
 
-	createAddonRes := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	createAddonRes := tmp.CreateAddonWithRetry(ctx, r.Client(), r.Organization(), addonReq)
 	if createAddonRes.HasError() {
 		res.Diagnostics.AddError("failed to create Matomo", createAddonRes.Error().Error())
 		return
