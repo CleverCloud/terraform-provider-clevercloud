@@ -250,6 +250,9 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 		&res.Diagnostics,
 	)
 
+	// Sync networkgroups from plan to state
+	state.Networkgroups = plan.Networkgroups
+
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }
 

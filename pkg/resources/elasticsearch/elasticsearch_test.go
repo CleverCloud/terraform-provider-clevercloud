@@ -275,6 +275,106 @@ func TestAccElasticsearch_InvalidVersionFormat(t *testing.T) {
 	})
 }
 
+// Issue #357: Test that changing immutable features (kibana, apm, encryption) triggers replacement
+// When an Elasticsearch addon is created with kibana=false, changing it to kibana=true should
+// force the resource to be replaced since there is no API to enable/disable these features after creation.
+func TestAccElasticsearch_KibanaRequiresReplace(t *testing.T) {
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-es")
+	fullName := fmt.Sprintf("clevercloud_elasticsearch.%s", rName)
+	cc := client.New(client.WithAutoOauthConfig())
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+
+	// Step 1: Create ES without Kibana
+	elasticsearchBlock := helper.NewRessource(
+		"clevercloud_elasticsearch",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+			"plan":   "xs",
+			"kibana": false,
+		}))
+
+	// Step 2: Enable Kibana (should trigger replace)
+	elasticsearchBlockWithKibana := helper.NewRessource(
+		"clevercloud_elasticsearch",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+			"plan":   "xs",
+			"kibana": true,
+		}))
+
+	var firstID string
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy: func(state *terraform.State) error {
+			for _, resource := range state.RootModule().Resources {
+				addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
+				if err != nil {
+					if strings.Contains(err.Error(), "not found") {
+						continue
+					}
+					return fmt.Errorf("failed to get addon ID: %s", err.Error())
+				}
+
+				res := tmp.GetElasticsearch(ctx, cc, addonId)
+				if res.IsNotFoundError() {
+					continue
+				}
+				if res.HasError() {
+					return fmt.Errorf("unexpected error: %s", res.Error().Error())
+				}
+				if res.Payload().Status == "TO_DELETE" {
+					continue
+				}
+
+				return fmt.Errorf("expect resource '%s' to be deleted", resource.Primary.ID)
+			}
+			return nil
+		},
+		Steps: []resource.TestStep{
+			{
+				ResourceName: rName,
+				Config:       providerBlock.Append(elasticsearchBlock).String(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(fullName, "kibana", "false"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[fullName]
+						if !ok {
+							return fmt.Errorf("resource %s not found", fullName)
+						}
+						firstID = rs.Primary.ID
+						return nil
+					},
+				),
+			},
+			{
+				ResourceName: rName,
+				Config:       providerBlock.Append(elasticsearchBlockWithKibana).String(),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(fullName, "kibana", "true"),
+					// Verify that the resource ID has changed (indicating replacement)
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[fullName]
+						if !ok {
+							return fmt.Errorf("resource %s not found", fullName)
+						}
+						if rs.Primary.ID == firstID {
+							return fmt.Errorf("expected resource to be replaced (different ID), but ID remained the same: %s", firstID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
 func TestAccElasticsearch_RefreshDeleted(t *testing.T) {
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-es")
