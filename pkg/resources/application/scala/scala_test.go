@@ -19,7 +19,7 @@ import (
 
 func TestAccScala_basic(t *testing.T) {
 	ctx := t.Context()
-	rName := acctest.RandomWithPrefix("tf-scala")
+	rName := acctest.RandomWithPrefix("tf-test")
 	fullName := fmt.Sprintf("clevercloud_scala.%s", rName)
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	scalaBlock := helper.NewRessource(

@@ -78,7 +78,7 @@ func SweepApplications(region string) error {
 
 	for _, app := range apps {
 		// Only delete test resources (those starting with tf-test)
-		if !strings.HasPrefix(app.Name, "tf-test") {
+		if !strings.HasPrefix(app.Name, "tf-") {
 			continue
 		}
 
