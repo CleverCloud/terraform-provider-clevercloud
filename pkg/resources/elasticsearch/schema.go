@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -82,19 +83,28 @@ func (r *ResourceElasticsearch) Schema(_ context.Context, req resource.SchemaReq
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(false),
-				MarkdownDescription: "Enable at-rest encryption",
+				MarkdownDescription: "Enable at-rest encryption. This option cannot be changed after creation.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
 			},
 			"kibana": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(false),
-				MarkdownDescription: "Enable Kibana for this Elasticsearch add-on.",
+				MarkdownDescription: "Enable Kibana for this Elasticsearch add-on. This option cannot be changed after creation.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
 			},
 			"apm": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(false),
-				MarkdownDescription: "Enable APM (Application Performance Monitoring) for this Elasticsearch add-on.",
+				MarkdownDescription: "Enable APM (Application Performance Monitoring) for this Elasticsearch add-on. This option cannot be changed after creation.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.RequiresReplace(),
+				},
 			},
 			"plugins": schema.SetAttribute{
 				Optional:    true,
