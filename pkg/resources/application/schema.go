@@ -130,10 +130,12 @@ var runtimeCommon = map[string]schema.Attribute{
 		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 	},
 	"environment": schema.MapAttribute{
-		Optional:    true,
-		Sensitive:   true,
-		Description: "Environment variables injected into the application",
-		ElementType: types.StringType,
+		Optional:            true,
+		Sensitive:           true,
+		Description:         "Environment variables injected into the application. Null values are not allowed - use a for expression to filter optional variables.",
+		MarkdownDescription: "Environment variables injected into the application.\n\n**Note:** Null values are not allowed. To conditionally include variables, use a for expression:\n```hcl\nenvironment = { for k, v in {\n  VAR1 = \"value\"\n  VAR2 = var.optional_var\n} : k => v if v != null }\n```",
+		ElementType:         types.StringType,
+		Validators:          []validator.Map{pkg.NoNullMapValuesValidator()},
 	},
 	"exposed_environment": schema.MapAttribute{
 		ElementType: types.StringType,
@@ -260,10 +262,12 @@ var runtimeCommonV0 = map[string]schema.Attribute{
 		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 	},
 	"environment": schema.MapAttribute{
-		Optional:    true,
-		Sensitive:   true,
-		Description: "Environment variables injected into the application",
-		ElementType: types.StringType,
+		Optional:            true,
+		Sensitive:           true,
+		Description:         "Environment variables injected into the application. Null values are not allowed - use a for expression to filter optional variables.",
+		MarkdownDescription: "Environment variables injected into the application.\n\n**Note:** Null values are not allowed. To conditionally include variables, use a for expression:\n```hcl\nenvironment = { for k, v in {\n  VAR1 = \"value\"\n  VAR2 = var.optional_var\n} : k => v if v != null }\n```",
+		ElementType:         types.StringType,
+		Validators:          []validator.Map{pkg.NoNullMapValuesValidator()},
 	},
 
 	"dependencies": schema.SetAttribute{
