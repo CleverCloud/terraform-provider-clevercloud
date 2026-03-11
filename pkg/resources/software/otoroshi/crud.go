@@ -49,7 +49,7 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 		}
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := tmp.CreateAddonWithRetry(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create Otoroshi add-on", res.Error().Error())
 		return

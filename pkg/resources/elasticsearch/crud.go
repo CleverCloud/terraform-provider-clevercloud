@@ -71,7 +71,7 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 		addonReq.Options["plugins"] = strings.Join(plugins, ",")
 	}
 
-	addonRes := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	addonRes := tmp.CreateAddonWithRetry(ctx, r.Client(), r.Organization(), addonReq)
 	if addonRes.HasError() {
 		res.Diagnostics.AddError("failed to create addon", addonRes.Error().Error())
 		return

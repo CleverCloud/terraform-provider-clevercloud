@@ -9,6 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg/retry"
 	"go.clever-cloud.dev/client"
 )
 
@@ -186,6 +187,15 @@ func GetAddonsProviders(ctx context.Context, cc *client.Client) client.Response[
 func CreateAddon(ctx context.Context, cc *client.Client, organisation string, addon AddonRequest) client.Response[AddonResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/addons", organisation)
 	return client.Post[AddonResponse](ctx, cc, path, addon)
+}
+
+// CreateAddonWithRetry wraps CreateAddon with automatic retry on 503 errors
+func CreateAddonWithRetry(ctx context.Context, cc *client.Client, organisation string, addon AddonRequest) client.Response[AddonResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/addons", organisation)
+
+	return retry.WithRetry(ctx, func() client.Response[AddonResponse] {
+		return client.Post[AddonResponse](ctx, cc, path, addon)
+	}, fmt.Sprintf("CreateAddon(%s)", addon.Name))
 }
 
 // Use Addon ID

@@ -38,7 +38,7 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 		ProviderID: "config-provider",
 	}
 
-	createAddonRes := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	createAddonRes := tmp.CreateAddonWithRetry(ctx, r.Client(), r.Organization(), addonReq)
 	if createAddonRes.HasError() {
 		res.Diagnostics.AddError("failed to create ConfigProvider", createAddonRes.Error().Error())
 		return

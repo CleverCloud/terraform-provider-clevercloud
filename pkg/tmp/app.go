@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/miton18/helper/set"
+	"go.clever-cloud.com/terraform-provider/pkg/retry"
 	"go.clever-cloud.dev/client"
 )
 
@@ -201,6 +202,15 @@ type Env struct {
 func CreateApp(ctx context.Context, cc *client.Client, organisationID string, app CreateAppRequest) client.Response[AppResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications", organisationID)
 	return client.Post[AppResponse](ctx, cc, path, app)
+}
+
+// CreateAppWithRetry wraps CreateApp with automatic retry on 503 errors
+func CreateAppWithRetry(ctx context.Context, cc *client.Client, organisationID string, app CreateAppRequest) client.Response[AppResponse] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications", organisationID)
+
+	return retry.WithRetry(ctx, func() client.Response[AppResponse] {
+		return client.Post[AppResponse](ctx, cc, path, app)
+	}, fmt.Sprintf("CreateApp(%s)", app.Name))
 }
 
 func GetApp(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[AppResponse] {
