@@ -99,7 +99,15 @@ resource "clevercloud_java_war" "myapp" {
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
-- `environment` (Map of String, Sensitive) Environment variables injected into the application
+- `environment` (Map of String, Sensitive) Environment variables injected into the application.
+
+**Note:** Null values are not allowed. To conditionally include variables, use a for expression:
+```hcl
+environment = { for k, v in {
+  VAR1 = "value"
+  VAR2 = var.optional_var
+} : k => v if v != null }
+```
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
