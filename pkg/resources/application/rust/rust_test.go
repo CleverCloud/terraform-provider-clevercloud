@@ -108,6 +108,31 @@ func TestAccRust_basic(t *testing.T) {
 	})
 }
 
+func TestAccRust_rejectNullEnvironmentValues(t *testing.T) {
+	resource.UnitTest(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		Steps: []resource.TestStep{
+			{
+				Config: `
+resource "clevercloud_rust" "test" {
+  name               = "test-rust"
+  region             = "par"
+  min_instance_count = 1
+  max_instance_count = 1
+  smallest_flavor    = "XS"
+  biggest_flavor     = "XS"
+
+  environment = {
+    VAR1 = "value1"
+    VAR2 = null
+  }
+}`,
+				ExpectError: regexp.MustCompile("Null values are not allowed in environment variables"),
+			},
+		},
+	})
+}
+
 func testAccCheckRustDestroy(cc *client.Client, org string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		for _, rs := range s.RootModule().Resources {

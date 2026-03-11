@@ -9,7 +9,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
 type ConfigProvider struct {
@@ -31,6 +33,7 @@ func (r ResourceConfigProvider) Schema(_ context.Context, req resource.SchemaReq
 				Sensitive:   true,
 				Description: "Environment variables injected into the application",
 				ElementType: types.StringType,
+				Validators:  []validator.Map{pkg.NoNullMapValuesValidator()},
 			},
 			"id":   schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
