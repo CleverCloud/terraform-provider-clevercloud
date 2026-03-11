@@ -17,7 +17,7 @@ import (
 
 func TestAccStatic_basic(t *testing.T) {
 	ctx := t.Context()
-	rName := acctest.RandomWithPrefix("tf-static")
+	rName := acctest.RandomWithPrefix("tf-test")
 	fullName := fmt.Sprintf("clevercloud_static.%s", rName)
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	staticBlock := helper.NewRessource(
