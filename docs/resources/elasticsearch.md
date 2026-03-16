@@ -24,9 +24,9 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/elast
 
 ### Optional
 
-- `apm` (Boolean) Enable APM (Application Performance Monitoring) for this Elasticsearch add-on.
-- `encryption` (Boolean) Enable at-rest encryption
-- `kibana` (Boolean) Enable Kibana for this Elasticsearch add-on.
+- `apm` (Boolean) Enable APM (Application Performance Monitoring) for this Elasticsearch add-on. This option cannot be changed after creation.
+- `encryption` (Boolean) Enable at-rest encryption. This option cannot be changed after creation.
+- `kibana` (Boolean) Enable Kibana for this Elasticsearch add-on. This option cannot be changed after creation.
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `plugins` (Set of String) List of plugins to install
 - `region` (String) Geographical region where the data will be stored
