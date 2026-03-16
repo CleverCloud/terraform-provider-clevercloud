@@ -95,6 +95,7 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 		r,
 		createdAddon.ID,
 		plan.Networkgroups,
+		&plan.Networkgroups,
 		&res.Diagnostics,
 	)
 
@@ -247,11 +248,9 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 		r,
 		identity.ID.ValueString(),
 		plan.Networkgroups,
+		&state.Networkgroups,
 		&res.Diagnostics,
 	)
-
-	// Sync networkgroups from plan to state
-	state.Networkgroups = plan.Networkgroups
 
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }
