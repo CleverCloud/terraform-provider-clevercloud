@@ -155,6 +155,7 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 		r,
 		createdMy.ID,
 		my.Networkgroups,
+		&my.Networkgroups,
 		&resp.Diagnostics,
 	)
 
@@ -278,6 +279,7 @@ func (r *ResourceMySQL) Update(ctx context.Context, req resource.UpdateRequest, 
 		r,
 		plan.ID.ValueString(),
 		plan.Networkgroups,
+		&state.Networkgroups,
 		&resp.Diagnostics,
 	)
 
