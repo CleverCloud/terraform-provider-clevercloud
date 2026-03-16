@@ -97,6 +97,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		r,
 		res.Payload().ID,
 		mg.Networkgroups,
+		&mg.Networkgroups,
 		&resp.Diagnostics,
 	)
 
@@ -207,6 +208,7 @@ func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest
 		r,
 		plan.ID.ValueString(),
 		plan.Networkgroups,
+		&state.Networkgroups,
 		&resp.Diagnostics,
 	)
 
