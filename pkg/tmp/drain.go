@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"go.clever-cloud.dev/client"
 )
@@ -92,24 +93,66 @@ type WannabeDrain struct {
 	Kind      DRAIN_KIND      `json:"kind,omitempty"`
 }
 
+// retryOn503 wraps an API call and retries it on 503 errors with exponential backoff.
+// It will retry up to 5 times with delays of 2s, 4s, 8s, 16s, 32s.
+func retryOn503[T any](ctx context.Context, fn func() client.Response[T]) client.Response[T] {
+	maxRetries := 5
+	baseDelay := 2 * time.Second
+
+	var response client.Response[T]
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		response = fn()
+
+		// If no error or not a 503, return immediately
+		if !response.HasError() || response.StatusCode() != 503 {
+			return response
+		}
+
+		// If this is the last attempt, return the error
+		if attempt == maxRetries-1 {
+			return response
+		}
+
+		// Wait before retrying with exponential backoff
+		delay := baseDelay * time.Duration(1<<uint(attempt))
+		select {
+		case <-ctx.Done():
+			return response
+		case <-time.After(delay):
+			// Continue to next retry
+		}
+	}
+
+	return response
+}
+
 // CreateDrain creates a drain for a given organisation and application.
 // POST /v4/drains/organisations/{ownerId}/applications/{applicationId}/drains
+// Automatically retries on 503 errors with exponential backoff.
 func CreateDrain(ctx context.Context, cc *client.Client, organisationID, applicationID string, req WannabeDrain) client.Response[Drain] {
 	path := fmt.Sprintf("/v4/drains/organisations/%s/applications/%s/drains", organisationID, applicationID)
-	return client.Post[Drain](ctx, cc, path, req)
+	return retryOn503(ctx, func() client.Response[Drain] {
+		return client.Post[Drain](ctx, cc, path, req)
+	})
 }
 
 // GetDrain retrieves a specific drain.
 // GET /v4/drains/organisations/{ownerId}/applications/{applicationId}/drains/{drainId}
+// Automatically retries on 503 errors with exponential backoff.
 func GetDrain(ctx context.Context, cc *client.Client, organisationID, applicationID, drainID string) client.Response[Drain] {
 	path := fmt.Sprintf("/v4/drains/organisations/%s/applications/%s/drains/%s", organisationID, applicationID, drainID)
-	return client.Get[Drain](ctx, cc, path)
+	return retryOn503(ctx, func() client.Response[Drain] {
+		return client.Get[Drain](ctx, cc, path)
+	})
 }
 
 // DeleteDrain deletes a specific drain.
 // DELETE /v4/drains/organisations/{ownerId}/applications/{applicationId}/drains/{drainId}
 // The API returns the deleted Drain in the response body (HTTP 200).
+// Automatically retries on 503 errors with exponential backoff.
 func DeleteDrain(ctx context.Context, cc *client.Client, organisationID, applicationID, drainID string) client.Response[Drain] {
 	path := fmt.Sprintf("/v4/drains/organisations/%s/applications/%s/drains/%s", organisationID, applicationID, drainID)
-	return client.Delete[Drain](ctx, cc, path)
+	return retryOn503(ctx, func() client.Response[Drain] {
+		return client.Delete[Drain](ctx, cc, path)
+	})
 }

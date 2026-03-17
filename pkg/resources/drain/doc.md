@@ -14,9 +14,28 @@ Forward logs to Datadog.
 resource "clevercloud_drain_datadog" "example" {
   resource_id = clevercloud_nodejs.app.id
   kind        = "LOG"
-  url         = "https://http-intake.logs.datadoghq.com/v1/input/YOUR_API_KEY"
+  api_key     = var.datadog_api_key
+  # endpoint defaults to US1: https://http-intake.logs.datadoghq.com/v1/input
+}
+
+# For EU region
+resource "clevercloud_drain_datadog" "eu_example" {
+  resource_id = clevercloud_nodejs.app.id
+  kind        = "LOG"
+  endpoint    = "https://http-intake.logs.datadoghq.eu/v1/input"
+  api_key     = var.datadog_api_key
 }
 ```
+
+**Available Datadog endpoints by region:**
+- **US1** (default): `https://http-intake.logs.datadoghq.com/v1/input`
+- **US3**: `https://http-intake.logs.us3.datadoghq.com/v1/input`
+- **US5**: `https://http-intake.logs.us5.datadoghq.com/v1/input`
+- **EU1**: `https://http-intake.logs.datadoghq.eu/v1/input`
+- **AP1**: `https://http-intake.logs.ap1.datadoghq.com/v1/input`
+- **US1-FED**: `https://http-intake.logs.ddog-gov.com/v1/input`
+
+See [Datadog documentation](https://docs.datadoghq.com/logs/log_collection/?tab=host#supported-endpoints) for the complete list of endpoints.
 
 ### clevercloud_drain_newrelic
 
