@@ -24,7 +24,7 @@ jobs:
           - database/pulsar
           - database/redis
           - drain
-          - elasticsearch
+          - database/elasticsearch
           - networkgroup
           - software
           - kubernetes
