@@ -23,10 +23,21 @@ See [Matomo product specification](https://www.clever.cloud/developers/doc/addon
 
 ### Optional
 
+- `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `region` (String) Geographical region where the data will be stored
 
 ### Read-Only
 
+- `creation_date` (Number) Date of addon creation
 - `host` (String) URL to access Matomo
 - `id` (String) Generated unique identifier
+- `plan` (String)
 - `version` (String) Current version of Matomo
+
+<a id="nestedatt--networkgroups"></a>
+### Nested Schema for `networkgroups`
+
+Required:
+
+- `fqdn` (String) domain name which will resolve to addon instances inside the networkgroup
+- `networkgroup_id` (String) ID of the networkgroup

@@ -13,7 +13,25 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/client"
 )
+
+// CreateReq represents the request structure for creating an addon
+type CreateReq struct {
+	Client       *client.Client
+	Organization string
+	Addon        tmp.AddonRequest
+}
+
+// CreateRes represents the response from creating or updating an addon
+type CreateRes struct {
+	Addon   tmp.AddonResponse
+	AddonID string // addon_xxx format (needed for SyncNetworkGroups)
+}
+
+func (r *CreateRes) GetAddon() *tmp.AddonResponse {
+	return &r.Addon
+}
 
 func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	ad := helper.PlanFrom[Addon](ctx, req.Plan, &resp.Diagnostics)
@@ -71,6 +89,24 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 	resp.Diagnostics.Append(resp.State.Set(ctx, ad)...)
 }
 
+// CreateAddon handles the low-level API calls for creating an addon
+func CreateAddon(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
+
+	res := tmp.CreateAddon(ctx, req.Client, req.Organization, req.Addon)
+	if res.HasError() {
+		diags.AddError("failed to create addon", res.Error().Error())
+		return nil, diags
+	}
+
+	addonPayload := res.Payload()
+
+	return &CreateRes{
+		Addon:   *addonPayload,
+		AddonID: addonPayload.ID,
+	}, diags
+}
+
 // Create centralizes the common Create logic for all addon resources.
 // Returns the addon_xxx ID (needed for SyncNetworkGroups) and diagnostics.
 func Create[T AddonPlan](ctx context.Context, r AddonResource, plan T) (addonID string, diags diag.Diagnostics) {
@@ -109,35 +145,40 @@ func Create[T AddonPlan](ctx context.Context, r AddonResource, plan T) (addonID 
 		}
 	}
 
-	// Build creation request
-	addonReq := tmp.AddonRequest{
-		Name:       common.Name.ValueString(),
-		Plan:       provPlan.ID,
-		ProviderID: r.GetProviderSlug(),
-		Region:     common.Region.ValueString(),
-		Options:    plan.GetAddonOptions(),
+	// Build CreateReq
+	createReq := CreateReq{
+		Client:       r.Client(),
+		Organization: r.Organization(),
+		Addon: tmp.AddonRequest{
+			Name:       common.Name.ValueString(),
+			Plan:       provPlan.ID,
+			ProviderID: r.GetProviderSlug(),
+			Region:     common.Region.ValueString(),
+			Options:    plan.GetAddonOptions(),
+		},
 	}
 
-	// Create addon
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
-	if res.HasError() {
-		diags.AddError("failed to create addon", res.Error().Error())
+	// Call common CreateAddon function
+	createRes, createDiags := CreateAddon(ctx, createReq)
+	diags.Append(createDiags...)
+	if createRes == nil {
 		return "", diags
 	}
 
-	addonPayload := res.Payload()
-	common.ID = pkg.FromStr(addonPayload.RealID)
-	common.CreationDate = pkg.FromI(addonPayload.CreationDate)
-	common.Plan = pkg.FromStr(addonPayload.Plan.Slug)
+	// Map common fields from response
+	a := createRes.GetAddon()
+	common.ID = pkg.FromStr(a.RealID)
+	common.CreationDate = pkg.FromI(a.CreationDate)
+	common.Plan = pkg.FromStr(a.Plan.Slug)
 
 	// Read provider-specific fields (host, port, password...)
-	plan.SetFromResponse(ctx, r.Client(), r.Organization(), addonPayload.ID, &diags)
+	plan.SetFromResponse(ctx, r.Client(), r.Organization(), createRes.AddonID, &diags)
 	if diags.HasError() {
-		return addonPayload.ID, diags
+		return createRes.AddonID, diags
 	}
 
 	// Set defaults for optional fields
 	plan.SetDefaults()
 
-	return addonPayload.ID, diags
+	return createRes.AddonID, diags
 }

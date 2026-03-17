@@ -5,97 +5,53 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 )
 
 // Create a new resource
 func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	mb := helper.PlanFrom[Metabase](ctx, req.Plan, &resp.Diagnostics)
+	tflog.Debug(ctx, "ResourceMetabase.Create()")
+
+	plan := helper.PlanFrom[Metabase](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
-	if addonsProvidersRes.HasError() {
-		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
-		return
-	}
-	addonsProviders := addonsProvidersRes.Payload()
-
-	prov := pkg.LookupAddonProvider(*addonsProviders, "metabase")
-	plan := prov.FirstPlan()
-	if plan == nil {
-		resp.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
+	addonID, createDiags := addon.Create(ctx, r, &plan)
+	resp.Diagnostics.Append(createDiags...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
-		Name:       mb.Name.ValueString(),
-		Plan:       plan.ID,
-		ProviderID: "metabase",
-		Region:     mb.Region.ValueString(),
-	}
-
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
-	if res.HasError() {
-		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
-	addon := res.Payload()
 
-	mb.ID = pkg.FromStr(addon.RealID)
-	mb.Region = pkg.FromStr(addon.Region)
-	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
+	addon.SyncNetworkGroups(ctx, r, addonID, plan.Networkgroups, &plan.Networkgroups, &resp.Diagnostics)
 
-	metabaseRes := tmp.GetMetabase(ctx, r.Client(), addon.RealID)
-	if metabaseRes.HasError() {
-		resp.Diagnostics.AddError("failed to get Metabase", metabaseRes.Error().Error())
-	} else {
-		metabase := metabaseRes.Payload()
-		mb.Host = pkg.FromStr(metabase.AccessURL)
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
 // Read resource information
 func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	tflog.Debug(ctx, "ResourceMetabase.Read()")
+
 	state := helper.StateFrom[Metabase](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if state.ID.ValueString() == "" {
+	addonIsDeleted, diags := addon.Read(ctx, r, &state)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if addonIsDeleted {
 		resp.State.RemoveResource(ctx)
 		return
-	}
-
-	addonMBRes := tmp.GetMetabase(ctx, r.Client(), state.ID.ValueString())
-	if addonMBRes.IsNotFoundError() {
-		resp.State.RemoveResource(ctx)
-		return
-	} else if addonMBRes.HasError() {
-		resp.Diagnostics.AddError("failed to get Metabase resource", addonMBRes.Error().Error())
-	} else {
-		metabase := addonMBRes.Payload()
-		state.Name = pkg.FromStr(metabase.Name)
-		state.Host = pkg.FromStr(metabase.AccessURL)
-	}
-
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
-		return
-	}
-
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
-	if addonRes.HasError() {
-		resp.Diagnostics.AddError("failed to get Metabase addon", addonRes.Error().Error())
-	} else {
-		addon := addonRes.Payload()
-		state.Region = pkg.FromStr(addon.Region)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
@@ -103,56 +59,49 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 
 // Update resource
 func (r *ResourceMetabase) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceMetabase.Update()")
+
 	plan := helper.PlanFrom[Metabase](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+	state := helper.StateFrom[Metabase](ctx, req.State, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	addonID, updateDiags := addon.Update(ctx, r, &plan, &state)
+	resp.Diagnostics.Append(updateDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan.SetFromResponse(ctx, r.Client(), r.Organization(), addonID, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	addon.SyncNetworkGroups(ctx, r, addonID, plan.Networkgroups, &plan.Networkgroups, &resp.Diagnostics)
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+}
+
+// Delete resource
+func (r *ResourceMetabase) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	tflog.Debug(ctx, "ResourceMetabase.Delete()")
 
 	state := helper.StateFrom[Metabase](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if plan.ID.ValueString() != state.ID.ValueString() {
-		resp.Diagnostics.AddError("metabase cannot be updated", "mismatched IDs")
-		return
-	}
-
-	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
-	})
-	if addonRes.HasError() {
-		resp.Diagnostics.AddError("failed to update Metabase", addonRes.Error().Error())
-	} else {
-		state.Name = pkg.FromStr(addonRes.Payload().Name)
-	}
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-}
-
-// Delete resource
-func (r *ResourceMetabase) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	mb := helper.StateFrom[Metabase](ctx, req.State, &resp.Diagnostics)
+	resp.Diagnostics.Append(addon.Delete(ctx, r, &state)...)
 	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	tflog.Debug(ctx, "Metabase DELETE", map[string]any{"mb": mb})
-
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), mb.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
-		return
-	}
-
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
-	if res.IsNotFoundError() {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	if res.HasError() {
-		resp.Diagnostics.AddError("failed to delete addon", res.Error().Error())
 		return
 	}
 

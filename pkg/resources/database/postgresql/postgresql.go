@@ -23,3 +23,7 @@ func NewResourcePostgreSQL() resource.Resource {
 func (r *ResourcePostgreSQL) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_postgresql"
 }
+
+func (r *ResourcePostgreSQL) GetProviderSlug() string {
+	return "postgresql-addon"
+}

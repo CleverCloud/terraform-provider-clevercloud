@@ -23,3 +23,7 @@ func NewResourceMySQL() resource.Resource {
 func (r *ResourceMySQL) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_mysql"
 }
+
+func (r *ResourceMySQL) GetProviderSlug() string {
+	return "mysql-addon"
+}

@@ -29,10 +29,11 @@ Learn more about [Otoroshi with LLM](https://www.clever.cloud/developers/doc/add
 
 ### Required
 
-- `name` (String) Name of the Otoroshi
+- `name` (String) Name of the service
 
 ### Optional
 
+- `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `region` (String) Geographical region where the data will be stored
 - `version` (String) Otoroshi version to deploy
 
@@ -41,8 +42,17 @@ Learn more about [Otoroshi with LLM](https://www.clever.cloud/developers/doc/add
 - `api_client_id` (String) API client ID
 - `api_client_secret` (String, Sensitive) API client secret
 - `api_url` (String) API URL
-- `creation_date` (Number) Date of Otoroshi creation
+- `creation_date` (Number) Date of addon creation
 - `id` (String) Generated unique identifier
 - `initial_admin_login` (String) Initial admin login
 - `initial_admin_password` (String, Sensitive) Initial admin password
+- `plan` (String)
 - `url` (String) URL
+
+<a id="nestedatt--networkgroups"></a>
+### Nested Schema for `networkgroups`
+
+Required:
+
+- `fqdn` (String) domain name which will resolve to addon instances inside the networkgroup
+- `networkgroup_id` (String) ID of the networkgroup

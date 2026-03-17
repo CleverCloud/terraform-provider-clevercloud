@@ -14,9 +14,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/client"
 )
 
 type PostgreSQL struct {
@@ -33,6 +35,89 @@ type PostgreSQL struct {
 	Encryption     types.Bool `tfsdk:"encryption"`
 	DirectHostOnly types.Bool `tfsdk:"direct_host_only"`
 	Locale         types.Bool `tfsdk:"locale"`
+}
+
+func (pg *PostgreSQL) GetCommonPtr() *addon.CommonAttributes {
+	return &pg.CommonAttributes
+}
+
+func (pg *PostgreSQL) GetAddonOptions() map[string]string {
+	opts := map[string]string{}
+
+	pkg.IfIsSetStr(pg.Version, func(s string) {
+		opts["version"] = s
+	})
+
+	if !pg.Backup.IsNull() && !pg.Backup.IsUnknown() {
+		opts["do-backup"] = fmt.Sprintf("%t", pg.Backup.ValueBool())
+	} else {
+		opts["do-backup"] = "true"
+	}
+
+	if !pg.Encryption.IsNull() && !pg.Encryption.IsUnknown() {
+		opts["encryption"] = fmt.Sprintf("%t", pg.Encryption.ValueBool())
+	}
+
+	if !pg.DirectHostOnly.IsNull() && !pg.DirectHostOnly.IsUnknown() {
+		opts["direct-host-only"] = fmt.Sprintf("%t", pg.DirectHostOnly.ValueBool())
+	}
+
+	if !pg.Locale.IsNull() && !pg.Locale.IsUnknown() {
+		opts["locale"] = fmt.Sprintf("%t", pg.Locale.ValueBool())
+	}
+
+	return opts
+}
+
+func (pg *PostgreSQL) SetFromResponse(ctx context.Context, cc *client.Client, _ string, addonID string, diags *diag.Diagnostics) {
+	pgInfoRes := tmp.GetPostgreSQL(ctx, cc, addonID)
+	if pgInfoRes.HasError() {
+		diags.AddError("failed to get PostgreSQL connection infos", pgInfoRes.Error().Error())
+		return
+	}
+	addonPG := pgInfoRes.Payload()
+
+	tflog.Debug(ctx, "API response", map[string]any{
+		"payload": fmt.Sprintf("%+v", addonPG),
+	})
+
+	if addonPG.Status == "TO_DELETE" {
+		diags.AddError("addon is being deleted", "PostgreSQL addon is marked for deletion")
+		return
+	}
+
+	pg.Host = pkg.FromStr(addonPG.Host)
+	pg.Port = pkg.FromI(int64(addonPG.Port))
+	pg.Database = pkg.FromStr(addonPG.Database)
+	pg.User = pkg.FromStr(addonPG.User)
+	pg.Password = pkg.FromStr(addonPG.Password)
+	pg.Version = pkg.FromStr(addonPG.Version)
+	pg.Uri = pkg.FromStr(addonPG.Uri())
+
+	for _, feature := range addonPG.Features {
+		switch feature.Name {
+		case "do-backup":
+			pg.Backup = pkg.FromBool(feature.Enabled)
+		case "encryption":
+			pg.Encryption = pkg.FromBool(feature.Enabled)
+		case "direct-host-only":
+			pg.DirectHostOnly = pkg.FromBool(feature.Enabled)
+		case "locale":
+			pg.Locale = pkg.FromBool(feature.Enabled)
+		}
+	}
+}
+
+func (pg *PostgreSQL) SetDefaults() {
+	if pg.Encryption.IsUnknown() {
+		pg.Encryption = pkg.FromBool(false)
+	}
+	if pg.DirectHostOnly.IsUnknown() {
+		pg.DirectHostOnly = pkg.FromBool(false)
+	}
+	if pg.Locale.IsUnknown() {
+		pg.Locale = pkg.FromBool(false)
+	}
 }
 
 //go:embed doc.md

@@ -6,25 +6,64 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
+	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk"
 )
 
 type Keycloak struct {
-	ID            types.String `tfsdk:"id"`
-	Name          types.String `tfsdk:"name"`
-	Region        types.String `tfsdk:"region"`
+	addon.CommonAttributes
 	Version       types.String `tfsdk:"version"`
 	AccessDomain  types.String `tfsdk:"access_domain"`
 	Host          types.String `tfsdk:"host"`
 	AdminUsername types.String `tfsdk:"admin_username"`
 	AdminPassword types.String `tfsdk:"admin_password"`
 	FSBucketID    types.String `tfsdk:"fsbucket_id"`
+}
+
+func (kc *Keycloak) GetCommonPtr() *addon.CommonAttributes {
+	return &kc.CommonAttributes
+}
+
+func (kc *Keycloak) GetAddonOptions() map[string]string {
+	opts := map[string]string{}
+
+	if !kc.AccessDomain.IsNull() && !kc.AccessDomain.IsUnknown() {
+		opts["access-domain"] = kc.AccessDomain.ValueString()
+	}
+	if !kc.Version.IsNull() && !kc.Version.IsUnknown() {
+		opts["version"] = kc.Version.ValueString()
+	}
+
+	return opts
+}
+
+func (kc *Keycloak) SetFromResponse(ctx context.Context, cc *client.Client, org string, addonID string, diags *diag.Diagnostics) {
+	s := sdk.NewSDK(sdk.WithClient(cc))
+	keycloakRes := s.V4().Keycloaks().Organisations().Ownerid(org).Keycloaks().Addonkeycloakid(kc.ID.ValueString()).Getkeycloak(ctx)
+	if keycloakRes.HasError() {
+		diags.AddError("failed to get Keycloak", keycloakRes.Error().Error())
+		return
+	}
+
+	keycloak := keycloakRes.Payload()
+	kc.Name = pkg.FromStr(keycloak.Name)
+	kc.Host = pkg.FromStr(keycloak.AccessURL)
+	kc.AdminUsername = pkg.FromStr(keycloak.InitialCredentials.User)
+	kc.AdminPassword = pkg.FromStr(keycloak.InitialCredentials.Password)
+	kc.Version = pkg.FromStr(keycloak.Version)
+	kc.AccessDomain = pkg.FromStr(keycloak.EnvVars["CC_KEYCLOAK_HOSTNAME"])
+	kc.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
+}
+
+func (kc *Keycloak) SetDefaults() {
+	// Keycloak has no optional fields requiring defaults
 }
 
 //go:embed doc.md
@@ -34,22 +73,16 @@ func (r ResourceKeycloak) Schema(_ context.Context, req resource.SchemaRequest, 
 	resp.Schema = schema.Schema{
 		Version:             0,
 		MarkdownDescription: resourceKeycloakDoc,
-		Attributes: map[string]schema.Attribute{
-			"id":   schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
-			"region": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				Default:             stringdefault.StaticString("par"),
-				MarkdownDescription: "Geographical region where the data will be stored",
-			},
-			"access_domain":  schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Main domaine to access the instance"},
-			"version":        schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Keycloak official version"},
-			"host":           schema.StringAttribute{Computed: true, MarkdownDescription: "URL to access Keycloak"},
-			"admin_username": schema.StringAttribute{Computed: true, MarkdownDescription: "Initial admin username for Keycloak"},
-			"admin_password": schema.StringAttribute{Computed: true, Sensitive: true, MarkdownDescription: "Initial admin password for Keycloak"},
-			"fsbucket_id":    schema.StringAttribute{Computed: true, MarkdownDescription: "ID of the fsbucket subresource"},
-		},
+		Attributes: addon.WithAddonCommons(map[string]schema.Attribute{
+			// Single-plan addon: plan is computed, not user-specified
+			"plan":             schema.StringAttribute{Computed: true},
+			"access_domain":    schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Main domaine to access the instance"},
+			"version":          schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Keycloak official version"},
+			"host":             schema.StringAttribute{Computed: true, MarkdownDescription: "URL to access Keycloak"},
+			"admin_username":   schema.StringAttribute{Computed: true, MarkdownDescription: "Initial admin username for Keycloak"},
+			"admin_password":   schema.StringAttribute{Computed: true, Sensitive: true, MarkdownDescription: "Initial admin password for Keycloak"},
+			"fsbucket_id":      schema.StringAttribute{Computed: true, MarkdownDescription: "ID of the fsbucket subresource"},
+		}),
 	}
 }
 

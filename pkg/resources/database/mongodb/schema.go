@@ -3,13 +3,19 @@ package mongodb
 import (
 	"context"
 	_ "embed"
+	"fmt"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/client"
 )
 
 type MongoDB struct {
@@ -22,6 +28,64 @@ type MongoDB struct {
 	Uri            types.String `tfsdk:"uri"`
 	Encryption     types.Bool   `tfsdk:"encryption"`
 	DirectHostOnly types.Bool   `tfsdk:"direct_host_only"`
+}
+
+func (mg *MongoDB) GetCommonPtr() *addon.CommonAttributes {
+	return &mg.CommonAttributes
+}
+
+func (mg *MongoDB) GetAddonOptions() map[string]string {
+	opts := map[string]string{}
+	if !mg.Encryption.IsNull() && !mg.Encryption.IsUnknown() {
+		opts["encryption"] = fmt.Sprintf("%t", mg.Encryption.ValueBool())
+	}
+	if !mg.DirectHostOnly.IsNull() && !mg.DirectHostOnly.IsUnknown() {
+		opts["direct-host-only"] = fmt.Sprintf("%t", mg.DirectHostOnly.ValueBool())
+	}
+	return opts
+}
+
+func (mg *MongoDB) SetFromResponse(ctx context.Context, cc *client.Client, _ string, addonID string, diags *diag.Diagnostics) {
+	mgInfoRes := tmp.GetMongoDB(ctx, cc, addonID)
+	if mgInfoRes.HasError() {
+		diags.AddError("failed to get MongoDB connection infos", mgInfoRes.Error().Error())
+		return
+	}
+
+	addonMG := mgInfoRes.Payload()
+	tflog.Debug(ctx, "API response", map[string]any{
+		"payload": fmt.Sprintf("%+v", addonMG),
+	})
+
+	if addonMG.Status == "TO_DELETE" {
+		diags.AddError("addon is being deleted", "MongoDB addon is marked for deletion")
+		return
+	}
+
+	mg.Host = pkg.FromStr(addonMG.Host)
+	mg.Port = pkg.FromI(int64(addonMG.Port))
+	mg.User = pkg.FromStr(addonMG.User)
+	mg.Password = pkg.FromStr(addonMG.Password)
+	mg.Database = pkg.FromStr(addonMG.Database)
+	mg.Uri = pkg.FromStr(addonMG.Uri())
+
+	for _, feature := range addonMG.Features {
+		switch feature.Name {
+		case "encryption":
+			mg.Encryption = pkg.FromBool(feature.Enabled)
+		case "direct-host-only":
+			mg.DirectHostOnly = pkg.FromBool(feature.Enabled)
+		}
+	}
+}
+
+func (mg *MongoDB) SetDefaults() {
+	if mg.Encryption.IsUnknown() {
+		mg.Encryption = pkg.FromBool(false)
+	}
+	if mg.DirectHostOnly.IsUnknown() {
+		mg.DirectHostOnly = pkg.FromBool(false)
+	}
 }
 
 //go:embed doc.md

@@ -18,3 +18,7 @@ func NewResourceMongoDB() resource.Resource {
 func (r *ResourceMongoDB) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_mongodb"
 }
+
+func (r *ResourceMongoDB) GetProviderSlug() string {
+	return "mongodb-addon"
+}

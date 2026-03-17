@@ -35,7 +35,7 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 
 ### Read-Only
 
-- `creation_date` (Number) Date of database creation
+- `creation_date` (Number) Date of addon creation
 - `database` (String) Database name on the MySQL server
 - `host` (String) Database host, used to connect to
 - `id` (String) Generated unique identifier

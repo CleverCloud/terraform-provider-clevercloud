@@ -34,7 +34,7 @@ var addonCommon = map[string]schema.Attribute{
 		Default:             stringdefault.StaticString("par"),
 		MarkdownDescription: "Geographical region where the data will be stored",
 	},
-	"creation_date": schema.Int64Attribute{Computed: true, MarkdownDescription: "Date of database creation", PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()}},
+	"creation_date": schema.Int64Attribute{Computed: true, MarkdownDescription: "Date of addon creation", PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()}},
 	"networkgroups": schema.SetNestedAttribute{
 		Optional:            true,
 		MarkdownDescription: "List of networkgroups the addon must be part of",

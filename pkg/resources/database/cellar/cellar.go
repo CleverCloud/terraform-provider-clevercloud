@@ -18,3 +18,7 @@ func NewResourceCellar() resource.Resource {
 func (r *ResourceCellar) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_cellar"
 }
+
+func (r *ResourceCellar) GetProviderSlug() string {
+	return "cellar-addon"
+}

@@ -29,7 +29,7 @@ See [Redis product specification](https://www.clever.cloud/developers/doc/addons
 
 ### Read-Only
 
-- `creation_date` (Number) Date of database creation
+- `creation_date` (Number) Date of addon creation
 - `host` (String) Database host, used to connect to
 - `id` (String) Generated unique identifier
 - `port` (Number) Database port

@@ -18,3 +18,7 @@ func NewResourceOtoroshi() resource.Resource {
 func (r *ResourceOtoroshi) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_otoroshi"
 }
+
+func (r *ResourceOtoroshi) GetProviderSlug() string {
+	return "otoroshi"
+}

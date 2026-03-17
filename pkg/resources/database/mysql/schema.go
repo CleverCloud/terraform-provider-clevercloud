@@ -14,9 +14,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/client"
 )
 
 type MySQL struct {
@@ -29,11 +31,94 @@ type MySQL struct {
 	Version  types.String `tfsdk:"version"`
 	Uri      types.String `tfsdk:"uri"`
 
-	Backup        types.Bool `tfsdk:"backup"`
-	Encryption    types.Bool `tfsdk:"encryption"`
+	Backup         types.Bool `tfsdk:"backup"`
+	Encryption     types.Bool `tfsdk:"encryption"`
 	DirectHostOnly types.Bool `tfsdk:"direct_host_only"`
-	SkipLogBin    types.Bool `tfsdk:"skip_log_bin"`
-	ReadOnlyUsers types.List `tfsdk:"read_only_users"`
+	SkipLogBin     types.Bool `tfsdk:"skip_log_bin"`
+	ReadOnlyUsers  types.List `tfsdk:"read_only_users"`
+}
+
+func (my *MySQL) GetCommonPtr() *addon.CommonAttributes {
+	return &my.CommonAttributes
+}
+
+func (my *MySQL) GetAddonOptions() map[string]string {
+	opts := map[string]string{}
+
+	if !my.Version.IsNull() && !my.Version.IsUnknown() {
+		opts["version"] = my.Version.ValueString()
+	}
+
+	opts["do-backup"] = "true"
+	if !my.Backup.IsNull() && !my.Backup.IsUnknown() {
+		opts["do-backup"] = fmt.Sprintf("%t", my.Backup.ValueBool())
+	}
+
+	if !my.Encryption.IsNull() && !my.Encryption.IsUnknown() {
+		opts["encryption"] = fmt.Sprintf("%t", my.Encryption.ValueBool())
+	}
+
+	if !my.DirectHostOnly.IsNull() && !my.DirectHostOnly.IsUnknown() {
+		opts["direct-host-only"] = fmt.Sprintf("%t", my.DirectHostOnly.ValueBool())
+	}
+
+	if !my.SkipLogBin.IsNull() && !my.SkipLogBin.IsUnknown() {
+		opts["skip-log-bin"] = fmt.Sprintf("%t", my.SkipLogBin.ValueBool())
+	}
+
+	return opts
+}
+
+func (my *MySQL) SetFromResponse(ctx context.Context, cc *client.Client, _ string, addonID string, diags *diag.Diagnostics) {
+	myInfoRes := tmp.GetMySQL(ctx, cc, addonID)
+	if myInfoRes.HasError() {
+		diags.AddError("failed to get MySQL connection infos", myInfoRes.Error().Error())
+		return
+	}
+	addonMy := myInfoRes.Payload()
+
+	tflog.Debug(ctx, "API response", map[string]any{
+		"payload": fmt.Sprintf("%+v", addonMy),
+	})
+
+	if addonMy.Status == "TO_DELETE" {
+		diags.AddError("addon is being deleted", "MySQL addon is marked for deletion")
+		return
+	}
+
+	my.Host = pkg.FromStr(addonMy.Host)
+	my.Port = pkg.FromI(int64(addonMy.Port))
+	my.Database = pkg.FromStr(addonMy.Database)
+	my.User = pkg.FromStr(addonMy.User)
+	my.Password = pkg.FromStr(addonMy.Password)
+	my.Version = pkg.FromStr(addonMy.Version)
+	my.Uri = pkg.FromStr(addonMy.Uri())
+	my.ReadOnlyUsers = tmp.FromMySQLReadOnlyUsers(addonMy.ReadOnlyUsers)
+
+	for _, feature := range addonMy.Features {
+		switch feature.Name {
+		case "do-backup":
+			my.Backup = pkg.FromBool(feature.Enabled)
+		case "encryption":
+			my.Encryption = pkg.FromBool(feature.Enabled)
+		case "direct-host-only":
+			my.DirectHostOnly = pkg.FromBool(feature.Enabled)
+		case "skip-log-bin":
+			my.SkipLogBin = pkg.FromBool(feature.Enabled)
+		}
+	}
+}
+
+func (my *MySQL) SetDefaults() {
+	if my.Encryption.IsUnknown() {
+		my.Encryption = pkg.FromBool(false)
+	}
+	if my.DirectHostOnly.IsUnknown() {
+		my.DirectHostOnly = pkg.FromBool(false)
+	}
+	if my.SkipLogBin.IsUnknown() {
+		my.SkipLogBin = pkg.FromBool(false)
+	}
 }
 
 //go:embed doc.md

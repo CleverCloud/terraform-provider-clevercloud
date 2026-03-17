@@ -12,7 +12,19 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/client"
 )
+
+// ReadRes represents the response from reading an addon
+type ReadRes struct {
+	Addon          tmp.AddonResponse
+	AddonID        string // addon_xxx format
+	AddonIsDeleted bool
+}
+
+func (r *ReadRes) GetAddon() *tmp.AddonResponse {
+	return &r.Addon
+}
 
 func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
 	ad := helper.StateFrom[Addon](ctx, req.State, &resp.Diagnostics)
@@ -52,6 +64,49 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 	resp.Diagnostics.Append(resp.State.Set(ctx, ad)...)
 }
 
+// ReadAddon handles the low-level API calls for reading an addon.
+// Handles legacy addon_xxx IDs transparently (converts to RealID).
+func ReadAddon(ctx context.Context, cc *client.Client, org, id string) (*ReadRes, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
+	r := &ReadRes{}
+
+	// Guard: empty ID means resource was never fully created
+	if id == "" {
+		r.AddonIsDeleted = true
+		return r, diags
+	}
+
+	// Handle legacy addon_xxx IDs from imports
+	realID, err := tmp.AddonIDToRealID(ctx, cc, org, id)
+	if err != nil {
+		diags.AddError("failed to resolve addon ID", err.Error())
+		return r, diags
+	}
+
+	// Convert RealID to AddonID for API calls
+	addonID, err := tmp.RealIDToAddonID(ctx, cc, org, realID)
+	if err != nil {
+		diags.AddError("failed to get addon ID", err.Error())
+		return r, diags
+	}
+
+	// Fetch addon metadata
+	addonRes := tmp.GetAddon(ctx, cc, org, addonID)
+	if addonRes.IsNotFoundError() {
+		r.AddonIsDeleted = true
+		return r, diags
+	}
+	if addonRes.HasError() {
+		diags.AddError("failed to get addon", addonRes.Error().Error())
+		return r, diags
+	}
+
+	r.Addon = *addonRes.Payload()
+	r.AddonID = addonID
+
+	return r, diags
+}
+
 // Read centralizes the common Read logic for all addon resources.
 // Returns true if the addon is deleted and should be removed from state.
 func Read[T AddonPlan](ctx context.Context, r AddonResource, state T) (addonIsDeleted bool, diags diag.Diagnostics) {
@@ -59,30 +114,20 @@ func Read[T AddonPlan](ctx context.Context, r AddonResource, state T) (addonIsDe
 
 	tflog.Debug(ctx, "addon.Read()", map[string]any{"provider": r.GetProviderSlug()})
 
-	// Guard: empty ID means resource was never fully created
-	if common.ID.ValueString() == "" {
-		return true, diags
-	}
-
-	// Convert RealID to AddonID
-	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), common.ID.ValueString())
-	if err != nil {
-		diags.AddError("failed to get addon ID", err.Error())
+	// Call common ReadAddon function
+	readRes, readDiags := ReadAddon(ctx, r.Client(), r.Organization(), common.ID.ValueString())
+	diags.Append(readDiags...)
+	if diags.HasError() {
 		return false, diags
 	}
 
-	// Fetch addon metadata
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonID)
-	if addonRes.IsNotFoundError() {
+	// Check if addon was deleted
+	if readRes.AddonIsDeleted {
 		return true, diags
-	}
-	if addonRes.HasError() {
-		diags.AddError("failed to get addon", addonRes.Error().Error())
-		return false, diags
 	}
 
 	// Map common fields from API response
-	a := addonRes.Payload()
+	a := readRes.GetAddon()
 	common.ID = pkg.FromStr(a.RealID)
 	common.Name = pkg.FromStr(a.Name)
 	common.Region = pkg.FromStr(a.Region)
@@ -90,13 +135,13 @@ func Read[T AddonPlan](ctx context.Context, r AddonResource, state T) (addonIsDe
 	common.CreationDate = pkg.FromI(a.CreationDate)
 
 	// Read provider-specific fields (host, port, password...)
-	state.SetFromResponse(ctx, r.Client(), r.Organization(), addonID, &diags)
+	state.SetFromResponse(ctx, r.Client(), r.Organization(), readRes.AddonID, &diags)
 	if diags.HasError() {
 		return false, diags
 	}
 
 	// Read networkgroups
-	common.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonID, &diags)
+	common.Networkgroups = resources.ReadNetworkGroups(ctx, r, readRes.AddonID, &diags)
 
 	return false, diags
 }

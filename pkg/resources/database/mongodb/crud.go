@@ -2,241 +2,112 @@ package mongodb
 
 import (
 	"context"
-	"fmt"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 // Create a new resource
 func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	mg := helper.PlanFrom[MongoDB](ctx, req.Plan, &resp.Diagnostics)
+	tflog.Debug(ctx, "ResourceMongoDB.Create()")
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
-	if addonsProvidersRes.HasError() {
-		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
-		return
-	}
-	addonsProviders := addonsProvidersRes.Payload()
-
-	prov := pkg.LookupAddonProvider(*addonsProviders, "mongodb-addon")
-	plan := pkg.LookupProviderPlan(prov, mg.Plan.ValueString())
-	if plan == nil {
-		resp.Diagnostics.AddError("failed to find plan", "expect: "+strings.Join(pkg.ProviderPlansAsList(prov), ", ")+", got: "+mg.Plan.String())
-		return
-	}
-
-	addonReq := tmp.AddonRequest{
-		Name:       mg.Name.ValueString(),
-		Plan:       plan.ID,
-		ProviderID: "mongodb-addon",
-		Region:     mg.Region.ValueString(),
-		Options:    map[string]string{},
-	}
-
-	if !mg.Encryption.IsNull() && !mg.Encryption.IsUnknown() {
-		addonReq.Options["encryption"] = fmt.Sprintf("%t", mg.Encryption.ValueBool())
-	}
-
-	if !mg.DirectHostOnly.IsNull() && !mg.DirectHostOnly.IsUnknown() {
-		addonReq.Options["direct-host-only"] = fmt.Sprintf("%t", mg.DirectHostOnly.ValueBool())
-	}
-
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
-	if res.HasError() {
-		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
-		return
-	}
-
-	mg.ID = pkg.FromStr(res.Payload().RealID)
-	mg.CreationDate = pkg.FromI(res.Payload().CreationDate)
-	mg.Plan = pkg.FromStr(res.Payload().Plan.Slug)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
-
-	mgInfoRes := tmp.GetMongoDB(ctx, r.Client(), res.Payload().ID)
-	if mgInfoRes.HasError() {
-		resp.Diagnostics.AddError("failed to get MongoDB connection infos", mgInfoRes.Error().Error())
-		return
-	}
-
-	addonMG := mgInfoRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]any{
-		"payload": fmt.Sprintf("%+v", addonMG),
-	})
-	mg.Host = pkg.FromStr(addonMG.Host)
-	mg.Port = pkg.FromI(int64(addonMG.Port))
-	mg.User = pkg.FromStr(addonMG.User)
-	mg.Password = pkg.FromStr(addonMG.Password)
-	mg.Database = pkg.FromStr(addonMG.Database)
-	mg.Uri = pkg.FromStr(addonMG.Uri())
-
-	if mg.Encryption.IsUnknown() {
-		mg.Encryption = pkg.FromBool(false)
-	}
-	if mg.DirectHostOnly.IsUnknown() {
-		mg.DirectHostOnly = pkg.FromBool(false)
-	}
-	for _, feature := range addonMG.Features {
-		switch feature.Name {
-		case "encryption":
-			mg.Encryption = pkg.FromBool(feature.Enabled)
-		case "direct-host-only":
-			mg.DirectHostOnly = pkg.FromBool(feature.Enabled)
-		}
-	}
-
-	addon.SyncNetworkGroups(
-		ctx,
-		r,
-		res.Payload().ID,
-		mg.Networkgroups,
-		&mg.Networkgroups,
-		&resp.Diagnostics,
-	)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
-}
-
-// Read resource information
-func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "MongoDB READ", map[string]any{"request": req})
-
-	mg := helper.StateFrom[MongoDB](ctx, req.State, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	if mg.ID.ValueString() == "" {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), mg.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
-		return
-	}
-
-	addonMGRes := tmp.GetMongoDB(ctx, r.Client(), addonId)
-	if addonMGRes.IsNotFoundError() {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-	if addonMGRes.HasError() {
-		resp.Diagnostics.AddError("failed to get MongoDB resource", addonMGRes.Error().Error())
-	}
-
-	addonMG := addonMGRes.Payload()
-
-	if addonMG.Status == "TO_DELETE" {
-		resp.State.RemoveResource(ctx)
-		return
-	}
-
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
-	if addonRes.HasError() {
-		resp.Diagnostics.AddError("failed to get MongoDB addon", addonRes.Error().Error())
-		return
-	}
-	addonInfo := addonRes.Payload()
-
-	tflog.Debug(ctx, "STATE", map[string]any{"mg": mg})
-	tflog.Debug(ctx, "API", map[string]any{"mg": addonMG})
-	mg.ID = pkg.FromStr(addonInfo.RealID)
-	mg.Name = pkg.FromStr(addonInfo.Name)
-	mg.Region = pkg.FromStr(addonInfo.Region)
-	mg.Plan = pkg.FromStr(addonInfo.Plan.Slug)
-	mg.CreationDate = pkg.FromI(addonInfo.CreationDate)
-	mg.Host = pkg.FromStr(addonMG.Host)
-	mg.Port = pkg.FromI(int64(addonMG.Port))
-	mg.User = pkg.FromStr(addonMG.User)
-	mg.Password = pkg.FromStr(addonMG.Password)
-	mg.Database = pkg.FromStr(addonMG.Database)
-	mg.Uri = pkg.FromStr(addonMG.Uri())
-
-	for _, feature := range addonMG.Features {
-		switch feature.Name {
-		case "encryption":
-			mg.Encryption = pkg.FromBool(feature.Enabled)
-		case "direct-host-only":
-			mg.DirectHostOnly = pkg.FromBool(feature.Enabled)
-		}
-	}
-
-	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
-
-	diags := resp.State.Set(ctx, mg)
-	resp.Diagnostics.Append(diags...)
-}
-
-// Update resource
-func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	plan := helper.PlanFrom[MongoDB](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
+
+	addonID, createDiags := addon.Create(ctx, r, &plan)
+	resp.Diagnostics.Append(createDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Save state before secondary operations
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Sync networkgroups (uses addon_xxx ID, not RealID)
+	addon.SyncNetworkGroups(ctx, r, addonID, plan.Networkgroups, &plan.Networkgroups, &resp.Diagnostics)
+
+	// Final save with networkgroups
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+}
+
+// Read resource information
+func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	tflog.Debug(ctx, "ResourceMongoDB.Read()")
 
 	state := helper.StateFrom[MongoDB](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	if plan.ID.ValueString() != state.ID.ValueString() {
-		resp.Diagnostics.AddError("mongodb cannot be updated", "mismatched IDs")
-		return
-	}
-
-	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
-	})
-	if addonRes.HasError() {
-		resp.Diagnostics.AddError("failed to update MongoDB", addonRes.Error().Error())
-		return
-	}
-	state.Name = pkg.FromStr(addonRes.Payload().Name)
-
-	addon.SyncNetworkGroups(
-		ctx,
-		r,
-		plan.ID.ValueString(),
-		plan.Networkgroups,
-		&state.Networkgroups,
-		&resp.Diagnostics,
-	)
-
-	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-}
-
-// Delete resource
-func (r *ResourceMongoDB) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	mg := helper.StateFrom[MongoDB](ctx, req.State, &resp.Diagnostics)
+	addonIsDeleted, diags := addon.Read(ctx, r, &state)
+	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
-	tflog.Debug(ctx, "MongoDB DELETE", map[string]any{"mg": mg})
-
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), mg.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
-		return
-	}
-
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
-	if res.IsNotFoundError() {
+	if addonIsDeleted {
 		resp.State.RemoveResource(ctx)
 		return
 	}
-	if res.HasError() {
-		resp.Diagnostics.AddError("failed to delete addon", res.Error().Error())
+
+	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+}
+
+// Update resource
+func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceMongoDB.Update()")
+
+	plan := helper.PlanFrom[MongoDB](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	state := helper.StateFrom[MongoDB](ctx, req.State, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	addonID, updateDiags := addon.Update(ctx, r, &plan, &state)
+	resp.Diagnostics.Append(updateDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan.SetFromResponse(ctx, r.Client(), r.Organization(), addonID, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Save plan to state (plan pattern)
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Sync networkgroups
+	addon.SyncNetworkGroups(ctx, r, addonID, plan.Networkgroups, &plan.Networkgroups, &resp.Diagnostics)
+
+	// Final save
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+}
+
+// Delete resource
+func (r *ResourceMongoDB) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	tflog.Debug(ctx, "ResourceMongoDB.Delete()")
+
+	state := helper.StateFrom[MongoDB](ctx, req.State, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(addon.Delete(ctx, r, &state)...)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

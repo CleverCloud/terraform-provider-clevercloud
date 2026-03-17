@@ -18,3 +18,7 @@ func NewResourceMateriaKV() resource.Resource {
 func (r *ResourceMateriaKV) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_materia_kv"
 }
+
+func (r *ResourceMateriaKV) GetProviderSlug() string {
+	return "kv"
+}

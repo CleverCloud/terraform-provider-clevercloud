@@ -18,3 +18,7 @@ func NewResourceMatomo() resource.Resource {
 func (r *ResourceMatomo) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_matomo"
 }
+
+func (r *ResourceMatomo) GetProviderSlug() string {
+	return "addon-matomo"
+}

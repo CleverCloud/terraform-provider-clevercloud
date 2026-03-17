@@ -9,7 +9,16 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/client"
 )
+
+// UpdateReq represents the request structure for updating an addon
+type UpdateReq struct {
+	ID           string // addon_xxx format
+	Client       *client.Client
+	Organization string
+	Name         string
+}
 
 func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	plan := helper.PlanFrom[Addon](ctx, req.Plan, &resp.Diagnostics)
@@ -36,6 +45,25 @@ func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
+// UpdateAddon handles the low-level API calls for updating an addon.
+// Reuses CreateRes as the response type (same as application pattern).
+func UpdateAddon(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
+
+	addonRes := tmp.UpdateAddon(ctx, req.Client, req.Organization, req.ID, map[string]string{
+		"name": req.Name,
+	})
+	if addonRes.HasError() {
+		diags.AddError("failed to update addon", addonRes.Error().Error())
+		return nil, diags
+	}
+
+	return &CreateRes{
+		Addon:   *addonRes.Payload(),
+		AddonID: req.ID,
+	}, diags
+}
+
 // Update centralizes the common Update logic for all addon resources.
 // Uses the plan pattern: writes the plan to state after updating, not the old state.
 // Returns the addon_xxx ID (needed for SyncNetworkGroups) and diagnostics.
@@ -57,17 +85,23 @@ func Update[T AddonPlan](ctx context.Context, r AddonResource, plan, state T) (a
 		return "", diags
 	}
 
-	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), addonID, map[string]string{
-		"name": planCommon.Name.ValueString(),
-	})
-	if addonRes.HasError() {
-		diags.AddError("failed to update addon", addonRes.Error().Error())
+	// Build UpdateReq
+	updateReq := UpdateReq{
+		ID:           addonID,
+		Client:       r.Client(),
+		Organization: r.Organization(),
+		Name:         planCommon.Name.ValueString(),
+	}
+
+	// Call common UpdateAddon function
+	updateRes, updateDiags := UpdateAddon(ctx, updateReq)
+	diags.Append(updateDiags...)
+	if updateRes == nil {
 		return addonID, diags
 	}
 
 	// Refresh common fields from API response to fill Computed values
-	a := addonRes.Payload()
+	a := updateRes.GetAddon()
 	planCommon.ID = pkg.FromStr(a.RealID)
 	planCommon.Name = pkg.FromStr(a.Name)
 	planCommon.Plan = pkg.FromStr(a.Plan.Slug)

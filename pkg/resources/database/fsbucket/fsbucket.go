@@ -18,3 +18,7 @@ func NewResourceFSBucket() resource.Resource {
 func (r *ResourceFSBucket) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_fsbucket"
 }
+
+func (r *ResourceFSBucket) GetProviderSlug() string {
+	return "fs-bucket"
+}

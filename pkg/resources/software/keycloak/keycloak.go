@@ -18,3 +18,7 @@ func NewResourceKeycloak() resource.Resource {
 func (r *ResourceKeycloak) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_keycloak"
 }
+
+func (r *ResourceKeycloak) GetProviderSlug() string {
+	return "keycloak"
+}

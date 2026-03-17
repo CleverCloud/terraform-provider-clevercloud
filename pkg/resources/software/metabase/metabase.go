@@ -18,3 +18,7 @@ func NewResourceMetabase() resource.Resource {
 func (r *ResourceMetabase) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_metabase"
 }
+
+func (r *ResourceMetabase) GetProviderSlug() string {
+	return "metabase"
+}
