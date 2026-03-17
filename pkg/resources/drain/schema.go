@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -74,14 +75,25 @@ type DrainAttributes interface {
 // Datadog drain
 type DatadogDrain struct {
 	Drain
-	URL types.String `tfsdk:"url"`
+	Endpoint types.String `tfsdk:"endpoint"`
+	APIKey   types.String `tfsdk:"api_key"`
 }
 
 func (r DatadogDrain) Attributes() map[string]schema.Attribute {
 	return map[string]schema.Attribute{
-		"url": schema.StringAttribute{
+		"endpoint": schema.StringAttribute{
+			Optional:            true,
+			Computed:            true,
+			MarkdownDescription: "Datadog log intake endpoint URL (without the API key). Defaults to US1 region.",
+			Default:             stringdefault.StaticString("https://http-intake.logs.datadoghq.com/v1/input"),
+			PlanModifiers: []planmodifier.String{
+				stringplanmodifier.RequiresReplace(),
+			},
+		},
+		"api_key": schema.StringAttribute{
 			Required:            true,
-			MarkdownDescription: "Datadog log intake URL",
+			Sensitive:           true,
+			MarkdownDescription: "Datadog API key for log ingestion",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
 			},
@@ -90,9 +102,15 @@ func (r DatadogDrain) Attributes() map[string]schema.Attribute {
 }
 
 func (r DatadogDrain) ToRecipient() []byte {
+	// Build the full URL by concatenating endpoint and API key
+	// This avoids URL encoding issues with the path
+	endpoint := r.Endpoint.ValueString()
+	apiKey := r.APIKey.ValueString()
+	fullURL := endpoint + "/" + apiKey
+
 	v, err := json.Marshal(tmp.RecipientDatadog{
 		Type: "DatadogRecipient",
-		URL:  r.URL.ValueString(),
+		URL:  fullURL,
 	})
 	if err != nil {
 		panic(err)
@@ -105,7 +123,32 @@ func (r *DatadogDrain) FromAPI(drain tmp.Drain) error {
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
 		return err
 	}
-	r.URL = types.StringValue(recipient.URL)
+
+	// Parse the URL to extract endpoint and API key
+	// URL format: https://http-intake.logs.datadoghq.com/v1/input/<API_KEY>
+	url := recipient.URL
+	lastSlash := strings.LastIndex(url, "/")
+
+	if lastSlash > 0 {
+		// Preserve endpoint from state if already set, otherwise use API value
+		if r.Endpoint.IsNull() || r.Endpoint.IsUnknown() {
+			r.Endpoint = types.StringValue(url[:lastSlash])
+		}
+		// For sensitive attributes, preserve current state value since API doesn't return it
+		if r.APIKey.IsNull() || r.APIKey.IsUnknown() {
+			r.APIKey = types.StringValue(url[lastSlash+1:])
+		}
+		// else: keep existing value from state
+	} else {
+		// Fallback if URL doesn't contain a slash (shouldn't happen)
+		if r.Endpoint.IsNull() || r.Endpoint.IsUnknown() {
+			r.Endpoint = types.StringValue(url)
+		}
+		if r.APIKey.IsNull() || r.APIKey.IsUnknown() {
+			r.APIKey = types.StringNull()
+		}
+	}
+
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
@@ -160,13 +203,15 @@ func (r *NewRelicDrain) FromAPI(drain tmp.Drain) error {
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
 		return err
 	}
-	r.URL = types.StringValue(recipient.URL)
+	// Preserve URL from state if already set, otherwise use API value
+	if r.URL.IsNull() || r.URL.IsUnknown() {
+		r.URL = types.StringValue(recipient.URL)
+	}
 	// For sensitive attributes, preserve current state value since API doesn't return it
-	if !r.APIKey.IsUnknown() {
-		// Keep existing value
-	} else {
+	if r.APIKey.IsNull() || r.APIKey.IsUnknown() {
 		r.APIKey = types.StringValue(recipient.APIKey)
 	}
+	// else: keep existing value from state
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
@@ -250,16 +295,24 @@ func (r *ElasticsearchDrain) FromAPI(drain tmp.Drain) error {
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
 		return err
 	}
-	r.URL = types.StringValue(recipient.URL)
-	r.Username = types.StringValue(recipient.Username)
+	// Preserve non-sensitive attributes from state if already set
+	if r.URL.IsNull() || r.URL.IsUnknown() {
+		r.URL = types.StringValue(recipient.URL)
+	}
+	if r.Username.IsNull() || r.Username.IsUnknown() {
+		r.Username = types.StringValue(recipient.Username)
+	}
+	if r.Index.IsNull() || r.Index.IsUnknown() {
+		r.Index = types.StringValue(recipient.Index)
+	}
+	if r.TLSVerification.IsNull() || r.TLSVerification.IsUnknown() {
+		r.TLSVerification = types.StringValue(recipient.TLSVerification)
+	}
 	// For sensitive attributes, preserve current state value since API doesn't return it
-	if !r.Password.IsUnknown() {
-		// Keep existing value
-	} else {
+	if r.Password.IsNull() || r.Password.IsUnknown() {
 		r.Password = types.StringValue(recipient.Password)
 	}
-	r.Index = types.StringValue(recipient.Index)
-	r.TLSVerification = types.StringValue(recipient.TLSVerification)
+	// else: keep existing value from state
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
@@ -314,17 +367,19 @@ func (r *SyslogUDPDrain) FromAPI(drain tmp.Drain) error {
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
 		return err
 	}
-	r.URL = types.StringValue(recipient.URL)
+	// Preserve URL from state if already set, otherwise use API value
+	if r.URL.IsNull() || r.URL.IsUnknown() {
+		r.URL = types.StringValue(recipient.URL)
+	}
 	// For sensitive attributes, preserve current state value since API doesn't return it
-	if !r.Token.IsUnknown() {
-		// Keep existing value
-	} else {
+	if r.Token.IsNull() || r.Token.IsUnknown() {
 		if recipient.Token != "" {
 			r.Token = types.StringValue(recipient.Token)
 		} else {
 			r.Token = types.StringNull()
 		}
 	}
+	// else: keep existing value from state
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
@@ -379,17 +434,19 @@ func (r *SyslogTCPDrain) FromAPI(drain tmp.Drain) error {
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
 		return err
 	}
-	r.URL = types.StringValue(recipient.URL)
+	// Preserve URL from state if already set, otherwise use API value
+	if r.URL.IsNull() || r.URL.IsUnknown() {
+		r.URL = types.StringValue(recipient.URL)
+	}
 	// For sensitive attributes, preserve current state value since API doesn't return it
-	if !r.Token.IsUnknown() {
-		// Keep existing value
-	} else {
+	if r.Token.IsNull() || r.Token.IsUnknown() {
 		if recipient.Token != "" {
 			r.Token = types.StringValue(recipient.Token)
 		} else {
 			r.Token = types.StringNull()
 		}
 	}
+	// else: keep existing value from state
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
@@ -434,7 +491,10 @@ func (r *HTTPDrain) FromAPI(drain tmp.Drain) error {
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
 		return err
 	}
-	r.URL = types.StringValue(recipient.URL)
+	// Preserve URL from state if already set, otherwise use API value
+	if r.URL.IsNull() || r.URL.IsUnknown() {
+		r.URL = types.StringValue(recipient.URL)
+	}
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
@@ -498,17 +558,21 @@ func (r *OVHDrain) FromAPI(drain tmp.Drain) error {
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
 		return err
 	}
-	r.URL = types.StringValue(recipient.URL)
+	// Preserve URL from state if already set, otherwise use API value
+	if r.URL.IsNull() || r.URL.IsUnknown() {
+		r.URL = types.StringValue(recipient.URL)
+	}
 	// For sensitive attributes, preserve current state value since API doesn't return it
-	if !r.Token.IsUnknown() {
-		// Keep existing value
-	} else {
+	if r.Token.IsNull() || r.Token.IsUnknown() {
 		r.Token = types.StringValue(recipient.Token)
 	}
-	if recipient.RFC5424StructuredDataParams != "" {
-		r.RFC5424StructuredDataParams = types.StringValue(recipient.RFC5424StructuredDataParams)
-	} else {
-		r.RFC5424StructuredDataParams = types.StringNull()
+	// else: keep existing value from state
+	if r.RFC5424StructuredDataParams.IsNull() || r.RFC5424StructuredDataParams.IsUnknown() {
+		if recipient.RFC5424StructuredDataParams != "" {
+			r.RFC5424StructuredDataParams = types.StringValue(recipient.RFC5424StructuredDataParams)
+		} else {
+			r.RFC5424StructuredDataParams = types.StringNull()
+		}
 	}
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
