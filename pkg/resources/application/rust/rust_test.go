@@ -1,7 +1,6 @@
 package rust_test
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"regexp"
@@ -11,18 +10,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
-	"go.clever-cloud.dev/client"
 )
 
 func TestAccRust_basic(t *testing.T) {
+	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-rust")
 	fullName := fmt.Sprintf("clevercloud_rust.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	rustBlock := helper.NewRessource(
 		"clevercloud_rust",
@@ -47,7 +43,7 @@ func TestAccRust_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck:                 tests.ExpectOrganisation(t),
-		CheckDestroy:             testAccCheckRustDestroy(cc, tests.ORGANISATION),
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			Config: providerBlock.String() + rustBlock.String(),
 			ConfigStateChecks: []statecheck.StateCheck{
@@ -131,25 +127,4 @@ resource "clevercloud_rust" "test" {
 			},
 		},
 	})
-}
-
-func testAccCheckRustDestroy(cc *client.Client, org string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		for _, rs := range s.RootModule().Resources {
-			if rs.Type != "clevercloud_rust" {
-				continue
-			}
-
-			err := tmp.GetApp(context.Background(), cc, org, rs.Primary.ID)
-			if err == nil {
-				return fmt.Errorf("Rust app %s still exists", rs.Primary.ID)
-			}
-
-			if !err.IsNotFoundError() {
-				return err.Error()
-			}
-		}
-
-		return nil
-	}
 }

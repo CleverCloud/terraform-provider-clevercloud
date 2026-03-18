@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
@@ -24,9 +23,9 @@ import (
 func TestAccFrankenPHP_basic(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-frankenphp")
 	fullName := fmt.Sprintf("clevercloud_frankenphp.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	domain := fmt.Sprintf("%s.com", rName)
 	domainEdit1 := rName + "-1.com"
@@ -144,22 +143,6 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 				}),
 			},
 		}},
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
-				if res.Payload().State == "TO_DELETE" {
-					continue
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
-			}
-			return nil
-		},
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
 }

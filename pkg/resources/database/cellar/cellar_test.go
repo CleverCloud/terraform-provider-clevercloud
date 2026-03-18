@@ -10,12 +10,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
-	"go.clever-cloud.dev/client"
 )
 
 func TestAccCellar_basic(t *testing.T) {
@@ -24,7 +21,6 @@ func TestAccCellar_basic(t *testing.T) {
 	rName := acctest.RandomWithPrefix("tf-test-cellar")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_cellar.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	cellarBlock := helper.NewRessource(
 		"clevercloud_cellar",
@@ -58,19 +54,6 @@ func TestAccCellar_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("key_secret"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
 			},
 		}},
-		CheckDestroy: func(state *terraform.State) error {
-			for resourceName, resourceState := range state.RootModule().Resources {
-				res := tmp.GetAddon(ctx, cc, tests.ORGANISATION, resourceState.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
-
-				return fmt.Errorf("expect cellar resource '%s' to be deleted: %+v", resourceName, res.Payload())
-			}
-			return nil
-		},
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
 }

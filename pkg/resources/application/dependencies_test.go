@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
@@ -48,12 +47,12 @@ func fetchDependencies(ctx context.Context, cc *client.Client, org, appID string
 func TestAccDependencies_app_only(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-deps")
 	mainAppName := rName + "-main"
 	depAppName := rName + "-dep"
 	fullMainName := fmt.Sprintf("clevercloud_java_war.%s", mainAppName)
 	fullDepName := fmt.Sprintf("clevercloud_java_war.%s", depAppName)
-	cc := client.New(client.WithAutoOauthConfig())
 
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
@@ -89,7 +88,7 @@ func TestAccDependencies_app_only(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 tests.ExpectOrganisation(t),
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
-		CheckDestroy:             checkAppsDestroyed(ctx, cc),
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: mainAppName,
 			Config:       config,
@@ -118,12 +117,12 @@ func TestAccDependencies_app_only(t *testing.T) {
 func TestAccDependencies_addon_only(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-deps")
 	mainAppName := rName + "-main"
 	pgName := rName + "-pg"
 	fullMainName := fmt.Sprintf("clevercloud_java_war.%s", mainAppName)
 	fullPgName := fmt.Sprintf("clevercloud_postgresql.%s", pgName)
-	cc := client.New(client.WithAutoOauthConfig())
 
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
@@ -156,7 +155,7 @@ func TestAccDependencies_addon_only(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 tests.ExpectOrganisation(t),
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
-		CheckDestroy:             checkResourcesDestroyed(ctx, cc),
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: mainAppName,
 			Config:       config,
@@ -185,6 +184,7 @@ func TestAccDependencies_addon_only(t *testing.T) {
 func TestAccDependencies_mixed(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-deps")
 	mainAppName := rName + "-main"
 	depAppName := rName + "-dep"
@@ -192,7 +192,6 @@ func TestAccDependencies_mixed(t *testing.T) {
 	fullMainName := fmt.Sprintf("clevercloud_java_war.%s", mainAppName)
 	fullDepName := fmt.Sprintf("clevercloud_java_war.%s", depAppName)
 	fullPgName := fmt.Sprintf("clevercloud_postgresql.%s", pgName)
-	cc := client.New(client.WithAutoOauthConfig())
 
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
@@ -241,7 +240,7 @@ func TestAccDependencies_mixed(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 tests.ExpectOrganisation(t),
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
-		CheckDestroy:             checkResourcesDestroyed(ctx, cc),
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: mainAppName,
 			Config:       config,
@@ -270,6 +269,7 @@ func TestAccDependencies_mixed(t *testing.T) {
 func TestAccDependencies_sync(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-deps")
 	mainAppName := rName + "-main"
 	depAppName := rName + "-dep"
@@ -277,7 +277,6 @@ func TestAccDependencies_sync(t *testing.T) {
 	fullMainName := fmt.Sprintf("clevercloud_java_war.%s", mainAppName)
 	fullDepName := fmt.Sprintf("clevercloud_java_war.%s", depAppName)
 	fullPgName := fmt.Sprintf("clevercloud_postgresql.%s", pgName)
-	cc := client.New(client.WithAutoOauthConfig())
 
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
@@ -320,7 +319,7 @@ func TestAccDependencies_sync(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 tests.ExpectOrganisation(t),
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
-		CheckDestroy:             checkResourcesDestroyed(ctx, cc),
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{
 			// Step 1: No dependencies
 			{
@@ -440,68 +439,4 @@ func TestAccDependencies_sync(t *testing.T) {
 			},
 		},
 	})
-}
-
-// checkAppsDestroyed verifies that all apps are deleted after test
-func checkAppsDestroyed(ctx context.Context, cc *client.Client) func(*terraform.State) error {
-	return func(state *terraform.State) error {
-		for _, res := range state.RootModule().Resources {
-			if res.Type != "clevercloud_java_war" {
-				continue
-			}
-			appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, res.Primary.ID)
-			if appRes.IsNotFoundError() {
-				continue
-			}
-			if appRes.HasError() {
-				return fmt.Errorf("unexpected error: %s", appRes.Error().Error())
-			}
-			if appRes.Payload().State == "TO_DELETE" {
-				continue
-			}
-			return fmt.Errorf("expect resource '%s' to be deleted, state: '%s'", res.Primary.ID, appRes.Payload().State)
-		}
-		return nil
-	}
-}
-
-// checkResourcesDestroyed verifies that all apps and addons are deleted after test
-func checkResourcesDestroyed(ctx context.Context, cc *client.Client) func(*terraform.State) error {
-	return func(state *terraform.State) error {
-		for _, res := range state.RootModule().Resources {
-			switch res.Type {
-			case "clevercloud_java_war":
-				appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, res.Primary.ID)
-				if appRes.IsNotFoundError() {
-					continue
-				}
-				if appRes.HasError() {
-					return fmt.Errorf("unexpected error: %s", appRes.Error().Error())
-				}
-				if appRes.Payload().State == "TO_DELETE" {
-					continue
-				}
-				return fmt.Errorf("expect app '%s' to be deleted, state: '%s'", res.Primary.ID, appRes.Payload().State)
-
-			case "clevercloud_postgresql":
-				addonID, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, res.Primary.ID)
-				if err != nil {
-					// Not found is OK
-					continue
-				}
-				pgRes := tmp.GetPostgreSQL(ctx, cc, addonID)
-				if pgRes.IsNotFoundError() {
-					continue
-				}
-				if pgRes.HasError() {
-					return fmt.Errorf("unexpected error: %s", pgRes.Error().Error())
-				}
-				if pgRes.Payload().Status == "TO_DELETE" {
-					continue
-				}
-				return fmt.Errorf("expect addon '%s' to be deleted", res.Primary.ID)
-			}
-		}
-		return nil
-	}
 }

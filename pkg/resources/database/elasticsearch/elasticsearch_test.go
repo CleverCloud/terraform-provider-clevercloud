@@ -4,7 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -26,7 +25,6 @@ func TestAccElasticsearch_basic(t *testing.T) {
 	//rName2 := acctest.RandomWithPrefix("tf-test2-es")
 	fullName := fmt.Sprintf("clevercloud_elasticsearch.%s", rName)
 	//fullName2 := fmt.Sprintf("clevercloud_elasticsearch.%s", rName2)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
 	elasticsearchBlock := helper.NewRessource(
@@ -41,31 +39,7 @@ func TestAccElasticsearch_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck:                 tests.ExpectOrganisation(t),
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if err != nil {
-					if strings.Contains(err.Error(), "not found") {
-						continue
-					}
-					return fmt.Errorf("failed to get addon ID: %s", err.Error())
-				}
-
-				res := tmp.GetElasticsearch(ctx, cc, addonId)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
-				if res.Payload().Status == "TO_DELETE" {
-					continue
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted", resource.Primary.ID)
-			}
-			return nil
-		},
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(elasticsearchBlock).String(),
@@ -117,7 +91,6 @@ func TestAccElasticsearch_VersionDrift(t *testing.T) {
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-es")
 	fullName := fmt.Sprintf("clevercloud_elasticsearch.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
 	elasticsearchBlock := helper.NewRessource(
@@ -133,31 +106,7 @@ func TestAccElasticsearch_VersionDrift(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck:                 tests.ExpectOrganisation(t),
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if err != nil {
-					if strings.Contains(err.Error(), "not found") {
-						continue
-					}
-					return fmt.Errorf("failed to get addon ID: %s", err.Error())
-				}
-
-				res := tmp.GetElasticsearch(ctx, cc, addonId)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpected error: %s", res.Error().Error())
-				}
-				if res.Payload().Status == "TO_DELETE" {
-					continue
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted", resource.Primary.ID)
-			}
-			return nil
-		},
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(elasticsearchBlock).String(),
@@ -282,7 +231,6 @@ func TestAccElasticsearch_KibanaRequiresReplace(t *testing.T) {
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-es")
 	fullName := fmt.Sprintf("clevercloud_elasticsearch.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
 	// Step 1: Create ES without Kibana
@@ -312,31 +260,7 @@ func TestAccElasticsearch_KibanaRequiresReplace(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck:                 tests.ExpectOrganisation(t),
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if err != nil {
-					if strings.Contains(err.Error(), "not found") {
-						continue
-					}
-					return fmt.Errorf("failed to get addon ID: %s", err.Error())
-				}
-
-				res := tmp.GetElasticsearch(ctx, cc, addonId)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpected error: %s", res.Error().Error())
-				}
-				if res.Payload().Status == "TO_DELETE" {
-					continue
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted", resource.Primary.ID)
-			}
-			return nil
-		},
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{
 			{
 				ResourceName: rName,
@@ -376,9 +300,9 @@ func TestAccElasticsearch_KibanaRequiresReplace(t *testing.T) {
 }
 
 func TestAccElasticsearch_RefreshDeleted(t *testing.T) {
+	cc := client.New(client.WithAutoOauthConfig())
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-es")
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	elasticsearchBlock := helper.NewRessource(
 		"clevercloud_elasticsearch",
@@ -392,31 +316,7 @@ func TestAccElasticsearch_RefreshDeleted(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck:                 tests.ExpectOrganisation(t),
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				addonId, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if err != nil {
-					if strings.Contains(err.Error(), "not found") {
-						continue
-					}
-					return fmt.Errorf("failed to get addon ID: %s", err.Error())
-				}
-
-				res := tmp.GetElasticsearch(ctx, cc, addonId)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
-				if res.Payload().Status == "TO_DELETE" {
-					continue
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted", resource.Primary.ID)
-			}
-			return nil
-		},
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(elasticsearchBlock).String(),
