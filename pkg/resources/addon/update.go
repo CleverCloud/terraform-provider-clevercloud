@@ -71,7 +71,7 @@ func Update[T AddonPlan](ctx context.Context, r AddonResource, plan, state T) (a
 	planCommon := plan.GetCommonPtr()
 	stateCommon := state.GetCommonPtr()
 
-	tflog.Debug(ctx, "addon.Update()", map[string]any{"provider": r.GetProviderSlug()})
+	tflog.Debug(ctx, "addon.Update()", map[string]any{"provider": r.GetSlug()})
 
 	if planCommon.ID.ValueString() != stateCommon.ID.ValueString() {
 		diags.AddError("addon cannot be updated", "mismatched IDs")

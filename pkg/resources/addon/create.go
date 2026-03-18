@@ -112,7 +112,7 @@ func CreateAddon(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnosti
 func Create[T AddonPlan](ctx context.Context, r AddonResource, plan T) (addonID string, diags diag.Diagnostics) {
 	common := plan.GetCommonPtr()
 
-	tflog.Debug(ctx, "addon.Create()", map[string]any{"provider": r.GetProviderSlug()})
+	tflog.Debug(ctx, "addon.Create()", map[string]any{"provider": r.GetSlug()})
 
 	// Lookup addon provider and plan
 	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
@@ -122,9 +122,9 @@ func Create[T AddonPlan](ctx context.Context, r AddonResource, plan T) (addonID 
 	}
 	addonsProviders := addonsProvidersRes.Payload()
 
-	prov := pkg.LookupAddonProvider(*addonsProviders, r.GetProviderSlug())
+	prov := pkg.LookupAddonProvider(*addonsProviders, r.GetSlug())
 	if prov == nil {
-		diags.AddError("addon provider not found", fmt.Sprintf("provider %q does not exist, available: %s", r.GetProviderSlug(), strings.Join(pkg.AddonProvidersAsList(*addonsProviders), ", ")))
+		diags.AddError("addon provider not found", fmt.Sprintf("provider %q does not exist, available: %s", r.GetSlug(), strings.Join(pkg.AddonProvidersAsList(*addonsProviders), ", ")))
 		return "", diags
 	}
 
@@ -152,7 +152,7 @@ func Create[T AddonPlan](ctx context.Context, r AddonResource, plan T) (addonID 
 		Addon: tmp.AddonRequest{
 			Name:       common.Name.ValueString(),
 			Plan:       provPlan.ID,
-			ProviderID: r.GetProviderSlug(),
+			ProviderID: r.GetSlug(),
 			Region:     common.Region.ValueString(),
 			Options:    plan.GetAddonOptions(),
 		},

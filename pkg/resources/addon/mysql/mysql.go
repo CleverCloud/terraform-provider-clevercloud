@@ -24,6 +24,6 @@ func (r *ResourceMySQL) Metadata(ctx context.Context, req resource.MetadataReque
 	res.TypeName = req.ProviderTypeName + "_mysql"
 }
 
-func (r *ResourceMySQL) GetProviderSlug() string {
+func (r *ResourceMySQL) GetSlug() string {
 	return "mysql-addon"
 }

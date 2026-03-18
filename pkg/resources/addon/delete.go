@@ -33,7 +33,7 @@ func Delete[T AddonPlan](ctx context.Context, r AddonResource, state T) diag.Dia
 	diags := diag.Diagnostics{}
 	common := state.GetCommonPtr()
 
-	tflog.Debug(ctx, "addon.Delete()", map[string]any{"provider": r.GetProviderSlug()})
+	tflog.Debug(ctx, "addon.Delete()", map[string]any{"provider": r.GetSlug()})
 
 	// Convert RealID to AddonID
 	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), common.ID.ValueString())

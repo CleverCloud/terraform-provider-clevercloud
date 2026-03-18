@@ -24,6 +24,6 @@ func (r *ResourcePostgreSQL) Metadata(ctx context.Context, req resource.Metadata
 	res.TypeName = req.ProviderTypeName + "_postgresql"
 }
 
-func (r *ResourcePostgreSQL) GetProviderSlug() string {
+func (r *ResourcePostgreSQL) GetSlug() string {
 	return "postgresql-addon"
 }

@@ -19,6 +19,6 @@ func (r *ResourceOtoroshi) Metadata(ctx context.Context, req resource.MetadataRe
 	res.TypeName = req.ProviderTypeName + "_otoroshi"
 }
 
-func (r *ResourceOtoroshi) GetProviderSlug() string {
+func (r *ResourceOtoroshi) GetSlug() string {
 	return "otoroshi"
 }

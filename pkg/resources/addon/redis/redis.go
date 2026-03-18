@@ -19,6 +19,6 @@ func (r *ResourceRedis) Metadata(ctx context.Context, req resource.MetadataReque
 	res.TypeName = req.ProviderTypeName + "_redis"
 }
 
-func (r *ResourceRedis) GetProviderSlug() string {
+func (r *ResourceRedis) GetSlug() string {
 	return "redis-addon"
 }

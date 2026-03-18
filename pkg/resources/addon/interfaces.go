@@ -11,7 +11,7 @@ import (
 // AddonResource interface defines methods required by resources to use generic addon CRUD operations
 type AddonResource interface {
 	provider.Provider
-	GetProviderSlug() string
+	GetSlug() string
 }
 
 // AddonPlan interface defines methods required by plan types to use generic addon CRUD operations

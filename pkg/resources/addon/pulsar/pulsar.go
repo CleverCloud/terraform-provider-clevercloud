@@ -19,6 +19,6 @@ func (r *ResourcePulsar) Metadata(ctx context.Context, req resource.MetadataRequ
 	res.TypeName = req.ProviderTypeName + "_pulsar"
 }
 
-func (r *ResourcePulsar) GetProviderSlug() string {
+func (r *ResourcePulsar) GetSlug() string {
 	return "addon-pulsar"
 }

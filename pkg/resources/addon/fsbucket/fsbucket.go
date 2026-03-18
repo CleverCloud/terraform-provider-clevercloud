@@ -19,6 +19,6 @@ func (r *ResourceFSBucket) Metadata(ctx context.Context, req resource.MetadataRe
 	res.TypeName = req.ProviderTypeName + "_fsbucket"
 }
 
-func (r *ResourceFSBucket) GetProviderSlug() string {
+func (r *ResourceFSBucket) GetSlug() string {
 	return "fs-bucket"
 }

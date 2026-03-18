@@ -19,6 +19,6 @@ func (r *ResourceMetabase) Metadata(ctx context.Context, req resource.MetadataRe
 	res.TypeName = req.ProviderTypeName + "_metabase"
 }
 
-func (r *ResourceMetabase) GetProviderSlug() string {
+func (r *ResourceMetabase) GetSlug() string {
 	return "metabase"
 }

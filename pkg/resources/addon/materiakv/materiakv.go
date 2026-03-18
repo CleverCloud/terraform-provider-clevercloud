@@ -19,6 +19,6 @@ func (r *ResourceMateriaKV) Metadata(ctx context.Context, req resource.MetadataR
 	res.TypeName = req.ProviderTypeName + "_materia_kv"
 }
 
-func (r *ResourceMateriaKV) GetProviderSlug() string {
+func (r *ResourceMateriaKV) GetSlug() string {
 	return "kv"
 }

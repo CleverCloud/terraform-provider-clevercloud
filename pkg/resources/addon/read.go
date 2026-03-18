@@ -112,7 +112,7 @@ func ReadAddon(ctx context.Context, cc *client.Client, org, id string) (*ReadRes
 func Read[T AddonPlan](ctx context.Context, r AddonResource, state T) (addonIsDeleted bool, diags diag.Diagnostics) {
 	common := state.GetCommonPtr()
 
-	tflog.Debug(ctx, "addon.Read()", map[string]any{"provider": r.GetProviderSlug()})
+	tflog.Debug(ctx, "addon.Read()", map[string]any{"provider": r.GetSlug()})
 
 	// Call common ReadAddon function
 	readRes, readDiags := ReadAddon(ctx, r.Client(), r.Organization(), common.ID.ValueString())

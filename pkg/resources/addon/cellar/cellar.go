@@ -19,6 +19,6 @@ func (r *ResourceCellar) Metadata(ctx context.Context, req resource.MetadataRequ
 	res.TypeName = req.ProviderTypeName + "_cellar"
 }
 
-func (r *ResourceCellar) GetProviderSlug() string {
+func (r *ResourceCellar) GetSlug() string {
 	return "cellar-addon"
 }
