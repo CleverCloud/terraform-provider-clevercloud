@@ -35,7 +35,7 @@ List of available providers:
 ### Read-Only
 
 - `configurations` (Map of String, Sensitive) Any configuration exposed by the add-on
-- `creation_date` (Number) Date of database creation
+- `creation_date` (Number) Date of addon creation
 - `id` (String) Generated unique identifier
 
 <a id="nestedatt--networkgroups"></a>

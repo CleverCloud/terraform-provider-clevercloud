@@ -42,7 +42,7 @@ resource "clevercloud_postgresql" "postgresql_database" {
 
 ### Read-Only
 
-- `creation_date` (Number) Date of database creation
+- `creation_date` (Number) Date of addon creation
 - `database` (String) Database name on the PostgreSQL server
 - `host` (String) Database host, used to connect to
 - `id` (String) Generated unique identifier

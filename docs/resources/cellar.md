@@ -19,15 +19,26 @@ See [Cellar product specification](https://www.clever.cloud/developers/doc/addon
 
 ### Required
 
-- `name` (String) Name of the Cellar
+- `name` (String) Name of the service
 
 ### Optional
 
+- `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `region` (String) Geographical region where the data will be stored
 
 ### Read-Only
 
+- `creation_date` (Number) Date of addon creation
 - `host` (String) S3 compatible Cellar endpoint
 - `id` (String) Generated unique identifier
 - `key_id` (String) Key ID used to authenticate
 - `key_secret` (String, Sensitive) Key secret used to authenticate
+- `plan` (String) Cellar plan (single-plan addon)
+
+<a id="nestedatt--networkgroups"></a>
+### Nested Schema for `networkgroups`
+
+Required:
+
+- `fqdn` (String) domain name which will resolve to addon instances inside the networkgroup
+- `networkgroup_id` (String) ID of the networkgroup

@@ -19,10 +19,11 @@ See [Pulsar product specification](https://www.clever.cloud/developers/doc/addon
 
 ### Required
 
-- `name` (String) Name of the Pulsar
+- `name` (String) Name of the service
 
 ### Optional
 
+- `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `region` (String) Geographical region where the data will be stored
 - `retention_period` (Number) Pulsar namespace retention policy in minutes
 - `retention_size` (Number) Pulsar namespace retention policy in bytes
@@ -30,8 +31,18 @@ See [Pulsar product specification](https://www.clever.cloud/developers/doc/addon
 ### Read-Only
 
 - `binary_url` (String) Pulsar native protocol address
+- `creation_date` (Number) Date of addon creation
 - `http_url` (String) Pulsar REST API address
 - `id` (String) Generated unique identifier
 - `namespace` (String) Pulsar namespace
+- `plan` (String)
 - `tenant` (String) Pulsar tenant
 - `token` (String, Sensitive) Pulsar authentication token
+
+<a id="nestedatt--networkgroups"></a>
+### Nested Schema for `networkgroups`
+
+Required:
+
+- `fqdn` (String) domain name which will resolve to addon instances inside the networkgroup
+- `networkgroup_id` (String) ID of the networkgroup
