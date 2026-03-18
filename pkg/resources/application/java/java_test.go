@@ -12,7 +12,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
@@ -25,7 +24,6 @@ func TestAccJava_basic(t *testing.T) {
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-java")
 	fullName := fmt.Sprintf("clevercloud_java_war.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	javaBlock := helper.NewRessource(
 		"clevercloud_java_war",
@@ -68,23 +66,7 @@ func TestAccJava_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("biggest_flavor"), knownvalue.StringExact("XS")),
 			},
 		}},
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
-				if res.Payload().State == "TO_DELETE" {
-					continue
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
-			}
-			return nil
-		},
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
 }
 
@@ -93,7 +75,6 @@ func TestAccJava_jar(t *testing.T) {
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-java")
 	fullName := fmt.Sprintf("clevercloud_java_jar.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	javaBlock := helper.NewRessource(
 		"clevercloud_java_jar",
@@ -119,32 +100,16 @@ func TestAccJava_jar(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 			},
 		}},
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
-				if res.Payload().State == "TO_DELETE" {
-					continue
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
-			}
-			return nil
-		},
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
 }
 
 func TestAccJava_empty_vhosts(t *testing.T) {
 	t.Parallel()
+	cc := client.New(client.WithAutoOauthConfig())
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-java")
 	fullName := fmt.Sprintf("clevercloud_java_war.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	javaBlock := helper.NewRessource(
 		"clevercloud_java_war",
@@ -187,22 +152,6 @@ func TestAccJava_empty_vhosts(t *testing.T) {
 				}),
 			},
 		}},
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
-				if res.Payload().State == "TO_DELETE" {
-					continue
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
-			}
-			return nil
-		},
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
 }

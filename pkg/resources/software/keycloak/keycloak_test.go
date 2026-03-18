@@ -11,11 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk"
 )
@@ -25,7 +23,6 @@ func TestAccKeycloak_basic(t *testing.T) {
 	rName := acctest.RandomWithPrefix("tf-test-kc")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_keycloak.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	materiakvBlock := helper.NewRessource(
 		"clevercloud_keycloak",
@@ -36,20 +33,7 @@ func TestAccKeycloak_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck:                 tests.ExpectOrganisation(t),
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetAddon(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted: %+v", resource.Primary.ID, res.Payload())
-			}
-			return nil
-		},
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(materiakvBlock).String(),
@@ -106,9 +90,9 @@ func TestAccKeycloak_versionUpgrade(t *testing.T) {
 
 	t.Parallel()
 	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-kc")
 	fullName := fmt.Sprintf("clevercloud_keycloak.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	// Fetch available versions from API
 	keycloakSDK := sdk.NewSDK(sdk.WithClient(cc))
 	infosRes := keycloakSDK.V4().AddonProviders().Keycloak().Getkeycloakproviderinformation(ctx)
@@ -146,20 +130,7 @@ func TestAccKeycloak_versionUpgrade(t *testing.T) {
 		PreCheck: func() {
 			tests.ExpectOrganisation(t)
 		},
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetAddon(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpected error: %s", res.Error().Error())
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted: %+v", resource.Primary.ID, res.Payload())
-			}
-			return nil
-		},
+		CheckDestroy: tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(keycloakBlock).String(),

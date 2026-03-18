@@ -23,7 +23,6 @@ func TestAccCellarBucket_basic(t *testing.T) {
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("my-bucket")
 	fullName := "clevercloud_cellar_bucket." + rName
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
 	cellarBlock := helper.NewRessource(
@@ -52,41 +51,7 @@ func TestAccCellarBucket_basic(t *testing.T) {
 				// TODO
 			},
 		}},
-		CheckDestroy: func(state *terraform.State) error {
-			for resourceName, resourceState := range state.RootModule().Resources {
-				switch resourceName {
-				case "clevercloud_cellar.cellar1":
-					t.Logf("skip cellar addon")
-
-				case fullName:
-					id := resourceState.Primary.Attributes["cellar_id"]
-					res := tmp.GetAddonEnv(ctx, cc, tests.ORGANISATION, id)
-					if res.IsNotFoundError() {
-						continue
-					}
-					if res.HasError() {
-						return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-					}
-
-					minioClient, err := s3.MinioClientFromEnvsFor(*res.Payload())
-					if err != nil {
-						return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-					}
-
-					exists, err := minioClient.BucketExists(ctx, rName)
-					if err != nil {
-						return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-					}
-
-					if exists {
-						return fmt.Errorf("expect cellar bucket resource '%s' to be deleted", resourceName)
-					}
-				default:
-					return fmt.Errorf("unhandled resource: %s", resourceName)
-				}
-			}
-			return nil
-		},
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
 }
 
@@ -94,10 +59,10 @@ func TestAccCellarBucket_basic(t *testing.T) {
 // where a bucket with objects cannot be deleted
 func TestAccCellarBucket_deleteNonEmpty(t *testing.T) {
 	t.Parallel()
+	cc := client.New(client.WithAutoOauthConfig())
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-bucket")
 	fullName := "clevercloud_cellar_bucket." + rName
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
 	cellarBlock := helper.NewRessource(
@@ -161,64 +126,6 @@ func TestAccCellarBucket_deleteNonEmpty(t *testing.T) {
 				return nil
 			},
 		}},
-		CheckDestroy: func(state *terraform.State) error {
-			// This test is expected to fail with "The bucket you tried to delete is not empty"
-			// The CheckDestroy will verify that the bucket still exists (deletion failed)
-			for resourceName, resourceState := range state.RootModule().Resources {
-				switch resourceName {
-				case "clevercloud_cellar.cellar_nonempty":
-					t.Logf("skip cellar addon")
-
-				case fullName:
-					id := resourceState.Primary.Attributes["cellar_id"]
-					bucketName := resourceState.Primary.Attributes["id"]
-
-					res := tmp.GetAddonEnv(ctx, cc, tests.ORGANISATION, id)
-					if res.IsNotFoundError() {
-						continue
-					}
-					if res.HasError() {
-						return fmt.Errorf("unexpected error: %s", res.Error().Error())
-					}
-
-					minioClient, err := s3.MinioClientFromEnvsFor(*res.Payload())
-					if err != nil {
-						return fmt.Errorf("unexpected error creating client: %s", err.Error())
-					}
-
-					// Check if bucket still exists (it should because deletion should have failed)
-					exists, err := minioClient.BucketExists(ctx, bucketName)
-					if err != nil {
-						return fmt.Errorf("unexpected error checking bucket: %s", err.Error())
-					}
-
-					if exists {
-						t.Logf("Bucket '%s' still exists after destroy attempt (expected due to non-empty bucket)", bucketName)
-						// Clean up the bucket manually for the test
-						objectsCh := minioClient.ListObjects(ctx, bucketName, minio.ListObjectsOptions{
-							Recursive: true,
-						})
-						for object := range objectsCh {
-							if object.Err != nil {
-								t.Logf("Error listing objects: %s", object.Err)
-								continue
-							}
-							err := minioClient.RemoveObject(ctx, bucketName, object.Key, minio.RemoveObjectOptions{})
-							if err != nil {
-								t.Logf("Error removing object %s: %s", object.Key, err)
-							}
-						}
-						// Now remove the empty bucket
-						err = minioClient.RemoveBucket(ctx, bucketName)
-						if err != nil {
-							t.Logf("Error removing bucket after cleanup: %s", err)
-						}
-					}
-				default:
-					// Ignore other resources
-				}
-			}
-			return nil
-		},
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
 }

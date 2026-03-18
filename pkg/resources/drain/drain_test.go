@@ -1,7 +1,6 @@
 package drain_test
 
 import (
-	"context"
 	_ "embed"
 	"fmt"
 	"regexp"
@@ -11,15 +10,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
-	"go.clever-cloud.dev/client"
 )
 
 func TestAccDrainDatadog_basic(t *testing.T) {
+	ctx := t.Context()
 	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
@@ -71,11 +68,12 @@ func TestAccDrainDatadog_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullNameDrain, tfjsonpath.New("resource_id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
 			},
 		}},
-		CheckDestroy: checkDrainDestroyed,
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
 }
 
 func TestAccDrainHTTP_basic(t *testing.T) {
+	ctx := t.Context()
 	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
@@ -126,11 +124,12 @@ func TestAccDrainHTTP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullNameDrain, tfjsonpath.New("url"), knownvalue.StringExact("https://httpbin.org/post")),
 			},
 		}},
-		CheckDestroy: checkDrainDestroyed,
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
 }
 
 func TestAccDrainSyslogTCP_basic(t *testing.T) {
+	ctx := t.Context()
 	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
@@ -182,11 +181,12 @@ func TestAccDrainSyslogTCP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullNameDrain, tfjsonpath.New("url"), knownvalue.StringExact("tcp://test.example.com:514")),
 			},
 		}},
-		CheckDestroy: checkDrainDestroyed,
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
 }
 
 func TestAccDrainSyslogUDP_basic(t *testing.T) {
+	ctx := t.Context()
 	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
@@ -237,11 +237,12 @@ func TestAccDrainSyslogUDP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullNameDrain, tfjsonpath.New("url"), knownvalue.StringExact("udp://test.example.com:514")),
 			},
 		}},
-		CheckDestroy: checkDrainDestroyed,
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
 }
 
 func TestAccDrainNewRelic_basic(t *testing.T) {
+	ctx := t.Context()
 	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
@@ -293,11 +294,12 @@ func TestAccDrainNewRelic_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullNameDrain, tfjsonpath.New("url"), knownvalue.StringExact("https://log-api.newrelic.com/log/v1")),
 			},
 		}},
-		CheckDestroy: checkDrainDestroyed,
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
 }
 
 func TestAccDrainElasticsearch_basic(t *testing.T) {
+	ctx := t.Context()
 	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
@@ -355,11 +357,12 @@ func TestAccDrainElasticsearch_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullNameDrain, tfjsonpath.New("tls_verification"), knownvalue.StringExact("DEFAULT")),
 			},
 		}},
-		CheckDestroy: checkDrainDestroyed,
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
 }
 
 func TestAccDrainOVH_basic(t *testing.T) {
+	ctx := t.Context()
 	t.Parallel()
 	rNameApp := acctest.RandomWithPrefix("tf-static")
 	rNameDrain := acctest.RandomWithPrefix("tf-drain")
@@ -411,28 +414,6 @@ func TestAccDrainOVH_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullNameDrain, tfjsonpath.New("url"), knownvalue.StringExact("https://gra1.logs.ovh.com/YOUR_LOG_STREAM/")),
 			},
 		}},
-		CheckDestroy: checkDrainDestroyed,
+		CheckDestroy: tests.CheckDestroy(ctx),
 	})
-}
-
-// Common function to check drain destruction
-func checkDrainDestroyed(state *terraform.State) error {
-	ctx := context.Background()
-	cc := client.New(client.WithAutoOauthConfig())
-
-	for _, resource := range state.RootModule().Resources {
-		res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-		if res.IsNotFoundError() {
-			continue
-		}
-		if res.HasError() {
-			return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-		}
-		if res.Payload().State == "TO_DELETE" {
-			continue
-		}
-
-		return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
-	}
-	return nil
 }

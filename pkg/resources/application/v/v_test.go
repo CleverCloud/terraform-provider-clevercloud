@@ -13,7 +13,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
-	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
@@ -24,11 +23,11 @@ import (
 
 func TestAccV_basic(t *testing.T) {
 	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-v")
 	rName2 := acctest.RandomWithPrefix("tf-test-v-2")
 	fullName := fmt.Sprintf("clevercloud_v.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_v.%s", rName2)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	vBlock := helper.NewRessource(
 		"clevercloud_v",
@@ -69,23 +68,7 @@ func TestAccV_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck:                 tests.ExpectOrganisation(t),
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
-				if res.Payload().State == "TO_DELETE" {
-					continue
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
-			}
-			return nil
-		},
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(vBlock).String(),
@@ -211,9 +194,9 @@ func TestAccV_basic(t *testing.T) {
 // (simulated via API) are properly detected by Terraform during refresh/plan operations.
 func TestAccV_EnvironmentDriftDetection(t *testing.T) {
 	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-v")
 	fullName := fmt.Sprintf("clevercloud_v.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
 	var appID string
@@ -239,22 +222,7 @@ func TestAccV_EnvironmentDriftDetection(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck:                 tests.ExpectOrganisation(t),
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpected error: %s", res.Error().Error())
-				}
-				if res.Payload().State == "TO_DELETE" {
-					continue
-				}
-				return fmt.Errorf("expect resource '%s' to be deleted, state: '%s'", resource.Primary.ID, res.Payload().State)
-			}
-			return nil
-		},
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(vBlock).String(),

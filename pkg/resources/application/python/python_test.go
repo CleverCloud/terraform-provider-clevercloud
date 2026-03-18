@@ -26,12 +26,12 @@ import (
 func TestAccPython_basic(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-python")
 	rName2 := acctest.RandomWithPrefix("tf-test-python-2")
 	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_python.%s", rName2)
 	vhost := "bubhbfbnriubielrbeuvieuv.com"
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	pythonBlock := helper.NewRessource(
 		"clevercloud_python",
@@ -58,23 +58,7 @@ func TestAccPython_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 tests.ExpectOrganisation(t),
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
-				if res.Payload().State == "TO_DELETE" {
-					continue
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
-			}
-			return nil
-		},
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(pythonBlock).String(),
@@ -232,9 +216,9 @@ func TestAccPython_basic(t *testing.T) {
 func TestAccPython_exposedEnv(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-python")
 	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
 	pythonBlock := helper.NewRessource(
@@ -274,23 +258,7 @@ func TestAccPython_exposedEnv(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 tests.ExpectOrganisation(t),
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
-				if res.Payload().State == "TO_DELETE" {
-					continue
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
-			}
-			return nil
-		},
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(pythonBlock).String(),
@@ -369,10 +337,10 @@ func TestAccPython_exposedEnv(t *testing.T) {
 func TestAccPython_networkgroup(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-python")
 	ngName := acctest.RandomWithPrefix("tf-test-python-ng")
 	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	providerBlock2 := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
@@ -422,30 +390,7 @@ func TestAccPython_networkgroup(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck:                 tests.ExpectOrganisation(t),
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
-		CheckDestroy: func(state *terraform.State) error {
-			for resourceName, resource := range state.RootModule().Resources {
-				if strings.HasPrefix(resourceName, "clevercloud_python") {
-					res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-					if res.IsNotFoundError() {
-						continue
-					} else if res.HasError() {
-						return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-					} else {
-						return fmt.Errorf("resource still exists: %+v", resource.Primary)
-					}
-				} else if strings.HasPrefix(resourceName, "clevercloud_networkgroup") {
-					res := tmp.GetNetworkgroup(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-					if res.IsNotFoundError() {
-						continue
-					} else if res.HasError() {
-						return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-					} else {
-						return fmt.Errorf("resource still exists: %+v", resource.Primary)
-					}
-				}
-			}
-			return nil
-		},
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			// PreConfig: func() {

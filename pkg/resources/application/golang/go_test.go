@@ -30,9 +30,9 @@ import (
 func TestAccGo_basic(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-go")
 	fullName := fmt.Sprintf("clevercloud_go.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	goBlock := helper.NewRessource(
 		"clevercloud_go",
@@ -56,23 +56,7 @@ func TestAccGo_basic(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck:                 tests.ExpectOrganisation(t),
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpectd error: %s", res.Error().Error())
-				}
-				if res.Payload().State == "TO_DELETE" {
-					continue
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
-			}
-			return nil
-		},
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
 			Config:       providerBlock.Append(goBlock).String(),
@@ -233,9 +217,9 @@ func waitForDeploymentComplete(t *testing.T, cc *client.Client, orgID, appID str
 func TestAccGo_singleDeploymentOnEnvAndGitChange(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-go-deploy")
 	fullName := fmt.Sprintf("clevercloud_go.%s", rName)
-	cc := client.New(client.WithAutoOauthConfig())
 
 	// Create a temporary directory for the git repo
 	tmpDir := t.TempDir()
@@ -307,23 +291,7 @@ func TestAccGo_singleDeploymentOnEnvAndGitChange(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck:                 tests.ExpectOrganisation(t),
-		CheckDestroy: func(state *terraform.State) error {
-			for _, resource := range state.RootModule().Resources {
-				res := tmp.GetApp(ctx, cc, tests.ORGANISATION, resource.Primary.ID)
-				if res.IsNotFoundError() {
-					continue
-				}
-				if res.HasError() {
-					return fmt.Errorf("unexpected error: %s", res.Error().Error())
-				}
-				if res.Payload().State == "TO_DELETE" {
-					continue
-				}
-
-				return fmt.Errorf("expect resource '%s' to be deleted state: '%s'", resource.Primary.ID, res.Payload().State)
-			}
-			return nil
-		},
+		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			// Step 1: Create an app with initial commit and env var
 			ResourceName: rName,
