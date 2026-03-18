@@ -172,7 +172,15 @@ Can be either app_xxx or postgres_yyy ID format
 - `description` (String) Application description
 - `enable_gzip_compression` (Boolean) Set to true to gzip-compress through Nginx
 - `enable_sidekiq` (Boolean) Enable Sidekiq background process
-- `environment` (Map of String, Sensitive) Environment variables injected into the application
+- `environment` (Map of String, Sensitive) Environment variables injected into the application.
+
+**Note:** Null values are not allowed. To conditionally include variables, use a for expression:
+```hcl
+environment = { for k, v in {
+  VAR1 = "value"
+  VAR2 = var.optional_var
+} : k => v if v != null }
+```
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `gzip_types` (String) Set the mime types to compress (default: 'text/* application/json application/xml application/javascript image/svg+xml')
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))

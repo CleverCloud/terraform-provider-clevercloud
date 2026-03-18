@@ -127,3 +127,61 @@ func (sv *stringValidator) MarkdownDescription(ctx context.Context) string {
 func (sv *stringValidator) ValidateString(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
 	sv.fn(ctx, req, res)
 }
+
+type mapValidator struct {
+	description string
+	fn          func(context.Context, validator.MapRequest, *validator.MapResponse)
+}
+
+func NewMapValidator(description string, fn func(context.Context, validator.MapRequest, *validator.MapResponse)) validator.Map {
+	return &mapValidator{description, fn}
+}
+
+func (mv *mapValidator) Description(context.Context) string {
+	return mv.description
+}
+
+func (mv *mapValidator) MarkdownDescription(ctx context.Context) string {
+	return mv.Description(ctx)
+}
+
+func (mv *mapValidator) ValidateMap(ctx context.Context, req validator.MapRequest, res *validator.MapResponse) {
+	mv.fn(ctx, req, res)
+}
+
+// NoNullMapValuesValidator creates a validator that rejects maps with null values
+func NoNullMapValuesValidator() validator.Map {
+	return NewMapValidator(
+		"map values cannot be null",
+		func(ctx context.Context, req validator.MapRequest, res *validator.MapResponse) {
+			if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+				return
+			}
+
+			elements := req.ConfigValue.Elements()
+			nullKeys := []string{}
+
+			for key, value := range elements {
+				if value.IsNull() {
+					nullKeys = append(nullKeys, key)
+				}
+			}
+
+			if len(nullKeys) > 0 {
+				res.Diagnostics.AddAttributeError(
+					req.Path,
+					"Null values are not allowed in environment variables",
+					fmt.Sprintf(
+						"The following environment variable(s) have null values: %s\n\n"+
+							"To conditionally include environment variables, use a for expression:\n"+
+							"environment = { for k, v in {\n"+
+							"  VAR1 = \"value\"\n"+
+							"  VAR2 = var.optional_var\n"+
+							"} : k => v if v != null }",
+						strings.Join(nullKeys, ", "),
+					),
+				)
+			}
+		},
+	)
+}
