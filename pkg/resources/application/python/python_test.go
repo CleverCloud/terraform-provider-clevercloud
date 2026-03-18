@@ -151,6 +151,11 @@ func TestAccPython_basic(t *testing.T) {
 						return tests.AssertError("bad env var value for CC_PIP_REQUIREMENTS_FILE", v4, "requirements.txt")
 					}
 
+					v5 := env["CC_PYTHON_VERSION"]
+					if v5 != "2.7" {
+						return tests.AssertError("bad env var value for CC_PYTHON_VERSION", v5, "2.7")
+					}
+
 					return nil
 				}),
 			},
@@ -189,6 +194,10 @@ func TestAccPython_basic(t *testing.T) {
 						"max_instance_count": 2,
 						"smallest_flavor":    "XS",
 						"biggest_flavor":     "M",
+						"environment": map[string]any{
+							"CC_PYTHON_MODULE":  "app:app",
+							"CC_PYTHON_BACKEND": "gunicorn",
+						},
 					}),
 					helper.SetBlockValues(
 						"deployment",
