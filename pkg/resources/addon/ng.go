@@ -15,6 +15,7 @@ func SyncNetworkGroups(
 	prov provider.Provider,
 	addonID string,
 	ngSet types.Set,
+	stateTarget *types.Set,
 	diags *diag.Diagnostics,
 ) {
 	ngConfigs := pkg.SetTo[resources.NetworkgroupConfig](ctx, ngSet, diags)
@@ -26,4 +27,6 @@ func SyncNetworkGroups(
 		addonID,
 		ngConfigs,
 		diags)
+
+	*stateTarget = ngSet
 }

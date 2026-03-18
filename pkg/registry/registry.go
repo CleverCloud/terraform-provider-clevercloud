@@ -34,7 +34,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/pulsar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/redis"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/drain"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/elasticsearch"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/database/elasticsearch"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/kubernetes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/kubernetes/nodegroup"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/networkgroup"

@@ -149,6 +149,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		r,
 		createdPg.ID,
 		pg.Networkgroups,
+		&pg.Networkgroups,
 		&resp.Diagnostics,
 	)
 
@@ -263,6 +264,7 @@ func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequ
 		r,
 		plan.ID.ValueString(),
 		plan.Networkgroups,
+		&state.Networkgroups,
 		&resp.Diagnostics,
 	)
 
