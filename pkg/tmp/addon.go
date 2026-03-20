@@ -38,10 +38,33 @@ type AddonResponseProvider struct {
 }
 
 type AddonPlan struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
-	Slug string `json:"slug"`
+	ID       string             `json:"id"`
+	Name     string             `json:"name"`
+	Slug     string             `json:"slug"`
+	Features []AddonPlanFeature `json:"features"`
 }
+
+type AddonPlanFeature struct {
+	Name            string `json:"name"`
+	Type            string `json:"type"`
+	ComputableValue string `json:"computable_value,omitempty"`
+	NameCode        string `json:"name_code,omitempty"`
+}
+
+// IsDedicated returns true if the plan has the "is-dedicated" feature set to "dedicated" (not "Shared")
+func (plan *AddonPlan) IsDedicated() bool {
+	if plan == nil {
+		return false
+	}
+	for _, feature := range plan.Features {
+		if feature.NameCode == "is-dedicated" {
+			// Value can be "dedicated" or "Shared"
+			return feature.ComputableValue == "dedicated"
+		}
+	}
+	return false
+}
+
 type AddonPlans []AddonPlan
 
 func (provider *AddonProvider) FirstPlan() *AddonPlan {
