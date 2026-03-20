@@ -198,3 +198,61 @@ func TestAccPostgreSQL_migration(t *testing.T) {
 		}},
 	})
 }
+
+// TestAccPostgreSQL_EncryptionOnDevPlan reproduces issue #367
+// When encryption=true is set on a 'dev' plan PostgreSQL, the provider should validate this
+// and provide a clear error message since dev plans don't support encryption.
+func TestAccPostgreSQL_EncryptionOnDevPlan(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-pg-enc")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	postgresqlBlock := helper.NewRessource(
+		"clevercloud_postgresql",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":       rName,
+			"region":     "par",
+			"plan":       "dev",
+			"encryption": true,
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(postgresqlBlock).String(),
+			ExpectError:  regexp.MustCompile(`Encryption not supported on shared plans`),
+		}},
+	})
+}
+
+// TestAccPostgreSQL_LocaleOnDevPlan tests that locale option is not allowed on dev plan
+func TestAccPostgreSQL_LocaleOnDevPlan(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-pg-locale")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	postgresqlBlock := helper.NewRessource(
+		"clevercloud_postgresql",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+			"plan":   "dev",
+			"locale": true,
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(postgresqlBlock).String(),
+			ExpectError:  regexp.MustCompile(`Locale not supported on shared plans`),
+		}},
+	})
+}

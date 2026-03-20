@@ -128,3 +128,88 @@ func TestAccMySQL_RefreshDeleted(t *testing.T) {
 		},
 	})
 }
+
+// TestAccMySQL_EncryptionOnDevPlan tests that encryption option is not allowed on dev plan
+// Similar to PostgreSQL issue #367
+func TestAccMySQL_EncryptionOnDevPlan(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-my-enc")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	mysqlBlock := helper.NewRessource(
+		"clevercloud_mysql",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":       rName,
+			"region":     "par",
+			"plan":       "dev",
+			"encryption": true,
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(mysqlBlock).String(),
+			ExpectError:  regexp.MustCompile(`Encryption not supported on shared plans`),
+		}},
+	})
+}
+
+// TestAccMySQL_SkipLogBinOnDevPlan tests that skip_log_bin option is not allowed on dev plan
+func TestAccMySQL_SkipLogBinOnDevPlan(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-my-skiplog")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	mysqlBlock := helper.NewRessource(
+		"clevercloud_mysql",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":         rName,
+			"region":       "par",
+			"plan":         "dev",
+			"skip_log_bin": true,
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(mysqlBlock).String(),
+			ExpectError:  regexp.MustCompile(`Skip log bin not supported on shared plans`),
+		}},
+	})
+}
+
+// TestAccMySQL_DirectHostOnlyOnDevPlan tests that direct_host_only option is not allowed on dev plan
+func TestAccMySQL_DirectHostOnlyOnDevPlan(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-my-direct")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	mysqlBlock := helper.NewRessource(
+		"clevercloud_mysql",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":             rName,
+			"region":           "par",
+			"plan":             "dev",
+			"direct_host_only": true,
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(mysqlBlock).String(),
+			ExpectError:  regexp.MustCompile(`Direct host only not supported on shared plans`),
+		}},
+	})
+}
