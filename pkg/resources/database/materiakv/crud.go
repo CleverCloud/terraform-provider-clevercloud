@@ -53,9 +53,12 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
 
-	kvInfoRes := r.SDK.V4().Materia().
-		Organisations().Ownerid(r.Organization()).Materia().
-		Databases().Resourceid(kv.ID.ValueString()).Getmateriakvv4(ctx)
+	kvInfoRes := r.SDK.V4().
+		Materia().
+		Organisations().
+		Ownerid(r.Organization()).
+		Materia().
+		Databases().Kvid(kv.ID.ValueString()).Getmateriakv(ctx)
 	if kvInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get materia kv connection infos", kvInfoRes.Error().Error())
 		return
@@ -90,7 +93,7 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 
 	addonKVRes := r.SDK.V4().Materia().
 		Organisations().Ownerid(r.Organization()).Materia().
-		Databases().Resourceid(kv.ID.ValueString()).Getmateriakvv4(ctx)
+		Databases().Kvid(kv.ID.ValueString()).Getmateriakv(ctx)
 	if addonKVRes.IsNotFoundError() {
 		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
 		resp.Diagnostics.Append(diags...)

@@ -19,21 +19,20 @@ func TestAccKubernetesNodegroup_basic(t *testing.T) {
 	rName := fmt.Sprintf("tf-test-kubernetes-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_kubernetes_nodegroup.%s", rName)
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
-
 	k8sBlock := helper.
 		NewRessource("clevercloud_kubernetes", rName).
 		SetOneValue("name", rName)
-
-	nodegroupBlock := helper.NewRessource(
-		"clevercloud_kubernetes_nodegroup",
-		rName,
-		helper.SetKeyValues(map[string]any{
-			"kubernetes_id": "${clevercloud_kubernetes." + rName + ".id}",
-			"flavor":        "XS",
-			"name":          rName,
-			"size":          3,
-		}),
-	)
+	nodegroupBlock := helper.
+		NewRessource(
+			"clevercloud_kubernetes_nodegroup",
+			rName,
+			helper.SetKeyValues(map[string]any{
+				"kubernetes_id": "${clevercloud_kubernetes." + rName + ".id}",
+				"flavor":        "S",
+				"name":          rName,
+				"size":          3,
+			}),
+		)
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
@@ -41,8 +40,7 @@ func TestAccKubernetesNodegroup_basic(t *testing.T) {
 		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			//PreConfig: func() {	},
-			Config: providerBlock.Append(k8sBlock, nodegroupBlock).String(),
+			Config:       providerBlock.Append(k8sBlock, nodegroupBlock).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				//statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^node_group_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),

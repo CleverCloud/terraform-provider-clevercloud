@@ -122,7 +122,7 @@ func (r *ResourceNG) Delete(ctx context.Context, req resource.DeleteRequest, res
 	resp.State.RemoveResource(ctx)
 }
 
-func (r *ResourceNG) WaitForNG(ctx context.Context, ngId string) (*models.NetworkGroup1, error) {
+func (r *ResourceNG) WaitForNG(ctx context.Context, ngId string) (*models.NetworkGroup, error) {
 	var lastErr error
 
 	for {
