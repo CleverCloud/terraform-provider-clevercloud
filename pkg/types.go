@@ -53,3 +53,12 @@ func IfIsSet[T attr.Value](v T, fn func(v T)) {
 		fn(v)
 	}
 }
+
+func AsPointer(i64 types.Int64) *int {
+	if i64.IsUnknown() || i64.IsNull() {
+		return nil
+	}
+
+	i := int(i64.ValueInt64())
+	return &i
+}

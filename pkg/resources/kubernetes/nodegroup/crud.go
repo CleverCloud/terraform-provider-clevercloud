@@ -2,10 +2,13 @@ package nodegroup
 
 import (
 	"context"
+	"errors"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/models"
 )
 
@@ -16,19 +19,30 @@ func (r *ResourceKubernetesNodegroup) Create(ctx context.Context, req resource.C
 	}
 
 	// Create Kubernetes cluster
-	createRes := r.SDK.V4().Kubernetes().
-		Organisations().Ownerid(r.Organization()).
-		Clusters().Clusterid(plan.KubernetesID.ValueString()).
+	createRes := r.SDK.V4().
+		Kubernetes().
+		Organisations().
+		Ownerid(r.Organization()).
+		Clusters().
+		Clusterid(plan.KubernetesID.ValueString()).
 		NodeGroups().
-		Createnodegroup(ctx, &models.NodeGroupCreationPayload{
+		Createkubernetesnodegroup(ctx, &models.NodeGroupCreationPayload{
 			Name:            plan.Name.ValueString(),
 			Flavor:          models.NodeFlavor(plan.Flavor.ValueString()),
 			TargetNodeCount: int(plan.Size.ValueInt64()),
-			MinNodeCount:    int(plan.Size.ValueInt64()),
-			MaxNodeCount:    int(plan.Size.ValueInt64()),
-			Labels:          &models.MapString{},
+			MinNodeCount:    pkg.AsPointer(plan.Size),
+			MaxNodeCount:    pkg.AsPointer(plan.Size),
+			Labels:          []models.KubernetesLabel{},
 		})
 	if createRes.HasError() {
+		var apiError client.APIError
+		if errors.As(createRes.Error(), &apiError) {
+			tflog.Debug(ctx, "API error", map[string]any{
+				"context": apiError.Context,
+				"code":    apiError.Code,
+			}) // TODO: find a better way to have relevant infos
+		}
+
 		res.Diagnostics.AddError("failed to create kubernetes nodegroup", createRes.Error().Error())
 		return
 	}
@@ -64,7 +78,7 @@ func (r *ResourceKubernetesNodegroup) Read(ctx context.Context, req resource.Rea
 		Organisations().Ownerid(r.Organization()).
 		Clusters().Clusterid(state.KubernetesID.ValueString()).
 		NodeGroups().Nodegroupid(identity.ID.ValueString()).
-		Getnodegroup(ctx)
+		Getkubernetesnodegroup(ctx)
 	if ngRes.HasError() {
 		res.Diagnostics.AddError("failed to get nodegroup", ngRes.Error().Error())
 	}
@@ -85,23 +99,19 @@ func (r *ResourceKubernetesNodegroup) Update(ctx context.Context, req resource.U
 		return
 	}
 
-	updateRes := r.SDK.V4().Kubernetes().
-		Organisations().Ownerid(r.Organization()).
-		Clusters().Clusterid(plan.KubernetesID.ValueString()).NodeGroups().
-		Nodegroupid(identity.ID.ValueString()).Updatenodegroup(ctx, &models.NodeGroupPatchPayload{
-		Flavor:          models.NodeFlavor(plan.Flavor.ValueString()),
-		Name:            plan.Name.ValueString(),
-		TargetNodeCount: int(plan.Size.ValueInt64()),
-		MinNodeCount:    int(plan.Size.ValueInt64()),
-		MaxNodeCount:    int(plan.Size.ValueInt64()),
-	})
-	/*tmp.UpdateNodeGroup(
-	ctx,
-	r.Client(),
-	r.Organization(),
-	plan.KubernetesID.ValueString(),
-	identity.ID.ValueString(),
-	updateReq)*/
+	updateRes := r.SDK.V4().
+		Kubernetes().
+		Organisations().
+		Ownerid(r.Organization()).
+		Clusters().
+		Clusterid(plan.KubernetesID.ValueString()).NodeGroups().
+		Nodegroupid(identity.ID.ValueString()).
+		Updatekubernetesnodegroup(ctx, &models.NodeGroupPatchPayload{
+			Name:            plan.Name.ValueString(),
+			TargetNodeCount: int(plan.Size.ValueInt64()),
+			MinNodeCount:    pkg.AsPointer(plan.Size),
+			MaxNodeCount:    pkg.AsPointer(plan.Size),
+		})
 	if updateRes.HasError() {
 		res.Diagnostics.AddError("failed to update nodegroup", updateRes.Error().Error())
 	}
@@ -129,7 +139,7 @@ func (r *ResourceKubernetesNodegroup) Delete(ctx context.Context, req resource.D
 		Organisations().Ownerid(r.Organization()).
 		Clusters().Clusterid(state.KubernetesID.ValueString()).
 		NodeGroups().Nodegroupid(identity.ID.ValueString()).
-		Deletenodegroup(ctx)
+		Deletekubernetesnodegroup(ctx)
 	if deleteRes.IsNotFoundError() {
 		res.State.RemoveResource(ctx)
 		return
