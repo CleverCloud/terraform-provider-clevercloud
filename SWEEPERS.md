@@ -28,7 +28,7 @@ Sweepers are executed in the following order to respect dependencies:
 
 Sweepers only delete resources that:
 - Have names starting with `tf-test` prefix
-- Are in the organization specified by the `ORGANISATION` environment variable
+- Are in the organization specified by the `CC_ORGANISATION` environment variable
 
 This ensures that only test resources created by the acceptance tests are deleted.
 
@@ -39,13 +39,13 @@ This ensures that only test resources created by the acceptance tests are delete
 To run all sweepers for a specific region:
 
 ```bash
-ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx make sweep
+CC_ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx make sweep
 ```
 
 Or using the Go test command directly:
 
 ```bash
-ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
+CC_ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 go test ./... -sweep=par -sweep-run=clevercloud
 ```
 
@@ -55,19 +55,19 @@ To run a specific sweeper:
 
 ```bash
 # Clean up only network groups
-ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
+CC_ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 go test ./... -sweep=par -sweep-run=clevercloud_networkgroup
 
 # Clean up only Kubernetes clusters
-ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
+CC_ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 go test ./... -sweep=par -sweep-run=clevercloud_kubernetes
 
 # Clean up only applications
-ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
+CC_ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 go test ./... -sweep=par -sweep-run=clevercloud_application
 
 # Clean up only addons
-ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
+CC_ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 go test ./... -sweep=par -sweep-run=clevercloud_addon
 ```
 
@@ -80,17 +80,17 @@ The `-sweep` flag specifies the region. While Clever Cloud has multiple regions 
 Before running sweepers:
 
 1. **Authentication**: Ensure you have valid Clever Cloud credentials configured:
-   - `CLEVER_TOKEN` and `CLEVER_SECRET` environment variables, or
+   - `CC_OAUTH_TOKEN` and `CC_OAUTH_SECRET` environment variables, or
    - `~/.config/clever-cloud` configuration file
 
-2. **Organization**: Set the `ORGANISATION` environment variable to your test organization ID
+2. **Organization**: Set the `CC_ORGANISATION` environment variable to your test organization ID
 
 Example:
 
 ```bash
-export ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-export CLEVER_TOKEN=your_token_here
-export CLEVER_SECRET=your_secret_here
+export CC_ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+export CC_OAUTH_TOKEN=your_token_here
+export CC_OAUTH_SECRET=your_secret_here
 ```
 
 ## Makefile Integration
@@ -107,7 +107,7 @@ sweep:
 Then run:
 
 ```bash
-ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx make sweep
+CC_ORGANISATION=orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx make sweep
 ```
 
 ## Logging
@@ -163,7 +163,7 @@ The sweepers are implemented using the [terraform-plugin-testing](https://github
 ### Sweeper doesn't find any resources
 
 Check that:
-1. The `ORGANISATION` environment variable is set correctly
+1. The `CC_ORGANISATION` environment variable is set correctly
 2. You have valid authentication credentials
 3. Test resources actually exist with the `tf-test` prefix
 
