@@ -58,7 +58,7 @@ Forward logs to Elasticsearch.
 resource "clevercloud_drain_elasticsearch" "example" {
   resource_id      = clevercloud_nodejs.app.id
   kind             = "LOG"
-  url              = "https://your-elasticsearch-cluster.com"
+  url              = "https://your-elasticsearch-cluster.com/_bulk"
   username         = "elastic"
   password         = "your-password"
   index            = "clever-cloud-logs"
