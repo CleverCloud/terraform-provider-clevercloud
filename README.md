@@ -15,9 +15,9 @@ To use this provider, you need to configure your Clever Cloud credentials. You c
 Set the following environment variables:
 
 ```bash
-export CLEVER_TOKEN="your-clever-cloud-token"
-export CLEVER_SECRET="your-clever-cloud-secret"
-export ORGANISATION="your-organization-id"  # Optional, for multi-org accounts
+export CC_OAUTH_TOKEN="your-clever-cloud-token"
+export CC_OAUTH_SECRET="your-clever-cloud-secret"
+export CC_ORGANISATION="your-organization-id"  # Optional, for multi-org accounts
 ```
 
 ## Build provider

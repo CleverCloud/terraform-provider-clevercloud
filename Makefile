@@ -51,8 +51,8 @@ testacc:
 
 sweep:
 	@echo "Running sweepers to clean up test resources..."
-	@if [ -z "$(ORGANISATION)" ]; then \
-		echo "Error: ORGANISATION environment variable must be set"; \
+	@if [ -z "$(CC_ORGANISATION)" ]; then \
+		echo "Error: CC_ORGANISATION environment variable must be set"; \
 		exit 1; \
 	fi
 	@go test ./main_test.go -v -sweep=par -timeout 30m
