@@ -32,7 +32,7 @@ func (r *ResourceKubernetesNodegroup) Create(ctx context.Context, req resource.C
 			TargetNodeCount: int(plan.Size.ValueInt64()),
 			MinNodeCount:    pkg.AsPointer(plan.Size),
 			MaxNodeCount:    pkg.AsPointer(plan.Size),
-			Labels:          []models.KubernetesLabel{},
+			Labels:          &models.MapLabelkeyLabelvalue{},
 		})
 	if createRes.HasError() {
 		var apiError client.APIError
@@ -50,6 +50,9 @@ func (r *ResourceKubernetesNodegroup) Create(ctx context.Context, req resource.C
 
 	identity := KubernetesNodegroupIdentity{ID: pkg.FromStr(nodegroup.ID)}
 	res.Diagnostics.Append(res.Identity.Set(ctx, identity)...)
+	if res.Diagnostics.HasError() {
+		return
+	}
 
 	state := KubernetesNodegroup{
 		ID:           pkg.FromStr(nodegroup.ID),

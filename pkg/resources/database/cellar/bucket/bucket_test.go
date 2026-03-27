@@ -21,6 +21,7 @@ import (
 func TestAccCellarBucket_basic(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
+	callarName := acctest.RandomWithPrefix("tf-test-cellar")
 	rName := acctest.RandomWithPrefix("my-bucket")
 	fullName := "clevercloud_cellar_bucket." + rName
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
@@ -29,7 +30,7 @@ func TestAccCellarBucket_basic(t *testing.T) {
 		"clevercloud_cellar",
 		"cellar1",
 		helper.SetKeyValues(map[string]any{
-			"name": "cellar1",
+			"name": callarName,
 		}),
 	)
 
@@ -61,6 +62,7 @@ func TestAccCellarBucket_deleteNonEmpty(t *testing.T) {
 	t.Parallel()
 	cc := client.New(client.WithAutoOauthConfig())
 	ctx := t.Context()
+	callarName := acctest.RandomWithPrefix("tf-test-cellar")
 	rName := acctest.RandomWithPrefix("tf-test-bucket")
 	fullName := "clevercloud_cellar_bucket." + rName
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
@@ -68,9 +70,7 @@ func TestAccCellarBucket_deleteNonEmpty(t *testing.T) {
 	cellarBlock := helper.NewRessource(
 		"clevercloud_cellar",
 		"cellar_nonempty",
-		helper.SetKeyValues(map[string]any{
-			"name": "cellar-nonempty-test",
-		}),
+		helper.SetKeyValues(map[string]any{"name": callarName}),
 	)
 
 	cellarBucketBlock := helper.NewRessource(

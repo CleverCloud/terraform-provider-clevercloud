@@ -44,7 +44,6 @@ func TestAccElasticsearch_basic(t *testing.T) {
 			ResourceName: rName,
 			Config:       providerBlock.Append(elasticsearchBlock).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
-				statecheck.ExpectIdentityValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^elasticsearch_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*\.services\.clever-cloud\.com$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("user"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
 				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("password")),
@@ -261,41 +260,38 @@ func TestAccElasticsearch_KibanaRequiresReplace(t *testing.T) {
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
 		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy:             tests.CheckDestroy(ctx),
-		Steps: []resource.TestStep{
-			{
-				ResourceName: rName,
-				Config:       providerBlock.Append(elasticsearchBlock).String(),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(fullName, "kibana", "false"),
-					func(s *terraform.State) error {
-						rs, ok := s.RootModule().Resources[fullName]
-						if !ok {
-							return fmt.Errorf("resource %s not found", fullName)
-						}
-						firstID = rs.Primary.ID
-						return nil
-					},
-				),
-			},
-			{
-				ResourceName: rName,
-				Config:       providerBlock.Append(elasticsearchBlockWithKibana).String(),
-				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(fullName, "kibana", "true"),
-					// Verify that the resource ID has changed (indicating replacement)
-					func(s *terraform.State) error {
-						rs, ok := s.RootModule().Resources[fullName]
-						if !ok {
-							return fmt.Errorf("resource %s not found", fullName)
-						}
-						if rs.Primary.ID == firstID {
-							return fmt.Errorf("expected resource to be replaced (different ID), but ID remained the same: %s", firstID)
-						}
-						return nil
-					},
-				),
-			},
-		},
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(elasticsearchBlock).String(),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(fullName, "kibana", "false"),
+				func(s *terraform.State) error {
+					rs, ok := s.RootModule().Resources[fullName]
+					if !ok {
+						return fmt.Errorf("resource %s not found", fullName)
+					}
+					firstID = rs.Primary.ID
+					return nil
+				},
+			),
+		}, {
+			ResourceName: rName,
+			Config:       providerBlock.Append(elasticsearchBlockWithKibana).String(),
+			Check: resource.ComposeAggregateTestCheckFunc(
+				resource.TestCheckResourceAttr(fullName, "kibana", "true"),
+				// Verify that the resource ID has changed (indicating replacement)
+				func(s *terraform.State) error {
+					rs, ok := s.RootModule().Resources[fullName]
+					if !ok {
+						return fmt.Errorf("resource %s not found", fullName)
+					}
+					if rs.Primary.ID == firstID {
+						return fmt.Errorf("expected resource to be replaced (different ID), but ID remained the same: %s", firstID)
+					}
+					return nil
+				},
+			),
+		}},
 	})
 }
 

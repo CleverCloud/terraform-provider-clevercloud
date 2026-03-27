@@ -4,11 +4,13 @@ package tmp
 import (
 	"context"
 	"fmt"
+	"math"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg/retry"
 	"go.clever-cloud.dev/client"
 )
@@ -605,19 +607,59 @@ func RealIDToAddonID(ctx context.Context, client *client.Client, organisation st
 		return realID, nil
 	}
 
-	addonsRes := ListAddons(ctx, client, organisation)
-	if addonsRes.HasError() {
-		return "", addonsRes.Error()
-	}
-	addons := *addonsRes.Payload()
+	// Use retry mechanism with custom config for addon listing
+	config := retry.DefaultConfig()
+	var lastError error
 
-	for _, addon := range addons {
-		if addon.RealID == realID {
-			return addon.ID, nil
+	// Wrap the operation in a retry mechanism
+	for attempt := range config.MaxAttempts {
+		addonsRes := ListAddons(ctx, client, organisation)
+		if addonsRes.HasError() {
+			lastError = addonsRes.Error()
+			tflog.Warn(ctx, fmt.Sprintf(
+				"RealIDToAddonID: failed to list addons (attempt %d/%d): %v",
+				attempt+1,
+				config.MaxAttempts,
+				lastError,
+			))
+			continue
 		}
+		addons := *addonsRes.Payload()
+
+		for _, addon := range addons {
+			if addon.RealID == realID {
+				return addon.ID, nil
+			}
+		}
+
+		// Addon not found, retry after a delay
+		lastError = fmt.Errorf("addon %s not found in list", realID)
+		backoff := min(time.Duration(float64(config.InitialDelay)*math.Pow(config.Multiplier, float64(attempt))), config.MaxDelay)
+
+		tflog.Warn(ctx, fmt.Sprintf(
+			"RealIDToAddonID: addon %s not found in list (attempt %d/%d), retrying in %v",
+			realID,
+			attempt+1,
+			config.MaxAttempts,
+			backoff,
+		))
+
+		select {
+		case <-ctx.Done():
+			tflog.Error(ctx, fmt.Sprintf("RealIDToAddonID: context cancelled while retrying to find addon %s", realID))
+			return "", fmt.Errorf("context cancelled while retrying to find addon %s: %w", realID, ctx.Err())
+		case <-time.After(backoff):
+			// Continue to next attempt
+		}
+
 	}
 
-	return "", fmt.Errorf("addon %s not found", realID)
+	tflog.Error(ctx, fmt.Sprintf(
+		"RealIDToAddonID: addon %s not found after %d attempts",
+		realID,
+		config.MaxAttempts,
+	))
+	return "", fmt.Errorf("addon %s not found after %d attempts: %w", realID, config.MaxAttempts, lastError)
 }
 
 func AddonIDToRealID(ctx context.Context, client *client.Client, organisation string, addonID string) (string, error) {

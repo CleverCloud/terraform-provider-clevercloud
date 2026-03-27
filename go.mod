@@ -18,7 +18,7 @@ require (
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/miton18/helper v0.0.4
 	go.clever-cloud.dev/client v0.1.7
-	go.clever-cloud.dev/sdk v0.2.4
+	go.clever-cloud.dev/sdk v0.2.5
 	golang.org/x/exp v0.0.0-20251017212417-90e834f514db
 )
 

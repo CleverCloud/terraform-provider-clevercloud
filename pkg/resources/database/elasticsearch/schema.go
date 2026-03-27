@@ -25,6 +25,7 @@ import (
 )
 
 type Elasticsearch struct {
+	ID            types.String `tfsdk:"id"`
 	Name          types.String `tfsdk:"name"`
 	Plan          types.String `tfsdk:"plan"`
 	Region        types.String `tfsdk:"region"`
@@ -56,6 +57,13 @@ func (r *ResourceElasticsearch) Schema(_ context.Context, req resource.SchemaReq
 		Version:             0,
 		MarkdownDescription: resourceElasticsearchDoc,
 		Attributes: map[string]schema.Attribute{
+			"id": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "Unique identifier of the Elasticsearch addon",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the elasticsearch"},
 			"plan": schema.StringAttribute{Required: true, MarkdownDescription: "Database size and spec"},
 			"region": schema.StringAttribute{
