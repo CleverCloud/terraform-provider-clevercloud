@@ -39,6 +39,7 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/elast
 - `apm_token` (String, Sensitive) APM token
 - `apm_user` (String) APM user
 - `host` (String) Elasticsearch host, used to connect to
+- `id` (String) Unique identifier of the Elasticsearch addon
 - `kibana_host` (String) Kibana URL if enabled
 - `kibana_password` (String, Sensitive) Kibana password
 - `kibana_user` (String) Kibana user
