@@ -3,6 +3,7 @@ package tmp
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"math"
 	"strings"
@@ -865,4 +866,174 @@ type CsiCephResponse struct {
 func EnableCsiCeph(ctx context.Context, cc *client.Client, organisationID, clusterID string) client.Response[CsiCephResponse] {
 	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/csi/ceph", organisationID, clusterID)
 	return client.Post[CsiCephResponse](ctx, cc, path, nil)
+}
+
+// AddonProviderManifest represents the manifest structure for creating addon providers
+type AddonProviderManifest struct {
+	ID   string                         `json:"id"`
+	Name string                         `json:"name"`
+	API  AddonProviderManifestAPIConfig `json:"api"`
+}
+
+type AddonProviderManifestAPIConfig struct {
+	ConfigVars []string                               `json:"config_vars"`
+	Password   string                                 `json:"password"`
+	SSOSalt    string                                 `json:"sso_salt"`
+	Production AddonProviderManifestEnvironmentConfig `json:"production"`
+	Test       AddonProviderManifestEnvironmentConfig `json:"test"`
+}
+
+type AddonProviderManifestEnvironmentConfig struct {
+	BaseURL string `json:"base_url"`
+	SSOURL  string `json:"sso_url"`
+}
+
+type AddonProviderInfo struct {
+	ID             string   `json:"id"`
+	Name           string   `json:"name"`
+	Website        *string  `json:"website"`
+	SupportEmail   *string  `json:"supportEmail"`
+	GooglePlusName *string  `json:"googlePlusName"`
+	TwitterName    *string  `json:"twitterName"`
+	AnalyticsID    *string  `json:"analyticsId"`
+	ShortDesc      *string  `json:"shortDesc"`
+	LongDesc       *string  `json:"longDesc"`
+	LogoURL        *string  `json:"logoUrl"`
+	Status         string   `json:"status"` // ALPHA, BETA, DELETED, etc.
+	OpenInNewTab   bool     `json:"openInNewTab"`
+	CanUpgrade     bool     `json:"canUpgrade"`
+	Regions        []string `json:"regions"`
+}
+
+// ListAddonProviders lists all addon providers for an organization
+func ListAddonProviders(ctx context.Context, cc *client.Client, organisationID string) client.Response[[]AddonProviderInfo] {
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders", organisationID)
+	return client.Get[[]AddonProviderInfo](ctx, cc, path)
+}
+
+// CreateAddonProvider creates a new addon provider in the marketplace
+func CreateAddonProvider(ctx context.Context, cc *client.Client, organisationID string, manifest AddonProviderManifest) client.Response[AddonProviderInfo] {
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders", organisationID)
+	return client.Post[AddonProviderInfo](ctx, cc, path, manifest)
+}
+
+// UpdateAddonProvider updates an existing addon provider
+func UpdateAddonProvider(ctx context.Context, cc *client.Client, organisationID string, providerID string, manifest AddonProviderManifest) client.Response[AddonProviderInfo] {
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s", organisationID, providerID)
+	return client.Put[AddonProviderInfo](ctx, cc, path, manifest)
+}
+
+// GetAddonProvider retrieves an addon provider by ID
+func GetAddonProvider(ctx context.Context, cc *client.Client, organisationID string, providerID string) client.Response[AddonProviderInfo] {
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s", organisationID, providerID)
+	return client.Get[AddonProviderInfo](ctx, cc, path)
+}
+
+// DeleteAddonProvider deletes an addon provider
+func DeleteAddonProvider(ctx context.Context, cc *client.Client, organisationID string, providerID string) client.Response[client.Nothing] {
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s", organisationID, providerID)
+	return client.Delete[client.Nothing](ctx, cc, path)
+}
+
+// AddonProviderFeature represents a feature that can be configured per plan
+type AddonProviderFeature struct {
+	Name string `json:"name"`
+	Type string `json:"type"`
+}
+
+// AddonProviderFeatureView represents the API response for a feature
+type AddonProviderFeatureView struct {
+	Name      string `json:"name"`
+	Type      string `json:"type"`
+	CompName  string `json:"compName,omitempty"`
+	Displayed bool   `json:"displayed,omitempty"`
+}
+
+// ListAddonProviderFeatures lists all features for an addon provider
+func ListAddonProviderFeatures(ctx context.Context, cc *client.Client, organisationID string, providerID string) client.Response[[]AddonProviderFeatureView] {
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s/features", organisationID, providerID)
+	return client.Get[[]AddonProviderFeatureView](ctx, cc, path)
+}
+
+// CreateAddonProviderFeature creates a feature for an addon provider
+func CreateAddonProviderFeature(ctx context.Context, cc *client.Client, organisationID string, providerID string, feature AddonProviderFeature) client.Response[AddonProviderFeatureView] {
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s/features", organisationID, providerID)
+	return client.Post[AddonProviderFeatureView](ctx, cc, path, feature)
+}
+
+// DeleteAddonProviderFeature deletes a feature from an addon provider
+// The featureName is base64-encoded before being sent to the API
+func DeleteAddonProviderFeature(ctx context.Context, cc *client.Client, organisationID string, providerID string, featureName string) client.Response[client.Nothing] {
+	// Encode feature name in base64 (API requires this)
+	encodedName := base64.StdEncoding.EncodeToString([]byte(featureName))
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s/features/%s", organisationID, providerID, encodedName)
+	return client.Delete[client.Nothing](ctx, cc, path)
+}
+
+// AddonProviderPlan represents a plan to be created/updated
+type AddonProviderPlan struct {
+	Name     string                     `json:"name"`
+	Slug     string                     `json:"slug"`
+	Price    float64                    `json:"price"`
+	Features []AddonProviderPlanFeature `json:"features"`
+}
+
+// AddonProviderPlanFeature represents a feature value in a plan (for create/update)
+type AddonProviderPlanFeature struct {
+	Name     string  `json:"name"`
+	Value    string  `json:"value"`
+	Type     *string `json:"type,omitempty"`
+	NameCode *string `json:"name_code,omitempty"`
+}
+
+// AddonProviderPlanView represents the API response for a plan
+type AddonProviderPlanView struct {
+	ID       string                 `json:"id"`
+	Name     string                 `json:"name"`
+	Slug     string                 `json:"slug"`
+	Price    float64                `json:"price"`
+	PriceID  string                 `json:"priceId,omitempty"`
+	Zones    []string               `json:"zones,omitempty"`
+	Features []AddonPlanFeatureView `json:"features,omitempty"`
+}
+
+// AddonPlanFeatureView represents a feature instance in a plan
+type AddonPlanFeatureView struct {
+	Name            string `json:"name"`
+	Type            string `json:"type"`
+	Value           string `json:"value"`
+	ComputableValue string `json:"computable_value,omitempty"`
+	NameCode        string `json:"name_code,omitempty"`
+}
+
+// ListAddonProviderPlans lists all plans for an addon provider
+func ListAddonProviderPlans(ctx context.Context, cc *client.Client, organisationID string, providerID string) client.Response[[]AddonProviderPlanView] {
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s/plans", organisationID, providerID)
+	return client.Get[[]AddonProviderPlanView](ctx, cc, path)
+}
+
+// CreateAddonProviderPlan creates a plan for an addon provider
+func CreateAddonProviderPlan(ctx context.Context, cc *client.Client, organisationID string, providerID string, plan AddonProviderPlan) client.Response[AddonProviderPlanView] {
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s/plans", organisationID, providerID)
+	return client.Post[AddonProviderPlanView](ctx, cc, path, plan)
+}
+
+// GetAddonProviderPlan gets a specific plan for an addon provider
+func GetAddonProviderPlan(ctx context.Context, cc *client.Client, organisationID string, providerID string, planID string) client.Response[AddonProviderPlanView] {
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s/plans/%s", organisationID, providerID, planID)
+	return client.Get[AddonProviderPlanView](ctx, cc, path)
+}
+
+// UpdateAddonProviderPlan updates a plan for an addon provider
+func UpdateAddonProviderPlan(ctx context.Context, cc *client.Client, organisationID string, providerID string, planID string, plan AddonProviderPlan) client.Response[AddonProviderPlanView] {
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s/plans/%s", organisationID, providerID, planID)
+	return client.Put[AddonProviderPlanView](ctx, cc, path, plan)
+}
+
+// DeleteAddonProviderPlan deletes a plan from an addon provider
+// The planID should be the ID returned by the API (not the slug)
+func DeleteAddonProviderPlan(ctx context.Context, cc *client.Client, organisationID string, providerID string, planID string) client.Response[client.Nothing] {
+	// Use the plan ID directly (no encoding needed, unlike features which use names)
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s/plans/%s", organisationID, providerID, planID)
+	return client.Delete[client.Nothing](ctx, cc, path)
 }

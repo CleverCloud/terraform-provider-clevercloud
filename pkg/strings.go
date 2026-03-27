@@ -44,6 +44,11 @@ func FromBool(b bool) types.Bool {
 	return types.BoolValue(b)
 }
 
+// Convert a native float64 into a tfsdk one
+func FromFloat64(f float64) types.Float64 {
+	return types.Float64Value(f)
+}
+
 // Convert a native int64 into a tfsdk one
 func FromListString(items []string) types.List {
 	if len(items) == 0 {

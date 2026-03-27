@@ -19,6 +19,26 @@ type Ressource struct {
 	isData        bool // true for data sources, false for resources
 }
 
+// Block represents a nested block with attributes and sub-blocks
+type Block struct {
+	Attributes map[string]any
+	Blocks     map[string]any
+}
+
+// NewBlock creates a new Block with the given attributes and sub-blocks
+func NewBlock(attributes map[string]any, blocks map[string]any) Block {
+	if attributes == nil {
+		attributes = make(map[string]any)
+	}
+	if blocks == nil {
+		blocks = make(map[string]any)
+	}
+	return Block{
+		Attributes: attributes,
+		Blocks:     blocks,
+	}
+}
+
 // New function type that accepts pointer to Ressource
 // (~= Signature of option functions)
 type RessourceOption func(*Ressource)
@@ -83,6 +103,15 @@ func (r *Ressource) UnsetOneValue(key string) *Ressource {
 	return r
 }
 
+// AddNestedBlocks chainable method to add nested blocks with deeply nested structure:
+//   - desc: set/add slice of Blocks to blockValues field then return the Ressource
+//   - args: blockName (string) and slice of Block structs
+//   - return: pointer to Ressource
+func (r *Ressource) AddNestedBlocks(blockName string, blocks []Block) *Ressource {
+	r.blockValues[blockName] = blocks
+	return r
+}
+
 // keyValues setter:
 //   - desc: set/add key: value to keyValues field of a Ressource then return the Ressource
 //   - args: map of string key + value
@@ -100,6 +129,26 @@ func SetKeyValues(newMap map[string]any) RessourceOption {
 func SetBlockValues(blockName string, newMap map[string]any) RessourceOption {
 	return func(r *Ressource) {
 		r.blockValues[blockName] = newMap
+	}
+}
+
+// SetNestedBlockValues setter for multiple blocks with same name (SetNestedBlock in Terraform):
+//   - desc: set/add slice of maps to blockValues field to generate multiple blocks with the same name
+//   - args: blockName (string) and slice of maps
+//   - return: RessourceOption function
+func SetNestedBlockValues(blockName string, blocks []map[string]string) RessourceOption {
+	return func(r *Ressource) {
+		r.blockValues[blockName] = blocks
+	}
+}
+
+// SetNestedBlocks setter for multiple blocks with deeply nested structure:
+//   - desc: set/add slice of Blocks to blockValues field to generate multiple nested blocks with sub-blocks
+//   - args: blockName (string) and slice of Block structs
+//   - return: RessourceOption function
+func SetNestedBlocks(blockName string, blocks []Block) RessourceOption {
+	return func(r *Ressource) {
+		r.blockValues[blockName] = blocks
 	}
 }
 
@@ -149,6 +198,9 @@ func map_String(m map[string]any, s, tab, separator string) string {
 		case int:
 			return acc + tab + key + ` = ` + strconv.Itoa(m[key].(int)) + `
 `
+		case float64:
+			return acc + tab + key + ` = ` + strconv.FormatFloat(m[key].(float64), 'f', -1, 64) + `
+`
 		case time.Time:
 			return acc + tab + key + ` = "` + m[key].(time.Time).Format(time.RFC3339) + `"
 `
@@ -165,15 +217,53 @@ func map_String(m map[string]any, s, tab, separator string) string {
 				return `"` + s + `"`
 			})
 			return acc + tab + key + separator + ` [ ` + strings.Join(strs, ", ") + " ]\n"
+		case []Block:
+			// Generate multiple nested blocks with support for sub-blocks
+			for _, block := range c_type {
+				acc += tab + key + ` {
+`
+				// First, output attributes
+				acc = map_String(block.Attributes, acc, tab+`	`, ` =`)
+				// Then, output sub-blocks
+				acc = map_String(block.Blocks, acc, tab+`	`, ``)
+				acc += tab + `}
+`
+			}
+			return acc
 		case []map[string]string:
-			strs := pkg.Map(c_type, func(m map[string]string) string {
-				fields := []string{}
-				for k, v := range m {
-					fields = append(fields, k+` = "`+v+`"`)
+			// Special handling: if separator is empty (blockValues), generate multiple blocks
+			// Otherwise (keyValues with separator " ="), generate an array
+			if separator == "" {
+				// Generate multiple nested blocks (for SetNestedBlock)
+				for _, blockMap := range c_type {
+					acc += tab + key + ` {
+`
+					// Sort keys for consistent output
+					blockKeys := make([]string, 0, len(blockMap))
+					for k := range blockMap {
+						blockKeys = append(blockKeys, k)
+					}
+					sort.Strings(blockKeys)
+
+					for _, k := range blockKeys {
+						acc += tab + `	` + k + ` = "` + blockMap[k] + `"
+`
+					}
+					acc += tab + `}
+`
 				}
-				return "{ " + strings.Join(fields, ", ") + " }"
-			})
-			return acc + tab + key + separator + ` [ ` + strings.Join(strs, ", ") + " ]\n"
+				return acc
+			} else {
+				// Original behavior: generate array syntax
+				strs := pkg.Map(c_type, func(m map[string]string) string {
+					fields := []string{}
+					for k, v := range m {
+						fields = append(fields, k+` = "`+v+`"`)
+					}
+					return "{ " + strings.Join(fields, ", ") + " }"
+				})
+				return acc + tab + key + separator + ` [ ` + strings.Join(strs, ", ") + " ]\n"
+			}
 		default:
 			return acc + `// Type ` + reflect.TypeOf(c_type).String() + ` of key "` + key + `" not considered yet
 `

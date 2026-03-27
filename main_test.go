@@ -36,6 +36,11 @@ func TestMain(m *testing.M) {
 		F:    sweepers.SweepAddons,
 	})
 
+	resource.AddTestSweepers("clevercloud_addon_provider", &resource.Sweeper{
+		Name: "clevercloud_addon_provider",
+		F:    sweepers.SweepAddonProviders,
+	})
+
 	fmt.Printf("sweepers added, running tests\n")
 	resource.TestMain(m)
 }

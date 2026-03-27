@@ -13,6 +13,7 @@ jobs:
       matrix:
         resource:
           - addon
+          - addonprovider
           - configprovider
           - application
           - database/cellar
