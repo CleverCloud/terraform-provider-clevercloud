@@ -4,8 +4,6 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
@@ -19,19 +17,4 @@ func NewResourceElasticsearch() resource.Resource {
 
 func (r *ResourceElasticsearch) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_elasticsearch"
-}
-
-type ElasticsearchIdentity struct {
-	ID types.String `tfsdk:"id"`
-}
-
-func (r *ResourceElasticsearch) IdentitySchema(ctx context.Context, req resource.IdentitySchemaRequest, res *resource.IdentitySchemaResponse) {
-	res.IdentitySchema = identityschema.Schema{
-		Attributes: map[string]identityschema.Attribute{
-			"id": identityschema.StringAttribute{
-				RequiredForImport: true,
-				Description:       "Unique identifier of the Elasticsearch addon",
-			},
-		},
-	}
 }

@@ -17,12 +17,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
-func (r *ResourceElasticsearch) Configure(ctx context.Context, req resource.ConfigureRequest, res *resource.ConfigureResponse) {
-	r.Configurer.Configure(ctx, req, res)
-}
-
 func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
-	identity := ElasticsearchIdentity{}
 	plan := helper.PlanFrom[Elasticsearch](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
@@ -78,8 +73,8 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 	}
 	createdAddon := addonRes.Payload()
 
-	identity.ID = pkg.FromStr(createdAddon.RealID)
-	res.Diagnostics.Append(res.Identity.Set(ctx, identity)...)
+	plan.ID = pkg.FromStr(createdAddon.RealID)
+	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 
 	r.readFromAddon(&plan, *createdAddon)
 
@@ -103,18 +98,12 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 }
 
 func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadRequest, res *resource.ReadResponse) {
-	identity := helper.IdentityFrom[ElasticsearchIdentity](ctx, *req.Identity, &res.Diagnostics)
 	state := helper.StateFrom[Elasticsearch](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	if identity.ID.ValueString() == "" {
-		res.State.RemoveResource(ctx)
-		return
-	}
-
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		res.State.RemoveResource(ctx)
 		return
@@ -125,7 +114,7 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 		r.readFromAddon(&state, *addonRes.Payload())
 	}
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if err != nil {
 		res.Diagnostics.AddError("failed to get addon ID", err.Error())
 	} else {
@@ -137,7 +126,7 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 		}
 	}
 
-	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, identity.ID.ValueString(), &res.Diagnostics)
+	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }
@@ -226,7 +215,6 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 	// ],"status":"RUNNING"}
 	// status	"OK"
 
-	identity := helper.IdentityFrom[ElasticsearchIdentity](ctx, *req.Identity, &res.Diagnostics)
 	plan := helper.PlanFrom[Elasticsearch](ctx, req.Plan, &res.Diagnostics)
 	state := helper.StateFrom[Elasticsearch](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
@@ -234,7 +222,7 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), identity.ID.ValueString(), map[string]string{
+	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString(), map[string]string{
 		"name": plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -246,7 +234,7 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 	addon.SyncNetworkGroups(
 		ctx,
 		r,
-		identity.ID.ValueString(),
+		state.ID.ValueString(),
 		plan.Networkgroups,
 		&state.Networkgroups,
 		&res.Diagnostics,
@@ -256,9 +244,17 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 }
 
 func (r *ResourceElasticsearch) Delete(ctx context.Context, req resource.DeleteRequest, res *resource.DeleteResponse) {
-	identity := helper.IdentityFrom[ElasticsearchIdentity](ctx, *req.Identity, &res.Diagnostics)
+	state := helper.StateFrom[Elasticsearch](ctx, req.State, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
 
-	deleteRes := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	if err != nil {
+		res.Diagnostics.AddError("failed to convert real ID to addon ID", err.Error())
+	}
+
+	deleteRes := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonID)
 	if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
 		res.Diagnostics.AddError("failed to delete addon", deleteRes.Error().Error())
 		return
