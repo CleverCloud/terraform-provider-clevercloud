@@ -72,6 +72,10 @@ func checkDestroy(ctx context.Context, state *terraform.State) error {
 		case resourceType == "clevercloud_networkgroup":
 			err = checkNetworkgroupDestroyed(ctx, cc, resourceID, resourceName)
 
+		// Addon Provider
+		case resourceType == "clevercloud_addon_provider":
+			err = checkAddonProviderDestroyed(ctx, cc, resourceID, resourceName)
+
 		// All other addons (database, software, storage, etc.)
 		case resourceType == "clevercloud_cellar",
 			resourceType == "clevercloud_fsbucket",
@@ -215,4 +219,21 @@ func checkNetworkgroupDestroyed(ctx context.Context, cc *client.Client, ngID, re
 	}
 
 	return fmt.Errorf("expected network group %s (ID: %s) to be deleted but it still exists", resourceName, ngID)
+}
+
+// checkAddonProviderDestroyed verifies that an addon provider has been deleted or is in DELETED state.
+func checkAddonProviderDestroyed(ctx context.Context, cc *client.Client, providerID, resourceName string) error {
+	res := tmp.GetAddonProvider(ctx, cc, ORGANISATION, providerID)
+	if res.IsNotFoundError() {
+		return nil
+	}
+	if res.HasError() {
+		return fmt.Errorf("unexpected error checking if addon provider %s was destroyed: %s", resourceName, res.Error().Error())
+	}
+
+	if res.Payload().Status == "DELETED" {
+		return nil
+	}
+
+	return fmt.Errorf("expected addon provider %s (ID: %s) to be deleted but it still exists with status: %s", resourceName, providerID, res.Payload().Status)
 }

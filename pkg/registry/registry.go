@@ -8,6 +8,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/datasources/defaultloadbalancer"
 	"go.clever-cloud.com/terraform-provider/pkg/datasources/postgresqlbackup"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/addonprovider"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/docker"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/dotnet"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/frankenphp"
@@ -52,6 +53,7 @@ var Datasources = []func() datasource.DataSource{
 
 var Resources = []func() resource.Resource{
 	addon.NewResourceAddon,
+	addonprovider.NewResourceAddonProvider,
 	bucket.NewResourceCellarBucket,
 	cellar.NewResourceCellar,
 	fsbucket.NewResourceFSBucket,

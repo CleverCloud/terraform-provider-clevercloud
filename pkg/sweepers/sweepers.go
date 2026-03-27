@@ -211,3 +211,51 @@ func SweepKubernetes(region string) error {
 	}
 	return nil
 }
+
+// sweepAddonProviders removes all test addon providers
+func SweepAddonProviders(region string) error {
+	ctx := context.Background()
+	cc := client.New(client.WithAutoOauthConfig())
+
+	if tests.ORGANISATION == "" {
+		return fmt.Errorf("ORGANISATION environment variable not set")
+	}
+
+	log.Printf("[INFO] Sweeping addon providers in organization: %s", tests.ORGANISATION)
+
+	// List all addon providers
+	providersRes := tmp.ListAddonProviders(ctx, cc, tests.ORGANISATION)
+	if providersRes.HasError() {
+		return fmt.Errorf("failed to list addon providers: %w", providersRes.Error())
+	}
+
+	providers := *providersRes.Payload()
+	swept := 0
+	errors := 0
+
+	for _, provider := range providers {
+		// Only delete test resources (those starting with tf-test- or tftest)
+		if !strings.HasPrefix(provider.ID, "tf-test-") && !strings.HasPrefix(provider.ID, "tftest") {
+			continue
+		}
+
+		log.Printf("[INFO] Deleting addon provider: %s (%s)", provider.Name, provider.ID)
+		delRes := tmp.DeleteAddonProvider(ctx, cc, tests.ORGANISATION, provider.ID)
+		if delRes.IsNotFoundError() {
+			log.Printf("[INFO] Addon provider %s already deleted", provider.ID)
+			continue
+		}
+		if delRes.HasError() {
+			log.Printf("[ERROR] Failed to delete addon provider %s: %v", provider.ID, delRes.Error())
+			errors++
+			continue
+		}
+		swept++
+	}
+
+	log.Printf("[INFO] Swept %d addon providers (errors: %d)", swept, errors)
+	if errors > 0 {
+		return fmt.Errorf("encountered %d errors while sweeping addon providers", errors)
+	}
+	return nil
+}

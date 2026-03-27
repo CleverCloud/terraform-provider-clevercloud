@@ -3,6 +3,7 @@ package pkg
 import (
 	"context"
 	"fmt"
+	"net/url"
 	"regexp"
 	"slices"
 	"strings"
@@ -180,6 +181,41 @@ func NoNullMapValuesValidator() validator.Map {
 							"} : k => v if v != null }",
 						strings.Join(nullKeys, ", "),
 					),
+				)
+			}
+		},
+	)
+}
+
+// HTTPSSchemeValidator returns a validator that ensures URLs use the HTTPS scheme
+func HTTPSSchemeValidator() validator.String {
+	return NewStringValidator(
+		"validates that the URL uses the HTTPS scheme",
+		func(ctx context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+			// If the value is unknown or null, there's nothing to validate
+			if req.ConfigValue.IsUnknown() || req.ConfigValue.IsNull() {
+				return
+			}
+
+			// Get the string value - this works for both regular types.String and custom URLValue
+			// because they both have ValueString() method through basetypes.StringValue
+			urlStr := req.ConfigValue.ValueString()
+
+			parsedURL, err := url.Parse(urlStr)
+			if err != nil {
+				resp.Diagnostics.AddAttributeError(
+					req.Path,
+					"Invalid URL",
+					fmt.Sprintf("Cannot parse URL %q: %s", urlStr, err),
+				)
+				return
+			}
+
+			if parsedURL.Scheme != "https" {
+				resp.Diagnostics.AddAttributeError(
+					req.Path,
+					"Invalid URL Scheme",
+					fmt.Sprintf("URL must use HTTPS scheme, got %q. Value: %q", parsedURL.Scheme, urlStr),
 				)
 			}
 		},
