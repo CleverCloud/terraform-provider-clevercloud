@@ -242,7 +242,7 @@ func TestAccPostgreSQL_LocaleOnDevPlan(t *testing.T) {
 			"name":   rName,
 			"region": "par",
 			"plan":   "dev",
-			"locale": true,
+			"locale": "fr_FR",
 		}))
 
 	resource.Test(t, resource.TestCase{
@@ -253,6 +253,77 @@ func TestAccPostgreSQL_LocaleOnDevPlan(t *testing.T) {
 			ResourceName: rName,
 			Config:       providerBlock.Append(postgresqlBlock).String(),
 			ExpectError:  regexp.MustCompile(`Locale not supported on shared plans`),
+		}},
+	})
+}
+
+// TestAccPostgreSQL_LocaleImport tests importing a PostgreSQL resource
+// This validates that import works correctly and preserves the locale value
+func TestAccPostgreSQL_LocaleImport(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+
+	rName := acctest.RandomWithPrefix("tf-test-pg-locale-import")
+	fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
+
+	configStr := helper.NewProvider("clevercloud").
+		SetOrganisation(tests.ORGANISATION).
+		Append(helper.NewRessource(
+			"clevercloud_postgresql",
+			rName,
+			helper.SetKeyValues(map[string]any{
+				"name":   rName,
+				"region": "par",
+				"plan":   "xs_sml",
+				"backup": true,
+			}))).String()
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			ResourceName: fullName,
+			Config:       configStr,
+		}, {
+			ResourceName: fullName,
+			ImportState:  true,
+			//ImportStateId:     addon.RealID,
+			ImportStateVerify: true,
+		}},
+	})
+}
+
+// TestAccPostgreSQL_LocaleCreate tests creating a PostgreSQL with a custom locale
+// This validates that the fix allows using locale as a string (e.g., 'fr_FR')
+func TestAccPostgreSQL_LocaleCreate(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-pg-locale-create")
+	fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+
+	// Create with a custom locale on a dedicated plan
+	postgresqlBlock := helper.NewRessource(
+		"clevercloud_postgresql",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+			"plan":   "xs_sml", // dedicated plan that supports locale
+			"locale": "fr_FR",  // Custom locale
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(postgresqlBlock).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("locale"), knownvalue.StringExact("fr_FR")),
+			},
 		}},
 	})
 }
