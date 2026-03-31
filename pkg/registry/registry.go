@@ -44,6 +44,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/resources/software/metabase"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/software/otoroshi"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/oauth_consumer"
 )
 
 var Datasources = []func() datasource.DataSource{
@@ -95,6 +96,7 @@ var Resources = []func() resource.Resource{
 	matomo.NewResourceMatomo,
 	configprovider.NewResourceConfigProvider,
 	dotnet.NewResourceDotnet,
+	oauth_consumer.NewResourceOAuthConsumer,
 }
 
 var Actions = []func() action.Action{

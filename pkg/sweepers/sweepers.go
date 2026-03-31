@@ -259,3 +259,51 @@ func SweepAddonProviders(region string) error {
 	}
 	return nil
 }
+
+// sweepOAuthConsumers removes all test OAuth consumers
+func SweepOAuthConsumers(region string) error {
+	ctx := context.Background()
+	cc := client.New(client.WithAutoOauthConfig())
+
+	if tests.ORGANISATION == "" {
+		return fmt.Errorf("ORGANISATION environment variable not set")
+	}
+
+	log.Printf("[INFO] Sweeping OAuth consumers in organization: %s", tests.ORGANISATION)
+
+	// List all OAuth consumers
+	consumersRes := tmp.ListOAuthConsumers(ctx, cc, tests.ORGANISATION)
+	if consumersRes.HasError() {
+		return fmt.Errorf("failed to list OAuth consumers: %w", consumersRes.Error())
+	}
+
+	consumers := consumersRes.Payload()
+	swept := 0
+	errors := 0
+
+	for _, consumer := range *consumers {
+		// Only delete test resources (those starting with tf-test)
+		if !strings.HasPrefix(consumer.Name, "tf-test") {
+			continue
+		}
+
+		log.Printf("[INFO] Deleting OAuth consumer: %s (key: %s)", consumer.Name, consumer.Key)
+		delRes := tmp.DeleteOAuthConsumer(ctx, cc, tests.ORGANISATION, consumer.Key)
+		if delRes.IsNotFoundError() {
+			log.Printf("[INFO] OAuth consumer %s already deleted", consumer.Key)
+			continue
+		}
+		if delRes.HasError() {
+			log.Printf("[ERROR] Failed to delete OAuth consumer %s: %v", consumer.Key, delRes.Error())
+			errors++
+			continue
+		}
+		swept++
+	}
+
+	log.Printf("[INFO] Swept %d OAuth consumers (errors: %d)", swept, errors)
+	if errors > 0 {
+		return fmt.Errorf("encountered %d errors while sweeping OAuth consumers", errors)
+	}
+	return nil
+}
