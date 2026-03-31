@@ -76,6 +76,10 @@ func checkDestroy(ctx context.Context, state *terraform.State) error {
 		case resourceType == "clevercloud_addon_provider":
 			err = checkAddonProviderDestroyed(ctx, cc, resourceID, resourceName)
 
+		// OAuth Consumers
+		case resourceType == "clevercloud_oauth_consumer":
+			err = checkOAuthConsumerDestroyed(ctx, cc, resourceID, resourceName)
+
 		// All other addons (database, software, storage, etc.)
 		case resourceType == "clevercloud_cellar",
 			resourceType == "clevercloud_fsbucket",
@@ -236,4 +240,19 @@ func checkAddonProviderDestroyed(ctx context.Context, cc *client.Client, provide
 	}
 
 	return fmt.Errorf("expected addon provider %s (ID: %s) to be deleted but it still exists with status: %s", resourceName, providerID, res.Payload().Status)
+}
+
+// checkOAuthConsumerDestroyed verifies that an OAuth consumer has been deleted.
+func checkOAuthConsumerDestroyed(ctx context.Context, cc *client.Client, consumerKey, resourceName string) error {
+	res := tmp.GetOAuthConsumer(ctx, cc, ORGANISATION, consumerKey)
+
+	if res.IsNotFoundError() {
+		return nil // Successfully destroyed
+	}
+
+	if res.HasError() {
+		return fmt.Errorf("unexpected error checking if OAuth consumer %s was destroyed: %s", resourceName, res.Error().Error())
+	}
+
+	return fmt.Errorf("expected OAuth consumer %s (key: %s) to be deleted but it still exists", resourceName, consumerKey)
 }

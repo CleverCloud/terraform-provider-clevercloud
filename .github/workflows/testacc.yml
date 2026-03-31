@@ -27,6 +27,7 @@ jobs:
           - drain
           - database/elasticsearch
           - networkgroup
+          - oauth_consumer
           - software
           - kubernetes
     steps:
@@ -60,5 +61,6 @@ jobs:
         CC_OAUTH_TOKEN: ${{ secrets.CC_OAUTH_TOKEN }}
         CC_OAUTH_SECRET: ${{ secrets.CC_OAUTH_SECRET }}
         ORGANISATION: ${{ secrets.ORGANISATION }}
+        CC_ORGANISATION: ${{ secrets.CC_ORGANISATION }}
 
 ...
