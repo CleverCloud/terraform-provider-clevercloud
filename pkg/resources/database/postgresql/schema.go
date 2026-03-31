@@ -4,14 +4,18 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"regexp"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -29,10 +33,10 @@ type PostgreSQL struct {
 	Version  types.String `tfsdk:"version"`
 	Uri      types.String `tfsdk:"uri"`
 
-	Backup         types.Bool `tfsdk:"backup"`
-	Encryption     types.Bool `tfsdk:"encryption"`
-	DirectHostOnly types.Bool `tfsdk:"direct_host_only"`
-	Locale         types.Bool `tfsdk:"locale"`
+	Backup         types.Bool   `tfsdk:"backup"`
+	Encryption     types.Bool   `tfsdk:"encryption"`
+	DirectHostOnly types.Bool   `tfsdk:"direct_host_only"`
+	Locale         types.String `tfsdk:"locale"`
 }
 
 //go:embed doc.md
@@ -40,7 +44,7 @@ var resourcePostgresqlDoc string
 
 func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Version:             0,
+		Version:             1, // Incremented from 0 due to locale type change from Bool to String
 		MarkdownDescription: resourcePostgresqlDoc,
 		Attributes: addon.WithAddonCommons(map[string]schema.Attribute{
 			"host":     schema.StringAttribute{Computed: true, MarkdownDescription: "Database host, used to connect to"},
@@ -76,11 +80,18 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 				MarkdownDescription: "Connect directly to the database host, bypassing the reverse proxy. Lower latency but no automatic failover on migration.",
 				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
 			},
-			"locale": schema.BoolAttribute{
+			"locale": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Enable locale support for collation and character classification",
-				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
+				MarkdownDescription: "Database locale for collation and character classification. Must be in format 'language_COUNTRY' (e.g., 'en_GB', 'fr_FR'). Only available on dedicated plans. If not specified, defaults to 'en_GB'.",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
+				Default:             stringdefault.StaticString("en_GB"),
+				Validators: []validator.String{
+					stringvalidator.RegexMatches(
+						regexp.MustCompile(`^[a-z]{2}_[A-Z]{2}$`),
+						"must be in format 'language_COUNTRY' (e.g., 'en_GB', 'fr_FR', 'de_DE')",
+					),
+				},
 			},
 		}),
 	}
