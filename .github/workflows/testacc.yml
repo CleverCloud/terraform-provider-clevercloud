@@ -26,6 +26,7 @@ jobs:
           - drain
           - database/elasticsearch
           - networkgroup
+          - oauth_consumer
           - software
           - kubernetes
     steps:
