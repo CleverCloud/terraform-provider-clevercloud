@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -45,10 +46,22 @@ func (r *ResourcePostgreSQL) UpgradeState(ctx context.Context) map[int64]resourc
 			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, res *resource.UpgradeStateResponse) {
 				tflog.Info(ctx, "Upgrading PostgreSQL state from version 0 to version 1")
 
-				// Parse the old state
+				// Parse the old state using a flat struct matching schema v0 exactly.
+				// Cannot embed PostgreSQL here because it already has Locale types.String `tfsdk:"locale"`,
+				// which would conflict with the v0 Bool field of the same tag.
 				type PostgreSQLV0 struct {
-					PostgreSQL
-					LocaleOld types.Bool `tfsdk:"locale"` // Old bool field
+					addon.CommonAttributes
+					Host           types.String `tfsdk:"host"`
+					Port           types.Int64  `tfsdk:"port"`
+					Database       types.String `tfsdk:"database"`
+					User           types.String `tfsdk:"user"`
+					Password       types.String `tfsdk:"password"`
+					Version        types.String `tfsdk:"version"`
+					Uri            types.String `tfsdk:"uri"`
+					Backup         types.Bool   `tfsdk:"backup"`
+					Encryption     types.Bool   `tfsdk:"encryption"`
+					DirectHostOnly types.Bool   `tfsdk:"direct_host_only"`
+					Locale         types.Bool   `tfsdk:"locale"` // Bool in v0, String in v1
 				}
 
 				var oldState PostgreSQLV0
@@ -57,13 +70,25 @@ func (r *ResourcePostgreSQL) UpgradeState(ctx context.Context) map[int64]resourc
 					return
 				}
 
-				// Create new state with locale as string
-				newState := oldState.PostgreSQL
+				// Build new state by copying all common fields explicitly
+				newState := PostgreSQL{
+					CommonAttributes: oldState.CommonAttributes,
+					Host:             oldState.Host,
+					Port:             oldState.Port,
+					Database:         oldState.Database,
+					User:             oldState.User,
+					Password:         oldState.Password,
+					Version:          oldState.Version,
+					Uri:              oldState.Uri,
+					Backup:           oldState.Backup,
+					Encryption:       oldState.Encryption,
+					DirectHostOnly:   oldState.DirectHostOnly,
+				}
 
 				// Convert old Bool locale to new String locale
 				// If old locale was true, try to retrieve actual locale from database
 				// If old locale was false or null, default to en_GB
-				if !oldState.LocaleOld.IsNull() && !oldState.LocaleOld.IsUnknown() && oldState.LocaleOld.ValueBool() {
+				if !oldState.Locale.IsNull() && !oldState.Locale.IsUnknown() && oldState.Locale.ValueBool() {
 					// Locale was enabled, try to get actual value from database
 					if !newState.Host.IsNull() && !newState.Port.IsNull() &&
 						!newState.Database.IsNull() && !newState.User.IsNull() && !newState.Password.IsNull() {
