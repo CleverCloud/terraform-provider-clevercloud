@@ -1,5 +1,38 @@
 # Changelog
 
+## [1.11.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.10.0...v1.11.0) (2026-04-02)
+
+
+### Features
+
+* addon provider ([db026d2](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/db026d20eddb4f4fa2c0689eadc26e1ece457f92))
+* env vars warning on invalid values ([23291c8](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/23291c8f6f154d108fc381b0698d697081383290))
+* **environment:** reject null values with clear error message ([#365](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/365)) ([4b020b7](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/4b020b7a675b9fe59cd25b6ecd373eccfa99c017))
+* oauth_consumer ([e0dc5c5](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/e0dc5c5e8b35444b3b2e9691b5569bba9c150fd4))
+* **plans:** validate slug ([f725e7a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/f725e7a4ffed18be6e79dc0e596586ded8a47155))
+* **retry:** add exponential backoff retry for 503 errors ([5e41b18](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5e41b18e9a4911f5a2797ddfdd54641635122388))
+* **retry:** add exponential backoff retry for 503 errors ([625233c](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/625233c8a803be2d8bca1589dacb1e3467525d81))
+* **tests:** add centralized CheckDestroy function for acceptance tests ([959250a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/959250a64d8e1e5991f44008139bd3cb13c15d84))
+* validate addon options against plan capabilities ([#367](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/367)) ([9e59fa5](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/9e59fa52feec512989aa308ae27c8393423dd4f5))
+* vuln scanner ([1ee7532](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1ee753263a99174179123675d8a9054bbbc3a01a))
+
+
+### Bug Fixes
+
+* **ci:** update elasticsearch test path after move to database/ ([6ab9949](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/6ab9949f7432204cd44fc1d9b8145133cfb7051a))
+* **drains:** add retry mechanism for 503 errors and fix state preservation ([078f862](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/078f862b4aafaedd15a7ebe42073730eb7b4f45c)), closes [#339](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/339)
+* **elasticsearch:** make kibana, apm, and encryption immutable ([#363](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/363)) ([d5d0cdb](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/d5d0cdbc1a03b61c360d263956bdad8a902c401e))
+* **networkgroups:** sync state in addon SyncNetworkGroups wrapper ([825a058](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/825a058ab62431c9a11c099db9778e799aef2adf))
+* **postgresql:** add retry logic and use pg_database query for locale ([181daba](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/181dabab4541289a25ac5936beb66d065995366b))
+* **postgresql:** change locale from Bool to String with schema migration ([181daba](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/181dabab4541289a25ac5936beb66d065995366b))
+* **postgresql:** handle sqlDB.Close() error properly ([181daba](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/181dabab4541289a25ac5936beb66d065995366b))
+* **postgresql:** query database for locale value in Create operation ([181daba](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/181dabab4541289a25ac5936beb66d065995366b))
+
+
+### Performance Improvements
+
+* add Plan.Equal() method to skip unnecessary plan updates ([db026d2](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/db026d20eddb4f4fa2c0689eadc26e1ece457f92))
+
 ## [1.10.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.9.0...v1.10.0) (2026-03-03)
 
 
