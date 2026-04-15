@@ -1,4 +1,4 @@
-package static
+package staticapache
 
 import (
 	"context"
@@ -10,10 +10,10 @@ import (
 )
 
 // Create a new resource
-func (r *ResourceStatic) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
-	tflog.Debug(ctx, "ResourceStatic.Create()")
+func (r *ResourceStaticApache) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	tflog.Debug(ctx, "ResourceStaticApache.Create()")
 
-	plan := helper.PlanFrom[Static](ctx, req.Plan, &resp.Diagnostics)
+	plan := helper.PlanFrom[StaticApache](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -40,10 +40,10 @@ func (r *ResourceStatic) Create(ctx context.Context, req resource.CreateRequest,
 }
 
 // Read resource information
-func (r *ResourceStatic) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	tflog.Debug(ctx, "ResourceStatic.Read()")
+func (r *ResourceStaticApache) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
+	tflog.Debug(ctx, "ResourceStaticApache.Read()")
 
-	state := helper.StateFrom[Static](ctx, req.State, &resp.Diagnostics)
+	state := helper.StateFrom[StaticApache](ctx, req.State, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -63,15 +63,15 @@ func (r *ResourceStatic) Read(ctx context.Context, req resource.ReadRequest, res
 }
 
 // Update resource
-func (r *ResourceStatic) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
-	tflog.Debug(ctx, "ResourceStatic.Update()")
+func (r *ResourceStaticApache) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
+	tflog.Debug(ctx, "ResourceStaticApache.Update()")
 
 	// Retrieve values from plan and state
-	plan := helper.PlanFrom[Static](ctx, req.Plan, &res.Diagnostics)
+	plan := helper.PlanFrom[StaticApache](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
-	state := helper.StateFrom[Static](ctx, req.State, &res.Diagnostics)
+	state := helper.StateFrom[StaticApache](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -93,15 +93,15 @@ func (r *ResourceStatic) Update(ctx context.Context, req resource.UpdateRequest,
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
 
-func (r *ResourceStatic) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
+func (r *ResourceStaticApache) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
 	if req.Plan.Raw.IsNull() {
 		return
 	}
 
-	plan := helper.PlanFrom[Static](ctx, req.Plan, &res.Diagnostics)
+	plan := helper.PlanFrom[StaticApache](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
 	}
 
-	application.ValidateRuntimeFlavors(ctx, r, "static", plan.Runtime, &res.Diagnostics)
+	application.ValidateRuntimeFlavors(ctx, r, "static-apache", plan.Runtime, &res.Diagnostics)
 }

@@ -23,6 +23,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/rust"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/scala"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/static"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/application/staticapache"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/v"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/configprovider"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/cellar"
@@ -74,6 +75,7 @@ var Resources = []func() resource.Resource{
 	ruby.NewResourceRuby,
 	scala.NewResourceScala(),
 	static.NewResourceStatic(),
+	staticapache.NewResourceStaticApache(),
 	docker.NewResourceDocker,
 	drain.NewDatadogDrain,
 	drain.NewNewRelicDrain,

@@ -1,4 +1,4 @@
-package static
+package staticapache
 
 import (
 	"context"
@@ -16,38 +16,38 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
 
-type Static struct {
+type StaticApache struct {
 	application.Runtime
-	// Static related
+	// StaticApache related
 }
 
-type StaticV0 struct {
+type StaticApacheV0 struct {
 	application.RuntimeV0
-	// Static related
+	// StaticApache related
 }
 
 //go:embed doc.md
-var staticDoc string
+var staticApacheDoc string
 
-func (r ResourceStatic) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-	res.Schema = schemaStatic
+func (r ResourceStaticApache) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
+	res.Schema = schemaStaticApache
 }
 
-var schemaStatic = schema.Schema{
+var schemaStaticApache = schema.Schema{
 	Version:             1,
-	MarkdownDescription: staticDoc,
+	MarkdownDescription: staticApacheDoc,
 	Attributes:          application.WithRuntimeCommons(map[string]schema.Attribute{}),
 	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-var schemaStaticV0 = schema.Schema{
+var schemaStaticApacheV0 = schema.Schema{
 	Version:             0,
-	MarkdownDescription: staticDoc,
+	MarkdownDescription: staticApacheDoc,
 	Attributes:          application.WithRuntimeCommonsV0(map[string]schema.Attribute{}),
 	Blocks:              attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
 
-func (plan *Static) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
+func (plan *StaticApache) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
 	env := map[string]string{}
 
 	// do not use the real map since ElementAs can nullish it
@@ -67,13 +67,13 @@ func (plan *Static) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[stri
 	return env
 }
 
-func (s *Static) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+func (s *StaticApache) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
 	s.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 
 	s.Integrations = attributes.FromEnvIntegrations(ctx, env, s.Integrations, diags)
 }
 
-func (s *Static) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
+func (s *StaticApache) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
 	if s.Deployment == nil || s.Deployment.Repository.IsNull() {
 		return nil
 	}
