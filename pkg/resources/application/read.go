@@ -99,6 +99,25 @@ func Read[T RuntimePlan](ctx context.Context, resource RuntimeResource, state T)
 		return true, diags
 	}
 
+	// Optional variant guard: runtimes that opt in via the VariantGuard interface
+	// refuse to reconcile an app whose CC variant does not match GetVariantSlug().
+	// Protects against resource type renames where a user's state still points to
+	// a now-misattributed resource (e.g. clevercloud_static after the split into
+	// static/static_apache in v1.12.0).
+	if guard, ok := resource.(VariantGuard); ok {
+		actual := readRes.App.Instance.Variant.Slug
+		expected := resource.GetVariantSlug()
+		if actual != "" && actual != expected {
+			diags.AddError(
+				"Resource variant mismatch",
+				"The application "+runtime.ID.ValueString()+" is a "+actual+
+					" app on Clever Cloud, but this Terraform resource manages "+expected+" apps.\n\n"+
+					guard.MigrationHint(actual),
+			)
+			return false, diags
+		}
+	}
+
 	// mutable env map, which will be subset by next reader
 	env := readRes.EnvAsMap()
 

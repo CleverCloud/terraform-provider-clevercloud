@@ -1,6 +1,8 @@
-Manage Static with Apache applications.
+Manage Static applications.
 
-See [Static with Apache product specification](https://www.clever.cloud/developers/doc/deploy/application/static/).
+Lightweight static-file runtime (no Apache). Ideal for sites built by static site generators (Hugo, Jekyll, Astro, MkDocs) or frontend frameworks exporting a static bundle (Vite, Next.js `output: 'export'`, Nuxt `generate`). For legacy sites needing `.htaccess` or Apache modules, use `clevercloud_static_apache` instead.
+
+See [Static product specification](https://www.clever.cloud/developers/doc/deploy/application/static/).
 
 ## Example usage
 

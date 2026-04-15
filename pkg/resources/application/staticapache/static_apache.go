@@ -1,4 +1,4 @@
-package static
+package staticapache
 
 import (
 	"context"
@@ -11,29 +11,29 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-type ResourceStatic struct {
-	application.Configurer[*Static]
+type ResourceStaticApache struct {
+	application.Configurer[*StaticApache]
 }
 
-func NewResourceStatic() func() resource.Resource {
+func NewResourceStaticApache() func() resource.Resource {
 	return func() resource.Resource {
-		return &ResourceStatic{}
+		return &ResourceStaticApache{}
 	}
 }
 
-func (r *ResourceStatic) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
-	res.TypeName = req.ProviderTypeName + "_static"
+func (r *ResourceStaticApache) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
+	res.TypeName = req.ProviderTypeName + "_static_apache"
 }
 
 // UpgradeState implements state migration from version 0 to 1 for vhosts attribute
-func (r *ResourceStatic) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+func (r *ResourceStaticApache) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{
 		0: {
-			PriorSchema: &schemaStaticV0,
+			PriorSchema: &schemaStaticApacheV0,
 			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, res *resource.UpgradeStateResponse) {
-				tflog.Info(ctx, "Upgrading Static resource state from version 0 to 1")
+				tflog.Info(ctx, "Upgrading StaticApache resource state from version 0 to 1")
 
-				old := helper.StateFrom[StaticV0](ctx, *req.State, &res.Diagnostics)
+				old := helper.StateFrom[StaticApacheV0](ctx, *req.State, &res.Diagnostics)
 				if res.Diagnostics.HasError() {
 					return
 				}
@@ -42,7 +42,7 @@ func (r *ResourceStatic) UpgradeState(ctx context.Context) map[int64]resource.St
 				res.Diagnostics.Append(old.VHosts.ElementsAs(ctx, &oldVhosts, false)...)
 				vhosts := helper.VHostsFromAPIHosts(ctx, oldVhosts, old.VHosts, &res.Diagnostics)
 
-				newState := Static{
+				newState := StaticApache{
 					Runtime: application.Runtime{
 						ID:                 old.ID,
 						Name:               old.Name,
@@ -74,24 +74,16 @@ func (r *ResourceStatic) UpgradeState(ctx context.Context) map[int64]resource.St
 	}
 }
 
-func (r *ResourceStatic) GetVariantSlug() string {
-	return "static"
+func (r *ResourceStaticApache) GetVariantSlug() string {
+	return "static-apache"
 }
 
-// MigrationHint satisfies the application.VariantGuard interface. It guides users
-// whose state was created under the legacy clevercloud_static (which at the time
-// meant "Static with Apache") after the v1.12.0 rename.
-func (r *ResourceStatic) MigrationHint(actualSlug string) string {
-	if actualSlug == "static-apache" {
-		return "This app was created as Static with Apache. The clevercloud_static " +
-			"resource now manages the lighter Static runtime (no Apache).\n" +
-			"To continue managing this app, migrate your state with a moved block:\n\n" +
-			"  moved {\n" +
-			"    from = clevercloud_static.<name>\n" +
-			"    to   = clevercloud_static_apache.<name>\n" +
-			"  }\n\n" +
-			"Then rename your resource block from \"clevercloud_static\" to \"clevercloud_static_apache\".\n" +
-			"See the v1.12.0 release notes for details."
+// MigrationHint satisfies the application.VariantGuard interface. Rare path: a user
+// pointed clevercloud_static_apache at an app that is actually a pure Static (nginx).
+func (r *ResourceStaticApache) MigrationHint(actualSlug string) string {
+	if actualSlug == "static" {
+		return "This app uses the lightweight Static runtime (no Apache). " +
+			"Manage it with clevercloud_static instead of clevercloud_static_apache."
 	}
 	return "Use the Terraform resource matching variant \"" + actualSlug + "\"."
 }

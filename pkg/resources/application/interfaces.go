@@ -32,3 +32,15 @@ type AppResponseProvider interface {
 	GetApp() *tmp.AppResponse
 	GetBuildFlavor() types.String
 }
+
+// VariantGuard is an optional interface implemented by runtimes that want a strict
+// check at Read time: if the CC app's actual variant slug differs from the resource's
+// expected slug, Read emits a clear error pointing the user to the right resource type.
+// Used to protect users against resource renames (e.g. clevercloud_static was renamed
+// to clevercloud_static_apache — a legacy state left on the new clevercloud_static
+// runtime would silently mis-manage a static-apache app without this guard).
+type VariantGuard interface {
+	// MigrationHint is the remediation message shown when a variant mismatch is detected.
+	// actualSlug is the slug returned by the CC API for the mis-managed app.
+	MigrationHint(actualSlug string) string
+}
