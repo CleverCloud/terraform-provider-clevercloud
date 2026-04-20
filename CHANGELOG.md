@@ -1,5 +1,22 @@
 # Changelog
 
+## [2.0.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.11.0...v2.0.0) (2026-04-20)
+
+
+### ⚠ BREAKING CHANGES
+
+* **static:** The clevercloud_static resource now manages the lightweight Static runtime (variant "static", no Apache). Users who were managing Static-with-Apache apps via clevercloud_static must add a `moved` block to migrate to clevercloud_static_apache:
+
+### Features
+
+* add debug logging for environment variable changes ([9ba60ab](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/9ba60ababef404af943cb05eb80f7ccdf6ad7914))
+* **static:** add Static runtime, rename clevercloud_static to clevercloud_static_apache ([798535a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/798535a3da9cfbb328d8cf0a546e2f3ac0fd1f34))
+
+
+### Bug Fixes
+
+* **postgresql:** resolve duplicate tfsdk locale tag in state upgrader ([4977609](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/497760910162cb3b37942af5703e0dc889b38d65))
+
 ## [1.11.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.10.0...v1.11.0) (2026-04-02)
 
 
