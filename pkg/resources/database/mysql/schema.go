@@ -29,11 +29,11 @@ type MySQL struct {
 	Version  types.String `tfsdk:"version"`
 	Uri      types.String `tfsdk:"uri"`
 
-	Backup        types.Bool `tfsdk:"backup"`
-	Encryption    types.Bool `tfsdk:"encryption"`
+	Backup         types.Bool `tfsdk:"backup"`
+	Encryption     types.Bool `tfsdk:"encryption"`
 	DirectHostOnly types.Bool `tfsdk:"direct_host_only"`
-	SkipLogBin    types.Bool `tfsdk:"skip_log_bin"`
-	ReadOnlyUsers types.List `tfsdk:"read_only_users"`
+	SkipLogBin     types.Bool `tfsdk:"skip_log_bin"`
+	ReadOnlyUsers  types.List `tfsdk:"read_only_users"`
 }
 
 //go:embed doc.md

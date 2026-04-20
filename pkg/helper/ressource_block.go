@@ -142,16 +142,6 @@ func SetNestedBlockValues(blockName string, blocks []map[string]string) Ressourc
 	}
 }
 
-// SetNestedBlocks setter for multiple blocks with deeply nested structure:
-//   - desc: set/add slice of Blocks to blockValues field to generate multiple nested blocks with sub-blocks
-//   - args: blockName (string) and slice of Block structs
-//   - return: RessourceOption function
-func SetNestedBlocks(blockName string, blocks []Block) RessourceOption {
-	return func(r *Ressource) {
-		r.blockValues[blockName] = blocks
-	}
-}
-
 // Ressource block
 //   - desc: chained function that stringify Ressource into a terraform block
 //   - args: none

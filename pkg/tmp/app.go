@@ -200,15 +200,6 @@ type Env struct {
 }
 
 // CreateAppWithRetry wraps CreateApp with automatic retry on 503 errors
-func CreateApp(ctx context.Context, cc *client.Client, organisationID string, app CreateAppRequest) client.Response[AppResponse] {
-	path := fmt.Sprintf("/v2/organisations/%s/applications", organisationID)
-
-	return retry.WithRetry(ctx, func() client.Response[AppResponse] {
-		return client.Post[AppResponse](ctx, cc, path, app)
-	}, fmt.Sprintf("CreateApp(%s)", app.Name))
-}
-
-// CreateAppWithRetry wraps CreateApp with automatic retry on 503 errors
 func CreateAppWithRetry(ctx context.Context, cc *client.Client, organisationID string, app CreateAppRequest) client.Response[AppResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications", organisationID)
 
@@ -388,11 +379,6 @@ type AppInstance struct {
 	InstanceNumber int            `json:"instanceNumber"`
 	DisplayName    string         `json:"displayName"`
 	CreationDate   int64          `json:"creationDate"`
-}
-
-func ListInstances(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[[]AppInstance] {
-	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/instances", organisationID, applicationID)
-	return client.Get[[]AppInstance](ctx, cc, path)
 }
 
 type RebootAppRes struct {

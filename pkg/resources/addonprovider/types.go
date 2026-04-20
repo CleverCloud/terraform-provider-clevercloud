@@ -109,17 +109,3 @@ func NewURLValue(value *url.URL) URLValue {
 		url:         value,
 	}
 }
-
-// NewURLNull creates a null URLValue
-func NewURLNull() URLValue {
-	return URLValue{
-		StringValue: basetypes.NewStringNull(),
-	}
-}
-
-// NewURLUnknown creates an unknown URLValue
-func NewURLUnknown() URLValue {
-	return URLValue{
-		StringValue: basetypes.NewStringUnknown(),
-	}
-}

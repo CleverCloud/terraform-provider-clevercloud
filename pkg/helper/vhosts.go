@@ -9,16 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// SetFromStrings builds a Set<string> from a slice
-func SetFromStrings(_ context.Context, xs []string) types.Set {
-	elems := make([]attr.Value, 0, len(xs))
-	for _, s := range xs {
-		elems = append(elems, types.StringValue(s))
-	}
-	v, _ := types.SetValue(types.StringType, elems)
-	return v
-}
-
 // VHostsFromAPIHosts converts API format vhosts ([]string) to Terraform List of VHost structs
 func VHostsFromAPIHosts(ctx context.Context, raw []string, planValue types.Set, diags *diag.Diagnostics) types.Set {
 	schema := map[string]attr.Type{"fqdn": types.StringType, "path_begin": types.StringType}

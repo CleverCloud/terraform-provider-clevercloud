@@ -263,11 +263,6 @@ type MateriaKV struct {
 	// ccapiUrl	"https://api.clever-cloud.com/v2/vendor/apps/addon_dbf12716-9353-41ef-aabf-e4b7fce1ba5e"
 }
 
-func GetMateriaKV(ctx context.Context, cc *client.Client, organisationID, postgresqlID string) client.Response[MateriaKV] {
-	path := fmt.Sprintf("/v4/materia/organisations/%s/materia/databases/%s", organisationID, postgresqlID)
-	return client.Get[MateriaKV](ctx, cc, path)
-}
-
 type Metabase struct {
 	ResourceID         string               `json:"resourceId"`
 	AddonID            string               `json:"addonId"`
@@ -815,59 +810,6 @@ type NodeGroup struct {
 // Same structure as NodeGroupCreationPayload
 type NodeGroupPatchPayload = NodeGroupCreationPayload
 
-// CreateNodeGroup creates a new node group in a Kubernetes cluster
-func CreateNodeGroup(ctx context.Context, cc *client.Client, organisationID, clusterID string, req NodeGroupCreationPayload) client.Response[NodeGroup] {
-	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/node-groups", organisationID, clusterID)
-	return client.Post[NodeGroup](ctx, cc, path, req)
-}
-
-// ListNodeGroups lists all node groups in a Kubernetes cluster
-func ListNodeGroups(ctx context.Context, cc *client.Client, organisationID, clusterID string) client.Response[[]NodeGroup] {
-	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/node-groups", organisationID, clusterID)
-	return client.Get[[]NodeGroup](ctx, cc, path)
-}
-
-// GetNodeGroup retrieves a specific node group by ID
-func GetNodeGroup(ctx context.Context, cc *client.Client, organisationID, clusterID, nodeGroupID string) client.Response[NodeGroup] {
-	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/node-groups/%s", organisationID, clusterID, nodeGroupID)
-	return client.Get[NodeGroup](ctx, cc, path)
-}
-
-// UpdateNodeGroup updates a node group in a Kubernetes cluster
-func UpdateNodeGroup(ctx context.Context, cc *client.Client, organisationID, clusterID, nodeGroupID string, req NodeGroupPatchPayload) client.Response[NodeGroup] {
-	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/node-groups/%s", organisationID, clusterID, nodeGroupID)
-	return client.Patch[NodeGroup](ctx, cc, path, req)
-}
-
-// DeleteNodeGroup deletes a node group from a Kubernetes cluster
-func DeleteNodeGroup(ctx context.Context, cc *client.Client, organisationID, clusterID, nodeGroupID string) client.Response[NodeGroup] {
-	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/node-groups/%s", organisationID, clusterID, nodeGroupID)
-	return client.Delete[NodeGroup](ctx, cc, path)
-}
-
-// KubeconfigPresignedUrlResponse represents the response from getting a presigned URL for kubeconfig
-type KubeconfigPresignedUrlResponse struct {
-	URL string `json:"url"`
-}
-
-// GetKubeconfigPresignedUrl retrieves a presigned URL for downloading the kubeconfig
-func GetKubeconfigPresignedUrl(ctx context.Context, cc *client.Client, organisationID, clusterID string) client.Response[KubeconfigPresignedUrlResponse] {
-	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/kubeconfig/presigned-url", organisationID, clusterID)
-	return client.Get[KubeconfigPresignedUrlResponse](ctx, cc, path)
-}
-
-// CsiCephResponse represents the response from enabling CSI Ceph
-type CsiCephResponse struct {
-	Message string `json:"message"`
-	Status  string `json:"status"`
-}
-
-// EnableCsiCeph enables the CSI Ceph driver for a Kubernetes cluster
-func EnableCsiCeph(ctx context.Context, cc *client.Client, organisationID, clusterID string) client.Response[CsiCephResponse] {
-	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s/csi/ceph", organisationID, clusterID)
-	return client.Post[CsiCephResponse](ctx, cc, path, nil)
-}
-
 // AddonProviderManifest represents the manifest structure for creating addon providers
 type AddonProviderManifest struct {
 	ID   string                         `json:"id"`
@@ -1016,12 +958,6 @@ func ListAddonProviderPlans(ctx context.Context, cc *client.Client, organisation
 func CreateAddonProviderPlan(ctx context.Context, cc *client.Client, organisationID string, providerID string, plan AddonProviderPlan) client.Response[AddonProviderPlanView] {
 	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s/plans", organisationID, providerID)
 	return client.Post[AddonProviderPlanView](ctx, cc, path, plan)
-}
-
-// GetAddonProviderPlan gets a specific plan for an addon provider
-func GetAddonProviderPlan(ctx context.Context, cc *client.Client, organisationID string, providerID string, planID string) client.Response[AddonProviderPlanView] {
-	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s/plans/%s", organisationID, providerID, planID)
-	return client.Get[AddonProviderPlanView](ctx, cc, path)
 }
 
 // UpdateAddonProviderPlan updates a plan for an addon provider

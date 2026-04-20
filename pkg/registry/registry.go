@@ -27,6 +27,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/configprovider"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/cellar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/cellar/bucket"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/database/elasticsearch"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/fsbucket"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/materiakv"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/mongodb"
@@ -35,16 +36,15 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/pulsar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/redis"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/drain"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/database/elasticsearch"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/kubernetes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/kubernetes/nodegroup"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/networkgroup"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/software/keycloak"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/software/matomo"
 
+	"go.clever-cloud.com/terraform-provider/pkg/resources/oauth_consumer"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/software/metabase"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/software/otoroshi"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/oauth_consumer"
 )
 
 var Datasources = []func() datasource.DataSource{
