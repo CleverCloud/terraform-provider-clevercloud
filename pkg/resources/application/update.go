@@ -115,6 +115,13 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 	runtime := plan.GetRuntimePtr()
 	stateRuntime := state.GetRuntimePtr()
 
+	triggerRestart := !reflect.DeepEqual(planEnvironment, stateEnvironment)
+	if triggerRestart {
+		tflog.Debug(ctx, "env vars diff, trigger a restart of the app")
+	} else {
+		tflog.Debug(ctx, "no env vars diff, no application restart")
+	}
+
 	// Build UpdateReq
 	updateReq := UpdateReq{
 		ID:           stateRuntime.ID.ValueString(),
@@ -140,7 +147,7 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
 		Deployment:     plan.ToDeployment(resource.GitAuth()),
-		TriggerRestart: !reflect.DeepEqual(planEnvironment, stateEnvironment),
+		TriggerRestart: triggerRestart,
 	}
 
 	// Call common Update function
