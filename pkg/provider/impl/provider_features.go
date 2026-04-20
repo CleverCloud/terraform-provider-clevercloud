@@ -3,6 +3,7 @@ package impl
 import (
 	"context"
 
+	"github.com/hashicorp/go-cty/cty/function"
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -21,4 +22,8 @@ func (p *Provider) Resources(_ context.Context) []func() resource.Resource {
 
 func (p *Provider) Actions(_ context.Context) []func() action.Action {
 	return registry.Actions
+}
+
+func (p *Provider) Functions(_ context.Context) []func() function.Function {
+	return registry.Functions
 }
