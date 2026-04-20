@@ -28,16 +28,6 @@ func LookupProviderPlan(provider *tmp.AddonProvider, planSlug string) *tmp.Addon
 	})
 }
 
-func LookupProviderPlanByID(provider *tmp.AddonProvider, planID string) *tmp.AddonPlan {
-	if provider == nil {
-		return nil
-	}
-
-	return First(provider.Plans, func(plan tmp.AddonPlan) bool {
-		return strings.EqualFold(plan.ID, planID)
-	})
-}
-
 func ProviderPlansAsList(provider *tmp.AddonProvider) []string {
 	return Map(provider.Plans, func(plan tmp.AddonPlan) string {
 		return plan.Slug

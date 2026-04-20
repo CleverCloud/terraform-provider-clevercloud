@@ -4,7 +4,6 @@ import (
 	"context"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -28,17 +27,6 @@ func FromI[I constraints.Integer](i I) types.Int64 {
 	return types.Int64Value(int64(i))
 }
 
-func FromISO8601(d string, diags *diag.Diagnostics) types.Int64 {
-	d = strings.SplitN(d, "[", 2)[0]
-
-	t, err := time.Parse(time.RFC3339, d)
-	if err != nil {
-		diags.AddError("failed to parse ISO8601 date", "expect: RFC3339, got: "+d)
-		return types.Int64Null()
-	}
-	return types.Int64Value(t.Unix())
-}
-
 // Convert a native bool into a tfsdk one
 func FromBool(b bool) types.Bool {
 	return types.BoolValue(b)
@@ -47,19 +35,6 @@ func FromBool(b bool) types.Bool {
 // Convert a native float64 into a tfsdk one
 func FromFloat64(f float64) types.Float64 {
 	return types.Float64Value(f)
-}
-
-// Convert a native int64 into a tfsdk one
-func FromListString(items []string) types.List {
-	if len(items) == 0 {
-		return types.ListNull(types.StringType)
-	}
-
-	return types.ListValueMust(
-		types.StringType,
-		Map(items, func(item string) attr.Value {
-			return types.StringValue(item)
-		}))
 }
 
 // Convert a native int64 into a tfsdk one
@@ -111,17 +86,6 @@ func FromBoolPtr(s *string) types.Bool {
 	}
 	if b, err := strconv.ParseBool(*s); err == nil {
 		return types.BoolValue(b)
-	}
-	return types.BoolNull()
-}
-
-// FromBoolIf returns types.Bool true if *string equals expected value.
-// Returns null otherwise.
-// WARNING: This overwrites the target. For "magic value" bools where you want
-// to preserve the existing value when condition doesn't match, use SetBoolIf instead.
-func FromBoolIf(s *string, expected string) types.Bool {
-	if s != nil && *s == expected {
-		return types.BoolValue(true)
 	}
 	return types.BoolNull()
 }

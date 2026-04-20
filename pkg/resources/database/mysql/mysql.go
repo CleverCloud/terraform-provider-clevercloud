@@ -12,7 +12,7 @@ import (
 
 // Ensure ResourceMySQL implements required interfaces
 var (
-	_ resource.Resource              = &ResourceMySQL{}
+	_ resource.Resource               = &ResourceMySQL{}
 	_ resource.ResourceWithModifyPlan = &ResourceMySQL{}
 )
 
