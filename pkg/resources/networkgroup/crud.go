@@ -48,7 +48,7 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 		return
 	}
 
-	plan.Name = basetypes.NewStringValue(ng.Label)
+	plan.Name = pkg.FromStrMaxLen(ng.Label)
 	plan.Description = basetypes.NewStringPointerValue(ng.Description)
 	plan.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
 	plan.Network = pkg.FromStr(ng.NetworkIP)
@@ -84,7 +84,7 @@ func (r *ResourceNG) Read(ctx context.Context, req resource.ReadRequest, resp *r
 	}
 	ng := ngRes.Payload()
 
-	state.Name = basetypes.NewStringValue(ng.Label)
+	state.Name = pkg.FromStrMaxLen(ng.Label)
 	state.Description = basetypes.NewStringPointerValue(ng.Description)
 	state.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
 	state.Network = pkg.FromStr(ng.NetworkIP)
@@ -122,7 +122,7 @@ func (r *ResourceNG) Delete(ctx context.Context, req resource.DeleteRequest, res
 	resp.State.RemoveResource(ctx)
 }
 
-func (r *ResourceNG) WaitForNG(ctx context.Context, ngId string) (*models.NetworkGroup, error) {
+func (r *ResourceNG) WaitForNG(ctx context.Context, ngId string) (*models.NetworkGroup1, error) {
 	var lastErr error
 
 	for {
