@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.0.0...v2.0.1) (2026-04-23)
+
+
+### Bug Fixes
+
+* **ng:** handle null tags values ([fa58fc4](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/fa58fc4ecb2355b28fefd48c78fbf49825dfeadb))
+
 ## [2.0.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v1.11.0...v2.0.0) (2026-04-20)
 
 
