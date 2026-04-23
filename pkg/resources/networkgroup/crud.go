@@ -50,7 +50,10 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 
 	plan.Name = pkg.FromStrMaxLen(ng.Label)
 	plan.Description = basetypes.NewStringPointerValue(ng.Description)
-	plan.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
+	// Preserve null tags from plan if no tags were provided
+	if !plan.Tags.IsNull() || len(ng.Tags) > 0 {
+		plan.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
+	}
 	plan.Network = pkg.FromStr(ng.NetworkIP)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -86,7 +89,10 @@ func (r *ResourceNG) Read(ctx context.Context, req resource.ReadRequest, resp *r
 
 	state.Name = pkg.FromStrMaxLen(ng.Label)
 	state.Description = basetypes.NewStringPointerValue(ng.Description)
-	state.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
+	// Preserve null tags from state if no tags were provided
+	if !state.Tags.IsNull() || len(ng.Tags) > 0 {
+		state.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
+	}
 	state.Network = pkg.FromStr(ng.NetworkIP)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

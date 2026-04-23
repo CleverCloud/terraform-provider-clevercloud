@@ -50,3 +50,63 @@ func TestAccNG_basic(t *testing.T) {
 		}},
 	})
 }
+
+// TestAccNG_withPeers reproduces issue #337
+func TestAccNG_withPeers(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	ngName := acctest.RandomWithPrefix("tf-test-ng")
+	appName := acctest.RandomWithPrefix("tf-test-docker")
+	ngFullName := fmt.Sprintf("clevercloud_networkgroup.%s", ngName)
+	appFullName := fmt.Sprintf("clevercloud_docker.%s", appName)
+
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	ngBlock := helper.NewRessource(
+		"clevercloud_networkgroup",
+		ngName,
+		helper.SetKeyValues(map[string]any{
+			"name":        ngName,
+			"description": "Test networkgroup with peers for issue #337",
+			// Intentionally omit "tags" to test that it's optional
+		}),
+	)
+	appBlock := helper.NewRessource(
+		"clevercloud_docker",
+		appName,
+		helper.SetKeyValues(map[string]any{
+			"name":               appName,
+			"region":             "par",
+			"min_instance_count": 0, // Don't start instances
+			"max_instance_count": 1,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "XS",
+			"networkgroups": []map[string]string{{
+				"networkgroup_id": fmt.Sprintf("${clevercloud_networkgroup.%s.id}", ngName),
+				"fqdn":            "myapp",
+			}},
+		}),
+	)
+
+	config := providerBlock.Append(ngBlock, appBlock).String()
+	t.Logf("Config:\n%s", config)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			ResourceName: ngName,
+			Config:       config,
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(ngFullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^ng_.*`))),
+				statecheck.ExpectKnownValue(ngFullName, tfjsonpath.New("name"), knownvalue.StringExact(ngName)),
+				statecheck.ExpectKnownValue(appFullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*`))),
+			},
+		}, {
+			ResourceName:       ngName,
+			Config:             config,
+			PlanOnly:           true,
+			ExpectNonEmptyPlan: false, // We don't expect any changes, just a successful refresh
+		}},
+	})
+}

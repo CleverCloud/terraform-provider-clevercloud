@@ -59,6 +59,10 @@ func SetTo[T any](ctx context.Context, items types.Set, diags *diag.Diagnostics)
 }
 
 func SetToStringSlice(ctx context.Context, items types.Set, diags *diag.Diagnostics) []string {
+	// Handle null or unknown Set gracefully
+	if items.IsNull() || items.IsUnknown() {
+		return []string{}
+	}
 	return SetTo[string](ctx, items, diags)
 }
 
