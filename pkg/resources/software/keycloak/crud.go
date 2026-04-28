@@ -59,12 +59,11 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 
 	keycloakRes := r.SDK.
 		V4().
-		Keycloaks().
-		Organisations().
-		Ownerid(r.Organization()).
-		Keycloaks().
+		AddonProviders().
+		AddonKeycloak().
+		Addons().
 		Addonkeycloakid(addon.RealID).
-		Getkeycloak(ctx)
+		Getkeycloakwithoutownerid(ctx)
 	if keycloakRes.HasError() {
 		res.Diagnostics.AddError("failed to get Keycloak", keycloakRes.Error().Error())
 	} else {
@@ -107,12 +106,11 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 
 	keycloakRes := r.SDK.
 		V4().
-		Keycloaks().
-		Organisations().
-		Ownerid(r.Organization()).
-		Keycloaks().
+		AddonProviders().
+		AddonKeycloak().
+		Addons().
 		Addonkeycloakid(state.ID.ValueString()).
-		Getkeycloak(ctx)
+		Getkeycloakwithoutownerid(ctx)
 	if keycloakRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
