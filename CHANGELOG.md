@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.0.2](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.0.1...v2.0.2) (2026-04-28)
+
+
+### Bug Fixes
+
+* **ng:** handle null description, sync peers correctly ([d786f9f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/d786f9f8b1b2dbf3f1b656cb87c18d5f27d9ce62))
+
 ## [2.0.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.0.0...v2.0.1) (2026-04-23)
 
 
