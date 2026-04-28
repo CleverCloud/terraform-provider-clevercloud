@@ -30,7 +30,12 @@ func TestAccKubernetesNodegroup_basic(t *testing.T) {
 				"kubernetes_id": "${clevercloud_kubernetes." + rName + ".id}",
 				"flavor":        "S",
 				"name":          rName,
-				"size":          3,
+				// Single node keeps the test under the K8S product quota
+				// when this and TestAccKubernetes_basic run in parallel:
+				// 8G CP + 12G S-node = 20G here, +8G for the basic test = 28G
+				// total against a 52G quota. Bumping size also bumps the wall
+				// clock, so leave scaling coverage to a dedicated test.
+				"size": 1,
 			}),
 		)
 
@@ -44,7 +49,7 @@ func TestAccKubernetesNodegroup_basic(t *testing.T) {
 			ConfigStateChecks: []statecheck.StateCheck{
 				//statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^node_group_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("size"), knownvalue.Int64Exact(3)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("size"), knownvalue.Int64Exact(1)),
 			},
 		}},
 	})
