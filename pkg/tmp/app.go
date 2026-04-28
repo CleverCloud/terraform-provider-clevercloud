@@ -339,6 +339,11 @@ func RestartApp(ctx context.Context, cc *client.Client, organisationID, applicat
 	return client.Post[RestartAppRes](ctx, cc, path, nil)
 }
 
+func ListInstances(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[[]AppInstance] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/instances", organisationID, applicationID)
+	return client.Get[[]AppInstance](ctx, cc, path)
+}
+
 func ListApps(ctx context.Context, cc *client.Client, organisationID string) client.Response[[]AppResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications", organisationID)
 	return client.Get[[]AppResponse](ctx, cc, path)

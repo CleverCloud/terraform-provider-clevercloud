@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -76,7 +77,10 @@ func TestAccNG_withPeers(t *testing.T) {
 		helper.SetKeyValues(map[string]any{
 			"name":               appName,
 			"region":             "par",
-			"min_instance_count": 0, // Don't start instances
+			// Boot a real instance so the NG actually registers a peer.
+			// Without a peer the API never returns the union-typed `peers` field
+			// and the SDK unmarshal bug stays hidden.
+			"min_instance_count": 1,
 			"max_instance_count": 1,
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "XS",
@@ -84,6 +88,10 @@ func TestAccNG_withPeers(t *testing.T) {
 				"networkgroup_id": fmt.Sprintf("${clevercloud_networkgroup.%s.id}", ngName),
 				"fqdn":            "myapp",
 			}},
+		}),
+		helper.SetBlockValues("deployment", map[string]any{
+			"repository": "https://github.com/CleverCloud/rust-docker-example",
+			"commit":     "63afb4aa99322276982837738fc9eda33ebf811d",
 		}),
 	)
 
@@ -101,6 +109,9 @@ func TestAccNG_withPeers(t *testing.T) {
 				statecheck.ExpectKnownValue(ngFullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^ng_.*`))),
 				statecheck.ExpectKnownValue(ngFullName, tfjsonpath.New("name"), knownvalue.StringExact(ngName)),
 				statecheck.ExpectKnownValue(appFullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*`))),
+				// Block until the app instance is UP so the NG has a real peer
+				// before the next step's refresh.
+				tests.WaitForAppInstanceUp(appFullName, 10*time.Minute),
 			},
 		}, {
 			ResourceName:       ngName,

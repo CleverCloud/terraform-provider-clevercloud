@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -12,6 +13,31 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/models"
 )
+
+// readFromAPI updates the given state with values returned by the API.
+//
+// For optional fields (description, tags), the rule is:
+//   - state null + API empty → keep null (user never set it, nothing to sync)
+//   - otherwise              → sync from API (state was set, or API returned a value)
+func readFromAPI(state *Networkgroup, ng *models.NetworkGroup1, diags *diag.Diagnostics) {
+	if ng == nil || state == nil {
+		return
+	}
+
+	state.Name = pkg.FromStrMaxLen(ng.Label)
+
+	apiDescEmpty := ng.Description == nil || *ng.Description == ""
+	if !state.Description.IsNull() || !apiDescEmpty {
+		state.Description = basetypes.NewStringPointerValue(ng.Description)
+	}
+
+	apiTagsEmpty := len(ng.Tags) == 0
+	if !state.Tags.IsNull() || !apiTagsEmpty {
+		state.Tags = pkg.FromSetString(ng.Tags, diags)
+	}
+
+	state.Network = pkg.FromStr(ng.NetworkIP)
+}
 
 // Create a new resource
 func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -48,14 +74,7 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 		return
 	}
 
-	plan.Name = pkg.FromStrMaxLen(ng.Label)
-	plan.Description = basetypes.NewStringPointerValue(ng.Description)
-	// Preserve null tags from plan if no tags were provided
-	if !plan.Tags.IsNull() || len(ng.Tags) > 0 {
-		plan.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
-	}
-	plan.Network = pkg.FromStr(ng.NetworkIP)
-
+	readFromAPI(&plan, ng, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
@@ -87,14 +106,7 @@ func (r *ResourceNG) Read(ctx context.Context, req resource.ReadRequest, resp *r
 	}
 	ng := ngRes.Payload()
 
-	state.Name = pkg.FromStrMaxLen(ng.Label)
-	state.Description = basetypes.NewStringPointerValue(ng.Description)
-	// Preserve null tags from state if no tags were provided
-	if !state.Tags.IsNull() || len(ng.Tags) > 0 {
-		state.Tags = pkg.FromSetString(ng.Tags, &resp.Diagnostics)
-	}
-	state.Network = pkg.FromStr(ng.NetworkIP)
-
+	readFromAPI(&state, ng, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
