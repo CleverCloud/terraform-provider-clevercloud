@@ -16,8 +16,10 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 func GitDeploy(ctx context.Context, d *Deployment, cleverRemote string, diags *diag.Diagnostics) {
@@ -217,4 +219,25 @@ func clone(ctx context.Context, repoUrl string, opts ...CloneOpts) (*git.Reposit
 	}
 
 	return r, diags
+}
+
+// ReadDeployedCommit returns the commit hash of the most recent successful deployment.
+// Returns null if no successful deployment is found.
+func ReadDeployedCommit(ctx context.Context, p RuntimeResource, applicationID string, diags *diag.Diagnostics) types.String {
+	deploymentsRes := tmp.ListDeployments(ctx, p.Client(), p.Organization(), applicationID)
+	if deploymentsRes.IsNotFoundError() {
+		return types.StringNull()
+	}
+	if deploymentsRes.HasError() {
+		diags.AddError("failed to list deployments", deploymentsRes.Error().Error())
+		return types.StringNull()
+	}
+
+	for _, d := range *deploymentsRes.Payload() {
+		if d.State == "OK" && d.Commit != "" {
+			return types.StringValue(d.Commit)
+		}
+	}
+
+	return types.StringNull()
 }
