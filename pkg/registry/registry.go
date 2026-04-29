@@ -4,7 +4,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	fwstatestore "github.com/hashicorp/terraform-plugin-framework/statestore"
 	"go.clever-cloud.com/terraform-provider/pkg/actions"
+	ccstatestore "go.clever-cloud.com/terraform-provider/pkg/statestore"
 	"go.clever-cloud.com/terraform-provider/pkg/datasources/defaultloadbalancer"
 	"go.clever-cloud.com/terraform-provider/pkg/datasources/postgresqlbackup"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
@@ -99,6 +101,10 @@ var Resources = []func() resource.Resource{
 	configprovider.NewResourceConfigProvider,
 	dotnet.NewResourceDotnet,
 	oauth_consumer.NewResourceOAuthConsumer,
+}
+
+var StateStores = []func() fwstatestore.StateStore{
+	ccstatestore.New,
 }
 
 var Actions = []func() action.Action{
