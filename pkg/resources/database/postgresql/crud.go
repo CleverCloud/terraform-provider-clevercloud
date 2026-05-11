@@ -174,8 +174,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	createdPg := res.Payload()
 
 	pg.ID = pkg.FromStr(createdPg.RealID)
-	pg.CreationDate = pkg.FromI(createdPg.CreationDate)
-	pg.Plan = pkg.FromStr(createdPg.Plan.Slug)
+	r.readFromAddon(&pg, *createdPg)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 
@@ -184,35 +183,10 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		resp.Diagnostics.AddError("failed to get postgres connection infos", pgInfoRes.Error().Error())
 		return
 	}
+
+	r.readFromAPI(&pg, *pgInfoRes.Payload())
+
 	addonPG := pgInfoRes.Payload()
-
-	tflog.Debug(ctx, "API response", map[string]any{
-		"payload": fmt.Sprintf("%+v", addonPG),
-	})
-	pg.Host = pkg.FromStr(addonPG.Host)
-	pg.Port = pkg.FromI(int64(addonPG.Port))
-	pg.Database = pkg.FromStr(addonPG.Database)
-	pg.User = pkg.FromStr(addonPG.User)
-	pg.Password = pkg.FromStr(addonPG.Password)
-	pg.Version = pkg.FromStr(addonPG.Version)
-	pg.Uri = pkg.FromStr(addonPG.Uri())
-
-	if pg.Encryption.IsUnknown() {
-		pg.Encryption = pkg.FromBool(false)
-	}
-	if pg.DirectHostOnly.IsUnknown() {
-		pg.DirectHostOnly = pkg.FromBool(false)
-	}
-
-	for _, option := range addonPG.Features {
-		switch option.Name {
-		case "encryption":
-			pg.Encryption = pkg.FromBool(option.Enabled)
-		case "direct-host-only":
-			pg.DirectHostOnly = pkg.FromBool(option.Enabled)
-		}
-	}
-
 	if plan.IsDedicated() {
 		locale, err := getLocaleFromDatabase(
 			ctx,
@@ -277,9 +251,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	} else if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Postgres resource", addonRes.Error().Error())
 	} else {
-		addon := addonRes.Payload()
-		pg.Name = pkg.FromStr(addon.Name)
-		pg.CreationDate = pkg.FromI(addon.CreationDate)
+		r.readFromAddon(&pg, *addonRes.Payload())
 	}
 
 	addonPGRes := tmp.GetPostgreSQL(ctx, r.Client(), addonID)
@@ -295,28 +267,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 			return
 		}
 
-		pg.Plan = pkg.FromStr(addonPG.Plan)
-		pg.Region = pkg.FromStr(addonPG.Zone)
-		pg.Host = pkg.FromStr(addonPG.Host)
-		pg.Port = pkg.FromI(int64(addonPG.Port))
-		pg.Database = pkg.FromStr(addonPG.Database)
-		pg.User = pkg.FromStr(addonPG.User)
-		pg.Password = pkg.FromStr(addonPG.Password)
-		pg.Version = pkg.FromStr(addonPG.Version)
-		pg.Uri = pkg.FromStr(addonPG.Uri())
-
-		for _, feature := range addonPG.Features {
-			switch feature.Name {
-			case "do-backup":
-				pg.Backup = pkg.FromBool(feature.Enabled)
-			case "encryption":
-				pg.Encryption = pkg.FromBool(feature.Enabled)
-			case "direct-host-only":
-				pg.DirectHostOnly = pkg.FromBool(feature.Enabled)
-				// Note: locale feature only indicates if locale support is enabled, not the actual locale value
-				// We retrieve the actual locale value by connecting to the database
-			}
-		}
+		r.readFromAPI(&pg, *addonPG)
 	}
 
 	// Retrieve the actual locale value from the database by querying LC_COLLATE
@@ -339,6 +290,40 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 
 	pg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonID, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
+}
+
+func (r *ResourcePostgreSQL) readFromAddon(state *PostgreSQL, addon tmp.AddonResponse) {
+	state.Name = pkg.FromStr(addon.Name)
+	state.Plan = pkg.FromStr(addon.Plan.Slug)
+	state.Region = pkg.FromStr(addon.Region)
+	state.CreationDate = pkg.FromI(addon.CreationDate)
+}
+
+func (r *ResourcePostgreSQL) readFromAPI(state *PostgreSQL, pg tmp.PostgreSQL) {
+	state.Host = pkg.FromStr(pg.Host)
+	state.Port = pkg.FromI(int64(pg.Port))
+	state.Database = pkg.FromStr(pg.Database)
+	state.User = pkg.FromStr(pg.User)
+	state.Password = pkg.FromStr(pg.Password)
+	state.Version = pkg.FromStr(pg.Version)
+	state.Uri = pkg.FromStr(pg.Uri())
+
+	// Initialize to defaults so attributes are never null in state after import.
+	// The features loop below overrides with actual API values if present.
+	state.Backup = pkg.FromBool(true)
+	state.Encryption = pkg.FromBool(false)
+	state.DirectHostOnly = pkg.FromBool(false)
+
+	for _, feature := range pg.Features {
+		switch feature.Name {
+		case "do-backup":
+			state.Backup = pkg.FromBool(feature.Enabled)
+		case "encryption":
+			state.Encryption = pkg.FromBool(feature.Enabled)
+		case "direct-host-only":
+			state.DirectHostOnly = pkg.FromBool(feature.Enabled)
+		}
+	}
 }
 
 func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
