@@ -54,48 +54,24 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	mg.ID = pkg.FromStr(res.Payload().RealID)
-	mg.CreationDate = pkg.FromI(res.Payload().CreationDate)
-	mg.Plan = pkg.FromStr(res.Payload().Plan.Slug)
+	createdMg := res.Payload()
+	mg.ID = pkg.FromStr(createdMg.RealID)
+	r.readFromAddon(&mg, *createdMg)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 
-	mgInfoRes := tmp.GetMongoDB(ctx, r.Client(), res.Payload().ID)
+	mgInfoRes := tmp.GetMongoDB(ctx, r.Client(), createdMg.ID)
 	if mgInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get MongoDB connection infos", mgInfoRes.Error().Error())
 		return
 	}
 
-	addonMG := mgInfoRes.Payload()
-	tflog.Debug(ctx, "API response", map[string]any{
-		"payload": fmt.Sprintf("%+v", addonMG),
-	})
-	mg.Host = pkg.FromStr(addonMG.Host)
-	mg.Port = pkg.FromI(int64(addonMG.Port))
-	mg.User = pkg.FromStr(addonMG.User)
-	mg.Password = pkg.FromStr(addonMG.Password)
-	mg.Database = pkg.FromStr(addonMG.Database)
-	mg.Uri = pkg.FromStr(addonMG.Uri())
-
-	if mg.Encryption.IsUnknown() {
-		mg.Encryption = pkg.FromBool(false)
-	}
-	if mg.DirectHostOnly.IsUnknown() {
-		mg.DirectHostOnly = pkg.FromBool(false)
-	}
-	for _, feature := range addonMG.Features {
-		switch feature.Name {
-		case "encryption":
-			mg.Encryption = pkg.FromBool(feature.Enabled)
-		case "direct-host-only":
-			mg.DirectHostOnly = pkg.FromBool(feature.Enabled)
-		}
-	}
+	r.readFromAPI(&mg, *mgInfoRes.Payload())
 
 	addon.SyncNetworkGroups(
 		ctx,
 		r,
-		res.Payload().ID,
+		createdMg.ID,
 		mg.Networkgroups,
 		&mg.Networkgroups,
 		&resp.Diagnostics,
@@ -147,33 +123,41 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 	addonInfo := addonRes.Payload()
 
-	tflog.Debug(ctx, "STATE", map[string]any{"mg": mg})
-	tflog.Debug(ctx, "API", map[string]any{"mg": addonMG})
-	mg.ID = pkg.FromStr(addonInfo.RealID)
-	mg.Name = pkg.FromStr(addonInfo.Name)
-	mg.Region = pkg.FromStr(addonInfo.Region)
-	mg.Plan = pkg.FromStr(addonInfo.Plan.Slug)
-	mg.CreationDate = pkg.FromI(addonInfo.CreationDate)
-	mg.Host = pkg.FromStr(addonMG.Host)
-	mg.Port = pkg.FromI(int64(addonMG.Port))
-	mg.User = pkg.FromStr(addonMG.User)
-	mg.Password = pkg.FromStr(addonMG.Password)
-	mg.Database = pkg.FromStr(addonMG.Database)
-	mg.Uri = pkg.FromStr(addonMG.Uri())
-
-	for _, feature := range addonMG.Features {
-		switch feature.Name {
-		case "encryption":
-			mg.Encryption = pkg.FromBool(feature.Enabled)
-		case "direct-host-only":
-			mg.DirectHostOnly = pkg.FromBool(feature.Enabled)
-		}
-	}
+	r.readFromAddon(&mg, *addonInfo)
+	r.readFromAPI(&mg, *addonMG)
 
 	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
+	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
+}
 
-	diags := resp.State.Set(ctx, mg)
-	resp.Diagnostics.Append(diags...)
+func (r *ResourceMongoDB) readFromAddon(state *MongoDB, addon tmp.AddonResponse) {
+	state.Name = pkg.FromStr(addon.Name)
+	state.Plan = pkg.FromStr(addon.Plan.Slug)
+	state.Region = pkg.FromStr(addon.Region)
+	state.CreationDate = pkg.FromI(addon.CreationDate)
+}
+
+func (r *ResourceMongoDB) readFromAPI(state *MongoDB, mg tmp.MongoDB) {
+	state.Host = pkg.FromStr(mg.Host)
+	state.Port = pkg.FromI(int64(mg.Port))
+	state.User = pkg.FromStr(mg.User)
+	state.Password = pkg.FromStr(mg.Password)
+	state.Database = pkg.FromStr(mg.Database)
+	state.Uri = pkg.FromStr(mg.Uri())
+
+	// Initialize to defaults so attributes are never null in state after import.
+	// The features loop below overrides with actual API values if present.
+	state.Encryption = pkg.FromBool(false)
+	state.DirectHostOnly = pkg.FromBool(false)
+
+	for _, feature := range mg.Features {
+		switch feature.Name {
+		case "encryption":
+			state.Encryption = pkg.FromBool(feature.Enabled)
+		case "direct-host-only":
+			state.DirectHostOnly = pkg.FromBool(feature.Enabled)
+		}
+	}
 }
 
 // Update resource
