@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.2](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.0.1...v2.0.2) (2026-05-11)
+
+
+### Bug Fixes
+
+* **mysql:** populate feature defaults in Read to prevent force-replace on import ([#399](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/399)) ([c428116](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/c4281165f1f66a0c737812ce9469a4aa2ee02f94))
+* **ng:** handle null description, sync peers correctly ([d786f9f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/d786f9f8b1b2dbf3f1b656cb87c18d5f27d9ce62))
+
 ## [2.0.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.0.0...v2.0.1) (2026-04-23)
 
 
