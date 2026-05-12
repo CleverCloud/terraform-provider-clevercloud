@@ -260,6 +260,58 @@ func SweepAddonProviders(region string) error {
 	return nil
 }
 
+type esClusterSummary struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// SweepElasticsearchClusters removes all test Elasticsearch clusters
+func SweepElasticsearchClusters(region string) error {
+	ctx := context.Background()
+	cc := client.New(client.WithAutoOauthConfig())
+
+	if tests.ORGANISATION == "" {
+		return fmt.Errorf("ORGANISATION environment variable not set")
+	}
+
+	log.Printf("[INFO] Sweeping Elasticsearch clusters in organization: %s", tests.ORGANISATION)
+
+	path := fmt.Sprintf("/v4/elasticsearch/organisations/%s/clusters", tests.ORGANISATION)
+	listRes := client.Get[[]esClusterSummary](ctx, cc, path)
+	if listRes.HasError() {
+		return fmt.Errorf("failed to list Elasticsearch clusters: %w", listRes.Error())
+	}
+
+	clusters := *listRes.Payload()
+	swept := 0
+	errors := 0
+
+	for _, cluster := range clusters {
+		if !strings.HasPrefix(cluster.Name, "tf-test") {
+			continue
+		}
+
+		log.Printf("[INFO] Deleting Elasticsearch cluster: %s (%s)", cluster.Name, cluster.ID)
+		delRes := client.Delete[client.Nothing](ctx, cc, fmt.Sprintf("%s/%s", path, cluster.ID))
+		if delRes.IsNotFoundError() {
+			log.Printf("[INFO] Elasticsearch cluster %s already deleted", cluster.ID)
+			continue
+		}
+		if delRes.HasError() {
+			log.Printf("[ERROR] Failed to delete Elasticsearch cluster %s: %v", cluster.ID, delRes.Error())
+			errors++
+			continue
+		}
+		swept++
+	}
+
+	log.Printf("[INFO] Swept %d Elasticsearch clusters (errors: %d)", swept, errors)
+	if errors > 0 {
+		return fmt.Errorf("encountered %d errors while sweeping Elasticsearch clusters", errors)
+	}
+	return nil
+}
+
 // sweepOAuthConsumers removes all test OAuth consumers
 func SweepOAuthConsumers(region string) error {
 	ctx := context.Background()

@@ -187,6 +187,57 @@ func NoNullMapValuesValidator() validator.Map {
 	)
 }
 
+type objectValidator struct {
+	description string
+	fn          func(context.Context, validator.ObjectRequest, *validator.ObjectResponse)
+}
+
+func NewObjectValidator(description string, fn func(context.Context, validator.ObjectRequest, *validator.ObjectResponse)) validator.Object {
+	return &objectValidator{description, fn}
+}
+
+func (ov *objectValidator) Description(context.Context) string {
+	return ov.description
+}
+
+func (ov *objectValidator) MarkdownDescription(ctx context.Context) string {
+	return ov.Description(ctx)
+}
+
+func (ov *objectValidator) ValidateObject(ctx context.Context, req validator.ObjectRequest, res *validator.ObjectResponse) {
+	ov.fn(ctx, req, res)
+}
+
+type int64AtLeastValidator struct {
+	min int64
+}
+
+func NewInt64AtLeastValidator(min int64) validator.Int64 {
+	return &int64AtLeastValidator{min: min}
+}
+
+func (v *int64AtLeastValidator) Description(context.Context) string {
+	return fmt.Sprintf("value must be at least %d", v.min)
+}
+
+func (v *int64AtLeastValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v *int64AtLeastValidator) ValidateInt64(_ context.Context, req validator.Int64Request, res *validator.Int64Response) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	if req.ConfigValue.ValueInt64() < v.min {
+		res.Diagnostics.AddAttributeError(
+			req.Path,
+			"Invalid value",
+			fmt.Sprintf("value must be at least %d, got %d", v.min, req.ConfigValue.ValueInt64()),
+		)
+	}
+}
+
 // HTTPSSchemeValidator returns a validator that ensures URLs use the HTTPS scheme
 func HTTPSSchemeValidator() validator.String {
 	return NewStringValidator(
