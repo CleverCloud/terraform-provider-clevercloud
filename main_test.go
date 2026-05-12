@@ -41,6 +41,11 @@ func TestMain(m *testing.M) {
 		F:    sweepers.SweepAddonProviders,
 	})
 
+	resource.AddTestSweepers("clevercloud_elasticsearch_cluster", &resource.Sweeper{
+		Name: "clevercloud_elasticsearch_cluster",
+		F:    sweepers.SweepElasticsearchClusters,
+	})
+
 	resource.AddTestSweepers("clevercloud_oauth_consumer", &resource.Sweeper{
 		Name: "clevercloud_oauth_consumer",
 		F:    sweepers.SweepOAuthConsumers,
