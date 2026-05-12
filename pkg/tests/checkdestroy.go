@@ -80,6 +80,10 @@ func checkDestroy(ctx context.Context, state *terraform.State) error {
 		case resourceType == "clevercloud_oauth_consumer":
 			err = checkOAuthConsumerDestroyed(ctx, cc, resourceID, resourceName)
 
+		// Elasticsearch Cluster (new API, not addon-based)
+		case resourceType == "clevercloud_elasticsearch_cluster":
+			err = checkElasticsearchClusterDestroyed(ctx, cc, resourceID, resourceName)
+
 		// All other addons (database, software, storage, etc.)
 		case resourceType == "clevercloud_cellar",
 			resourceType == "clevercloud_fsbucket",
@@ -240,6 +244,22 @@ func checkAddonProviderDestroyed(ctx context.Context, cc *client.Client, provide
 	}
 
 	return fmt.Errorf("expected addon provider %s (ID: %s) to be deleted but it still exists with status: %s", resourceName, providerID, res.Payload().Status)
+}
+
+// checkElasticsearchClusterDestroyed verifies that an Elasticsearch cluster has been deleted.
+func checkElasticsearchClusterDestroyed(ctx context.Context, cc *client.Client, clusterID, resourceName string) error {
+	path := fmt.Sprintf("/v4/elasticsearch/organisations/%s/clusters/%s", ORGANISATION, clusterID)
+	res := client.Get[client.Nothing](ctx, cc, path)
+
+	if res.IsNotFoundError() {
+		return nil
+	}
+
+	if res.HasError() {
+		return fmt.Errorf("unexpected error checking if Elasticsearch cluster %s was destroyed: %s", resourceName, res.Error().Error())
+	}
+
+	return fmt.Errorf("expected Elasticsearch cluster %s (ID: %s) to be deleted but it still exists", resourceName, clusterID)
 }
 
 // checkOAuthConsumerDestroyed verifies that an OAuth consumer has been deleted.
