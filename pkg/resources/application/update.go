@@ -159,5 +159,13 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 		runtime.SetFromResponse(updatedApp, ctx, &diags)
 	}
 
+	// Sync resources exposed through dedicated API endpoints
+	if !diags.HasError() {
+		appID := runtime.ID.ValueString()
+		SyncNetworkGroups(ctx, resource, appID, runtime.Networkgroups, &diags)
+		SyncExposedVariables(ctx, resource, appID, runtime.ExposedEnvironment, &diags)
+		SyncDependencies(ctx, resource, appID, runtime.Dependencies, &diags)
+	}
+
 	return diags
 }

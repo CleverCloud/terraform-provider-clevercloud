@@ -165,6 +165,14 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 		runtime.SetFromResponse(createRes, ctx, &diags)
 	}
 
+	// Sync resources exposed through dedicated API endpoints, once the app exists
+	if !diags.HasError() && !runtime.ID.IsNull() && !runtime.ID.IsUnknown() {
+		appID := runtime.ID.ValueString()
+		SyncNetworkGroups(ctx, resource, appID, runtime.Networkgroups, &diags)
+		SyncExposedVariables(ctx, resource, appID, runtime.ExposedEnvironment, &diags)
+		SyncDependencies(ctx, resource, appID, runtime.Dependencies, &diags)
+	}
+
 	return diags
 }
 
