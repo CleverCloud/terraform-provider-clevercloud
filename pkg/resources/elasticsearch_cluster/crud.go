@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -239,6 +240,37 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 
 	cluster := res.Payload()
 	stateFromAPI(cluster, &plan)
+
+	// Poll until connection details are populated (the cluster may still be provisioning)
+	if cluster.Endpoint == "" || cluster.Username == "" || cluster.Password == "" {
+		clusterID := cluster.ID
+		tflog.Debug(ctx, "ElasticsearchCluster waiting for connection details", map[string]any{"id": clusterID})
+
+		for range 60 {
+			time.Sleep(10 * time.Second)
+
+			getRes := client.Get[apiClusterResponse](ctx, r.esClient(), clusterIDPath(r.Organization(), clusterID))
+			if getRes.HasError() {
+				tflog.Debug(ctx, "ElasticsearchCluster poll error, retrying...", map[string]any{"error": getRes.Error().Error()})
+				continue
+			}
+
+			cluster = getRes.Payload()
+			if cluster.Endpoint != "" && cluster.Username != "" && cluster.Password != "" {
+				tflog.Debug(ctx, "ElasticsearchCluster connection details ready", map[string]any{"endpoint": cluster.Endpoint})
+				stateFromAPI(cluster, &plan)
+				break
+			}
+		}
+
+		if cluster.Endpoint == "" || cluster.Username == "" || cluster.Password == "" {
+			resp.Diagnostics.AddError(
+				"elasticsearch cluster provisioning timeout",
+				"connection details (endpoint, username, password) were not available after 10 minutes",
+			)
+			return
+		}
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
