@@ -20,19 +20,27 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 )
 
-func GitDeploy(ctx context.Context, d *Deployment, cleverRemote string, diags *diag.Diagnostics) {
+// GitDeploy pushes the configured repository to the Clever Cloud remote.
+// deployedCommit is the commit currently deployed on the application (CommitID
+// from the API, empty when unknown or never deployed): when the resolved
+// target commit already matches it, the push is skipped.
+// It returns true only when a push actually triggered a deployment, so the
+// caller can decide whether an explicit restart is still needed (e.g. when
+// only environment variables changed).
+func GitDeploy(ctx context.Context, d *Deployment, cleverRemote, deployedCommit string, diags *diag.Diagnostics) bool {
 	var errs diag.Diagnostics
+	var deployed bool
 
 	if d == nil {
-		return
+		return false
 	}
 	if d.Commit != nil && strings.HasPrefix(*d.Commit, attributes.GITHUB_COMMIT_PREFIX) {
 		tflog.Warn(ctx, "repository deployment is handled by Github, skipping deployment")
-		return
+		return false
 	}
 
 	for range 5 {
-		errs = gitDeploy(ctx, *d, cleverRemote)
+		deployed, errs = gitDeploy(ctx, *d, cleverRemote, deployedCommit)
 		if !errs.HasError() {
 			break
 		}
@@ -42,20 +50,27 @@ func GitDeploy(ctx context.Context, d *Deployment, cleverRemote string, diags *d
 
 	// only add last error
 	diags.Append(errs...)
+	return deployed
 }
 
-func gitDeploy(ctx context.Context, d Deployment, cleverRemote string) diag.Diagnostics {
+func gitDeploy(ctx context.Context, d Deployment, cleverRemote, deployedCommit string) (bool, diag.Diagnostics) {
 	cleverRemote = strings.Replace(cleverRemote, "git+ssh", "https", 1) // switch protocol
 
 	repo, diags := OpenOrClone(ctx, d.Repository, WithCommit(d.Commit), WithBasicAuth(d.Username, d.Password))
 	if diags.HasError() {
-		return diags
+		return false, diags
 	}
 
-	currentRef, err := repo.Head()
-	if err != nil {
-		diags.AddError("failed to get current ref", err.Error())
-		return diags
+	targetCommit, diags := resolveTargetCommit(repo, d.Commit)
+	if diags.HasError() {
+		return false, diags
+	}
+
+	if deployedCommit != "" && targetCommit == deployedCommit {
+		tflog.Info(ctx, "deployed commit is already the expected one, skipping git push", map[string]any{
+			"commit": targetCommit,
+		})
+		return false, diags
 	}
 
 	remoteOpts := &config.RemoteConfig{
@@ -70,7 +85,13 @@ func gitDeploy(ctx context.Context, d Deployment, cleverRemote string) diag.Diag
 	remote, err := repo.CreateRemote(remoteOpts)
 	if err != nil {
 		diags.AddError("failed to add clever remote", err.Error())
-		return diags
+		return false, diags
+	}
+
+	refSpec := config.RefSpec(fmt.Sprintf("%s:%s", targetCommit, plumbing.Master))
+	if err := refSpec.Validate(); err != nil {
+		diags.AddError("failed to build ref spec to push", err.Error())
+		return false, diags
 	}
 
 	pushOptions := &git.PushOptions{
@@ -78,56 +99,7 @@ func gitDeploy(ctx context.Context, d Deployment, cleverRemote string) diag.Diag
 		Force:      true,
 		Progress:   os.Stdout,
 		Auth:       d.CleverGitAuth,
-		RefSpecs: []config.RefSpec{
-			config.RefSpec(fmt.Sprintf("%s:%s", currentRef.Name(), plumbing.Master)),
-		},
-	}
-	if d.Commit != nil {
-		refNameOrCommit := *d.Commit
-		var refSpec config.RefSpec
-
-		// can be
-		// refs/heads/[BRANCH]
-		// or
-		// [COMMIT_SHA] a397296e135b24e682a011e31f8e15f2fa8a5a0e
-
-		if IsSHA1(refNameOrCommit) {
-			commit, err := repo.CommitObject(plumbing.NewHash(refNameOrCommit))
-			if err == plumbing.ErrObjectNotFound {
-				diags.AddError("requested commit not found", fmt.Sprintf("no commit '%s'", refNameOrCommit))
-				return diags
-			}
-			if err != nil {
-				diags.AddError("failed to look for commit", err.Error())
-				return diags
-			}
-
-			refSpec = config.RefSpec(fmt.Sprintf("%s:%s", commit.Hash.String(), plumbing.Master))
-		} else {
-			if !strings.HasPrefix(refNameOrCommit, "refs/") {
-				refNameOrCommit = "refs/heads/" + refNameOrCommit
-			}
-
-			// We need to check if provided ref exists (several issues with main/master)
-			ref, err := repo.Storer.Reference(plumbing.ReferenceName(refNameOrCommit))
-			if err == plumbing.ErrReferenceNotFound {
-				diags.AddError("requested reference not found", fmt.Sprintf("no reference named '%s'", refNameOrCommit))
-				return diags
-			}
-			if err != nil {
-				diags.AddError("failed to get reference", err.Error())
-				return diags
-			}
-
-			refSpec = config.RefSpec(fmt.Sprintf("%s:%s", ref.Hash().String(), plumbing.Master))
-		}
-
-		if err := refSpec.Validate(); err != nil {
-			diags.AddError("failed to build ref spec to push", err.Error())
-			return diags
-		}
-
-		pushOptions.RefSpecs = []config.RefSpec{refSpec}
+		RefSpecs:   []config.RefSpec{refSpec},
 	}
 
 	tflog.Debug(ctx, "pushing...", map[string]any{
@@ -138,12 +110,68 @@ func gitDeploy(ctx context.Context, d Deployment, cleverRemote string) diag.Diag
 	if err != nil {
 		if err == git.NoErrAlreadyUpToDate {
 			diags.AddWarning("Git push rejected", "repository is already up-to-date")
-		} else {
-			diags.AddError("failed to push to clever remote", err.Error())
+			return false, diags
 		}
+
+		diags.AddError("failed to push to clever remote", err.Error())
+		return false, diags
 	}
 
-	return diags
+	return true, diags
+}
+
+// resolveTargetCommit resolves the commit hash to deploy: the explicit
+// commit/reference when one is set, the repository HEAD otherwise.
+func resolveTargetCommit(repo *git.Repository, commit *string) (string, diag.Diagnostics) {
+	diags := diag.Diagnostics{}
+
+	if commit == nil {
+		head, err := repo.Head()
+		if err != nil {
+			diags.AddError("failed to get current ref", err.Error())
+			return "", diags
+		}
+
+		return head.Hash().String(), diags
+	}
+
+	refNameOrCommit := *commit
+
+	// can be
+	// refs/heads/[BRANCH]
+	// or
+	// [COMMIT_SHA] a397296e135b24e682a011e31f8e15f2fa8a5a0e
+
+	if IsSHA1(refNameOrCommit) {
+		c, err := repo.CommitObject(plumbing.NewHash(refNameOrCommit))
+		if err == plumbing.ErrObjectNotFound {
+			diags.AddError("requested commit not found", fmt.Sprintf("no commit '%s'", refNameOrCommit))
+			return "", diags
+		}
+		if err != nil {
+			diags.AddError("failed to look for commit", err.Error())
+			return "", diags
+		}
+
+		return c.Hash.String(), diags
+	}
+
+	if !strings.HasPrefix(refNameOrCommit, "refs/") {
+		refNameOrCommit = "refs/heads/" + refNameOrCommit
+	}
+
+	// We need to check if provided ref exists (several issues with main/master)
+	ref, err := repo.Storer.Reference(plumbing.ReferenceName(refNameOrCommit))
+	if err == plumbing.ErrReferenceNotFound {
+		diags.AddError("requested reference not found", fmt.Sprintf("no reference named '%s'", refNameOrCommit))
+		return "", diags
+	}
+	if err != nil {
+		diags.AddError("failed to get reference", err.Error())
+		return "", diags
+	}
+
+	return ref.Hash().String(), diags
 }
 
 func IsSHA1(s string) bool {
