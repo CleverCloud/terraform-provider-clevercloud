@@ -59,14 +59,15 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	}
 	res.Application.Vhosts = *vhostsRes.Payload()
 
-	// Git Deployment (when commit change)
+	// Git Deployment: the target commit (explicit one or repository HEAD) is
+	// compared to the currently deployed commit (CommitID), the push only
+	// happens when they differ
 	gitDeployed := false
 	if req.Deployment != nil {
-		GitDeploy(ctx, req.Deployment, res.Application.DeployURL, &diags)
+		gitDeployed = GitDeploy(ctx, req.Deployment, res.Application.DeployURL, res.Application.CommitID, &diags)
 		if diags.HasError() {
 			return res, diags
 		}
-		gitDeployed = true
 	}
 
 	// trigger restart of the app if needed (when env change)
