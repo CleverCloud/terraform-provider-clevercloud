@@ -13,7 +13,31 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
+
+var keycloakOptionsCodec = resources.Codec{
+	{StateField: "Version", APIKeyName: "version", Kind: resources.KindString},
+	{StateField: "AccessDomain", APIKeyName: "access-domain", Kind: resources.KindString},
+}
+
+// keycloakHostnameEnvVar is the env var carrying the Keycloak access domain.
+const keycloakHostnameEnvVar = "CC_KEYCLOAK_HOSTNAME"
+
+// keycloakAPIOptions assembles the codec input map from a Keycloak payload's
+// scattered fields. The keys must match keycloakOptionsCodec's APIKeyName entries.
+// Empty values are omitted so the codec leaves the attribute null (matching the
+// old pkg.FromStr("") behaviour) rather than writing an empty string.
+func keycloakAPIOptions(version, accessDomain string) map[string]any {
+	api := map[string]any{}
+	if version != "" {
+		api["version"] = version
+	}
+	if accessDomain != "" {
+		api["access-domain"] = accessDomain
+	}
+	return api
+}
 
 type Keycloak struct {
 	ID            types.String `tfsdk:"id"`

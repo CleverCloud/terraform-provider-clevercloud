@@ -38,11 +38,12 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		Options:    map[string]string{},
 	}
 
-	if !plan.AccessDomain.IsNull() && !plan.AccessDomain.IsUnknown() {
-		addonReq.Options["access-domain"] = plan.AccessDomain.ValueString()
-	}
-	if !plan.Version.IsNull() && !plan.Version.IsUnknown() {
-		addonReq.Options["version"] = plan.Version.ValueString()
+	res.Diagnostics.Append(keycloakOptionsCodec.WriteEnv(plan, addonReq.Options)...)
+	// keep the addon payload free of empty options
+	for k, v := range addonReq.Options {
+		if v == "" {
+			delete(addonReq.Options, k)
+		}
 	}
 
 	createAddonRes := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
@@ -72,9 +73,9 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		plan.Host = pkg.FromStr(keycloak.AccessURL)
 		plan.AdminUsername = pkg.FromStr(keycloak.InitialCredentials.User)
 		plan.AdminPassword = pkg.FromStr(keycloak.InitialCredentials.Password)
-		plan.Version = pkg.FromStr(keycloak.Version)
-		plan.AccessDomain = pkg.FromStr(keycloak.EnvVars["CC_KEYCLOAK_HOSTNAME"])
 		plan.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
+		res.Diagnostics.Append(keycloakOptionsCodec.APIToState(
+			keycloakAPIOptions(keycloak.Version, keycloak.EnvVars[keycloakHostnameEnvVar]), plan)...)
 	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
@@ -121,9 +122,9 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 		state.Host = pkg.FromStr(keycloak.AccessURL)
 		state.AdminUsername = pkg.FromStr(keycloak.InitialCredentials.User)
 		state.AdminPassword = pkg.FromStr(keycloak.InitialCredentials.Password)
-		state.Version = pkg.FromStr(keycloak.Version)
-		state.AccessDomain = pkg.FromStr(keycloak.EnvVars["CC_KEYCLOAK_HOSTNAME"])
 		state.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
+		resp.Diagnostics.Append(keycloakOptionsCodec.APIToState(
+			keycloakAPIOptions(keycloak.Version, keycloak.EnvVars[keycloakHostnameEnvVar]), state)...)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
@@ -171,12 +172,12 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 			return
 		} else {
 			kc := versionRes.Payload()
-			state.Version = pkg.FromStr(kc.Version)
 			state.Host = pkg.FromStr(kc.AccessURL)
 			state.AdminUsername = pkg.FromStr(kc.InitialCredentials.User)
 			state.AdminPassword = pkg.FromStr(kc.InitialCredentials.Password)
-			state.AccessDomain = pkg.FromStr(kc.EnvVars["CC_KEYCLOAK_HOSTNAME"])
 			state.FSBucketID = types.StringPointerValue(kc.Resources.FsbucketID)
+			resp.Diagnostics.Append(keycloakOptionsCodec.APIToState(
+				keycloakAPIOptions(kc.Version, kc.EnvVars[keycloakHostnameEnvVar]), &state)...)
 		}
 	}
 
