@@ -16,7 +16,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
+
+var rubyEnvFlagsCodec = resources.Codec{
+	{StateField: "EnableSidekiq", APIKeyName: "CC_ENABLE_SIDEKIQ", Kind: resources.KindEnvFlag, TruthyValue: "true"},
+	{StateField: "EnableGzipCompression", APIKeyName: "ENABLE_GZIP_COMPRESSION", Kind: resources.KindEnvFlag, TruthyValue: "true"},
+}
 
 type Ruby struct {
 	application.Runtime
@@ -257,22 +263,13 @@ func (ruby Ruby) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 
 	pkg.IfIsSetStr(ruby.AppFolder, func(s string) { env["APP_FOLDER"] = s })
 	pkg.IfIsSetStr(ruby.RubyVersion, func(s string) { env["CC_RUBY_VERSION"] = s })
-	pkg.IfIsSetB(ruby.EnableSidekiq, func(b bool) {
-		if b {
-			env["CC_ENABLE_SIDEKIQ"] = "true"
-		}
-	})
+	diags.Append(rubyEnvFlagsCodec.WriteEnv(ruby, env)...)
 	pkg.IfIsSetStr(ruby.RackupServer, func(s string) { env["CC_RACKUP_SERVER"] = s })
 	pkg.IfIsSetStr(ruby.RakeGoals, func(s string) { env["CC_RAKEGOALS"] = s })
 	pkg.IfIsSetStr(ruby.SidekiqFiles, func(s string) { env["CC_SIDEKIQ_FILES"] = s })
 	pkg.IfIsSetStr(ruby.HTTPBasicAuth, func(s string) { env["CC_HTTP_BASIC_AUTH"] = s })
 	pkg.IfIsSetStr(ruby.NginxProxyBuffers, func(s string) { env["CC_NGINX_PROXY_BUFFERS"] = s })
 	pkg.IfIsSetStr(ruby.NginxProxyBufferSize, func(s string) { env["CC_NGINX_PROXY_BUFFER_SIZE"] = s })
-	pkg.IfIsSetB(ruby.EnableGzipCompression, func(b bool) {
-		if b {
-			env["ENABLE_GZIP_COMPRESSION"] = "true"
-		}
-	})
 	pkg.IfIsSetStr(ruby.GzipTypes, func(s string) { env["GZIP_TYPES"] = s })
 	pkg.IfIsSetI(ruby.NginxReadTimeout, func(i int64) { env["NGINX_READ_TIMEOUT"] = strconv.FormatInt(i, 10) })
 	pkg.IfIsSetStr(ruby.RackEnv, func(s string) { env["RACK_ENV"] = s })
@@ -289,14 +286,13 @@ func (ruby Ruby) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 func (ruby *Ruby) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
 	ruby.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 	ruby.RubyVersion = pkg.FromStrPtr(env.PopPtr("CC_RUBY_VERSION"))
-	pkg.SetBoolIf(&ruby.EnableSidekiq, env.PopPtr("CC_ENABLE_SIDEKIQ"), "true")
+	diags.Append(rubyEnvFlagsCodec.ReadEnv(env, ruby)...)
 	ruby.RackupServer = pkg.FromStrPtr(env.PopPtr("CC_RACKUP_SERVER"))
 	ruby.RakeGoals = pkg.FromStrPtr(env.PopPtr("CC_RAKEGOALS"))
 	ruby.SidekiqFiles = pkg.FromStrPtr(env.PopPtr("CC_SIDEKIQ_FILES"))
 	ruby.HTTPBasicAuth = pkg.FromStrPtr(env.PopPtr("CC_HTTP_BASIC_AUTH"))
 	ruby.NginxProxyBuffers = pkg.FromStrPtr(env.PopPtr("CC_NGINX_PROXY_BUFFERS"))
 	ruby.NginxProxyBufferSize = pkg.FromStrPtr(env.PopPtr("CC_NGINX_PROXY_BUFFER_SIZE"))
-	pkg.SetBoolIf(&ruby.EnableGzipCompression, env.PopPtr("ENABLE_GZIP_COMPRESSION"), "true")
 	ruby.GzipTypes = pkg.FromStrPtr(env.PopPtr("GZIP_TYPES"))
 	ruby.NginxReadTimeout = pkg.FromIntPtr(env.PopPtr("NGINX_READ_TIMEOUT"))
 	ruby.RackEnv = pkg.FromStrPtr(env.PopPtr("RACK_ENV"))

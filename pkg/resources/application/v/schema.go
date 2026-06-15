@@ -16,7 +16,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
+
+var vEnvFlagsCodec = resources.Codec{
+	{StateField: "DevelopmentBuild", APIKeyName: "ENVIRONMENT", Kind: resources.KindEnvFlag, TruthyValue: "development"},
+}
 
 type V struct {
 	application.Runtime
@@ -60,11 +65,7 @@ func (vapp V) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	env = pkg.Merge(env, customEnv)
 
 	pkg.IfIsSetStr(vapp.Binary, func(s string) { env["CC_V_BINARY"] = s })
-	pkg.IfIsSetB(vapp.DevelopmentBuild, func(devBuild bool) {
-		if devBuild {
-			env["ENVIRONMENT"] = "development"
-		}
-	})
+	diags.Append(vEnvFlagsCodec.WriteEnv(vapp, env)...)
 
 	env = pkg.Merge(env, vapp.Hooks.ToEnv())
 	env = pkg.Merge(env, vapp.Integrations.ToEnv(ctx, diags))
@@ -74,7 +75,7 @@ func (vapp V) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 
 func (vapp *V) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
 	vapp.Binary = pkg.FromStrPtr(env.PopPtr("CC_V_BINARY"))
-	pkg.SetBoolIf(&vapp.DevelopmentBuild, env.PopPtr("ENVIRONMENT"), "development")
+	diags.Append(vEnvFlagsCodec.ReadEnv(env, vapp)...)
 
 	vapp.Integrations = attributes.FromEnvIntegrations(ctx, env, vapp.Integrations, diags)
 }

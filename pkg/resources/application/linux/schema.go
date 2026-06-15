@@ -16,7 +16,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
+
+var linuxEnvFlagsCodec = resources.Codec{
+	{StateField: "DisableMise", APIKeyName: "CC_DISABLE_MISE", Kind: resources.KindEnvFlag, TruthyValue: "true"},
+}
 
 type Linux struct {
 	application.Runtime
@@ -79,11 +84,7 @@ func (l *Linux) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]s
 	pkg.IfIsSetStr(l.BuildCommand, func(s string) { env["CC_BUILD_COMMAND"] = s })
 	pkg.IfIsSetStr(l.Makefile, func(s string) { env["CC_MAKEFILE"] = s })
 	pkg.IfIsSetStr(l.MiseFilePath, func(s string) { env["CC_MISE_FILE_PATH"] = s })
-	pkg.IfIsSetB(l.DisableMise, func(disable bool) {
-		if disable {
-			env["CC_DISABLE_MISE"] = "true"
-		}
-	})
+	diags.Append(linuxEnvFlagsCodec.WriteEnv(l, env)...)
 
 	env = pkg.Merge(env, l.Hooks.ToEnv())
 	env = pkg.Merge(env, l.Integrations.ToEnv(ctx, diags))
@@ -97,7 +98,7 @@ func (l *Linux) FromEnv(ctx context.Context, env *maps.Map[string, string], diag
 	l.BuildCommand = pkg.FromStrPtr(env.PopPtr("CC_BUILD_COMMAND"))
 	l.Makefile = pkg.FromStrPtr(env.PopPtr("CC_MAKEFILE"))
 	l.MiseFilePath = pkg.FromStrPtr(env.PopPtr("CC_MISE_FILE_PATH"))
-	pkg.SetBoolIf(&l.DisableMise, env.PopPtr("CC_DISABLE_MISE"), "true")
+	diags.Append(linuxEnvFlagsCodec.ReadEnv(env, l)...)
 
 	l.Integrations = attributes.FromEnvIntegrations(ctx, env, l.Integrations, diags)
 }

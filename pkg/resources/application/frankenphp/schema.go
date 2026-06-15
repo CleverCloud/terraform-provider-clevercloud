@@ -16,7 +16,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
+
+var frankenphpEnvFlagsCodec = resources.Codec{
+	{StateField: "DevDependencies", APIKeyName: "CC_PHP_DEV_DEPENDENCIES", Kind: resources.KindEnvFlag, TruthyValue: "install"},
+}
 
 type FrankenPHP struct {
 	application.Runtime
@@ -54,11 +59,7 @@ func (fp *FrankenPHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[st
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetB(fp.DevDependencies, func(devDeps bool) {
-		if devDeps {
-			env["CC_PHP_DEV_DEPENDENCIES"] = "install"
-		}
-	})
+	diags.Append(frankenphpEnvFlagsCodec.WriteEnv(fp, env)...)
 	env = pkg.Merge(env, fp.Hooks.ToEnv())
 	env = pkg.Merge(env, fp.Integrations.ToEnv(ctx, diags))
 
@@ -66,7 +67,7 @@ func (fp *FrankenPHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[st
 }
 
 func (fp *FrankenPHP) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
-	pkg.SetBoolIf(&fp.DevDependencies, env.PopPtr("CC_PHP_DEV_DEPENDENCIES"), "install")
+	diags.Append(frankenphpEnvFlagsCodec.ReadEnv(env, fp)...)
 
 	fp.Integrations = attributes.FromEnvIntegrations(ctx, env, fp.Integrations, diags)
 }
