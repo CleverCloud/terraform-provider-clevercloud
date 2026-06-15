@@ -9,8 +9,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 )
+
+var mongodbFeaturesCodec = resources.Codec{
+	{StateField: "Encryption", APIKeyName: "encryption", Kind: resources.KindBool},
+	{StateField: "DirectHostOnly", APIKeyName: "direct-host-only", Kind: resources.KindBool},
+}
 
 type MongoDB struct {
 	addon.CommonAttributes

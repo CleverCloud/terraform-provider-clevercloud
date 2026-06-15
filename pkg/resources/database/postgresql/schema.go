@@ -19,9 +19,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
+
+var postgresqlFeaturesCodec = resources.Codec{
+	{StateField: "Backup", APIKeyName: "do-backup", Kind: resources.KindBool},
+	{StateField: "Encryption", APIKeyName: "encryption", Kind: resources.KindBool},
+	{StateField: "DirectHostOnly", APIKeyName: "direct-host-only", Kind: resources.KindBool},
+}
 
 type PostgreSQL struct {
 	addon.CommonAttributes

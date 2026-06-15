@@ -49,16 +49,12 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 		addonReq.Options["version"] = plan.Version.ValueString()
 	}
 
-	if plan.Encryption.ValueBool() {
-		addonReq.Options["encryption"] = "true"
-	}
-
-	if plan.Kibana.ValueBool() {
-		addonReq.Options["kibana"] = "true"
-	}
-
-	if plan.Apm.ValueBool() {
-		addonReq.Options["apm"] = "true"
+	featureFlags := map[string]any{}
+	res.Diagnostics.Append(elasticsearchFeaturesCodec.StateToAPI(&plan, featureFlags)...)
+	for name, v := range featureFlags {
+		if b, ok := v.(bool); ok && b {
+			addonReq.Options[name] = "true"
+		}
 	}
 
 	plugins := pkg.SetTo[string](ctx, plan.Plugins, &res.Diagnostics)
@@ -150,18 +146,26 @@ func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic tmp.El
 		}
 	}
 
-	features := pkg.Reduce(
-		elastic.Features,
-		map[string]bool{},
-		func(acc map[string]bool, feature tmp.ElasticsearchFeature) map[string]bool {
-			acc[feature.Name] = feature.Enabled
-			return acc
-		})
+	features := map[string]any{
+		"encryption": false,
+		"kibana":     false,
+		"apm":        false,
+	}
+	for _, f := range elastic.Features {
+		features[f.Name] = f.Enabled
+	}
+
+	diags.Append(elasticsearchFeaturesCodec.APIToState(features, state)...)
+
+	isEnabled := func(name string) bool {
+		b, ok := features[name].(bool)
+		return ok && b
+	}
 
 	state.KibanaUser = basetypes.NewStringNull()
 	state.KibanaPassword = basetypes.NewStringNull()
 	state.KibanaHost = basetypes.NewStringNull()
-	if features["kibana"] {
+	if isEnabled("kibana") {
 		state.KibanaUser = pkg.FromStr(elastic.KibanaUser)
 		state.KibanaPassword = pkg.FromStr(elastic.KibanaPassword)
 	}
@@ -173,14 +177,12 @@ func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic tmp.El
 	state.ApmPassword = basetypes.NewStringNull()
 	state.ApmToken = basetypes.NewStringNull()
 	state.ApmHost = basetypes.NewStringNull()
-	if features["apm"] {
+	if isEnabled("apm") {
 		state.ApmUser = pkg.FromStr(elastic.ApmUser)
 		state.ApmPassword = pkg.FromStr(elastic.ApmPassword)
 		state.ApmToken = pkg.FromStr(elastic.ApmAuthToken)
 		state.ApmHost = pkg.FromStr(*elastic.ApmHost)
 	}
-
-	state.Encryption = pkg.FromBool(features["encryption"])
 
 	state.Plugins = basetypes.NewSetNull(types.StringType)
 	if len(elastic.Plugins) > 0 {

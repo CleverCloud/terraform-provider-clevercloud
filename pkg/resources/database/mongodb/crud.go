@@ -40,12 +40,12 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		Options:    map[string]string{},
 	}
 
-	if !mg.Encryption.IsNull() && !mg.Encryption.IsUnknown() {
-		addonReq.Options["encryption"] = fmt.Sprintf("%t", mg.Encryption.ValueBool())
-	}
-
-	if !mg.DirectHostOnly.IsNull() && !mg.DirectHostOnly.IsUnknown() {
-		addonReq.Options["direct-host-only"] = fmt.Sprintf("%t", mg.DirectHostOnly.ValueBool())
+	featureFlags := map[string]any{}
+	resp.Diagnostics.Append(mongodbFeaturesCodec.StateToAPI(&mg, featureFlags)...)
+	for k, v := range featureFlags {
+		if b, ok := v.(bool); ok {
+			addonReq.Options[k] = fmt.Sprintf("%t", b)
+		}
 	}
 
 	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
@@ -77,20 +77,19 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 	mg.Database = pkg.FromStr(addonMG.Database)
 	mg.Uri = pkg.FromStr(addonMG.Uri())
 
+	// Default unset flags to false; the codec then overrides only the features
+	// the API actually reports, preserving any flag it omits.
 	if mg.Encryption.IsUnknown() {
 		mg.Encryption = pkg.FromBool(false)
 	}
 	if mg.DirectHostOnly.IsUnknown() {
 		mg.DirectHostOnly = pkg.FromBool(false)
 	}
+	features := map[string]any{}
 	for _, feature := range addonMG.Features {
-		switch feature.Name {
-		case "encryption":
-			mg.Encryption = pkg.FromBool(feature.Enabled)
-		case "direct-host-only":
-			mg.DirectHostOnly = pkg.FromBool(feature.Enabled)
-		}
+		features[feature.Name] = feature.Enabled
 	}
+	resp.Diagnostics.Append(mongodbFeaturesCodec.APIToState(features, &mg)...)
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -161,14 +160,11 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 	mg.Database = pkg.FromStr(addonMG.Database)
 	mg.Uri = pkg.FromStr(addonMG.Uri())
 
+	featuresR := map[string]any{}
 	for _, feature := range addonMG.Features {
-		switch feature.Name {
-		case "encryption":
-			mg.Encryption = pkg.FromBool(feature.Enabled)
-		case "direct-host-only":
-			mg.DirectHostOnly = pkg.FromBool(feature.Enabled)
-		}
+		featuresR[feature.Name] = feature.Enabled
 	}
+	resp.Diagnostics.Append(mongodbFeaturesCodec.APIToState(featuresR, &mg)...)
 
 	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
 

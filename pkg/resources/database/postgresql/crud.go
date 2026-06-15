@@ -147,19 +147,12 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		addonReq.Options["version"] = pg.Version.ValueString()
 	})
 
-	if !pg.Backup.IsNull() && !pg.Backup.IsUnknown() {
-		backupValue := fmt.Sprintf("%t", pg.Backup.ValueBool())
-		addonReq.Options["do-backup"] = backupValue
-	} else {
-		addonReq.Options["do-backup"] = "true"
-	}
-
-	if !pg.Encryption.IsNull() && !pg.Encryption.IsUnknown() {
-		addonReq.Options["encryption"] = fmt.Sprintf("%t", pg.Encryption.ValueBool())
-	}
-
-	if !pg.DirectHostOnly.IsNull() && !pg.DirectHostOnly.IsUnknown() {
-		addonReq.Options["direct-host-only"] = fmt.Sprintf("%t", pg.DirectHostOnly.ValueBool())
+	featureFlags := map[string]any{"do-backup": true}
+	resp.Diagnostics.Append(postgresqlFeaturesCodec.StateToAPI(&pg, featureFlags)...)
+	for k, v := range featureFlags {
+		if b, ok := v.(bool); ok {
+			addonReq.Options[k] = fmt.Sprintf("%t", b)
+		}
 	}
 
 	if !pg.Locale.IsNull() && !pg.Locale.IsUnknown() {
@@ -305,18 +298,11 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 		pg.Version = pkg.FromStr(addonPG.Version)
 		pg.Uri = pkg.FromStr(addonPG.Uri())
 
+		features := map[string]any{}
 		for _, feature := range addonPG.Features {
-			switch feature.Name {
-			case "do-backup":
-				pg.Backup = pkg.FromBool(feature.Enabled)
-			case "encryption":
-				pg.Encryption = pkg.FromBool(feature.Enabled)
-			case "direct-host-only":
-				pg.DirectHostOnly = pkg.FromBool(feature.Enabled)
-				// Note: locale feature only indicates if locale support is enabled, not the actual locale value
-				// We retrieve the actual locale value by connecting to the database
-			}
+			features[feature.Name] = feature.Enabled
 		}
+		resp.Diagnostics.Append(postgresqlFeaturesCodec.APIToState(features, &pg)...)
 	}
 
 	// Retrieve the actual locale value from the database by querying LC_COLLATE
