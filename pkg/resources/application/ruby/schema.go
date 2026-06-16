@@ -19,6 +19,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
+func init() { resources.RegisterCodec("ruby", rubyEnvFlagsCodec, &Ruby{}) }
+
 var rubyEnvFlagsCodec = resources.Codec{
 	{StateField: "EnableSidekiq", APIKeyName: "CC_ENABLE_SIDEKIQ", Kind: resources.KindEnvFlag, TruthyValue: "true"},
 	{StateField: "EnableGzipCompression", APIKeyName: "ENABLE_GZIP_COMPRESSION", Kind: resources.KindEnvFlag, TruthyValue: "true"},

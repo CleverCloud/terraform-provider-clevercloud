@@ -18,6 +18,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
+func init() { resources.RegisterCodec("nodejs", nodejsEnvFlagsCodec, &NodeJS{}) }
+
 var nodejsEnvFlagsCodec = resources.Codec{
 	{StateField: "DevDependencies", APIKeyName: "CC_NODE_DEV_DEPENDENCIES", Kind: resources.KindEnvFlag, TruthyValue: "install"},
 }

@@ -19,6 +19,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
+func init() { resources.RegisterCodec("linux", linuxEnvFlagsCodec, &Linux{}) }
+
 var linuxEnvFlagsCodec = resources.Codec{
 	{StateField: "DisableMise", APIKeyName: "CC_DISABLE_MISE", Kind: resources.KindEnvFlag, TruthyValue: "true"},
 }

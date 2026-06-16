@@ -18,6 +18,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
+func init() { resources.RegisterCodec("php", phpEnvFlagsCodec, &PHP{}) }
+
 var phpEnvFlagsCodec = resources.Codec{
 	{StateField: "DevDependencies", APIKeyName: "CC_PHP_DEV_DEPENDENCIES", Kind: resources.KindEnvFlag, TruthyValue: "install"},
 	{StateField: "RedisSessions", APIKeyName: "SESSION_TYPE", Kind: resources.KindEnvFlag, TruthyValue: "redis"},

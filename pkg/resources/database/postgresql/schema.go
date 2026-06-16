@@ -24,6 +24,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
+func init() { resources.RegisterCodec("postgresql", postgresqlFeaturesCodec, &PostgreSQL{}) }
+
 var postgresqlFeaturesCodec = resources.Codec{
 	{StateField: "Backup", APIKeyName: "do-backup", Kind: resources.KindBool},
 	{StateField: "Encryption", APIKeyName: "encryption", Kind: resources.KindBool},

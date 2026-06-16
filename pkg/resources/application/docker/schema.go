@@ -21,6 +21,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
+func init() { resources.RegisterCodec("docker", dockerEnvCodec, &Docker{}) }
+
 var dockerEnvCodec = resources.Codec{
 	{StateField: "DaemonSocketMount", APIKeyName: "CC_MOUNT_DOCKER_SOCKET", Kind: resources.KindBoolString},
 }

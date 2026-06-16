@@ -19,6 +19,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
+func init() { resources.RegisterCodec("frankenphp", frankenphpEnvFlagsCodec, &FrankenPHP{}) }
+
 var frankenphpEnvFlagsCodec = resources.Codec{
 	{StateField: "DevDependencies", APIKeyName: "CC_PHP_DEV_DEPENDENCIES", Kind: resources.KindEnvFlag, TruthyValue: "install"},
 }
