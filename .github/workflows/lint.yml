@@ -13,6 +13,12 @@ jobs:
       uses: actions/setup-go@v5
       with:
         go-version: '1.25'
+    # Provide a Terraform CLI on PATH so tests don't trigger hc-install's
+    # GPG-verified download (HashiCorp's signing key periodically expires).
+    - name: Setup Terraform
+      uses: hashicorp/setup-terraform@v4
+      with:
+        terraform_wrapper: false
     - name: Tests
       run: make test
   lint:
