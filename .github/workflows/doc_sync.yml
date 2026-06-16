@@ -28,6 +28,12 @@ jobs:
       - name: Get dependencies
         run: go mod download
 
+      # Provide a Terraform CLI on PATH so tfplugindocs uses it instead of
+      # hc-install's GPG-verified download (HashiCorp's signing key periodically expires).
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_wrapper: false
       - name: Install tfplugindocs
         run: go install github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs
       - name: Run tfplugindocs
