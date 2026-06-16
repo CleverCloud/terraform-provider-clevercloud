@@ -25,6 +25,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
+func init() { resources.RegisterCodec("elasticsearch", elasticsearchFeaturesCodec, &Elasticsearch{}) }
+
 var elasticsearchFeaturesCodec = resources.Codec{
 	{StateField: "Encryption", APIKeyName: "encryption", Kind: resources.KindBool},
 	{StateField: "Kibana", APIKeyName: "kibana", Kind: resources.KindBool},

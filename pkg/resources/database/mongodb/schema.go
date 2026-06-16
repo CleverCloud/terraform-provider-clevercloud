@@ -13,6 +13,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 )
 
+func init() { resources.RegisterCodec("mongodb", mongodbFeaturesCodec, &MongoDB{}) }
+
 var mongodbFeaturesCodec = resources.Codec{
 	{StateField: "Encryption", APIKeyName: "encryption", Kind: resources.KindBool},
 	{StateField: "DirectHostOnly", APIKeyName: "direct-host-only", Kind: resources.KindBool},

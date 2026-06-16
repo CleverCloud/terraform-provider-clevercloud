@@ -16,6 +16,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
+func init() { resources.RegisterCodec("keycloak", keycloakOptionsCodec, &Keycloak{}) }
+
 var keycloakOptionsCodec = resources.Codec{
 	{StateField: "Version", APIKeyName: "version", Kind: resources.KindString},
 	{StateField: "AccessDomain", APIKeyName: "access-domain", Kind: resources.KindString},

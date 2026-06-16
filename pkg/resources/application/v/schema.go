@@ -17,6 +17,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
+func init() { resources.RegisterCodec("v", vEnvFlagsCodec, &V{}) }
+
 var vEnvFlagsCodec = resources.Codec{
 	{StateField: "DevelopmentBuild", APIKeyName: "ENVIRONMENT", Kind: resources.KindEnvFlag, TruthyValue: "development"},
 }
