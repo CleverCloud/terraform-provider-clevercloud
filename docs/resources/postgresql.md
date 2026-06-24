@@ -28,7 +28,6 @@ resource "clevercloud_postgresql" "postgresql_database" {
 ### Required
 
 - `name` (String) Name of the service
-- `plan` (String) Database size and spec (must be lowercase)
 
 ### Optional
 
@@ -37,6 +36,7 @@ resource "clevercloud_postgresql" "postgresql_database" {
 - `encryption` (Boolean) Encrypt the hard drive at rest
 - `locale` (String) Database locale for collation and character classification. Must be in format 'language_COUNTRY' (e.g., 'en_GB', 'fr_FR'). Only available on dedicated plans. If not specified, defaults to 'en_GB'.
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
+- `plan` (String) Database size and spec (must be lowercase)
 - `region` (String) Geographical region where the data will be stored
 - `version` (String) PostgreSQL version
 
