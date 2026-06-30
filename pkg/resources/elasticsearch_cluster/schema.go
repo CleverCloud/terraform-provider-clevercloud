@@ -22,9 +22,7 @@ type ElasticsearchCluster struct {
 	NetworkGroupID types.String `tfsdk:"networkgroup_id"`
 	Version        types.Object `tfsdk:"version"`
 	NodeCount      types.Int64  `tfsdk:"node_count"`
-	CPUCount       types.Int64  `tfsdk:"cpu_count"`
-	MemorySize     types.Int64  `tfsdk:"memory_size"`
-	DiskSize       types.Int64  `tfsdk:"disk_size"`
+	Plan           types.String `tfsdk:"plan"`
 	Endpoint       types.String `tfsdk:"endpoint"`
 	Username       types.String `tfsdk:"username"`
 	Password       types.String `tfsdk:"password"`
@@ -97,26 +95,9 @@ func (r ResourceElasticsearchCluster) Schema(_ context.Context, req resource.Sch
 				MarkdownDescription: "Number of nodes in the cluster",
 				Validators:          atLeastOne,
 			},
-			"cpu_count": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Default:             pkg.StaticInt64(4),
-				MarkdownDescription: "Number of CPUs per node",
-				Validators:          atLeastOne,
-			},
-			"memory_size": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Default:             pkg.StaticInt64(8192),
-				MarkdownDescription: "Memory per node in MB",
-				Validators:          atLeastOne,
-			},
-			"disk_size": schema.Int64Attribute{
-				Optional:            true,
-				Computed:            true,
-				Default:             pkg.StaticInt64(25600),
-				MarkdownDescription: "Disk size per node in MB",
-				Validators:          atLeastOne,
+			"plan": schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "Node plan defining CPU, memory and disk per node (e.g. M, L, XL). Available plans are listed at `/v4/elasticsearch/plans`",
 			},
 			"endpoint": schema.StringAttribute{
 				Computed:            true,
@@ -173,4 +154,3 @@ var validateVersionSemver = pkg.NewObjectValidator(
 		}
 	},
 )
-

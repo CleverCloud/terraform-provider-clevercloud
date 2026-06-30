@@ -35,9 +35,7 @@ type apiCreateRequest struct {
 	Name           string             `json:"name"`
 	Version        *apiVersionRequest `json:"version"`
 	NumberOfNodes  int64              `json:"numberOfNodes"`
-	NodeCPU        int64              `json:"nodeCPU"`
-	NodeMemoryMB   int64              `json:"nodeMemoryMB"`
-	NodeDiskMB     int64              `json:"nodeDiskMB"`
+	Plan           string             `json:"plan"`
 	NetworkGroupID *string            `json:"networkGroupId,omitempty"`
 }
 
@@ -55,6 +53,7 @@ type apiClusterResponse struct {
 	Username       string     `json:"username"`
 	Password       string     `json:"password"`
 	Nodes          []apiNode  `json:"nodes"`
+	Plan           string     `json:"plan"`
 	Version        apiVersion `json:"version"`
 	NetworkGroupID string     `json:"networkGroupId"`
 }
@@ -79,11 +78,9 @@ func stateFromAPI(cluster *apiClusterResponse, state *ElasticsearchCluster) {
 	state.Version = versionFromAPI(cluster.Version)
 	state.NodeCount = pkg.FromI(int64(len(cluster.Nodes)))
 
-	if len(cluster.Nodes) > 0 {
-		node := cluster.Nodes[0]
-		state.CPUCount = pkg.FromI(node.CPU)
-		state.MemorySize = pkg.FromI(int64(node.MemoryMB))
-		state.DiskSize = pkg.FromI(int64(node.DiskMB))
+	// The API may not echo the plan back; preserve the configured value if so.
+	if cluster.Plan != "" {
+		state.Plan = pkg.FromStr(cluster.Plan)
 	}
 }
 
@@ -158,6 +155,34 @@ func validateVersionAgainstAvailable(requested *apiVersionRequest, available []a
 	)
 }
 
+const plansPath = "/v4/elasticsearch/plans"
+
+type apiPlan struct {
+	Name     string `json:"name"`
+	CPU      int64  `json:"cpu"`
+	MemoryMB int64  `json:"memoryMB"`
+	DiskMB   int64  `json:"diskMB"`
+}
+
+func (r *ResourceElasticsearchCluster) fetchAvailablePlans(ctx context.Context) ([]apiPlan, error) {
+	res := client.Get[[]apiPlan](ctx, r.esClient(), plansPath)
+	if res.HasError() {
+		return nil, res.Error()
+	}
+	return *res.Payload(), nil
+}
+
+func validatePlanAgainstAvailable(requested string, available []apiPlan) string {
+	names := make([]string, len(available))
+	for i, p := range available {
+		if p.Name == requested {
+			return ""
+		}
+		names[i] = p.Name
+	}
+	return fmt.Sprintf("plan %q is not available, supported plans: %s", requested, strings.Join(names, ", "))
+}
+
 func clusterPath(orgID string) string {
 	return fmt.Sprintf(basePath, orgID)
 }
@@ -189,23 +214,33 @@ func (r *ResourceElasticsearchCluster) ModifyPlan(ctx context.Context, req resou
 		return
 	}
 
-	if plan.Version.IsNull() || plan.Version.IsUnknown() {
-		return
+	if !plan.Version.IsNull() && !plan.Version.IsUnknown() {
+		version := versionToAPI(ctx, plan.Version, &res.Diagnostics)
+		if res.Diagnostics.HasError() {
+			return
+		}
+
+		available, err := r.fetchAvailableVersions(ctx)
+		if err != nil {
+			res.Diagnostics.AddError("failed to fetch available Elasticsearch versions", err.Error())
+			return
+		}
+
+		if msg := validateVersionAgainstAvailable(version, available); msg != "" {
+			res.Diagnostics.AddError("Invalid Elasticsearch version", msg)
+		}
 	}
 
-	version := versionToAPI(ctx, plan.Version, &res.Diagnostics)
-	if res.Diagnostics.HasError() {
-		return
-	}
+	if !plan.Plan.IsNull() && !plan.Plan.IsUnknown() {
+		plans, err := r.fetchAvailablePlans(ctx)
+		if err != nil {
+			res.Diagnostics.AddError("failed to fetch available Elasticsearch plans", err.Error())
+			return
+		}
 
-	available, err := r.fetchAvailableVersions(ctx)
-	if err != nil {
-		res.Diagnostics.AddError("failed to fetch available Elasticsearch versions", err.Error())
-		return
-	}
-
-	if msg := validateVersionAgainstAvailable(version, available); msg != "" {
-		res.Diagnostics.AddError("Invalid Elasticsearch version", msg)
+		if msg := validatePlanAgainstAvailable(plan.Plan.ValueString(), plans); msg != "" {
+			res.Diagnostics.AddError("Invalid Elasticsearch plan", msg)
+		}
 	}
 }
 
@@ -219,9 +254,7 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 		Name:          plan.Name.ValueString(),
 		Version:       versionToAPI(ctx, plan.Version, &resp.Diagnostics),
 		NumberOfNodes: plan.NodeCount.ValueInt64(),
-		NodeCPU:       plan.CPUCount.ValueInt64(),
-		NodeMemoryMB:  plan.MemorySize.ValueInt64(),
-		NodeDiskMB:    plan.DiskSize.ValueInt64(),
+		Plan:          plan.Plan.ValueString(),
 	}
 	pkg.IfIsSetStr(plan.NetworkGroupID, func(s string) { body.NetworkGroupID = &s })
 
