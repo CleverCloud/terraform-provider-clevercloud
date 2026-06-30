@@ -29,11 +29,9 @@ func TestAccElasticsearchCluster_basic(t *testing.T) {
 		"clevercloud_elasticsearch_cluster",
 		rName,
 		helper.SetKeyValues(map[string]any{
-			"name":        rName,
-			"node_count":  3,
-			"cpu_count":   1,
-			"memory_size": 1024,
-			"disk_size":   1024,
+			"name":       rName,
+			"node_count": 3,
+			"plan":       "M",
 			"version": map[string]any{
 				"major": 8,
 				"minor": 19,
@@ -53,9 +51,7 @@ func TestAccElasticsearchCluster_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.NotNull()),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("node_count"), knownvalue.Int64Exact(3)),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("cpu_count"), knownvalue.Int64Exact(1)),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("memory_size"), knownvalue.Int64Exact(1024)),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("disk_size"), knownvalue.Int64Exact(1024)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.StringExact("M")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("version").AtMapKey("major"), knownvalue.Int64Exact(8)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("endpoint"), knownvalue.NotNull()),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("username"), knownvalue.NotNull()),
@@ -76,11 +72,9 @@ func TestAccElasticsearchCluster_versionValidation(t *testing.T) {
 		"clevercloud_elasticsearch_cluster",
 		rName,
 		helper.SetKeyValues(map[string]any{
-			"name":        rName,
-			"node_count":  1,
-			"cpu_count":   1,
-			"memory_size": 1024,
-			"disk_size":   1024,
+			"name":       rName,
+			"node_count": 1,
+			"plan":       "M",
 			"version": map[string]any{
 				"minor": 19,
 			},
@@ -107,6 +101,7 @@ func TestAccElasticsearchCluster_unavailableVersion(t *testing.T) {
 		rName,
 		helper.SetKeyValues(map[string]any{
 			"name": rName,
+			"plan": "M",
 			"version": map[string]any{
 				"major": 99,
 				"minor": 1,
