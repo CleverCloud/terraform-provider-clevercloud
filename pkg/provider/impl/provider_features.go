@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	fwstatestore "github.com/hashicorp/terraform-plugin-framework/statestore"
 	"go.clever-cloud.com/terraform-provider/pkg/registry"
 )
 
@@ -21,4 +22,11 @@ func (p *Provider) Resources(_ context.Context) []func() resource.Resource {
 
 func (p *Provider) Actions(_ context.Context) []func() action.Action {
 	return registry.Actions
+}
+
+// StateStores - Defines provider state stores. Experimental: requires
+// terraform-plugin-framework's statestore package and Terraform >= 1.15 with
+// the TF_ENABLE_PLUGGABLE_STATE_STORAGE experiment enabled.
+func (p *Provider) StateStores(_ context.Context) []func() fwstatestore.StateStore {
+	return registry.StateStores
 }
