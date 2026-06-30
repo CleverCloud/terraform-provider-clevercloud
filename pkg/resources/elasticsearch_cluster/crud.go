@@ -107,11 +107,10 @@ func versionToAPI(ctx context.Context, obj types.Object, diags *diag.Diagnostics
 	return av
 }
 
-const versionsPath = "/v4/elasticsearch/organisations/%s/versions"
+const versionsPath = "/v4/elasticsearch/versions"
 
 func (r *ResourceElasticsearchCluster) fetchAvailableVersions(ctx context.Context) ([]apiVersion, error) {
-	path := fmt.Sprintf(versionsPath, r.Organization())
-	res := client.Get[[]apiVersion](ctx, r.esClient(), path)
+	res := client.Get[[]apiVersion](ctx, r.esClient(), versionsPath)
 	if res.HasError() {
 		return nil, res.Error()
 	}
