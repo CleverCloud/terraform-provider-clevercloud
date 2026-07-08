@@ -33,7 +33,6 @@ require (
 	github.com/Masterminds/sprig/v3 v3.2.3 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/ProtonMail/go-crypto v1.4.1 // indirect
-	github.com/adrg/xdg v0.5.3 // indirect
 	github.com/agext/levenshtein v1.2.2 // indirect
 	github.com/apparentlymart/go-cidr v1.1.0 // indirect
 	github.com/apparentlymart/go-textseg/v15 v15.0.0 // indirect
@@ -181,6 +180,7 @@ replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20250106
 
 require (
 	github.com/Masterminds/semver/v3 v3.2.0
+	github.com/adrg/xdg v0.5.3
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/jlaffaye/ftp v0.2.0

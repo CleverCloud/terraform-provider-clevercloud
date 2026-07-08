@@ -6,10 +6,70 @@ import (
 	"os"
 
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"go.clever-cloud.com/terraform-provider/pkg/clevertools"
 	"go.clever-cloud.dev/client"
 )
+
+type oauthCreds struct{ consumerKey, consumerSecret, token, secret string }
+
+// resolveCreds mirrors go.clever-cloud.dev/client credential precedence (env, then
+// clever-tools config) while also understanding the profiles format introduced in
+// clever-tools 4.6.0, which the pinned client v0.1.7 cannot parse.
+func resolveCreds() (*oauthCreds, *clevertools.Profile, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	token, secret := os.Getenv("CC_OAUTH_TOKEN"), os.Getenv("CC_OAUTH_SECRET")
+	if token != "" && secret != "" {
+		return &oauthCreds{
+			consumerKey:    firstNonEmpty(os.Getenv("CC_CONSUMER_KEY"), client.OAUTH_CONSUMER_KEY),
+			consumerSecret: firstNonEmpty(os.Getenv("CC_CONSUMER_SECRET"), client.OAUTH_CONSUMER_SECRET),
+			token:          token,
+			secret:         secret,
+		}, nil, diags
+	}
+
+	path := clevertools.ConfigFilePath()
+
+	profile, err := clevertools.ActiveProfile(path)
+	if err != nil {
+		diags.AddError(
+			"Invalid clever-tools configuration",
+			fmt.Sprintf("Could not read credentials from %q: %s", path, err),
+		)
+
+		return nil, nil, diags
+	}
+
+	if profile == nil {
+		return nil, nil, diags
+	}
+
+	consumerKey, consumerSecret := client.OAUTH_CONSUMER_KEY, client.OAUTH_CONSUMER_SECRET
+	if o := profile.Overrides; o != nil {
+		consumerKey = firstNonEmpty(o.OAuthConsumerKey, consumerKey)
+		consumerSecret = firstNonEmpty(o.OAuthConsumerSecret, consumerSecret)
+	}
+
+	return &oauthCreds{
+		consumerKey:    consumerKey,
+		consumerSecret: consumerSecret,
+		token:          profile.Token,
+		secret:         profile.Secret,
+	}, profile, diags
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, v := range values {
+		if v != "" {
+			return v
+		}
+	}
+
+	return ""
+}
 
 func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var config ProviderData
@@ -55,21 +115,45 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 		config.Token.IsUnknown() ||
 		config.Secret.IsNull() ||
 		config.Token.IsNull() {
-		clientOptions = append(clientOptions, client.WithAutoOauthConfig())
+		creds, profile, diags := resolveCreds()
+		resp.Diagnostics.Append(diags...)
+		if resp.Diagnostics.HasError() {
+			return
+		}
 
-		tmpClient := client.New()
-		c := tmpClient.GuessOauth1Config()
+		if creds == nil {
+			searched := clevertools.ConfigFilePath()
+			if searched == "" {
+				searched = "no clever-tools configuration file found"
+			}
 
-		// Check if GuessOauth1Config returned nil (invalid/missing credentials)
-		if c == nil {
 			resp.Diagnostics.AddError(
 				"CleverCloud authentication empty",
-				"Something went wrong while trying to guess OAuth1 credentials",
+				fmt.Sprintf(
+					"No credentials found (%s).\n\nEither set the CC_OAUTH_TOKEN and CC_OAUTH_SECRET environment variables, run 'clever login', or set the token and secret provider parameters.",
+					searched,
+				),
 			)
 			return
 		}
 
-		p.gitAuth = &http.BasicAuth{Username: c.AccessToken, Password: c.AccessSecret}
+		// An expired token only surfaces as an opaque 401 later on, and the legacy
+		// config format may not carry an expiration date at all: warn, never fail.
+		if profile.Expired() {
+			resp.Diagnostics.AddWarning(
+				"CleverCloud credentials expired",
+				fmt.Sprintf("The clever-tools profile %q expired on %s, run 'clever login' to renew it.", profile.Alias, profile.ExpirationDate),
+			)
+		}
+
+		clientOptions = append(clientOptions, client.WithOauthConfig(
+			creds.consumerKey,
+			creds.consumerSecret,
+			creds.token,
+			creds.secret,
+		))
+
+		p.gitAuth = &http.BasicAuth{Username: creds.token, Password: creds.secret}
 
 	} else {
 		clientOptions = append(clientOptions, client.WithUserOauthConfig(
