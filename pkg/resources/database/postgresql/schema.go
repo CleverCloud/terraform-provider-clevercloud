@@ -13,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -47,16 +48,17 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 		Version:             1, // Incremented from 0 due to locale type change from Bool to String
 		MarkdownDescription: resourcePostgresqlDoc,
 		Attributes: addon.WithAddonCommons(map[string]schema.Attribute{
-			"host":     schema.StringAttribute{Computed: true, MarkdownDescription: "Database host, used to connect to"},
-			"port":     schema.Int64Attribute{Computed: true, MarkdownDescription: "Database port"},
-			"database": schema.StringAttribute{Computed: true, MarkdownDescription: "Database name on the PostgreSQL server"},
-			"user":     schema.StringAttribute{Computed: true, MarkdownDescription: "Login username"},
-			"password": schema.StringAttribute{Computed: true, MarkdownDescription: "Login password", Sensitive: true},
-			"uri":      schema.StringAttribute{Computed: true, MarkdownDescription: "Database connection string", Sensitive: true},
+			"host":     schema.StringAttribute{Computed: true, MarkdownDescription: "Database host, used to connect to", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"port":     schema.Int64Attribute{Computed: true, MarkdownDescription: "Database port", PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()}},
+			"database": schema.StringAttribute{Computed: true, MarkdownDescription: "Database name on the PostgreSQL server", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"user":     schema.StringAttribute{Computed: true, MarkdownDescription: "Login username", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"password": schema.StringAttribute{Computed: true, MarkdownDescription: "Login password", Sensitive: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
+			"uri":      schema.StringAttribute{Computed: true, MarkdownDescription: "Database connection string", Sensitive: true, PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"version": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
 				MarkdownDescription: "PostgreSQL version",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 				Validators: []validator.String{
 					pkg.NewStringValidator("Match existing PostgresQL version", r.validatePGVersion),
 				},
@@ -72,13 +74,13 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 				Optional:            true,
 				Computed:            true,
 				MarkdownDescription: "Encrypt the hard drive at rest",
-				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown(), boolplanmodifier.RequiresReplace()},
 			},
 			"direct_host_only": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
 				MarkdownDescription: "Connect directly to the database host, bypassing the reverse proxy. Lower latency but no automatic failover on migration.",
-				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.UseStateForUnknown(), boolplanmodifier.RequiresReplace()},
 			},
 			"locale": schema.StringAttribute{
 				Optional:            true,

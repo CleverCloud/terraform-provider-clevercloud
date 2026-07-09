@@ -55,11 +55,13 @@ func (r ResourceCellar) Schema(_ context.Context, req resource.SchemaRequest, re
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"key_id": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Key ID used to authenticate"},
+				MarkdownDescription: "Key ID used to authenticate",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"key_secret": schema.StringAttribute{
 				Computed:            true,
 				Sensitive:           true,
-				MarkdownDescription: "Key secret used to authenticate"},
+				MarkdownDescription: "Key secret used to authenticate",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 		},
 	}
 }
