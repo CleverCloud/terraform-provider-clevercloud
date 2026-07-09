@@ -65,9 +65,11 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.AddError("failed to get Otorshi", otoroshiRes.Error().Error())
 	} else {
 		otoroshi := otoroshiRes.Payload()
-		state.APIURL = pkg.FromStr(otoroshi.API.URL)
-		state.APIClientID = pkg.FromStr(otoroshi.EnvVars["CC_OTOROSHI_API_CLIENT_ID"])
-		state.APIClientSecret = pkg.FromStr(otoroshi.EnvVars["CC_OTOROSHI_API_CLIENT_SECRET"])
+		if otoroshi.API != nil {
+			state.APIURL = pkg.FromStr(otoroshi.API.URL)
+			state.APIClientID = pkg.FromStr(otoroshi.API.User)
+			state.APIClientSecret = pkg.FromStr(otoroshi.API.Secret)
+		}
 		state.InitialAdminLogin = pkg.FromStr(otoroshi.Initialredentials.User)
 		state.InitialAdminPassword = pkg.FromStr(otoroshi.Initialredentials.Passsword)
 		state.URL = pkg.FromStr(otoroshi.AccessURL)
@@ -105,9 +107,11 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddError("failed to get Otorshi", otoroshiRes.Error().Error())
 	} else {
 		otoroshi := otoroshiRes.Payload()
-		state.APIURL = pkg.FromStr(otoroshi.API.URL)
-		state.APIClientID = pkg.FromStr(otoroshi.EnvVars["CC_OTOROSHI_API_CLIENT_ID"])
-		state.APIClientSecret = pkg.FromStr(otoroshi.EnvVars["CC_OTOROSHI_API_CLIENT_SECRET"])
+		if otoroshi.API != nil {
+			state.APIURL = pkg.FromStr(otoroshi.API.URL)
+			state.APIClientID = pkg.FromStr(otoroshi.API.User)
+			state.APIClientSecret = pkg.FromStr(otoroshi.API.Secret)
+		}
 		state.InitialAdminLogin = pkg.FromStr(otoroshi.Initialredentials.User)
 		state.InitialAdminPassword = pkg.FromStr(otoroshi.Initialredentials.Passsword)
 		state.URL = pkg.FromStr(otoroshi.AccessURL)

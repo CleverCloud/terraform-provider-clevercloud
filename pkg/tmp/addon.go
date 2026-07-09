@@ -404,7 +404,9 @@ type OtoroshiInfo struct {
 	} `json:"initialCredentials"`
 }
 type OtoroshiAPI struct {
-	URL string `json:"url"`
+	URL    string `json:"url"`
+	User   string `json:"user"`
+	Secret string `json:"secret"`
 }
 
 // Use real ID
