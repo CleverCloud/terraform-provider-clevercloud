@@ -513,6 +513,21 @@ func (r *ResourcePostgreSQL) migrate(ctx context.Context, plan PostgreSQL, state
 				state.Plan = pkg.FromStr(billingPlan.Slug)
 				state.Region = pkg.FromStr(migrationReq.Region)
 				state.Version = pkg.FromStr(*migrationReq.Version)
+
+				// A migration provisions a new instance: connection details change.
+				// Refresh them explicitly since they are pinned via UseStateForUnknown.
+				if pgRes := tmp.GetPostgreSQL(ctx, r.Client(), addonID); pgRes.HasError() {
+					diags.AddWarning("failed to refresh connection info after migration", pgRes.Error().Error())
+				} else {
+					addonPG := pgRes.Payload()
+					state.Host = pkg.FromStr(addonPG.Host)
+					state.Port = pkg.FromI(int64(addonPG.Port))
+					state.Database = pkg.FromStr(addonPG.Database)
+					state.User = pkg.FromStr(addonPG.User)
+					state.Password = pkg.FromStr(addonPG.Password)
+					state.Version = pkg.FromStr(addonPG.Version)
+					state.Uri = pkg.FromStr(addonPG.Uri())
+				}
 				return
 			} else if currentMigration.Status != "RUNNING" {
 				diags.AddError(
