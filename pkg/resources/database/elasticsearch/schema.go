@@ -20,6 +20,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/miton18/helper/set"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -30,6 +31,8 @@ type Elasticsearch struct {
 	Plan          types.String `tfsdk:"plan"`
 	Region        types.String `tfsdk:"region"`
 	Networkgroups types.Set    `tfsdk:"networkgroups"`
+	Tags          types.Set    `tfsdk:"tags"`
+	TagsAll       types.Set    `tfsdk:"tags_all"`
 
 	Version    types.String `tfsdk:"version"`
 	Encryption types.Bool   `tfsdk:"encryption"`
@@ -66,6 +69,16 @@ func (r *ResourceElasticsearch) Schema(_ context.Context, req resource.SchemaReq
 			},
 			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the elasticsearch"},
 			"plan": schema.StringAttribute{Required: true, MarkdownDescription: "Database size and spec"},
+			"tags": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Tags of the addon",
+			},
+			"tags_all": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Computed:            true,
+				MarkdownDescription: "All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`",
+			},
 			"region": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
@@ -153,13 +166,23 @@ func (r *ResourceElasticsearch) Schema(_ context.Context, req resource.SchemaReq
 }
 
 func (r *ResourceElasticsearch) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
-	if req.Plan.Raw.IsNull() { // Skip validation when deleting
+	if req.Plan.Raw.IsNull() || r.Provider == nil { // Skip validation when deleting
 		return
 	}
 
 	plan := helper.From[Elasticsearch](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
+	}
+
+	// Recompute the effective tags_all (provider defaults merged with the resource tags)
+	// so a provider-level default_tags change propagates to existing resources.
+	if r.Provider != nil {
+		plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &res.Diagnostics)
+		res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+		if res.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	if !plan.Version.IsNull() && !plan.Version.IsUnknown() {

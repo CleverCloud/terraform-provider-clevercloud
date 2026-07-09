@@ -8,8 +8,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
+
+// ModifyPlan recomputes the effective `tags_all` (provider defaults merged with the
+// resource `tags`) at plan time, so a provider-level default_tags change propagates to
+// existing resources.
+func (r *ResourceOtoroshi) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || r.Provider == nil {
+		return
+	}
+
+	plan := helper.PlanFrom[Otoroshi](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &resp.Diagnostics)
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, plan)...)
+}
 
 func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	state := helper.PlanFrom[Otoroshi](ctx, req.Plan, &resp.Diagnostics)
@@ -75,6 +93,8 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 		state.URL = pkg.FromStr(otoroshi.AccessURL)
 	}
 
+	resources.SyncTags(ctx, r, resources.AddonTags, addonRes.ID, state.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
@@ -96,10 +116,12 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 	} else if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Otoroshi", addonRes.Error().Error())
 	} else {
-		addon := addonRes.Payload()
-		state.Name = pkg.FromStr(addon.Name)
-		state.Region = pkg.FromStr(addon.Region)
-		state.CreationDate = pkg.FromI(addon.CreationDate)
+		addonPayload := addonRes.Payload()
+		state.Name = pkg.FromStr(addonPayload.Name)
+		state.Region = pkg.FromStr(addonPayload.Region)
+		state.CreationDate = pkg.FromI(addonPayload.CreationDate)
+
+		state.Tags, state.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonPayload.ID, state.Tags, &resp.Diagnostics)
 	}
 
 	otoroshiRes := tmp.GetOtoroshi(ctx, r.Client(), state.ID.ValueString())
@@ -144,6 +166,8 @@ func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 	state.Name = pkg.FromStr(addonRes.Payload().Name)
+
+	resources.SyncTags(ctx, r, resources.AddonTags, addonRes.Payload().ID, plan.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

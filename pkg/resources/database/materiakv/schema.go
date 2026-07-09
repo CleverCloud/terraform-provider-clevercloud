@@ -18,6 +18,8 @@ type MateriaKV struct {
 	Port         types.Int64  `tfsdk:"port"`
 	Region       types.String `tfsdk:"region"`
 	Token        types.String `tfsdk:"token"`
+	Tags         types.Set    `tfsdk:"tags"`
+	TagsAll      types.Set    `tfsdk:"tags_all"`
 }
 
 //go:embed doc.md
@@ -35,6 +37,16 @@ func (r ResourceMateriaKV) Schema(_ context.Context, req resource.SchemaRequest,
 				Computed:            true,
 				Default:             stringdefault.StaticString("par"),
 				MarkdownDescription: "Geographical region where the data will be stored",
+			},
+			"tags": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Tags of the addon",
+			},
+			"tags_all": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Computed:            true,
+				MarkdownDescription: "All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`",
 			},
 			// provider
 			"id":            schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier"},

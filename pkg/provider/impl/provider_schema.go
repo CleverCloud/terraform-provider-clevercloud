@@ -21,6 +21,7 @@ type ProviderData struct {
 	ConsumerKey         types.String `tfsdk:"consumer_key"`
 	ConsumerSecret      types.String `tfsdk:"consumer_secret"`
 	DisableNetworkgroup types.Bool   `tfsdk:"disable_networkgroups"`
+	DefaultTags         types.Set    `tfsdk:"default_tags"`
 }
 
 //go:embed provider.md
@@ -65,6 +66,14 @@ func (p *Provider) Schema(_ context.Context, req provider.SchemaRequest, res *pr
 			"disable_networkgroups": schema.BoolAttribute{
 				Optional:            true,
 				MarkdownDescription: "Disable netorkgroups features",
+			},
+			"default_tags": schema.SetAttribute{
+				ElementType: types.StringType,
+				Optional:    true,
+				MarkdownDescription: "Tags applied to every taggable resource, merged with each resource's own tags. " +
+					"~> Changing this replaces every `clevercloud_networkgroup` that does not set `ignore_default_tags` " +
+					"(network groups cannot be updated in place, and members are dropped during recreation); " +
+					"all other resource kinds are updated in place.",
 			},
 		},
 	}

@@ -113,6 +113,7 @@ environment = { for k, v in {
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
+- `tags` (Set of String) Tags of the application
 - `tfm` (String) Compiles for a specific framework. The framework must be defined in the project file. Example : net5.0
 - `version` (String) Choose the .NET Core version between 6.0, 8.0, 9.0. Default: '8.0'
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
@@ -121,6 +122,7 @@ environment = { for k, v in {
 
 - `deploy_url` (String) Git URL used to push source code
 - `id` (String) Unique identifier generated during application creation
+- `tags_all` (Set of String) All tags applied to the application: the resource `tags` merged with the provider-level `default_tags`
 
 <a id="nestedblock--deployment"></a>
 ### Nested Schema for `deployment`

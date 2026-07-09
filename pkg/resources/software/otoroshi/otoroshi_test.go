@@ -20,13 +20,15 @@ func TestAccOtoroshi_basic(t *testing.T) {
 	rName := acctest.RandomWithPrefix("tf-test-otoroshi")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_otoroshi.%s", rName)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
 	otoroshiBlock := helper.NewRessource(
 		"clevercloud_otoroshi",
 		rName,
 		helper.SetKeyValues(map[string]any{
 			"name":   rName,
 			"region": "par",
+			"tags":   []string{"foo", "bar"},
 		}))
 
 	resource.Test(t, resource.TestCase{
@@ -45,6 +47,15 @@ func TestAccOtoroshi_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("initial_admin_login"), knownvalue.StringExact("cc-account-admin")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("initial_admin_password"), knownvalue.StringRegexp(regexp.MustCompile(`^[a-zA-Z0-9]+$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("url"), knownvalue.StringRegexp(regexp.MustCompile(`^https://.*-ui-otoroshi\.services\.clever-cloud\.com$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+					knownvalue.StringExact("managed"),
+				})),
 			},
 		}, {
 			ResourceName: "otoroshi_" + rName,

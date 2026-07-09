@@ -18,6 +18,8 @@ type ConfigProvider struct {
 	ID          types.String `tfsdk:"id"`
 	Name        types.String `tfsdk:"name"`
 	Environment types.Map    `tfsdk:"environment"`
+	Tags        types.Set    `tfsdk:"tags"`
+	TagsAll     types.Set    `tfsdk:"tags_all"`
 }
 
 //go:embed doc.md
@@ -37,6 +39,16 @@ func (r ResourceConfigProvider) Schema(_ context.Context, req resource.SchemaReq
 			},
 			"id":   schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
+			"tags": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Tags of the addon",
+			},
+			"tags_all": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Computed:            true,
+				MarkdownDescription: "All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`",
+			},
 		},
 	}
 }

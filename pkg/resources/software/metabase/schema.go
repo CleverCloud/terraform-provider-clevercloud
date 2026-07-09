@@ -13,10 +13,12 @@ import (
 )
 
 type Metabase struct {
-	ID     types.String `tfsdk:"id"`
-	Name   types.String `tfsdk:"name"`
-	Region types.String `tfsdk:"region"`
-	Host   types.String `tfsdk:"host"`
+	ID      types.String `tfsdk:"id"`
+	Name    types.String `tfsdk:"name"`
+	Region  types.String `tfsdk:"region"`
+	Host    types.String `tfsdk:"host"`
+	Tags    types.Set    `tfsdk:"tags"`
+	TagsAll types.Set    `tfsdk:"tags_all"`
 }
 
 //go:embed doc.md
@@ -36,6 +38,16 @@ func (r ResourceMetabase) Schema(_ context.Context, req resource.SchemaRequest, 
 				MarkdownDescription: "Geographical region where the data will be stored",
 			},
 			"host": schema.StringAttribute{Computed: true, MarkdownDescription: "Metabase host, used to connect to"},
+			"tags": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Tags of the addon",
+			},
+			"tags_all": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Computed:            true,
+				MarkdownDescription: "All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`",
+			},
 		},
 	}
 }

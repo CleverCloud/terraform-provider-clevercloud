@@ -13,6 +13,7 @@ type Provider struct {
 	gitAuth                *http.BasicAuth
 	organization           string
 	isNetwrkgroupsDisabled bool
+	tags                   []string
 }
 
 func New(version string) func() provider.Provider {
@@ -34,4 +35,8 @@ func (p *Provider) GitAuth() *http.BasicAuth {
 
 func (p *Provider) IsNetwrkgroupsDisabled() bool {
 	return p.isNetwrkgroupsDisabled
+}
+
+func (p *Provider) DefaultTags() []string {
+	return p.tags
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 )
@@ -94,7 +95,7 @@ func (r *ResourceV) Update(ctx context.Context, req resource.UpdateRequest, res 
 }
 
 func (r *ResourceV) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
-	if req.Plan.Raw.IsNull() {
+	if req.Plan.Raw.IsNull() || r.Provider == nil {
 		return
 	}
 
@@ -104,4 +105,9 @@ func (r *ResourceV) ModifyPlan(ctx context.Context, req resource.ModifyPlanReque
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "v", plan.Runtime, &res.Diagnostics)
+
+	// Recompute tags_all (provider default_tags merged with resource tags) so a
+	// provider-level default_tags change propagates to existing applications.
+	plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &res.Diagnostics)
+	res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
 }

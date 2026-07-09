@@ -1,5 +1,5 @@
 resource "clevercloud_docker" "docker_instance" {
-  name = "docker_instance"
+  name   = "docker_instance"
   region = "par"
 
   # horizontal scaling
@@ -9,4 +9,7 @@ resource "clevercloud_docker" "docker_instance" {
   # vertical scaling
   smallest_flavor = "XS"
   biggest_flavor  = "M"
+
+  # Merged with the provider-level `default_tags`; the effective set is exposed as `tags_all`.
+  tags = ["team:backend", "env:prod"]
 }

@@ -22,6 +22,11 @@ See [ConfigProvider product specification](https://www.clever.cloud/developers/d
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `name` (String) Name of the service
 
+### Optional
+
+- `tags` (Set of String) Tags of the addon
+
 ### Read-Only
 
 - `id` (String) Generated unique identifier
+- `tags_all` (Set of String) All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`

@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
@@ -25,6 +26,8 @@ type Keycloak struct {
 	AdminUsername types.String `tfsdk:"admin_username"`
 	AdminPassword types.String `tfsdk:"admin_password"`
 	FSBucketID    types.String `tfsdk:"fsbucket_id"`
+	Tags          types.Set    `tfsdk:"tags"`
+	TagsAll       types.Set    `tfsdk:"tags_all"`
 }
 
 //go:embed doc.md
@@ -43,6 +46,16 @@ func (r ResourceKeycloak) Schema(_ context.Context, req resource.SchemaRequest, 
 				Default:             stringdefault.StaticString("par"),
 				MarkdownDescription: "Geographical region where the data will be stored",
 			},
+			"tags": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Tags of the addon",
+			},
+			"tags_all": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Computed:            true,
+				MarkdownDescription: "All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`",
+			},
 			"access_domain":  schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Main domaine to access the instance"},
 			"version":        schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Keycloak official version"},
 			"host":           schema.StringAttribute{Computed: true, MarkdownDescription: "URL to access Keycloak"},
@@ -54,12 +67,22 @@ func (r ResourceKeycloak) Schema(_ context.Context, req resource.SchemaRequest, 
 }
 
 func (r ResourceKeycloak) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
-	if req.Plan.Raw.IsNull() { // plan is null when calling Delete() methode
+	if req.Plan.Raw.IsNull() || r.Provider == nil { // plan is null when calling Delete() methode
 		return
 	}
 	plan := helper.From[Keycloak](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
+	}
+
+	// Recompute the effective tags_all (provider defaults merged with the resource tags)
+	// so a provider-level default_tags change propagates to existing resources.
+	if r.Provider != nil {
+		plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &res.Diagnostics)
+		res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+		if res.Diagnostics.HasError() {
+			return
+		}
 	}
 
 	// Skip validation if version is not specified

@@ -83,6 +83,46 @@ func TestAccElasticsearch_basic(t *testing.T) {
 	})
 }
 
+// TestAccElasticsearch_Tags verifies the resource `tags` and the merge into `tags_all`
+// with a provider-level default_tags.
+func TestAccElasticsearch_Tags(t *testing.T) {
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-es-tags")
+	fullName := fmt.Sprintf("clevercloud_elasticsearch.%s", rName)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
+	esBlock := helper.NewRessource(
+		"clevercloud_elasticsearch",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+			"plan":   "xs",
+			"tags":   []string{"foo", "bar"},
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(esBlock).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+					knownvalue.StringExact("managed"),
+				})),
+			},
+		}},
+	})
+}
+
 // Issue #338: Test that version handling works correctly
 // The version field accepts only major version numbers (e.g., "8").
 // The API may return "8" or "8.19.9" but we always extract and store the major version.

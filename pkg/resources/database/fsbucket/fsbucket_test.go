@@ -21,11 +21,12 @@ func TestAccFSBucket_basic(t *testing.T) {
 	rName := acctest.RandomWithPrefix("tf-test-fsbucket")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_fsbucket.%s", rName)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
 	fsbucketBlock := helper.NewRessource(
 		"clevercloud_fsbucket",
 		rName,
-		helper.SetKeyValues(map[string]any{"name": rName, "region": "par"}),
+		helper.SetKeyValues(map[string]any{"name": rName, "region": "par", "tags": []string{"foo", "bar"}}),
 	)
 
 	resource.Test(t, resource.TestCase{
@@ -40,6 +41,15 @@ func TestAccFSBucket_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*fsbucket.services.clever-cloud.com$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("ftp_username"), knownvalue.NotNull()),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("ftp_password"), knownvalue.NotNull()),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+					knownvalue.StringExact("managed"),
+				})),
 			},
 		}, {
 			ResourceName: "fsbucket_" + rName,

@@ -19,7 +19,7 @@ See [Docker product specification](https://www.clever.cloud/developers/doc/appli
 
 ```terraform
 resource "clevercloud_docker" "docker_instance" {
-  name = "docker_instance"
+  name   = "docker_instance"
   region = "par"
 
   # horizontal scaling
@@ -29,6 +29,9 @@ resource "clevercloud_docker" "docker_instance" {
   # vertical scaling
   smallest_flavor = "XS"
   biggest_flavor  = "M"
+
+  # Merged with the provider-level `default_tags`; the effective set is exposed as `tags_all`.
+  tags = ["team:backend", "env:prod"]
 }
 ```
 
@@ -76,12 +79,14 @@ environment = { for k, v in {
 - `registry_url` (String) The server of your private registry (optional).	Docker’s public registry
 - `registry_user` (String) The username to login to a private registry
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
+- `tags` (Set of String) Tags of the application
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
 
 ### Read-Only
 
 - `deploy_url` (String) Git URL used to push source code
 - `id` (String) Unique identifier generated during application creation
+- `tags_all` (Set of String) All tags applied to the application: the resource `tags` merged with the provider-level `default_tags`
 
 <a id="nestedblock--deployment"></a>
 ### Nested Schema for `deployment`

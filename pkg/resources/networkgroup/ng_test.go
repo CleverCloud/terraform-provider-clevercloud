@@ -21,7 +21,8 @@ func TestAccNG_basic(t *testing.T) {
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-ng")
 	fullName := fmt.Sprintf("clevercloud_networkgroup.%s", rName)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
 	addonBlock := helper.NewRessource(
 		"clevercloud_networkgroup",
 		rName,
@@ -46,6 +47,51 @@ func TestAccNG_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
 					knownvalue.StringExact("tag1"),
 					knownvalue.StringExact("tag2"),
+				})),
+				// tags_all merges the resource tags with the provider default_tags
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("managed"),
+					knownvalue.StringExact("tag1"),
+					knownvalue.StringExact("tag2"),
+				})),
+			},
+		}},
+	})
+}
+
+// TestAccNG_ignoreDefaultTags verifies that a network group with ignore_default_tags=true
+// does not merge the provider-level default_tags into its tags_all.
+func TestAccNG_ignoreDefaultTags(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-ng")
+	fullName := fmt.Sprintf("clevercloud_networkgroup.%s", rName)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
+	ngBlock := helper.NewRessource(
+		"clevercloud_networkgroup",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":                rName,
+			"tags":                []string{"tag1"},
+			"ignore_default_tags": true,
+		}),
+	)
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(ngBlock).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("tag1"),
+				})),
+				// default_tags are ignored: "managed" must NOT appear in tags_all
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("tag1"),
 				})),
 			},
 		}},
@@ -75,8 +121,8 @@ func TestAccNG_withPeers(t *testing.T) {
 		"clevercloud_docker",
 		appName,
 		helper.SetKeyValues(map[string]any{
-			"name":               appName,
-			"region":             "par",
+			"name":   appName,
+			"region": "par",
 			// Boot a real instance so the NG actually registers a peer.
 			// Without a peer the API never returns the union-typed `peers` field
 			// and the SDK unmarshal bug stays hidden.

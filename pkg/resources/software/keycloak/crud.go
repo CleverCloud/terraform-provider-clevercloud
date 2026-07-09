@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/models"
 )
@@ -50,19 +51,21 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		res.Diagnostics.AddError("failed to create Keycloak", createAddonRes.Error().Error())
 		return
 	}
-	addon := createAddonRes.Payload()
+	createdAddon := createAddonRes.Payload()
 
-	plan.ID = pkg.FromStr(addon.RealID)
-	plan.Region = pkg.FromStr(addon.Region)
+	plan.ID = pkg.FromStr(createdAddon.RealID)
+	plan.Region = pkg.FromStr(createdAddon.Region)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
+
+	resources.SyncTags(ctx, r, resources.AddonTags, createdAddon.ID, plan.Tags, &plan.Tags, &plan.TagsAll, &res.Diagnostics)
 
 	keycloakRes := r.SDK.
 		V4().
 		AddonProviders().
 		AddonKeycloak().
 		Addons().
-		Addonkeycloakid(addon.RealID).
+		Addonkeycloakid(createdAddon.RealID).
 		Getkeycloakwithoutownerid(ctx)
 	if keycloakRes.HasError() {
 		res.Diagnostics.AddError("failed to get Keycloak", keycloakRes.Error().Error())
@@ -99,9 +102,11 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 	} else if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Keycloak addon", addonRes.Error().Error())
 	} else {
-		addon := addonRes.Payload()
-		state.Name = pkg.FromStr(addon.Name)
-		state.Region = pkg.FromStr(addon.Region)
+		addonPayload := addonRes.Payload()
+		state.Name = pkg.FromStr(addonPayload.Name)
+		state.Region = pkg.FromStr(addonPayload.Region)
+
+		state.Tags, state.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonPayload.ID, state.Tags, &resp.Diagnostics)
 	}
 
 	keycloakRes := r.SDK.
@@ -145,6 +150,12 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 		resp.Diagnostics.AddError("failed to update Keycloak", addonRes.Error().Error())
 	} else {
 		state.Name = pkg.FromStr(addonRes.Payload().Name)
+	}
+
+	if addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString()); err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+	} else {
+		resources.SyncTags(ctx, r, resources.AddonTags, addonID, plan.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
 	}
 
 	// Handle version upgrade

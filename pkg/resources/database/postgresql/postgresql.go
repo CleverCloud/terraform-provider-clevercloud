@@ -127,7 +127,7 @@ func (r *ResourcePostgreSQL) UpgradeState(ctx context.Context) map[int64]resourc
 func (r *ResourcePostgreSQL) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
 	tflog.Debug(ctx, "ModifyPlan called for PostgreSQL")
 
-	if req.Plan.Raw.IsNull() { // Skip validation when deleting
+	if req.Plan.Raw.IsNull() || r.Provider == nil { // Skip validation when deleting
 		return
 	}
 
@@ -139,6 +139,15 @@ func (r *ResourcePostgreSQL) ModifyPlan(ctx context.Context, req resource.Modify
 	// Skip validation if provider not configured yet
 	if r.Client() == nil {
 		tflog.Debug(ctx, "Skipping validation - provider not configured")
+		return
+	}
+
+	// Recompute the effective tags_all (provider defaults merged with the resource tags).
+	// Doing this at plan time is what makes a provider-level tag change produce a diff on
+	// existing resources so it propagates on the next apply.
+	plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &res.Diagnostics)
+	res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+	if res.Diagnostics.HasError() {
 		return
 	}
 

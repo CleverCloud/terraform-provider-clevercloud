@@ -7,8 +7,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
+
+// ModifyPlan recomputes the effective `tags_all` (provider defaults merged with the
+// resource `tags`) at plan time, so a provider-level default_tags change propagates to
+// existing resources.
+func (r *ResourceMatomo) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || r.Provider == nil {
+		return
+	}
+
+	plan := helper.PlanFrom[Matomo](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &resp.Diagnostics)
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, plan)...)
+}
 
 // Create a new resource
 func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
@@ -44,13 +62,13 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 		res.Diagnostics.AddError("failed to create Matomo", createAddonRes.Error().Error())
 		return
 	}
-	addon := createAddonRes.Payload()
+	createdAddon := createAddonRes.Payload()
 
-	appMatomo.ID = pkg.FromStr(addon.RealID)
-	appMatomo.Region = pkg.FromStr(addon.Region)
+	appMatomo.ID = pkg.FromStr(createdAddon.RealID)
+	appMatomo.Region = pkg.FromStr(createdAddon.Region)
 	res.Diagnostics.Append(res.State.Set(ctx, appMatomo)...)
 
-	matomoRes := tmp.GetMatomo(ctx, r.Client(), addon.RealID)
+	matomoRes := tmp.GetMatomo(ctx, r.Client(), createdAddon.RealID)
 	if matomoRes.HasError() {
 		res.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
 	} else {
@@ -58,6 +76,8 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 		appMatomo.Host = pkg.FromStr(matomo.AccessURL)
 		appMatomo.Version = pkg.FromStr(matomo.Version)
 	}
+
+	resources.SyncTags(ctx, r, resources.AddonTags, createdAddon.ID, appMatomo.Tags, &appMatomo.Tags, &appMatomo.TagsAll, &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, appMatomo)...)
 }
@@ -94,9 +114,11 @@ func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, res
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Matomo addon", addonRes.Error().Error())
 	} else {
-		addon := addonRes.Payload()
-		state.Region = pkg.FromStr(addon.Region)
+		addonPayload := addonRes.Payload()
+		state.Region = pkg.FromStr(addonPayload.Region)
 	}
+
+	state.Tags, state.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonId, state.Tags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -126,6 +148,12 @@ func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest,
 		resp.Diagnostics.AddError("failed to update Matomo", addonRes.Error().Error())
 	} else {
 		state.Name = pkg.FromStr(addonRes.Payload().Name)
+	}
+
+	if addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString()); err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+	} else {
+		resources.SyncTags(ctx, r, resources.AddonTags, addonID, plan.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
