@@ -3,7 +3,6 @@ package elasticsearch_cluster
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
@@ -51,11 +50,18 @@ type apiClusterResponse struct {
 	Name           string     `json:"name"`
 	Endpoint       string     `json:"endpoint"`
 	Username       string     `json:"username"`
-	Password       string     `json:"password"`
 	Nodes          []apiNode  `json:"nodes"`
 	Plan           string     `json:"plan"`
 	Version        apiVersion `json:"version"`
 	NetworkGroupID string     `json:"networkGroupId"`
+}
+
+// apiCredentials is returned by the dedicated /credentials endpoint. The
+// password is no longer served on the cluster GET.
+type apiCredentials struct {
+	Endpoint string `json:"endpoint"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 func versionFromAPI(v apiVersion) types.Object {
@@ -73,7 +79,6 @@ func stateFromAPI(cluster *apiClusterResponse, state *ElasticsearchCluster) {
 	state.Name = pkg.FromStr(cluster.Name)
 	state.Endpoint = pkg.FromStr(cluster.Endpoint)
 	state.Username = pkg.FromStr(cluster.Username)
-	state.Password = pkg.FromStr(cluster.Password)
 	state.NetworkGroupID = pkg.FromStr(cluster.NetworkGroupID)
 	state.Version = versionFromAPI(cluster.Version)
 	state.NodeCount = pkg.FromI(int64(len(cluster.Nodes)))
@@ -107,7 +112,7 @@ func versionToAPI(ctx context.Context, obj types.Object, diags *diag.Diagnostics
 const versionsPath = "/v4/elasticsearch/versions"
 
 func (r *ResourceElasticsearchCluster) fetchAvailableVersions(ctx context.Context) ([]apiVersion, error) {
-	res := client.Get[[]apiVersion](ctx, r.esClient(), versionsPath)
+	res := client.Get[[]apiVersion](ctx, r.Client(), versionsPath)
 	if res.HasError() {
 		return nil, res.Error()
 	}
@@ -165,7 +170,7 @@ type apiPlan struct {
 }
 
 func (r *ResourceElasticsearchCluster) fetchAvailablePlans(ctx context.Context) ([]apiPlan, error) {
-	res := client.Get[[]apiPlan](ctx, r.esClient(), plansPath)
+	res := client.Get[[]apiPlan](ctx, r.Client(), plansPath)
 	if res.HasError() {
 		return nil, res.Error()
 	}
@@ -191,17 +196,34 @@ func clusterIDPath(orgID, clusterID string) string {
 	return fmt.Sprintf(basePath+"/%s", orgID, clusterID)
 }
 
-// esClient returns a client targeting the Elasticsearch API.
-// TODO: remove once the API is served from the main API domain
-func (r *ResourceElasticsearchCluster) esClient() *client.Client {
-	endpoint := os.Getenv("CC_ES_API_ENDPOINT")
-	if endpoint == "" {
-		return r.Client()
+func credentialsPath(orgID, clusterID string) string {
+	return fmt.Sprintf(basePath+"/%s/credentials", orgID, clusterID)
+}
+
+func (r *ResourceElasticsearchCluster) fetchCredentials(ctx context.Context, clusterID string) (*apiCredentials, error) {
+	res := client.Get[apiCredentials](ctx, r.Client(), credentialsPath(r.Organization(), clusterID))
+	if res.HasError() {
+		return nil, res.Error()
 	}
-	return client.New(
-		client.WithEndpoint(endpoint),
-		client.WithAuthenticator(r.Client().Authenticator()),
-	)
+	return res.Payload(), nil
+}
+
+// applyCredentials copies the connection details returned by /credentials into
+// the state, only overriding fields the endpoint actually populates.
+func applyCredentials(c *apiCredentials, state *ElasticsearchCluster) {
+	if c.Endpoint != "" {
+		state.Endpoint = pkg.FromStr(c.Endpoint)
+	}
+	if c.Username != "" {
+		state.Username = pkg.FromStr(c.Username)
+	}
+	if c.Password != "" {
+		state.Password = pkg.FromStr(c.Password)
+	}
+}
+
+func connectionReady(s *ElasticsearchCluster) bool {
+	return s.Endpoint.ValueString() != "" && s.Username.ValueString() != "" && s.Password.ValueString() != ""
 }
 
 func (r *ResourceElasticsearchCluster) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
@@ -264,44 +286,47 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 
 	tflog.Debug(ctx, "ElasticsearchCluster CREATE", map[string]any{"name": body.Name})
 
-	res := client.Post[apiClusterResponse](ctx, r.esClient(), clusterPath(r.Organization()), body)
+	res := client.Post[apiClusterResponse](ctx, r.Client(), clusterPath(r.Organization()), body)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create elasticsearch cluster", res.Error().Error())
 		return
 	}
 
 	cluster := res.Payload()
+	clusterID := cluster.ID
 	stateFromAPI(cluster, &plan)
 
-	// Poll until connection details are populated (the cluster may still be provisioning)
-	if cluster.Endpoint == "" || cluster.Username == "" || cluster.Password == "" {
-		clusterID := cluster.ID
-		tflog.Debug(ctx, "ElasticsearchCluster waiting for connection details", map[string]any{"id": clusterID})
-
-		for range 60 {
-			time.Sleep(10 * time.Second)
-
-			getRes := client.Get[apiClusterResponse](ctx, r.esClient(), clusterIDPath(r.Organization(), clusterID))
-			if getRes.HasError() {
-				tflog.Debug(ctx, "ElasticsearchCluster poll error, retrying...", map[string]any{"error": getRes.Error().Error()})
-				continue
-			}
-
-			cluster = getRes.Payload()
-			if cluster.Endpoint != "" && cluster.Username != "" && cluster.Password != "" {
-				tflog.Debug(ctx, "ElasticsearchCluster connection details ready", map[string]any{"endpoint": cluster.Endpoint})
-				stateFromAPI(cluster, &plan)
-				break
-			}
+	// Poll until connection details are populated (the cluster may still be
+	// provisioning). The password lives on a dedicated /credentials endpoint.
+	for range 60 {
+		if connectionReady(&plan) {
+			break
 		}
 
-		if cluster.Endpoint == "" || cluster.Username == "" || cluster.Password == "" {
-			resp.Diagnostics.AddError(
-				"elasticsearch cluster provisioning timeout",
-				"connection details (endpoint, username, password) were not available after 10 minutes",
-			)
-			return
+		time.Sleep(10 * time.Second)
+
+		getRes := client.Get[apiClusterResponse](ctx, r.Client(), clusterIDPath(r.Organization(), clusterID))
+		if getRes.HasError() {
+			tflog.Debug(ctx, "ElasticsearchCluster poll error, retrying...", map[string]any{"error": getRes.Error().Error()})
+			continue
 		}
+		cluster = getRes.Payload()
+		stateFromAPI(cluster, &plan)
+
+		creds, err := r.fetchCredentials(ctx, clusterID)
+		if err != nil {
+			tflog.Debug(ctx, "ElasticsearchCluster credentials not ready, retrying...", map[string]any{"error": err.Error()})
+			continue
+		}
+		applyCredentials(creds, &plan)
+	}
+
+	if !connectionReady(&plan) {
+		resp.Diagnostics.AddError(
+			"elasticsearch cluster provisioning timeout",
+			"connection details (endpoint, username, password) were not available after 10 minutes",
+		)
+		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -321,7 +346,7 @@ func (r *ResourceElasticsearchCluster) Read(ctx context.Context, req resource.Re
 
 	tflog.Debug(ctx, "ElasticsearchCluster READ", map[string]any{"id": state.ID.ValueString()})
 
-	res := client.Get[apiClusterResponse](ctx, r.esClient(), clusterIDPath(r.Organization(), state.ID.ValueString()))
+	res := client.Get[apiClusterResponse](ctx, r.Client(), clusterIDPath(r.Organization(), state.ID.ValueString()))
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -333,6 +358,13 @@ func (r *ResourceElasticsearchCluster) Read(ctx context.Context, req resource.Re
 
 	cluster := res.Payload()
 	stateFromAPI(cluster, &state)
+
+	creds, err := r.fetchCredentials(ctx, state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to read elasticsearch cluster credentials", err.Error())
+		return
+	}
+	applyCredentials(creds, &state)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -351,7 +383,7 @@ func (r *ResourceElasticsearchCluster) Delete(ctx context.Context, req resource.
 
 	tflog.Debug(ctx, "ElasticsearchCluster DELETE", map[string]any{"id": state.ID.ValueString()})
 
-	res := client.Delete[client.Nothing](ctx, r.esClient(), clusterIDPath(r.Organization(), state.ID.ValueString()))
+	res := client.Delete[client.Nothing](ctx, r.Client(), clusterIDPath(r.Organization(), state.ID.ValueString()))
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete elasticsearch cluster", res.Error().Error())
 		return
