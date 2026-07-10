@@ -97,7 +97,7 @@ func (r ResourceElasticsearchCluster) Schema(_ context.Context, req resource.Sch
 			},
 			"plan": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "Node plan defining CPU, memory and disk per node (e.g. M, L, XL). Available plans are listed at `/v4/elasticsearch/plans`",
+				MarkdownDescription: "Node plan defining CPU, memory and disk per node (e.g. M, L, XL)",
 			},
 			"endpoint": schema.StringAttribute{
 				Computed:            true,
