@@ -18,6 +18,8 @@ type CommonAttributes struct {
 	Region        types.String `tfsdk:"region"`
 	CreationDate  types.Int64  `tfsdk:"creation_date"`
 	Networkgroups types.Set    `tfsdk:"networkgroups"`
+	Tags          types.Set    `tfsdk:"tags"`
+	TagsAll       types.Set    `tfsdk:"tags_all"`
 }
 
 var addonCommon = map[string]schema.Attribute{
@@ -35,6 +37,16 @@ var addonCommon = map[string]schema.Attribute{
 		MarkdownDescription: "Geographical region where the data will be stored",
 	},
 	"creation_date": schema.Int64Attribute{Computed: true, MarkdownDescription: "Date of database creation", PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()}},
+	"tags": schema.SetAttribute{
+		ElementType:         types.StringType,
+		Optional:            true,
+		MarkdownDescription: "Tags of the addon",
+	},
+	"tags_all": schema.SetAttribute{
+		ElementType:         types.StringType,
+		Computed:            true,
+		MarkdownDescription: "All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`",
+	},
 	"networkgroups": schema.SetNestedAttribute{
 		Optional:            true,
 		MarkdownDescription: "List of networkgroups the addon must be part of",

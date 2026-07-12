@@ -28,7 +28,8 @@ func TestAccV_basic(t *testing.T) {
 	rName2 := acctest.RandomWithPrefix("tf-test-v-2")
 	fullName := fmt.Sprintf("clevercloud_v.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_v.%s", rName2)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
 	vBlock := helper.NewRessource(
 		"clevercloud_v",
 		rName,
@@ -47,6 +48,7 @@ func TestAccV_basic(t *testing.T) {
 			"dependencies":       []string{},
 			"binary":             "a.out",
 			"development_build":  true,
+			"tags":               []string{"foo", "bar"},
 		}),
 	)
 	vBlock2 := helper.NewRessource(
@@ -76,6 +78,15 @@ func TestAccV_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+					knownvalue.StringExact("managed"),
+				})),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("build_flavor"), knownvalue.StringExact("XL")),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
 					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)

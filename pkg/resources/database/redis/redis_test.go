@@ -21,11 +21,13 @@ func TestAccRedis_basic(t *testing.T) {
 	rName := acctest.RandomWithPrefix("tf-test-redis")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_redis.%s", rName)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
 	materiakvBlock := helper.NewRessource("clevercloud_redis", rName, helper.SetKeyValues(map[string]any{
 		"name":   rName,
 		"region": "par",
 		"plan":   "m_mono",
+		"tags":   []string{"foo", "bar"},
 	}))
 
 	resource.Test(t, resource.TestCase{
@@ -41,6 +43,15 @@ func TestAccRedis_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("host"), knownvalue.StringRegexp(regexp.MustCompile(`^.*.services.clever-cloud.com$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("port"), knownvalue.NotNull()),
 				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("token")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+					knownvalue.StringExact("managed"),
+				})),
 			},
 		}, {
 			ResourceName: rName,

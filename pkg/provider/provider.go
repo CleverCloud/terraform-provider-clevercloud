@@ -10,4 +10,7 @@ type Provider interface {
 	Client() *client.Client
 	GitAuth() *http.BasicAuth
 	IsNetwrkgroupsDisabled() bool
+	// DefaultTags returns the tags configured at provider level, which are merged
+	// into every taggable resource's own tags.
+	DefaultTags() []string
 }

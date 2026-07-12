@@ -5,7 +5,9 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -14,12 +16,64 @@ import (
 	"go.clever-cloud.dev/sdk/models"
 )
 
+// defaultTagsFor returns the provider-level default tags to merge for this network group,
+// or nil when the resource opts out via ignore_default_tags.
+func (r *ResourceNG) defaultTagsFor(ng Networkgroup) []string {
+	if ng.IgnoreDefaultTags.ValueBool() {
+		return nil
+	}
+	return r.DefaultTags()
+}
+
+// ModifyPlan recomputes the effective tags_all (provider default_tags merged with the
+// resource tags, unless opted out). Network groups cannot be updated in place, so when the
+// effective set changes on an existing resource, replacement is forced to apply the new tags.
+func (r *ResourceNG) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || r.Provider == nil {
+		return // resource is being destroyed, or provider not configured (e.g. validate)
+	}
+
+	plan := helper.PlanFrom[Networkgroup](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// Can't compute the effective set until the resource tags are known.
+	if plan.Tags.IsUnknown() {
+		plan.TagsAll = basetypes.NewSetUnknown(types.StringType)
+		resp.Diagnostics.Append(resp.Plan.Set(ctx, plan)...)
+		return
+	}
+
+	merged := pkg.MergeTags(r.defaultTagsFor(plan), pkg.SetToStringSlice(ctx, plan.Tags, &resp.Diagnostics))
+	plan.TagsAll = pkg.FromSetString(merged, &resp.Diagnostics)
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, plan)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if req.State.Raw.IsNull() {
+		return // create: nothing to replace
+	}
+	state := helper.StateFrom[Networkgroup](ctx, req.State, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	// Guard on a non-null prior tags_all so upgrading state that predates this attribute
+	// (null tags_all) doesn't trigger a spurious replacement before the first refresh.
+	if !state.TagsAll.IsNull() && !state.TagsAll.Equal(plan.TagsAll) {
+		resp.RequiresReplace = append(resp.RequiresReplace, path.Root("tags_all"))
+	}
+}
+
 // readFromAPI updates the given state with values returned by the API.
 //
-// For optional fields (description, tags), the rule is:
-//   - state null + API empty → keep null (user never set it, nothing to sync)
-//   - otherwise              → sync from API (state was set, or API returned a value)
-func readFromAPI(state *Networkgroup, ng *models.NetworkGroup1, diags *diag.Diagnostics) {
+// tags_all reflects every tag on the network group. The resource-level `tags` attribute
+// excludes the provider-level default_tags so they don't leak into it (which would cause
+// a perpetual diff). For optional fields (description, tags), the rule is:
+//   - state null + nothing resource-level → keep null (user never set it, nothing to sync)
+//   - otherwise                           → sync from API
+func readFromAPI(state *Networkgroup, ng *models.NetworkGroup1, defaultTags []string, diags *diag.Diagnostics) {
 	if ng == nil || state == nil {
 		return
 	}
@@ -31,10 +85,9 @@ func readFromAPI(state *Networkgroup, ng *models.NetworkGroup1, diags *diag.Diag
 		state.Description = basetypes.NewStringPointerValue(ng.Description)
 	}
 
-	apiTagsEmpty := len(ng.Tags) == 0
-	if !state.Tags.IsNull() || !apiTagsEmpty {
-		state.Tags = pkg.FromSetString(ng.Tags, diags)
-	}
+	// tags_all is the full effective set (resource tags + provider default_tags);
+	// tags excludes the provider default_tags.
+	state.Tags, state.TagsAll = pkg.SplitTags(ng.Tags, defaultTags, state.Tags, diags)
 
 	state.Network = pkg.FromStr(ng.NetworkIP)
 }
@@ -51,6 +104,10 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 
 	label := plan.Name.ValueString()
 	description := plan.Description.ValueString()
+	// Apply the union of the provider-level default_tags and the resource-level tags
+	// (unless the resource opts out via ignore_default_tags).
+	defaultTags := r.defaultTagsFor(plan)
+	mergedTags := pkg.MergeTags(defaultTags, pkg.SetToStringSlice(ctx, plan.Tags, &resp.Diagnostics))
 	ngRes := r.SDK.
 		V4().
 		Networkgroups().
@@ -61,7 +118,7 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 			ID:          &id,
 			Label:       &label,
 			Description: &description,
-			Tags:        pkg.SetToStringSlice(ctx, plan.Tags, &resp.Diagnostics),
+			Tags:        mergedTags,
 		})
 	if ngRes.HasError() {
 		resp.Diagnostics.AddError("failed to create networkgroup", ngRes.Error().Error())
@@ -74,7 +131,7 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 		return
 	}
 
-	readFromAPI(&plan, ng, &resp.Diagnostics)
+	readFromAPI(&plan, ng, defaultTags, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 }
 
@@ -106,7 +163,7 @@ func (r *ResourceNG) Read(ctx context.Context, req resource.ReadRequest, resp *r
 	}
 	ng := ngRes.Payload()
 
-	readFromAPI(&state, ng, &resp.Diagnostics)
+	readFromAPI(&state, ng, r.defaultTagsFor(state), &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 

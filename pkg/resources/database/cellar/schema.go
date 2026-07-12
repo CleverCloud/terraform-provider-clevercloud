@@ -15,8 +15,10 @@ import (
 type Cellar struct {
 	ID types.String `tfsdk:"id"`
 
-	Name   types.String `tfsdk:"name"`
-	Region types.String `tfsdk:"region"`
+	Name    types.String `tfsdk:"name"`
+	Region  types.String `tfsdk:"region"`
+	Tags    types.Set    `tfsdk:"tags"`
+	TagsAll types.Set    `tfsdk:"tags_all"`
 
 	Host      types.String `tfsdk:"host"`
 	KeyID     types.String `tfsdk:"key_id"`
@@ -41,6 +43,16 @@ func (r ResourceCellar) Schema(_ context.Context, req resource.SchemaRequest, re
 				Computed:            true,
 				MarkdownDescription: "Geographical region where the data will be stored",
 				Default:             stringdefault.StaticString("par"),
+			},
+			"tags": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Tags of the Cellar",
+			},
+			"tags_all": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Computed:            true,
+				MarkdownDescription: "All tags applied to the Cellar: the resource `tags` merged with the provider-level `default_tags`",
 			},
 
 			// provider

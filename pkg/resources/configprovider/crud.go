@@ -8,8 +8,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
+
+// ModifyPlan recomputes the effective `tags_all` (provider defaults merged with the
+// resource `tags`) at plan time, so a provider-level default_tags change propagates to
+// existing resources.
+func (r *ResourceConfigProvider) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || r.Provider == nil {
+		return
+	}
+
+	plan := helper.PlanFrom[ConfigProvider](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &resp.Diagnostics)
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, plan)...)
+}
 
 // Create a new resource
 func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
@@ -73,6 +91,8 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 		return
 	}
 
+	resources.SyncTags(ctx, r, resources.AddonTags, createdAddon.ID, addonConfigProvider.Tags, &addonConfigProvider.Tags, &addonConfigProvider.TagsAll, &res.Diagnostics)
+
 	res.Diagnostics.Append(res.State.Set(ctx, addonConfigProvider)...)
 }
 
@@ -106,6 +126,12 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 	addonConfigProvider.fromEnv(ctx, envVars, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	if addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString()); err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+	} else {
+		addonConfigProvider.Tags, addonConfigProvider.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonID, addonConfigProvider.Tags, &resp.Diagnostics)
 	}
 
 	// Update the state
@@ -167,6 +193,8 @@ func (r *ResourceConfigProvider) Update(ctx context.Context, req resource.Update
 		return
 	}
 	state.Environment = m
+
+	resources.SyncTags(ctx, r, resources.AddonTags, addonRes.Payload().ID, plan.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

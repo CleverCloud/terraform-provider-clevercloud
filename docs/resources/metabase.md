@@ -24,8 +24,10 @@ See [Metabase product specification](https://www.clever.cloud/developers/doc/add
 ### Optional
 
 - `region` (String) Geographical region where the data will be stored
+- `tags` (Set of String) Tags of the addon
 
 ### Read-Only
 
 - `host` (String) Metabase host, used to connect to
 - `id` (String) Generated unique identifier
+- `tags_all` (Set of String) All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`

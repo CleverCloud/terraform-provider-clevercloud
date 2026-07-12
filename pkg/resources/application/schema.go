@@ -191,6 +191,16 @@ var runtimeCommon = map[string]schema.Attribute{
 		},
 	},
 	"integrations": attributes.IntegrationsAttribute,
+	"tags": schema.SetAttribute{
+		ElementType:         types.StringType,
+		Optional:            true,
+		MarkdownDescription: "Tags of the application",
+	},
+	"tags_all": schema.SetAttribute{
+		ElementType:         types.StringType,
+		Computed:            true,
+		MarkdownDescription: "All tags applied to the application: the resource `tags` merged with the provider-level `default_tags`",
+	},
 }
 
 // runtimeCommonV0 defines common schema attributes for schema version 0 (for state upgrades)

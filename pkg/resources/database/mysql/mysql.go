@@ -34,7 +34,7 @@ func (r *ResourceMySQL) Metadata(ctx context.Context, req resource.MetadataReque
 
 // ModifyPlan validates that encryption, backup, skip_log_bin, and direct_host_only options are only used with dedicated plans
 func (r *ResourceMySQL) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, res *resource.ModifyPlanResponse) {
-	if req.Plan.Raw.IsNull() { // Skip validation when deleting
+	if req.Plan.Raw.IsNull() || r.Provider == nil { // Skip validation when deleting
 		return
 	}
 
@@ -45,6 +45,14 @@ func (r *ResourceMySQL) ModifyPlan(ctx context.Context, req resource.ModifyPlanR
 
 	// Skip validation if provider not configured yet
 	if r.Client() == nil {
+		return
+	}
+
+	// Recompute the effective tags_all (provider defaults merged with the resource tags)
+	// so a provider-level default_tags change propagates to existing resources.
+	plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &res.Diagnostics)
+	res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+	if res.Diagnostics.HasError() {
 		return
 	}
 

@@ -25,6 +25,7 @@ See [Keycloak product specification](https://www.clever.cloud/developers/doc/add
 
 - `access_domain` (String) Main domaine to access the instance
 - `region` (String) Geographical region where the data will be stored
+- `tags` (Set of String) Tags of the addon
 - `version` (String) Keycloak official version
 
 ### Read-Only
@@ -34,3 +35,4 @@ See [Keycloak product specification](https://www.clever.cloud/developers/doc/add
 - `fsbucket_id` (String) ID of the fsbucket subresource
 - `host` (String) URL to access Keycloak
 - `id` (String) Generated unique identifier
+- `tags_all` (Set of String) All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`

@@ -24,6 +24,7 @@ See [Materia KV product specification](https://www.clever.cloud/developers/doc/a
 ### Optional
 
 - `region` (String) Geographical region where the data will be stored
+- `tags` (Set of String) Tags of the addon
 
 ### Read-Only
 
@@ -31,4 +32,5 @@ See [Materia KV product specification](https://www.clever.cloud/developers/doc/a
 - `host` (String) Database host, used to connect to
 - `id` (String) Generated unique identifier
 - `port` (Number) Database port
+- `tags_all` (Set of String) All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`
 - `token` (String, Sensitive) Token to authenticate

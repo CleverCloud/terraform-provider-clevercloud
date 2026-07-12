@@ -8,8 +8,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
+
+// ModifyPlan recomputes the effective `tags_all` (provider defaults merged with the
+// resource `tags`) at plan time, so a provider-level default_tags change propagates to
+// existing resources.
+func (r *ResourceFSBucket) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || r.Provider == nil {
+		return
+	}
+
+	plan := helper.PlanFrom[FSBucket](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &resp.Diagnostics)
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, plan)...)
+}
 
 // Create a new resource
 func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -69,6 +87,8 @@ func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateReques
 	fsbucket.FTPUsername = envMap["BUCKET_FTP_USERNAME"]
 	fsbucket.FTPPassword = envMap["BUCKET_FTP_PASSWORD"]
 
+	resources.SyncTags(ctx, r, resources.AddonTags, addonRes.ID, fsbucket.Tags, &fsbucket.Tags, &fsbucket.TagsAll, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, fsbucket)...)
 }
 
@@ -95,7 +115,7 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddError("failed to get FSBucket", addonRes.Error().Error())
 		return
 	}
-	addon := addonRes.Payload()
+	addonPayload := addonRes.Payload()
 
 	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), fsbucket.ID.ValueString())
 	if addonEnvRes.HasError() {
@@ -108,11 +128,13 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 		return m
 	})
 
-	fsbucket.Name = pkg.FromStr(addon.Name)
-	fsbucket.Region = pkg.FromStr(addon.Region)
+	fsbucket.Name = pkg.FromStr(addonPayload.Name)
+	fsbucket.Region = pkg.FromStr(addonPayload.Region)
 	fsbucket.Host = addonMap["BUCKET_HOST"]
 	fsbucket.FTPUsername = addonMap["BUCKET_FTP_USERNAME"]
 	fsbucket.FTPPassword = addonMap["BUCKET_FTP_PASSWORD"]
+
+	fsbucket.Tags, fsbucket.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonPayload.ID, fsbucket.Tags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, fsbucket)...)
 }
@@ -143,6 +165,8 @@ func (r *ResourceFSBucket) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 	state.Name = pkg.FromStr(addonRes.Payload().Name)
+
+	resources.SyncTags(ctx, r, resources.AddonTags, addonRes.Payload().ID, plan.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

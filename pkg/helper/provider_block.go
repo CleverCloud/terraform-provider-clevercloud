@@ -10,6 +10,7 @@ import (
 type Provider struct {
 	provider     string
 	organisation string
+	keyValues    map[string]any
 	blocks       []fmt.Stringer
 }
 
@@ -44,6 +45,13 @@ func (p *Provider) SetOrganisation(orgName string) *Provider {
 	return p
 }
 
+// SetKeyValues sets additional provider-level attributes (e.g. default_tags),
+// rendered inside the provider block alongside organisation.
+func (p *Provider) SetKeyValues(kv map[string]any) *Provider {
+	p.keyValues = kv
+	return p
+}
+
 func (p *Provider) Append(blocks ...fmt.Stringer) *Provider {
 	p.blocks = blocks
 	return p
@@ -56,7 +64,9 @@ func (p *Provider) Append(blocks ...fmt.Stringer) *Provider {
 func (p *Provider) String() string {
 	s := `provider "` + p.provider + `" {
 	organisation = "` + p.organisation + `"
-}
+`
+	s = map_String(p.keyValues, s, "\t", " =")
+	s += `}
 ` + pkg.Reduce(p.blocks, "", func(acc string, block fmt.Stringer) string {
 		return acc + block.String() + "\n"
 	})

@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -106,6 +107,63 @@ func SetBoolIf(target *types.Bool, s *string, expected string) {
 	if s != nil && *s == expected {
 		*target = types.BoolValue(true)
 	}
+}
+
+// MergeTags returns the sorted union of the provider-level default tags and the
+// resource-level tags — the effective set applied to a taggable resource.
+func MergeTags(defaultTags, resourceTags []string) []string {
+	set := map[string]bool{}
+	for _, tag := range defaultTags {
+		set[tag] = true
+	}
+	for _, tag := range resourceTags {
+		set[tag] = true
+	}
+
+	out := make([]string, 0, len(set))
+	for tag := range set {
+		out = append(out, tag)
+	}
+	sort.Strings(out)
+	return out
+}
+
+// ComputeTagsAll computes the effective tag set (provider defaultTags merged with the
+// resource-level tags) as a types.Set. It is meant to be called from a resource's ModifyPlan
+// to populate the computed `tags_all` attribute — recomputing it at plan time is what makes a
+// provider-level default_tags change propagate to existing resources.
+//
+// If the resource tags are unknown, the result is unknown too.
+func ComputeTagsAll(ctx context.Context, defaultTags []string, resourceTags types.Set, diags *diag.Diagnostics) types.Set {
+	if resourceTags.IsUnknown() {
+		return basetypes.NewSetUnknown(types.StringType)
+	}
+	return FromSetString(MergeTags(defaultTags, SetToStringSlice(ctx, resourceTags, diags)), diags)
+}
+
+// SplitTags separates the full tag set returned by the API into the resource-level `tags`
+// (API tags minus the provider default_tags) and the effective `tags_all` (all API tags).
+//
+// It preserves a null `tags` when the user never declared any (stateTags is null) and there
+// are no resource-level tags on the API, to avoid a spurious diff on the Optional attribute.
+func SplitTags(apiTags, defaultTags []string, stateTags types.Set, diags *diag.Diagnostics) (tags, tagsAll types.Set) {
+	defaults := map[string]bool{}
+	for _, tag := range defaultTags {
+		defaults[tag] = true
+	}
+
+	resourceTags := []string{}
+	for _, tag := range apiTags {
+		if !defaults[tag] {
+			resourceTags = append(resourceTags, tag)
+		}
+	}
+
+	tagsAll = FromSetString(apiTags, diags)
+	if stateTags.IsNull() && len(resourceTags) == 0 {
+		return stateTags, tagsAll
+	}
+	return FromSetString(resourceTags, diags), tagsAll
 }
 
 // FromSetSplit splits *string by separator and returns types.Set.

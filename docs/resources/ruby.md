@@ -202,12 +202,14 @@ environment = { for k, v in {
 - `static_url_prefix` (String) The URL path under which you want to serve static files, usually /public
 - `static_webroot` (String) Path to the web content to serve, relative to the root of your application
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
+- `tags` (Set of String) Tags of the application
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
 
 ### Read-Only
 
 - `deploy_url` (String) Git URL used to push source code
 - `id` (String) Unique identifier generated during application creation
+- `tags_all` (Set of String) All tags applied to the application: the resource `tags` merged with the provider-level `default_tags`
 
 <a id="nestedblock--deployment"></a>
 ### Nested Schema for `deployment`

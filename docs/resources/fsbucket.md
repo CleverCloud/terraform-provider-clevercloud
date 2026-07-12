@@ -62,6 +62,7 @@ resource "clevercloud_fsbucket" "my_fsbucket" {
 ### Optional
 
 - `region` (String) Geographical region where the data will be stored
+- `tags` (Set of String) Tags of the addon
 
 ### Read-Only
 
@@ -69,3 +70,4 @@ resource "clevercloud_fsbucket" "my_fsbucket" {
 - `ftp_username` (String) FTP username used to authenticate
 - `host` (String) FSBucket FTP endpoint
 - `id` (String) Generated unique identifier
+- `tags_all` (Set of String) All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`

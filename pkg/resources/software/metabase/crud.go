@@ -7,8 +7,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
+
+// ModifyPlan recomputes the effective `tags_all` (provider defaults merged with the
+// resource `tags`) at plan time, so a provider-level default_tags change propagates to
+// existing resources.
+func (r *ResourceMetabase) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || r.Provider == nil {
+		return
+	}
+
+	plan := helper.PlanFrom[Metabase](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &resp.Diagnostics)
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, plan)...)
+}
 
 // Create a new resource
 func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -43,19 +61,21 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
 	}
-	addon := res.Payload()
+	createdAddon := res.Payload()
 
-	mb.ID = pkg.FromStr(addon.RealID)
-	mb.Region = pkg.FromStr(addon.Region)
+	mb.ID = pkg.FromStr(createdAddon.RealID)
+	mb.Region = pkg.FromStr(createdAddon.Region)
 	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
 
-	metabaseRes := tmp.GetMetabase(ctx, r.Client(), addon.RealID)
+	metabaseRes := tmp.GetMetabase(ctx, r.Client(), createdAddon.RealID)
 	if metabaseRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Metabase", metabaseRes.Error().Error())
 	} else {
 		metabase := metabaseRes.Payload()
 		mb.Host = pkg.FromStr(metabase.AccessURL)
 	}
+
+	resources.SyncTags(ctx, r, resources.AddonTags, createdAddon.ID, mb.Tags, &mb.Tags, &mb.TagsAll, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
 }
@@ -94,9 +114,11 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Metabase addon", addonRes.Error().Error())
 	} else {
-		addon := addonRes.Payload()
-		state.Region = pkg.FromStr(addon.Region)
+		addonPayload := addonRes.Payload()
+		state.Region = pkg.FromStr(addonPayload.Region)
 	}
+
+	state.Tags, state.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonId, state.Tags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -126,6 +148,12 @@ func (r *ResourceMetabase) Update(ctx context.Context, req resource.UpdateReques
 		resp.Diagnostics.AddError("failed to update Metabase", addonRes.Error().Error())
 	} else {
 		state.Name = pkg.FromStr(addonRes.Payload().Name)
+	}
+
+	if addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString()); err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+	} else {
+		resources.SyncTags(ctx, r, resources.AddonTags, addonID, plan.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

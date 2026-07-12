@@ -34,6 +34,7 @@ Learn more about [Otoroshi with LLM](https://www.clever.cloud/developers/doc/add
 ### Optional
 
 - `region` (String) Geographical region where the data will be stored
+- `tags` (Set of String) Tags of the Otoroshi
 - `version` (String) Otoroshi version to deploy
 
 ### Read-Only
@@ -45,4 +46,5 @@ Learn more about [Otoroshi with LLM](https://www.clever.cloud/developers/doc/add
 - `id` (String) Generated unique identifier
 - `initial_admin_login` (String) Initial admin login
 - `initial_admin_password` (String, Sensitive) Initial admin password
+- `tags_all` (Set of String) All tags applied to the Otoroshi: the resource `tags` merged with the provider-level `default_tags`
 - `url` (String) URL

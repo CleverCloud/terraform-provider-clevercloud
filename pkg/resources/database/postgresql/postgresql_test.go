@@ -36,6 +36,7 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 			"region": "par",
 			"plan":   "dev",
 			"backup": true,
+			"tags":   []string{"foo", "bar"},
 		}))
 
 	resource.Test(t, resource.TestCase{
@@ -54,12 +55,22 @@ func TestAccPostgreSQL_basic(t *testing.T) {
 				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("password")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.StringExact("dev")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("backup"), knownvalue.Bool(true)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
 			},
 		}, {
 			ResourceName: rName,
-			Config:       providerBlock.Append(postgresqlBlock.SetOneValue("name", rNameEdited)).String(),
+			Config: providerBlock.Append(
+				postgresqlBlock.SetOneValue("name", rNameEdited).SetOneValue("tags", []string{"bar", "baz"}),
+			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rNameEdited)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("baz"),
+				})),
 			},
 		}, {
 			ResourceName: rName2,

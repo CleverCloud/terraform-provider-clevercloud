@@ -26,6 +26,7 @@ See [Redis product specification](https://www.clever.cloud/developers/doc/addons
 
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `region` (String) Geographical region where the data will be stored
+- `tags` (Set of String) Tags of the addon
 
 ### Read-Only
 
@@ -33,6 +34,7 @@ See [Redis product specification](https://www.clever.cloud/developers/doc/addons
 - `host` (String) Database host, used to connect to
 - `id` (String) Generated unique identifier
 - `port` (Number) Database port
+- `tags_all` (Set of String) All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`
 - `token` (String, Sensitive) Token to authenticate
 
 <a id="nestedatt--networkgroups"></a>

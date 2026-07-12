@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
@@ -163,6 +164,9 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 	if createRes != nil {
 		runtime.ID = pkg.FromStr(createRes.Application.ID)
 		runtime.SetFromResponse(createRes, ctx, &diags)
+
+		// Apply the union of provider default_tags and the resource tags.
+		resources.SyncTags(ctx, resource, resources.ApplicationTags, runtime.ID.ValueString(), runtime.Tags, &runtime.Tags, &runtime.TagsAll, &diags)
 	}
 
 	return diags

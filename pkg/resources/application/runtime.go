@@ -47,6 +47,8 @@ type Runtime struct {
 	DeployURL        types.String             `tfsdk:"deploy_url"`
 	Dependencies     types.Set                `tfsdk:"dependencies"`
 	Networkgroups    types.Set                `tfsdk:"networkgroups"`
+	Tags             types.Set                `tfsdk:"tags"`
+	TagsAll          types.Set                `tfsdk:"tags_all"`
 	Deployment       *attributes.Deployment   `tfsdk:"deployment"`
 	Hooks            *attributes.Hooks        `tfsdk:"hooks"`
 	Integrations     *attributes.Integrations `tfsdk:"integrations"`

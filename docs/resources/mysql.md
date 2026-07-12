@@ -31,6 +31,7 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 - `read_only_users` (Attributes List) MySQL users with read-only access (see [below for nested schema](#nestedatt--read_only_users))
 - `region` (String) Geographical region where the data will be stored
 - `skip_log_bin` (Boolean) Disable binary logging. Saves disk space but prevents point-in-time recovery and replication.
+- `tags` (Set of String) Tags of the addon
 - `version` (String) MySQL version
 
 ### Read-Only
@@ -41,6 +42,7 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 - `id` (String) Generated unique identifier
 - `password` (String, Sensitive) Login password
 - `port` (Number) Database port
+- `tags_all` (Set of String) All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`
 - `uri` (String, Sensitive) Database connection string
 - `user` (String) Login username
 
