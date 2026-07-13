@@ -233,3 +233,64 @@ func TestAccNodejs_tcpRedirection(t *testing.T) {
 		}},
 	})
 }
+
+func TestAccNodejs_githubHookRequiresBranch(t *testing.T) {
+	t.Parallel()
+
+	rName := acctest.RandomWithPrefix("tf-test-node")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	nodejsBlock := helper.NewRessource(
+		"clevercloud_nodejs",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 2,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "M",
+		}),
+		helper.SetBlockValues("deployment", map[string]any{
+			"repository": "https://github.com/CleverCloud/nodejs-example.git",
+			"commit":     "github_hook",
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(nodejsBlock).String(),
+			ExpectError:  regexp.MustCompile("branch is required"),
+		}},
+	})
+}
+
+func TestAccNodejs_branchRequiresGithubHook(t *testing.T) {
+	t.Parallel()
+
+	rName := acctest.RandomWithPrefix("tf-test-node")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	nodejsBlock := helper.NewRessource(
+		"clevercloud_nodejs",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 2,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "M",
+			"branch":             "main",
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(nodejsBlock).String(),
+			ExpectError:  regexp.MustCompile("branch only applies"),
+		}},
+	})
+}
