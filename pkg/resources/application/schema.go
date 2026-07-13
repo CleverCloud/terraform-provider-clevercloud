@@ -117,6 +117,12 @@ var runtimeCommon = map[string]schema.Attribute{
 		Optional:            true,
 		MarkdownDescription: "Folder in which the application is located (inside the git repository)",
 	},
+	"branch": schema.StringAttribute{
+		Optional:            true,
+		Computed:            true,
+		MarkdownDescription: "Git branch the application deploys from. Required when the application is linked to a GitHub repository (`deployment.commit = \"github_hook\"`) and must be omitted otherwise; then it reflects the branch last deployed, as reported by the API",
+		PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+	},
 
 	// Provider provided
 	"id": schema.StringAttribute{

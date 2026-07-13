@@ -45,6 +45,7 @@ type Runtime struct {
 	RedirectHTTPS    types.Bool               `tfsdk:"redirect_https"`
 	VHosts           types.Set                `tfsdk:"vhosts"`
 	DeployURL        types.String             `tfsdk:"deploy_url"`
+	Branch           types.String             `tfsdk:"branch"`
 	Dependencies     types.Set                `tfsdk:"dependencies"`
 	Networkgroups    types.Set                `tfsdk:"networkgroups"`
 	Tags             types.Set                `tfsdk:"tags"`

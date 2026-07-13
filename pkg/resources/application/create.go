@@ -150,6 +150,7 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 			ForceHttps:      FromForceHTTPS(runtime.RedirectHTTPS.ValueBool()),
 			Zone:            runtime.Region.ValueString(),
 			CancelOnPush:    false,
+			Branch:          runtime.Branch.ValueString(),
 		},
 		Environment: environment,
 		VHosts:      vhosts,

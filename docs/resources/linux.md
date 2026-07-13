@@ -102,6 +102,7 @@ resource "clevercloud_linux" "myapp" {
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `branch` (String) Git branch the application deploys from. Required when the application is linked to a GitHub repository (`deployment.commit = "github_hook"`) and must be omitted otherwise; then it reflects the branch last deployed, as reported by the API
 - `build_command` (String) The command to run during the build phase.
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
@@ -143,7 +144,7 @@ environment = { for k, v in {
 Optional:
 
 - `authentication_basic` (String, Sensitive) user ans password ':' separated, (PersonalAccessToken in Github case)
-- `commit` (String) Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository
+- `commit` (String) Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository. When linked, the top-level `branch` attribute selects the branch to deploy and is required
 - `repository` (String) The repository URL to deploy, can be 'https://...', 'file://...'
 
 

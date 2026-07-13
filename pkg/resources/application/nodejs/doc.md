@@ -36,4 +36,24 @@ resource "clevercloud_nodejs" "myapp" {
 }
 ```
 
+### Deploy from a linked GitHub repository
+
+```terraform
+resource "clevercloud_nodejs" "from_github" {
+    name = "tf-myapp"
+    region = "par"
+    min_instance_count = 1
+    max_instance_count = 2
+    smallest_flavor = "XS"
+    biggest_flavor = "M"
+
+    # pushes to the selected branch trigger deployments
+    branch = "main"
+    deployment {
+        repository = "https://github.com/your-org/your-app.git"
+        commit     = "github_hook"
+    }
+}
+```
+
 **Note**: For deploying from private GitHub repositories, see the [private repository deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-private-repository-deployment).

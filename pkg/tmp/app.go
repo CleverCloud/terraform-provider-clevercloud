@@ -28,6 +28,7 @@ type CreateAppRequest struct {
 	CancelOnPush    bool               `json:"cancelOnPush"`
 	StickySessions  bool               `json:"stickySessions"`
 	ForceHttps      string             `json:"forceHttps"`
+	Branch          string             `json:"branch,omitempty"`
 	GithubApp       *GithubApplication `json:"githubApp"`
 	OAuthService    *string            `json:"oauthService"`
 	OAuthAppID      *string            `json:"oauthAppId"`
@@ -312,6 +313,7 @@ type UpdateAppReq struct {
 	CancelOnPush    bool   `json:"cancelOnPush"`
 	StickySessions  bool   `json:"stickySessions"`
 	ForceHttps      string `json:"forceHttps"`
+	Branch          string `json:"branch,omitempty"`
 }
 
 func UpdateApp(ctx context.Context, cc *client.Client, organisationID, applicationID string, req UpdateAppReq) client.Response[AppResponse] {

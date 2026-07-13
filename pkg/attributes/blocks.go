@@ -250,7 +250,7 @@ var blocks = map[string]schema.Block{
 			"commit": schema.StringAttribute{
 				Optional:            true,
 				Description:         "The git reference you want to deploy",
-				MarkdownDescription: "Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository",
+				MarkdownDescription: "Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository. When linked, the top-level `branch` attribute selects the branch to deploy and is required",
 				Validators: []validator.String{
 					pkg.NewValidator(
 						"if reference (not commit hash) is provided test it's syntax",
