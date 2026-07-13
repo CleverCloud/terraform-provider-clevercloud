@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"math"
+	"net/url"
 	"strings"
 	"time"
 
@@ -455,6 +456,30 @@ func GetAddonEnv(ctx context.Context, cc *client.Client, organisation string, ad
 func UpdateAddon(ctx context.Context, cc *client.Client, organisation string, addon string, env map[string]string) client.Response[AddonResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/addons/%s", organisation, addon)
 	return client.Put[AddonResponse](ctx, cc, path, env)
+}
+
+// GetAddonTags returns the tags currently set on an addon.
+func GetAddonTags(ctx context.Context, cc *client.Client, organisation string, addon string) client.Response[[]string] {
+	path := fmt.Sprintf("/v2/organisations/%s/addons/%s/tags", organisation, addon)
+	return client.Get[[]string](ctx, cc, path)
+}
+
+// AddAddonTag adds a single tag to an addon.
+func AddAddonTag(ctx context.Context, cc *client.Client, organisation string, addon string, tag string) client.Response[any] {
+	path := fmt.Sprintf("/v2/organisations/%s/addons/%s/tags/%s", organisation, addon, url.PathEscape(tag))
+
+	return retry.WithRetry(ctx, func() client.Response[any] {
+		return client.Put[any](ctx, cc, path, nil)
+	}, fmt.Sprintf("AddAddonTag(%s, %s)", addon, tag))
+}
+
+// DeleteAddonTag removes a single tag from an addon.
+func DeleteAddonTag(ctx context.Context, cc *client.Client, organisation string, addon string, tag string) client.Response[any] {
+	path := fmt.Sprintf("/v2/organisations/%s/addons/%s/tags/%s", organisation, addon, url.PathEscape(tag))
+
+	return retry.WithRetry(ctx, func() client.Response[any] {
+		return client.Delete[any](ctx, cc, path)
+	}, fmt.Sprintf("DeleteAddonTag(%s, %s)", addon, tag))
 }
 
 func UpdateConfigProviderEnv(ctx context.Context, cc *client.Client, organisation string, addon string, envVars EnvVars) client.Response[EnvVars] {

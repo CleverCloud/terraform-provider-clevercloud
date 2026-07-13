@@ -19,7 +19,7 @@ See [Docker product specification](https://www.clever.cloud/developers/doc/appli
 
 ```terraform
 resource "clevercloud_docker" "docker_instance" {
-  name = "docker_instance"
+  name   = "docker_instance"
   region = "par"
 
   # horizontal scaling
@@ -29,6 +29,9 @@ resource "clevercloud_docker" "docker_instance" {
   # vertical scaling
   smallest_flavor = "XS"
   biggest_flavor  = "M"
+
+  # Merged with the provider-level `default_tags`; the effective set is exposed as `tags_all`.
+  tags = ["team:backend", "env:prod"]
 }
 ```
 
@@ -46,6 +49,7 @@ resource "clevercloud_docker" "docker_instance" {
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `branch` (String) Git branch the application deploys from. Required when the application is linked to a GitHub repository (`deployment.commit = "github_hook"`) and must be omitted otherwise; then it reflects the branch last deployed, as reported by the API
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `container_port` (Number) Set to custom HTTP port if your Docker container runs on custom port
 - `container_port_tcp` (Number) Set to custom TCP port if your Docker container runs on custom port.
@@ -76,12 +80,14 @@ environment = { for k, v in {
 - `registry_url` (String) The server of your private registry (optional).	Docker’s public registry
 - `registry_user` (String) The username to login to a private registry
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
+- `tags` (Set of String) Tags of the application
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
 
 ### Read-Only
 
 - `deploy_url` (String) Git URL used to push source code
 - `id` (String) Unique identifier generated during application creation
+- `tags_all` (Set of String) All tags applied to the application: the resource `tags` merged with the provider-level `default_tags`
 
 <a id="nestedblock--deployment"></a>
 ### Nested Schema for `deployment`
@@ -89,7 +95,7 @@ environment = { for k, v in {
 Optional:
 
 - `authentication_basic` (String, Sensitive) user ans password ':' separated, (PersonalAccessToken in Github case)
-- `commit` (String) Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository
+- `commit` (String) Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository. When linked, the top-level `branch` attribute selects the branch to deploy and is required
 - `repository` (String) The repository URL to deploy, can be 'https://...', 'file://...'
 
 

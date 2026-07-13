@@ -17,6 +17,23 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
+// ModifyPlan recomputes the effective `tags_all` (provider defaults merged with the
+// resource `tags`) at plan time, so a provider-level default_tags change propagates to
+// existing resources.
+func (r *ResourceRedis) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || r.Provider == nil {
+		return
+	}
+
+	plan := helper.PlanFrom[Redis](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &resp.Diagnostics)
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, plan)...)
+}
+
 // Create a new resource
 func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	rd := helper.PlanFrom[Redis](ctx, req.Plan, &resp.Diagnostics)
@@ -87,6 +104,8 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 		&resp.Diagnostics,
 	)
 
+	resources.SyncTags(ctx, r, resources.AddonTags, res.Payload().ID, rd.Tags, &rd.Tags, &rd.TagsAll, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, rd)...)
 }
 
@@ -152,6 +171,7 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 	rd.Token = envAsMap["REDIS_PASSWORD"]
 
 	rd.Networkgroups = resources.ReadNetworkGroups(ctx, r, rd.ID.ValueString(), &resp.Diagnostics)
+	rd.Tags, rd.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonRD.ID, rd.Tags, &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, rd)
 	resp.Diagnostics.Append(diags...)
@@ -192,6 +212,8 @@ func (r *ResourceRedis) Update(ctx context.Context, req resource.UpdateRequest, 
 		&state.Networkgroups,
 		&resp.Diagnostics,
 	)
+
+	resources.SyncTags(ctx, r, resources.AddonTags, addonRes.Payload().ID, plan.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

@@ -28,7 +28,8 @@ func TestAccMySQL_basic(t *testing.T) {
 	rName2 := acctest.RandomWithPrefix("tf-test2-my")
 	fullName := fmt.Sprintf("clevercloud_mysql.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_mysql.%s", rName2)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
 	mysqlBlock := helper.NewRessource(
 		"clevercloud_mysql",
 		rName,
@@ -37,6 +38,7 @@ func TestAccMySQL_basic(t *testing.T) {
 			"region": "par",
 			"plan":   "dev",
 			"backup": true,
+			"tags":   []string{"foo", "bar"},
 		}))
 
 	resource.Test(t, resource.TestCase{
@@ -55,6 +57,17 @@ func TestAccMySQL_basic(t *testing.T) {
 				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("password")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.StringExact("dev")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("backup"), knownvalue.Bool(true)),
+				// resource-level tags exclude the provider default_tags
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
+				// tags_all merges resource tags with provider default_tags
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+					knownvalue.StringExact("managed"),
+				})),
 			},
 		}, {
 			ResourceName: rName,
@@ -282,9 +295,9 @@ func TestAccMySQL_Import(t *testing.T) {
 					addonID = res.Payload().ID
 					realID = res.Payload().RealID
 				},
-				Config:       providerBlock.Append(mysqlBlock).String(),
-				ResourceName: fullName,
-				ImportState:  true,
+				Config:             providerBlock.Append(mysqlBlock).String(),
+				ResourceName:       fullName,
+				ImportState:        true,
 				ImportStatePersist: true,
 				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
 					return realID, nil

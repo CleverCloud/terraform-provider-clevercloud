@@ -26,6 +26,7 @@ See [Pulsar product specification](https://www.clever.cloud/developers/doc/addon
 - `region` (String) Geographical region where the data will be stored
 - `retention_period` (Number) Pulsar namespace retention policy in minutes
 - `retention_size` (Number) Pulsar namespace retention policy in bytes
+- `tags` (Set of String) Tags of the addon
 
 ### Read-Only
 
@@ -33,5 +34,6 @@ See [Pulsar product specification](https://www.clever.cloud/developers/doc/addon
 - `http_url` (String) Pulsar REST API address
 - `id` (String) Generated unique identifier
 - `namespace` (String) Pulsar namespace
+- `tags_all` (Set of String) All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`
 - `tenant` (String) Pulsar tenant
 - `token` (String, Sensitive) Pulsar authentication token

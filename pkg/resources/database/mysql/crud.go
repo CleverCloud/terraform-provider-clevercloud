@@ -125,6 +125,8 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 		&resp.Diagnostics,
 	)
 
+	resources.SyncTags(ctx, r, resources.AddonTags, createdMy.ID, my.Tags, &my.Tags, &my.TagsAll, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, my)...)
 }
 
@@ -183,6 +185,7 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 
 	my.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
+	my.Tags, my.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonId, my.Tags, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, my)...)
 }
 
@@ -259,6 +262,8 @@ func (r *ResourceMySQL) Update(ctx context.Context, req resource.UpdateRequest, 
 		&state.Networkgroups,
 		&resp.Diagnostics,
 	)
+
+	resources.SyncTags(ctx, r, resources.AddonTags, addonRes.Payload().ID, plan.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

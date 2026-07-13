@@ -19,7 +19,8 @@ func TestAccRust_basic(t *testing.T) {
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-rust")
 	fullName := fmt.Sprintf("clevercloud_rust.%s", rName)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
 	rustBlock := helper.NewRessource(
 		"clevercloud_rust",
 		rName,
@@ -37,6 +38,7 @@ func TestAccRust_basic(t *testing.T) {
 			"environment":        map[string]any{"MY_KEY": "myval"},
 			"dependencies":       []string{},
 			"features":           []string{"feature1", "feature2"},
+			"tags":               []string{"foo", "bar"},
 		}),
 	)
 
@@ -61,6 +63,15 @@ func TestAccRust_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dependencies"), knownvalue.ListSizeExact(0)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`app_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`git\+ssh://.*`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+					knownvalue.StringExact("managed"),
+				})),
 			},
 		}, {
 			Config: providerBlock.String() + helper.NewRessource(

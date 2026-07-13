@@ -26,7 +26,8 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-frankenphp")
 	fullName := fmt.Sprintf("clevercloud_frankenphp.%s", rName)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
 	domain := fmt.Sprintf("%s.com", rName)
 	domainEdit1 := rName + "-1.com"
 	domainEdit2 := rName + "-2.com"
@@ -42,6 +43,7 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 			"biggest_flavor":     "M",
 			"dev_dependencies":   false,
 			"vhosts":             []map[string]string{{"fqdn": domain}},
+			"tags":               []string{"foo", "bar"},
 		}),
 	)
 
@@ -55,6 +57,15 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+					knownvalue.StringExact("managed"),
+				})),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(false)),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
 					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)

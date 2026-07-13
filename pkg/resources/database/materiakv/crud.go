@@ -10,8 +10,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
+
+// ModifyPlan recomputes the effective `tags_all` (provider defaults merged with the
+// resource `tags`) at plan time, so a provider-level default_tags change propagates to
+// existing resources.
+func (r *ResourceMateriaKV) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || r.Provider == nil {
+		return
+	}
+
+	plan := helper.PlanFrom[MateriaKV](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &resp.Diagnostics)
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, plan)...)
+}
 
 // Create a new resource
 func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -72,6 +90,8 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 	kv.Port = pkg.FromI(int64(kvInfo.Port))
 	kv.Token = pkg.FromStr(kvInfo.Token)
 
+	resources.SyncTags(ctx, r, resources.AddonTags, res.Payload().ID, kv.Tags, &kv.Tags, &kv.TagsAll, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
 }
 
@@ -122,6 +142,12 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 	kv.Port = pkg.FromI(int64(addonKV.Port))
 	kv.Token = pkg.FromStr(addonKV.Token)
 
+	if addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), kv.ID.ValueString()); err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+	} else {
+		kv.Tags, kv.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonID, kv.Tags, &resp.Diagnostics)
+	}
+
 	diags = resp.State.Set(ctx, kv)
 	resp.Diagnostics.Append(diags...)
 }
@@ -145,6 +171,9 @@ func (r *ResourceMateriaKV) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 	state.Name = pkg.FromStr(addonRes.Payload().Name)
+
+	resources.SyncTags(ctx, r, resources.AddonTags, addonRes.Payload().ID, plan.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 

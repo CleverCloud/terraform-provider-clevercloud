@@ -73,7 +73,7 @@ func TestReadFromAPI_Description(t *testing.T) {
 			}
 			var diags diag.Diagnostics
 
-			readFromAPI(state, ng, &diags)
+			readFromAPI(state, ng, nil, &diags)
 
 			if diags.HasError() {
 				t.Fatalf("unexpected diagnostics: %v", diags)
@@ -94,13 +94,40 @@ func TestReadFromAPI_Description(t *testing.T) {
 	}
 }
 
+func extractSet(t *testing.T, s basetypes.SetValue) []string {
+	t.Helper()
+	var got []string
+	if d := s.ElementsAs(t.Context(), &got, false); d.HasError() {
+		t.Fatalf("failed to extract set: %v", d)
+	}
+	return got
+}
+
+func assertSameElements(t *testing.T, got, want []string) {
+	t.Helper()
+	if len(got) != len(want) {
+		t.Fatalf("expected %v, got %v", want, got)
+	}
+	seen := map[string]bool{}
+	for _, v := range got {
+		seen[v] = true
+	}
+	for _, w := range want {
+		if !seen[w] {
+			t.Fatalf("missing %q in result %v", w, got)
+		}
+	}
+}
+
 func TestReadFromAPI_Tags(t *testing.T) {
 	cases := []struct {
-		name      string
-		stateTags basetypes.SetValue
-		apiTags   []string
-		wantNull  bool
-		wantTags  []string
+		name        string
+		stateTags   basetypes.SetValue
+		defaultTags []string
+		apiTags     []string
+		wantNull    bool
+		wantTags    []string
+		wantTagsAll []string
 	}{{
 		name:      "null state + nil API → keep null",
 		stateTags: setNull(),
@@ -112,20 +139,39 @@ func TestReadFromAPI_Tags(t *testing.T) {
 		apiTags:   []string{},
 		wantNull:  true,
 	}, {
-		name:      "null state + values API → sync from API",
-		stateTags: setNull(),
-		apiTags:   []string{"a", "b"},
-		wantTags:  []string{"a", "b"},
+		name:        "null state + values API → sync from API",
+		stateTags:   setNull(),
+		apiTags:     []string{"a", "b"},
+		wantTags:    []string{"a", "b"},
+		wantTagsAll: []string{"a", "b"},
 	}, {
-		name:      "set state + values API → sync from API",
-		stateTags: setOf(t, "old"),
-		apiTags:   []string{"new"},
-		wantTags:  []string{"new"},
+		name:        "set state + values API → sync from API",
+		stateTags:   setOf(t, "old"),
+		apiTags:     []string{"new"},
+		wantTags:    []string{"new"},
+		wantTagsAll: []string{"new"},
 	}, {
-		name:      "set state + empty API → sync to empty",
-		stateTags: setOf(t, "old"),
-		apiTags:   []string{},
-		wantTags:  []string{},
+		name:        "set state + empty API → sync to empty",
+		stateTags:   setOf(t, "old"),
+		apiTags:     []string{},
+		wantTags:    []string{},
+		wantTagsAll: []string{},
+	}, {
+		// provider default_tags are excluded from tags but kept in tags_all
+		name:        "null state + default merged into API → tags excludes default, tags_all keeps it",
+		stateTags:   setNull(),
+		defaultTags: []string{"managed"},
+		apiTags:     []string{"foo", "managed"},
+		wantTags:    []string{"foo"},
+		wantTagsAll: []string{"foo", "managed"},
+	}, {
+		// only a default tag on the API and user never set tags → tags stays null
+		name:        "null state + only default on API → keep tags null, tags_all has default",
+		stateTags:   setNull(),
+		defaultTags: []string{"managed"},
+		apiTags:     []string{"managed"},
+		wantNull:    true,
+		wantTagsAll: []string{"managed"},
 	}}
 
 	for _, tc := range cases {
@@ -138,11 +184,15 @@ func TestReadFromAPI_Tags(t *testing.T) {
 			}
 			var diags diag.Diagnostics
 
-			readFromAPI(state, ng, &diags)
+			readFromAPI(state, ng, tc.defaultTags, &diags)
 
 			if diags.HasError() {
 				t.Fatalf("unexpected diagnostics: %v", diags)
 			}
+
+			// tags_all always reflects the full API set.
+			assertSameElements(t, extractSet(t, state.TagsAll), tc.wantTagsAll)
+
 			if tc.wantNull {
 				if !state.Tags.IsNull() {
 					t.Fatalf("expected tags to be null, got %v", state.Tags)
@@ -152,25 +202,7 @@ func TestReadFromAPI_Tags(t *testing.T) {
 			if state.Tags.IsNull() {
 				t.Fatalf("expected tags %v, got null", tc.wantTags)
 			}
-
-			var got []string
-			diags2 := state.Tags.ElementsAs(t.Context(), &got, false)
-			if diags2.HasError() {
-				t.Fatalf("failed to extract tags: %v", diags2)
-			}
-			if len(got) != len(tc.wantTags) {
-				t.Fatalf("expected tags %v, got %v", tc.wantTags, got)
-			}
-			// Sets are unordered: check membership
-			seen := map[string]bool{}
-			for _, v := range got {
-				seen[v] = true
-			}
-			for _, want := range tc.wantTags {
-				if !seen[want] {
-					t.Fatalf("missing tag %q in result %v", want, got)
-				}
-			}
+			assertSameElements(t, extractSet(t, state.Tags), tc.wantTags)
 		})
 	}
 }
@@ -180,7 +212,7 @@ func TestReadFromAPI_RequiredFields(t *testing.T) {
 	ng := &models.NetworkGroup1{Label: "myng", NetworkIP: "10.42.0.0/16"}
 	var diags diag.Diagnostics
 
-	readFromAPI(state, ng, &diags)
+	readFromAPI(state, ng, nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
@@ -196,6 +228,6 @@ func TestReadFromAPI_RequiredFields(t *testing.T) {
 func TestReadFromAPI_NilSafe(t *testing.T) {
 	var diags diag.Diagnostics
 	// Should not panic.
-	readFromAPI(nil, &models.NetworkGroup1{}, &diags)
-	readFromAPI(&Networkgroup{}, nil, &diags)
+	readFromAPI(nil, &models.NetworkGroup1{}, nil, &diags)
+	readFromAPI(&Networkgroup{}, nil, nil, &diags)
 }

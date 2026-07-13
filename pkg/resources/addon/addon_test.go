@@ -21,7 +21,8 @@ func TestAccAddon_basic(t *testing.T) {
 	rName := acctest.RandomWithPrefix("tf-test-mp")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_addon.%s", rName)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
 	addonBlock := helper.NewRessource(
 		"clevercloud_addon",
 		rName,
@@ -30,6 +31,7 @@ func TestAccAddon_basic(t *testing.T) {
 			"region":               "par",
 			"plan":                 "clever_solo",
 			"third_party_provider": "mailpace",
+			"tags":                 []string{"foo", "bar"},
 		}))
 
 	resource.Test(t, resource.TestCase{
@@ -42,6 +44,15 @@ func TestAccAddon_basic(t *testing.T) {
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^addon_.*`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+					knownvalue.StringExact("managed"),
+				})),
 				// TODO test env var existance
 			},
 		}, {

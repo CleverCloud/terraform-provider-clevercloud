@@ -151,5 +151,8 @@ func Read[T RuntimePlan](ctx context.Context, resource RuntimeResource, state T)
 	// Map API response to state
 	runtime.SetFromResponse(readRes, ctx, &diags)
 
+	// Read tags: resource-level tags exclude provider default_tags; tags_all keeps them.
+	runtime.Tags, runtime.TagsAll = resources.ReadTags(ctx, resource, resources.ApplicationTags, runtime.ID.ValueString(), runtime.Tags, &diags)
+
 	return false, diags
 }

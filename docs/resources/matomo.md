@@ -24,9 +24,11 @@ See [Matomo product specification](https://www.clever.cloud/developers/doc/addon
 ### Optional
 
 - `region` (String) Geographical region where the data will be stored
+- `tags` (Set of String) Tags of the addon
 
 ### Read-Only
 
 - `host` (String) URL to access Matomo
 - `id` (String) Generated unique identifier
+- `tags_all` (Set of String) All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`
 - `version` (String) Current version of Matomo

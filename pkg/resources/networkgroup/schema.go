@@ -8,6 +8,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
@@ -15,11 +19,13 @@ import (
 )
 
 type Networkgroup struct {
-	ID          types.String `tfsdk:"id"`
-	Name        types.String `tfsdk:"name"`
-	Description types.String `tfsdk:"description"`
-	Tags        types.Set    `tfsdk:"tags"`
-	Network     types.String `tfsdk:"network"`
+	ID                types.String `tfsdk:"id"`
+	Name              types.String `tfsdk:"name"`
+	Description       types.String `tfsdk:"description"`
+	Tags              types.Set    `tfsdk:"tags"`
+	TagsAll           types.Set    `tfsdk:"tags_all"`
+	IgnoreDefaultTags types.Bool   `tfsdk:"ignore_default_tags"`
+	Network           types.String `tfsdk:"network"`
 }
 
 //go:embed doc.md
@@ -36,8 +42,21 @@ func (r ResourceNG) Schema(_ context.Context, req resource.SchemaRequest, resp *
 				validateLabel,
 			}},
 			"description": schema.StringAttribute{Optional: true, MarkdownDescription: "Description of the network group"},
-			"tags":        schema.SetAttribute{ElementType: types.StringType, Optional: true, MarkdownDescription: "Tags of the network group"},
-			"network":     schema.StringAttribute{Computed: true, MarkdownDescription: "Network CIDR of the network group"},
+			"tags": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Tags of the network group. Network groups cannot be updated in place, so changing tags replaces the resource.",
+				PlanModifiers:       []planmodifier.Set{setplanmodifier.RequiresReplace()},
+			},
+			"tags_all": schema.SetAttribute{ElementType: types.StringType, Computed: true, MarkdownDescription: "All tags applied to the network group: the resource `tags` merged with the provider-level `default_tags` (unless `ignore_default_tags` is set)"},
+			"ignore_default_tags": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				MarkdownDescription: "When true, the provider-level `default_tags` are not merged into this network group. Changing this replaces the resource.",
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
+			},
+			"network": schema.StringAttribute{Computed: true, MarkdownDescription: "Network CIDR of the network group"},
 		},
 	}
 }

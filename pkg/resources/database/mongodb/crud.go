@@ -14,6 +14,23 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
+// ModifyPlan recomputes the effective `tags_all` (provider defaults merged with the
+// resource `tags`) at plan time, so a provider-level default_tags change propagates to
+// existing resources.
+func (r *ResourceMongoDB) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || r.Provider == nil {
+		return
+	}
+
+	plan := helper.PlanFrom[MongoDB](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &resp.Diagnostics)
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, plan)...)
+}
+
 // Create a new resource
 func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	mg := helper.PlanFrom[MongoDB](ctx, req.Plan, &resp.Diagnostics)
@@ -101,6 +118,8 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		&resp.Diagnostics,
 	)
 
+	resources.SyncTags(ctx, r, resources.AddonTags, res.Payload().ID, mg.Tags, &mg.Tags, &mg.TagsAll, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 }
 
@@ -171,6 +190,7 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 	}
 
 	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
+	mg.Tags, mg.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonId, mg.Tags, &resp.Diagnostics)
 
 	diags := resp.State.Set(ctx, mg)
 	resp.Diagnostics.Append(diags...)
@@ -211,6 +231,8 @@ func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest
 		&state.Networkgroups,
 		&resp.Diagnostics,
 	)
+
+	resources.SyncTags(ctx, r, resources.AddonTags, addonRes.Payload().ID, plan.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

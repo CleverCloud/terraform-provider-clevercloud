@@ -21,11 +21,12 @@ func TestAccPulsar_basic(t *testing.T) {
 	rName := acctest.RandomWithPrefix("tf-test-pulsar")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_pulsar.%s", rName)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
 	pulsarBlock := helper.NewRessource(
 		"clevercloud_pulsar",
 		rName,
-		helper.SetKeyValues(map[string]any{"name": rName, "region": "par"}),
+		helper.SetKeyValues(map[string]any{"name": rName, "region": "par", "tags": []string{"foo", "bar"}}),
 	)
 
 	resource.Test(t, resource.TestCase{
@@ -44,6 +45,15 @@ func TestAccPulsar_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tenant"), knownvalue.StringExact(tests.ORGANISATION)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("namespace"), knownvalue.NotNull()),
 				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("token")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+					knownvalue.StringExact("managed"),
+				})),
 			},
 		}, {
 			ResourceName: rName,

@@ -15,8 +15,10 @@ import (
 type FSBucket struct {
 	ID types.String `tfsdk:"id"`
 
-	Name   types.String `tfsdk:"name"`
-	Region types.String `tfsdk:"region"`
+	Name    types.String `tfsdk:"name"`
+	Region  types.String `tfsdk:"region"`
+	Tags    types.Set    `tfsdk:"tags"`
+	TagsAll types.Set    `tfsdk:"tags_all"`
 
 	Host        types.String `tfsdk:"host"`
 	FTPUsername types.String `tfsdk:"ftp_username"`
@@ -41,6 +43,16 @@ func (r ResourceFSBucket) Schema(_ context.Context, req resource.SchemaRequest, 
 				Computed:            true,
 				MarkdownDescription: "Geographical region where the data will be stored",
 				Default:             stringdefault.StaticString("par"),
+			},
+			"tags": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Tags of the addon",
+			},
+			"tags_all": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Computed:            true,
+				MarkdownDescription: "All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`",
 			},
 
 			// provider

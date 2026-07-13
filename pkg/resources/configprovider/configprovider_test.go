@@ -26,11 +26,12 @@ func TestAccConfigProvider_basic(t *testing.T) {
 	rName := acctest.RandomWithPrefix("tf-test-cp")
 	rNameEdited := rName + "-edit"
 	fullName := fmt.Sprintf("clevercloud_configprovider.%s", rName)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
 	configProviderBlock := helper.NewRessource(
 		"clevercloud_configprovider",
 		rName,
-		helper.SetKeyValues(map[string]any{"name": rName, "environment": map[string]any{"foo": "this is foo"}}),
+		helper.SetKeyValues(map[string]any{"name": rName, "environment": map[string]any{"foo": "this is foo"}, "tags": []string{"foo", "bar"}}),
 	)
 
 	retrieveConfigProvider := func(ctx context.Context, id string) (*tmp.ConfigProvider, error) {
@@ -76,6 +77,15 @@ func TestAccConfigProvider_basic(t *testing.T) {
 
 					return nil
 				}),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+					knownvalue.StringExact("managed"),
+				})),
 			},
 		}, {
 			ResourceName: rName,

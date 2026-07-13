@@ -4,6 +4,7 @@ page_title: "clevercloud_networkgroup Resource - terraform-provider-clevercloud"
 description: |-
   Manage any Network Group https://www.clever.cloud/developers/doc/develop/network-groups/.
   See Network Groups product specification https://www.clever.cloud/developers/doc/develop/network-groups/.
+  ~> Network groups cannot be updated in place: any change to the effective tag set (the resource tags, or the provider-level default_tags unless ignore_default_tags is set) replaces the network group, dropping its members during recreation. Set ignore_default_tags = true to shield a network group from provider-level tag changes.
 ---
 
 # clevercloud_networkgroup (Resource)
@@ -11,6 +12,8 @@ description: |-
 Manage any [Network Group](https://www.clever.cloud/developers/doc/develop/network-groups/).
 
 See [Network Groups product specification](https://www.clever.cloud/developers/doc/develop/network-groups/).
+
+~> Network groups cannot be updated in place: any change to the effective tag set (the resource `tags`, or the provider-level `default_tags` unless `ignore_default_tags` is set) **replaces the network group**, dropping its members during recreation. Set `ignore_default_tags = true` to shield a network group from provider-level tag changes.
 
 
 
@@ -24,9 +27,11 @@ See [Network Groups product specification](https://www.clever.cloud/developers/d
 ### Optional
 
 - `description` (String) Description of the network group
-- `tags` (Set of String) Tags of the network group
+- `ignore_default_tags` (Boolean) When true, the provider-level `default_tags` are not merged into this network group. Changing this replaces the resource.
+- `tags` (Set of String) Tags of the network group. Network groups cannot be updated in place, so changing tags replaces the resource.
 
 ### Read-Only
 
 - `id` (String) Generated unique identifier
 - `network` (String) Network CIDR of the network group
+- `tags_all` (Set of String) All tags applied to the network group: the resource `tags` merged with the provider-level `default_tags` (unless `ignore_default_tags` is set)

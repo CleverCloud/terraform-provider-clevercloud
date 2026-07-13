@@ -31,12 +31,14 @@ List of available providers:
 
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `region` (String) Geographical region where the data will be stored
+- `tags` (Set of String) Tags of the addon
 
 ### Read-Only
 
 - `configurations` (Map of String, Sensitive) Any configuration exposed by the add-on
 - `creation_date` (Number) Date of database creation
 - `id` (String) Generated unique identifier
+- `tags_all` (Set of String) All tags applied to the addon: the resource `tags` merged with the provider-level `default_tags`
 
 <a id="nestedatt--networkgroups"></a>
 ### Nested Schema for `networkgroups`

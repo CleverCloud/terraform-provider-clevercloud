@@ -94,6 +94,7 @@ resource "clevercloud_python" "myapp" {
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `branch` (String) Git branch the application deploys from. Required when the application is linked to a GitHub repository (`deployment.commit = "github_hook"`) and must be omitted otherwise; then it reflects the branch last deployed, as reported by the API
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
@@ -117,12 +118,14 @@ environment = { for k, v in {
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
+- `tags` (Set of String) Tags of the application
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
 
 ### Read-Only
 
 - `deploy_url` (String) Git URL used to push source code
 - `id` (String) Unique identifier generated during application creation
+- `tags_all` (Set of String) All tags applied to the application: the resource `tags` merged with the provider-level `default_tags`
 
 <a id="nestedblock--deployment"></a>
 ### Nested Schema for `deployment`
@@ -130,7 +133,7 @@ environment = { for k, v in {
 Optional:
 
 - `authentication_basic` (String, Sensitive) user ans password ':' separated, (PersonalAccessToken in Github case)
-- `commit` (String) Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository
+- `commit` (String) Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository. When linked, the top-level `branch` attribute selects the branch to deploy and is required
 - `repository` (String) The repository URL to deploy, can be 'https://...', 'file://...'
 
 

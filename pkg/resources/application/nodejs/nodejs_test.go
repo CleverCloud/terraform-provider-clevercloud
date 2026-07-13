@@ -30,7 +30,8 @@ func TestAccNodejs_basic(t *testing.T) {
 	rName2 := acctest.RandomWithPrefix("tf-test-node-2")
 	fullName := fmt.Sprintf("clevercloud_nodejs.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_nodejs.%s", rName2)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
 	nodejsBlock := helper.NewRessource(
 		"clevercloud_nodejs",
 		rName,
@@ -47,6 +48,7 @@ func TestAccNodejs_basic(t *testing.T) {
 			"app_folder":         "./app",
 			"environment":        map[string]any{"MY_KEY": "myval"},
 			"dependencies":       []string{},
+			"tags":               []string{"foo", "bar"},
 		}),
 		helper.SetBlockValues("hooks", map[string]any{"post_build": "echo \"build is OK!\""}),
 	)
@@ -63,7 +65,7 @@ func TestAccNodejs_basic(t *testing.T) {
 		}),
 		helper.SetBlockValues("deployment", map[string]any{
 			"repository": "https://github.com/CleverCloud/nodejs-example.git",
-			"commit":     "84cc90cc76abeda2a425ed23d1881f398a30857a",
+			"commit":     "2474d0e99089096f2e5548e19a2c0ad0f684c674",
 		}))
 
 	resource.Test(t, resource.TestCase{
@@ -78,6 +80,15 @@ func TestAccNodejs_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("build_flavor"), knownvalue.StringExact("XL")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+					knownvalue.StringExact("managed"),
+				})),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
 					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
 					if appRes.HasError() {
@@ -185,6 +196,72 @@ func TestAccNodejs_basic(t *testing.T) {
 					return nil
 				}),
 			},
+		}},
+	})
+}
+
+// TestAccNodejs_githubHookRequiresBranch checks the shared config validation: a
+// GitHub-linked application (deployment.commit = "github_hook") must explicitly
+// select the branch to deploy.
+func TestAccNodejs_githubHookRequiresBranch(t *testing.T) {
+	t.Parallel()
+
+	rName := acctest.RandomWithPrefix("tf-test-node")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	nodejsBlock := helper.NewRessource(
+		"clevercloud_nodejs",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 2,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "M",
+		}),
+		helper.SetBlockValues("deployment", map[string]any{
+			"repository": "https://github.com/CleverCloud/nodejs-example.git",
+			"commit":     "github_hook",
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(nodejsBlock).String(),
+			ExpectError:  regexp.MustCompile("branch is required"),
+		}},
+	})
+}
+
+// TestAccNodejs_branchRequiresGithubHook checks the reverse rule: `branch` must
+// not be defined on applications not linked to a GitHub repository.
+func TestAccNodejs_branchRequiresGithubHook(t *testing.T) {
+	t.Parallel()
+
+	rName := acctest.RandomWithPrefix("tf-test-node")
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	nodejsBlock := helper.NewRessource(
+		"clevercloud_nodejs",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 2,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "M",
+			"branch":             "main",
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(nodejsBlock).String(),
+			ExpectError:  regexp.MustCompile("branch only applies"),
 		}},
 	})
 }

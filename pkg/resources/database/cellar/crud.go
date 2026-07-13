@@ -7,9 +7,27 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/s3"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
+
+// ModifyPlan recomputes the effective `tags_all` (provider defaults merged with the
+// resource `tags`) at plan time. This is what makes a provider-level tag change produce
+// a diff on existing resources so it propagates on the next apply.
+func (r *ResourceCellar) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || r.Provider == nil {
+		return // resource is being destroyed, or provider not configured (e.g. validate)
+	}
+
+	plan := helper.PlanFrom[Cellar](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &resp.Diagnostics)
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, plan)...)
+}
 
 // Create a new resource
 func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -54,6 +72,11 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 
 	cellar.ID = pkg.FromStr(addonRes.RealID)
 
+	resources.SyncTags(ctx, r, resources.AddonTags, addonRes.ID, cellar.Tags, &cellar.Tags, &cellar.TagsAll, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), addonRes.RealID)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env vars", envRes.Error().Error())
@@ -92,7 +115,7 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 		resp.Diagnostics.AddError("failed to get Cellar", addonRes.Error().Error())
 		return
 	}
-	addon := addonRes.Payload()
+	addonPayload := addonRes.Payload()
 
 	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
 	if addonEnvRes.HasError() {
@@ -102,11 +125,13 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 	addonEnv := addonEnvRes.Payload()
 
 	creds := s3.FromEnvVars(*addonEnv)
-	cellar.Name = pkg.FromStr(addon.Name)
-	cellar.Region = pkg.FromStr(addon.Region)
+	cellar.Name = pkg.FromStr(addonPayload.Name)
+	cellar.Region = pkg.FromStr(addonPayload.Region)
 	cellar.Host = pkg.FromStr(creds.Host)
 	cellar.KeyID = pkg.FromStr(creds.KeyID)
 	cellar.KeySecret = pkg.FromStr(creds.KeySecret)
+
+	cellar.Tags, cellar.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonPayload.ID, cellar.Tags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
 }
@@ -137,6 +162,11 @@ func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 	state.Name = pkg.FromStr(addonRes.Payload().Name)
+
+	resources.SyncTags(ctx, r, resources.AddonTags, addonRes.Payload().ID, plan.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

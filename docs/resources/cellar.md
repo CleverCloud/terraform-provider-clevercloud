@@ -24,6 +24,7 @@ See [Cellar product specification](https://www.clever.cloud/developers/doc/addon
 ### Optional
 
 - `region` (String) Geographical region where the data will be stored
+- `tags` (Set of String) Tags of the Cellar
 
 ### Read-Only
 
@@ -31,3 +32,4 @@ See [Cellar product specification](https://www.clever.cloud/developers/doc/addon
 - `id` (String) Generated unique identifier
 - `key_id` (String) Key ID used to authenticate
 - `key_secret` (String, Sensitive) Key secret used to authenticate
+- `tags_all` (Set of String) All tags applied to the Cellar: the resource `tags` merged with the provider-level `default_tags`

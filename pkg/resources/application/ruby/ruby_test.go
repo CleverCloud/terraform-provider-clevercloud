@@ -26,7 +26,8 @@ func TestAccRuby_basic(t *testing.T) {
 	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-ruby")
 	fullName := fmt.Sprintf("clevercloud_ruby.%s", rName)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).
+		SetKeyValues(map[string]any{"default_tags": []string{"managed"}})
 	rubyBlock := helper.NewRessource(
 		"clevercloud_ruby",
 		rName,
@@ -54,6 +55,7 @@ func TestAccRuby_basic(t *testing.T) {
 			"static_url_prefix":       "/assets",
 			"environment":             map[string]any{"MY_KEY": "myval", "RAILS_SECRET": "secret123"},
 			"dependencies":            []string{},
+			"tags":                    []string{"foo", "bar"},
 		}),
 		helper.SetBlockValues("hooks", map[string]any{"post_build": "bundle exec rake assets:precompile"}),
 	)
@@ -69,6 +71,15 @@ func TestAccRuby_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+				})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags_all"), knownvalue.SetExact([]knownvalue.Check{
+					knownvalue.StringExact("bar"),
+					knownvalue.StringExact("foo"),
+					knownvalue.StringExact("managed"),
+				})),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("build_flavor"), knownvalue.StringExact("XL")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("ruby_version"), knownvalue.StringExact("3.3")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("enable_sidekiq"), knownvalue.Bool(true)),

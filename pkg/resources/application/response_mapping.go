@@ -23,6 +23,7 @@ func (r *Runtime) SetFromResponse(res AppResponseProvider, ctx context.Context, 
 	r.StickySessions = pkg.FromBool(app.StickySessions)
 	r.RedirectHTTPS = pkg.FromBool(ToForceHTTPS(app.ForceHTTPS))
 	r.DeployURL = pkg.FromStr(app.DeployURL)
+	r.Branch = pkg.FromStr(app.Branch)
 
 	r.VHosts = helper.VHostsFromAPIHosts(ctx, app.Vhosts.AsString(), r.VHosts, diags)
 }

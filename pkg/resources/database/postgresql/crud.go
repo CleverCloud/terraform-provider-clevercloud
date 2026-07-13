@@ -243,6 +243,8 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		&resp.Diagnostics,
 	)
 
+	resources.SyncTags(ctx, r, resources.AddonTags, createdPg.ID, pg.Tags, &pg.Tags, &pg.TagsAll, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 }
 
@@ -338,6 +340,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	pg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonID, &resp.Diagnostics)
+	pg.Tags, pg.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonID, pg.Tags, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 }
 
@@ -375,6 +378,13 @@ func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequ
 		&state.Networkgroups,
 		&resp.Diagnostics,
 	)
+
+	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+	resources.SyncTags(ctx, r, resources.AddonTags, addonID, plan.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 	// Handle plan, region, or version changes via migration

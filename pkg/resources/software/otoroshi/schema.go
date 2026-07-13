@@ -16,8 +16,10 @@ import (
 type Otoroshi struct {
 	ID types.String `tfsdk:"id"`
 
-	Name   types.String `tfsdk:"name"`
-	Region types.String `tfsdk:"region"`
+	Name    types.String `tfsdk:"name"`
+	Region  types.String `tfsdk:"region"`
+	Tags    types.Set    `tfsdk:"tags"`
+	TagsAll types.Set    `tfsdk:"tags_all"`
 
 	CreationDate types.Int64  `tfsdk:"creation_date"`
 	Version      types.String `tfsdk:"version"`
@@ -52,6 +54,16 @@ func (r ResourceOtoroshi) Schema(_ context.Context, req resource.SchemaRequest, 
 			"version": schema.StringAttribute{
 				Optional:            true,
 				MarkdownDescription: "Otoroshi version to deploy",
+			},
+			"tags": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Optional:            true,
+				MarkdownDescription: "Tags of the Otoroshi",
+			},
+			"tags_all": schema.SetAttribute{
+				ElementType:         types.StringType,
+				Computed:            true,
+				MarkdownDescription: "All tags applied to the Otoroshi: the resource `tags` merged with the provider-level `default_tags`",
 			},
 
 			// provider

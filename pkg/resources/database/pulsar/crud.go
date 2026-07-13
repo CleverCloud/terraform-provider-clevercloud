@@ -10,8 +10,26 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
+
+// ModifyPlan recomputes the effective `tags_all` (provider defaults merged with the
+// resource `tags`) at plan time, so a provider-level default_tags change propagates to
+// existing resources.
+func (r *ResourcePulsar) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
+	if req.Plan.Raw.IsNull() || r.Provider == nil {
+		return
+	}
+
+	plan := helper.PlanFrom[Pulsar](ctx, req.Plan, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	plan.TagsAll = pkg.ComputeTagsAll(ctx, r.DefaultTags(), plan.Tags, &resp.Diagnostics)
+	resp.Diagnostics.Append(resp.Plan.Set(ctx, plan)...)
+}
 
 // Create a new resource
 func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -48,13 +66,15 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 		resp.Diagnostics.AddError("failed to create add-on", res.Error().Error())
 		return
 	}
-	addon := res.Payload()
+	createdAddon := res.Payload()
 
-	plan.ID = pkg.FromStr(addon.RealID)
+	plan.ID = pkg.FromStr(createdAddon.RealID)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
-	pulsarRes := tmp.GetPulsar(ctx, r.Client(), r.Organization(), addon.RealID)
+	resources.SyncTags(ctx, r, resources.AddonTags, createdAddon.ID, plan.Tags, &plan.Tags, &plan.TagsAll, &resp.Diagnostics)
+
+	pulsarRes := tmp.GetPulsar(ctx, r.Client(), r.Organization(), createdAddon.RealID)
 	if pulsarRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())
 		return
@@ -115,8 +135,10 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 		resp.Diagnostics.AddError("failed to get add-on", addonRes.Error().Error())
 		return
 	}
-	addon := addonRes.Payload()
-	readOldAddon(&state, addon, &resp.Diagnostics)
+	addonPayload := addonRes.Payload()
+	readOldAddon(&state, addonPayload, &resp.Diagnostics)
+
+	state.Tags, state.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonPayload.ID, state.Tags, &resp.Diagnostics)
 
 	readRetention(ctx, &state, &resp.Diagnostics)
 
@@ -244,6 +266,12 @@ func (r *ResourcePulsar) Update(ctx context.Context, req resource.UpdateRequest,
 	} else {
 		state.Name = pkg.FromStr(addonRes.Payload().Name)
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+	}
+
+	if addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString()); err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+	} else {
+		resources.SyncTags(ctx, r, resources.AddonTags, addonID, plan.Tags, &state.Tags, &state.TagsAll, &resp.Diagnostics)
 	}
 
 	state.RetentionPeriod = plan.RetentionPeriod

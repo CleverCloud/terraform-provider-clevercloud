@@ -28,6 +28,7 @@ type CreateAppRequest struct {
 	CancelOnPush    bool               `json:"cancelOnPush"`
 	StickySessions  bool               `json:"stickySessions"`
 	ForceHttps      string             `json:"forceHttps"`
+	Branch          string             `json:"branch,omitempty"`
 	GithubApp       *GithubApplication `json:"githubApp"`
 	OAuthService    *string            `json:"oauthService"`
 	OAuthAppID      *string            `json:"oauthAppId"`
@@ -218,6 +219,30 @@ func DeleteApp(ctx context.Context, cc *client.Client, organisationID, applicati
 	return client.Delete[any](ctx, cc, path)
 }
 
+// GetAppTags returns the tags currently set on an application.
+func GetAppTags(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[[]string] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/tags", organisationID, applicationID)
+	return client.Get[[]string](ctx, cc, path)
+}
+
+// AddAppTag adds a single tag to an application.
+func AddAppTag(ctx context.Context, cc *client.Client, organisationID, applicationID, tag string) client.Response[any] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/tags/%s", organisationID, applicationID, url.PathEscape(tag))
+
+	return retry.WithRetry(ctx, func() client.Response[any] {
+		return client.Put[any](ctx, cc, path, nil)
+	}, fmt.Sprintf("AddAppTag(%s, %s)", applicationID, tag))
+}
+
+// DeleteAppTag removes a single tag from an application.
+func DeleteAppTag(ctx context.Context, cc *client.Client, organisationID, applicationID, tag string) client.Response[any] {
+	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/tags/%s", organisationID, applicationID, url.PathEscape(tag))
+
+	return retry.WithRetry(ctx, func() client.Response[any] {
+		return client.Delete[any](ctx, cc, path)
+	}, fmt.Sprintf("DeleteAppTag(%s, %s)", applicationID, tag))
+}
+
 func GetAppEnv(ctx context.Context, cc *client.Client, organisationID string, applicationID string) client.Response[[]Env] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/env", organisationID, applicationID)
 	return client.Get[[]Env](ctx, cc, path)
@@ -288,6 +313,7 @@ type UpdateAppReq struct {
 	CancelOnPush    bool   `json:"cancelOnPush"`
 	StickySessions  bool   `json:"stickySessions"`
 	ForceHttps      string `json:"forceHttps"`
+	Branch          string `json:"branch,omitempty"`
 }
 
 func UpdateApp(ctx context.Context, cc *client.Client, organisationID, applicationID string, req UpdateAppReq) client.Response[AppResponse] {

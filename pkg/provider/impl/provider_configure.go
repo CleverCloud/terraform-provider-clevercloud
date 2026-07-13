@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/clevertools"
 	"go.clever-cloud.dev/client"
 )
@@ -82,6 +83,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 	}
 
 	p.isNetwrkgroupsDisabled = config.DisableNetworkgroup.ValueBool()
+	p.tags = pkg.SetToStringSlice(ctx, config.DefaultTags, &resp.Diagnostics)
 
 	p.organization = os.Getenv("CC_ORGANISATION")
 	if !config.Organisation.IsUnknown() && !config.Organisation.IsNull() {

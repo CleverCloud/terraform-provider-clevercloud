@@ -94,6 +94,8 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 		&res.Diagnostics,
 	)
 
+	resources.SyncTags(ctx, r, resources.AddonTags, createdAddon.ID, plan.Tags, &plan.Tags, &plan.TagsAll, &res.Diagnostics)
+
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
 
@@ -124,6 +126,8 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 		} else {
 			r.readFromAPI(&state, *elasticRes.Payload(), &res.Diagnostics)
 		}
+
+		state.Tags, state.TagsAll = resources.ReadTags(ctx, r, resources.AddonTags, addonId, state.Tags, &res.Diagnostics)
 	}
 
 	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &res.Diagnostics)
@@ -239,6 +243,12 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 		&state.Networkgroups,
 		&res.Diagnostics,
 	)
+
+	if addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString()); err != nil {
+		res.Diagnostics.AddError("failed to get addon ID", err.Error())
+	} else {
+		resources.SyncTags(ctx, r, resources.AddonTags, addonID, plan.Tags, &state.Tags, &state.TagsAll, &res.Diagnostics)
+	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }
