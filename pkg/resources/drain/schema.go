@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"encoding/json"
+	"net/url"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -126,23 +127,23 @@ func (r *DatadogDrain) FromAPI(drain tmp.Drain) error {
 
 	// Parse the URL to extract endpoint and API key
 	// URL format: https://http-intake.logs.datadoghq.com/v1/input/<API_KEY>
-	url := recipient.URL
-	lastSlash := strings.LastIndex(url, "/")
+	rawURL := recipient.URL
+	lastSlash := strings.LastIndex(rawURL, "/")
 
 	if lastSlash > 0 {
 		// Preserve endpoint from state if already set, otherwise use API value
 		if r.Endpoint.IsNull() || r.Endpoint.IsUnknown() {
-			r.Endpoint = types.StringValue(url[:lastSlash])
+			r.Endpoint = types.StringValue(unescapeOrRaw(rawURL[:lastSlash]))
 		}
 		// For sensitive attributes, preserve current state value since API doesn't return it
 		if r.APIKey.IsNull() || r.APIKey.IsUnknown() {
-			r.APIKey = types.StringValue(url[lastSlash+1:])
+			r.APIKey = types.StringValue(unescapeOrRaw(rawURL[lastSlash+1:]))
 		}
 		// else: keep existing value from state
 	} else {
 		// Fallback if URL doesn't contain a slash (shouldn't happen)
 		if r.Endpoint.IsNull() || r.Endpoint.IsUnknown() {
-			r.Endpoint = types.StringValue(url)
+			r.Endpoint = types.StringValue(unescapeOrRaw(rawURL))
 		}
 		if r.APIKey.IsNull() || r.APIKey.IsUnknown() {
 			r.APIKey = types.StringNull()
@@ -153,6 +154,16 @@ func (r *DatadogDrain) FromAPI(drain tmp.Drain) error {
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
 	return nil
+}
+
+// unescapeOrRaw decodes percent-encoding, falling back to the raw input on
+// invalid escapes so a malformed segment never breaks a Read/plan.
+func unescapeOrRaw(s string) string {
+	decoded, err := url.PathUnescape(s)
+	if err != nil {
+		return s
+	}
+	return decoded
 }
 
 func (r DatadogDrain) GetDrain() Drain { return r.Drain }
