@@ -9,16 +9,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"go.clever-cloud.com/terraform-provider/pkg/clevertools"
 	"go.clever-cloud.dev/client"
 )
 
 type oauthCreds struct{ consumerKey, consumerSecret, token, secret string }
 
 // resolveCreds mirrors go.clever-cloud.dev/client credential precedence (env, then
-// clever-tools config) while also understanding the profiles format introduced in
-// clever-tools 4.6.0, which the pinned client v0.1.7 cannot parse.
-func resolveCreds() (*oauthCreds, *clevertools.Profile, diag.Diagnostics) {
+// clever-tools config).
+func resolveCreds() (*oauthCreds, *client.Profile, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	token, secret := os.Getenv("CC_OAUTH_TOKEN"), os.Getenv("CC_OAUTH_SECRET")
@@ -31,9 +29,9 @@ func resolveCreds() (*oauthCreds, *clevertools.Profile, diag.Diagnostics) {
 		}, nil, diags
 	}
 
-	path := clevertools.ConfigFilePath()
+	path := client.ConfigFilePath()
 
-	profile, err := clevertools.ActiveProfile(path)
+	profile, err := client.ActiveProfile(path)
 	if err != nil {
 		diags.AddError(
 			"Invalid clever-tools configuration",
@@ -122,7 +120,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 		}
 
 		if creds == nil {
-			searched := clevertools.ConfigFilePath()
+			searched := client.ConfigFilePath()
 			if searched == "" {
 				searched = "no clever-tools configuration file found"
 			}
