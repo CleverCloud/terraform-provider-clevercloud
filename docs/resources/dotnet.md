@@ -111,6 +111,7 @@ environment = { for k, v in {
 - `profile` (String) Override the build configuration settings in your project. Default: Release
 - `proj` (String) The name of your project file to use for the build, without the .csproj / .fsproj / .vbproj extension.
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
+- `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tfm` (String) Compiles for a specific framework. The framework must be defined in the project file. Example : net5.0
@@ -226,6 +227,18 @@ Required:
 
 - `fqdn` (String) domain name which will resolve to application instances inside the networkgroup
 - `networkgroup_id` (String) ID of the networkgroup
+
+
+<a id="nestedatt--redirection"></a>
+### Nested Schema for `redirection`
+
+Required:
+
+- `namespace` (String) Namespace in which the TCP redirection is open (usually `default` or `cleverapps`)
+
+Read-Only:
+
+- `port` (Number) External port allocated by Clever Cloud for this redirection
 
 
 <a id="nestedatt--vhosts"></a>

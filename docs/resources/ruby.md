@@ -195,6 +195,7 @@ environment = { for k, v in {
 - `rails_env` (String) Rails environment variable
 - `rake_goals` (String) Comma-separated list of rake goals to execute (e.g., 'db:migrate,assets:precompile')
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
+- `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
 - `ruby_version` (String) Ruby version to use (e.g., '3.3', '3.3.1')
 - `sidekiq_files` (String) Specify a list of Sidekiq configuration files (e.g., './config/sidekiq_1.yml,./config/sidekiq_2.yml')
@@ -313,6 +314,18 @@ Required:
 
 - `fqdn` (String) domain name which will resolve to application instances inside the networkgroup
 - `networkgroup_id` (String) ID of the networkgroup
+
+
+<a id="nestedatt--redirection"></a>
+### Nested Schema for `redirection`
+
+Required:
+
+- `namespace` (String) Namespace in which the TCP redirection is open (usually `default` or `cleverapps`)
+
+Read-Only:
+
+- `port` (Number) External port allocated by Clever Cloud for this redirection
 
 
 <a id="nestedatt--vhosts"></a>

@@ -191,6 +191,21 @@ var runtimeCommon = map[string]schema.Attribute{
 		},
 	},
 	"integrations": attributes.IntegrationsAttribute,
+	"redirection": schema.SingleNestedAttribute{
+		Optional:            true,
+		MarkdownDescription: "Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/))",
+		Attributes: map[string]schema.Attribute{
+			"namespace": schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "Namespace in which the TCP redirection is open (usually `default` or `cleverapps`)",
+			},
+			"port": schema.Int64Attribute{
+				Computed:            true,
+				MarkdownDescription: "External port allocated by Clever Cloud for this redirection",
+				PlanModifiers:       []planmodifier.Int64{UseStatePortWhenNamespaceUnchanged()},
+			},
+		},
+	},
 }
 
 // runtimeCommonV0 defines common schema attributes for schema version 0 (for state upgrades)

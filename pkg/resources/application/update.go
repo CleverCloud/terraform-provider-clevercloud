@@ -160,5 +160,8 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 		runtime.SetFromResponse(updatedApp, ctx, &diags)
 	}
 
+	// TCP redirection
+	runtime.Redirection = SyncTCPRedirection(ctx, resource.Client(), resource.Organization(), stateRuntime.ID.ValueString(), runtime.Redirection, stateRuntime.Redirection, &diags)
+
 	return diags
 }

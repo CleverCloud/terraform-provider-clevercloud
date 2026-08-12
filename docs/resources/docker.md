@@ -71,6 +71,7 @@ environment = { for k, v in {
 - `ipv6_cidr` (String) Activate the support of IPv6 with an IPv6 subnet int the docker daemon
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
+- `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
 - `registry_password` (String, Sensitive) The password of your username
 - `registry_url` (String) The server of your private registry (optional).	Docker’s public registry
@@ -187,6 +188,18 @@ Required:
 
 - `fqdn` (String) domain name which will resolve to application instances inside the networkgroup
 - `networkgroup_id` (String) ID of the networkgroup
+
+
+<a id="nestedatt--redirection"></a>
+### Nested Schema for `redirection`
+
+Required:
+
+- `namespace` (String) Namespace in which the TCP redirection is open (usually `default` or `cleverapps`)
+
+Read-Only:
+
+- `port` (Number) External port allocated by Clever Cloud for this redirection
 
 
 <a id="nestedatt--vhosts"></a>

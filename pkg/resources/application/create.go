@@ -163,6 +163,9 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 	if createRes != nil {
 		runtime.ID = pkg.FromStr(createRes.Application.ID)
 		runtime.SetFromResponse(createRes, ctx, &diags)
+
+		// TCP redirection
+		runtime.Redirection = SyncTCPRedirection(ctx, resource.Client(), resource.Organization(), createRes.Application.ID, runtime.Redirection, nil, &diags)
 	}
 
 	return diags
