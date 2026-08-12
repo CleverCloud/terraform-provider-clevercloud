@@ -188,3 +188,48 @@ func TestAccNodejs_basic(t *testing.T) {
 		}},
 	})
 }
+
+func TestAccNodejs_tcpRedirection(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-node")
+	fullName := fmt.Sprintf("clevercloud_nodejs.%s", rName)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	nodejsBlock := helper.NewRessource(
+		"clevercloud_nodejs",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 1,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "XS",
+			"redirection": map[string]any{
+				"namespace": "default",
+			},
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			Destroy:      false,
+			ResourceName: rName,
+			Config:       providerBlock.Append(nodejsBlock).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("redirection").AtMapKey("namespace"), knownvalue.StringExact("default")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("redirection").AtMapKey("port"), knownvalue.NotNull()),
+			},
+		}, {
+			ResourceName: rName,
+			Config: providerBlock.Append(
+				nodejsBlock.UnsetOneValue("redirection"),
+			).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("redirection"), knownvalue.Null()),
+			},
+		}},
+	})
+}

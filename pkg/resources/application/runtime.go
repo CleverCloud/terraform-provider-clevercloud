@@ -30,6 +30,13 @@ func (vh VHost) String() *string {
 	return &vhost
 }
 
+// TCPRedirection represents a TCP redirection exposing the application
+// local port 4040 on an external port
+type TCPRedirection struct {
+	Namespace types.String `tfsdk:"namespace"`
+	Port      types.Int64  `tfsdk:"port"`
+}
+
 // Runtime represents the common fields for all application runtimes
 type Runtime struct {
 	ID               types.String             `tfsdk:"id"`
@@ -50,6 +57,7 @@ type Runtime struct {
 	Deployment       *attributes.Deployment   `tfsdk:"deployment"`
 	Hooks            *attributes.Hooks        `tfsdk:"hooks"`
 	Integrations     *attributes.Integrations `tfsdk:"integrations"`
+	Redirection      *TCPRedirection          `tfsdk:"redirection"`
 
 	// Env
 	AppFolder          types.String `tfsdk:"app_folder"`
