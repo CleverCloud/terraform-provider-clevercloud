@@ -395,7 +395,7 @@ type OtoroshiInfo struct {
 	AccessURL         string            `json:"accessUrl"`
 	API               *OtoroshiAPI      `json:"api"`
 	AvailableVersions []string          `json:"availableVersions"`
-	Resources         map[string]string `json:"resources"`
+	Resources         OtoroshiResources `json:"resources"`
 	Features          map[string]any    `json:"features"`
 	EnvVars           map[string]string `json:"envVars"`
 	Initialredentials struct {
@@ -407,6 +407,16 @@ type OtoroshiAPI struct {
 	URL    string `json:"url"`
 	User   string `json:"user"`
 	Secret string `json:"secret"`
+}
+
+type OtoroshiResources struct {
+	// Entrypoint is the ID of the Java application backing the Otoroshi add-on
+	Entrypoint   string  `json:"entrypoint"`
+	RedisID      string  `json:"redisId"`
+	CellarID     *string `json:"cellarId"`
+	PulsarID     *string `json:"pulsarId"`
+	ElasticID    *string `json:"elasticId"`
+	PostgresqlID *string `json:"postgresqlId"`
 }
 
 // Use real ID

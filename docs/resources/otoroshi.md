@@ -33,6 +33,7 @@ Learn more about [Otoroshi with LLM](https://www.clever.cloud/developers/doc/add
 
 ### Optional
 
+- `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `region` (String) Geographical region where the data will be stored
 - `version` (String) Otoroshi version to deploy
 
@@ -46,3 +47,11 @@ Learn more about [Otoroshi with LLM](https://www.clever.cloud/developers/doc/add
 - `initial_admin_login` (String) Initial admin login
 - `initial_admin_password` (String, Sensitive) Initial admin password
 - `url` (String) URL
+
+<a id="nestedatt--networkgroups"></a>
+### Nested Schema for `networkgroups`
+
+Required:
+
+- `fqdn` (String) domain name which will resolve to application instances inside the networkgroup
+- `networkgroup_id` (String) ID of the networkgroup

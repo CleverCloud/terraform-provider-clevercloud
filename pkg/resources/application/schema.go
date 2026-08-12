@@ -18,6 +18,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
 // runtimeCommon defines common schema attributes for all application runtimes
@@ -173,24 +174,8 @@ var runtimeCommon = map[string]schema.Attribute{
 			}),
 		},
 	},
-	"networkgroups": schema.SetNestedAttribute{
-		Optional:            true,
-		MarkdownDescription: "List of networkgroups the application must be part of",
-		NestedObject: schema.NestedAttributeObject{
-			Attributes: map[string]schema.Attribute{
-				"networkgroup_id": schema.StringAttribute{
-					Required:            true,
-					MarkdownDescription: "ID of the networkgroup",
-				},
-				"fqdn": schema.StringAttribute{
-					Required:            true,
-					MarkdownDescription: "domain name which will resolve to application instances inside the networkgroup",
-					//Default: stringdefault.StaticString(),
-				},
-			},
-		},
-	},
-	"integrations": attributes.IntegrationsAttribute,
+	"networkgroups": resources.NetworkgroupsAttribute,
+	"integrations":  attributes.IntegrationsAttribute,
 	"redirection": schema.SingleNestedAttribute{
 		Optional:            true,
 		MarkdownDescription: "Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/))",
