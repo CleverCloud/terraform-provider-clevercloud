@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
 type Otoroshi struct {
@@ -28,6 +29,8 @@ type Otoroshi struct {
 	InitialAdminLogin    types.String `tfsdk:"initial_admin_login"`
 	InitialAdminPassword types.String `tfsdk:"initial_admin_password"`
 	URL                  types.String `tfsdk:"url"`
+
+	Networkgroups types.Set `tfsdk:"networkgroups"`
 }
 
 //go:embed doc.md
@@ -53,6 +56,7 @@ func (r ResourceOtoroshi) Schema(_ context.Context, req resource.SchemaRequest, 
 				Optional:            true,
 				MarkdownDescription: "Otoroshi version to deploy",
 			},
+			"networkgroups": resources.NetworkgroupsAttribute,
 
 			// provider
 			"id": schema.StringAttribute{

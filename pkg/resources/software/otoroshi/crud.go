@@ -8,6 +8,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -73,6 +75,9 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 		state.InitialAdminLogin = pkg.FromStr(otoroshi.Initialredentials.User)
 		state.InitialAdminPassword = pkg.FromStr(otoroshi.Initialredentials.Passsword)
 		state.URL = pkg.FromStr(otoroshi.AccessURL)
+
+		// Networkgroups are piloted on the Java application backing the add-on
+		application.SyncNetworkGroups(ctx, r, otoroshi.Resources.Entrypoint, state.Networkgroups, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
@@ -115,6 +120,9 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 		state.InitialAdminLogin = pkg.FromStr(otoroshi.Initialredentials.User)
 		state.InitialAdminPassword = pkg.FromStr(otoroshi.Initialredentials.Passsword)
 		state.URL = pkg.FromStr(otoroshi.AccessURL)
+
+		// Networkgroups are piloted on the Java application backing the add-on
+		state.Networkgroups = resources.ReadNetworkGroups(ctx, r, otoroshi.Resources.Entrypoint, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
@@ -144,6 +152,15 @@ func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 	state.Name = pkg.FromStr(addonRes.Payload().Name)
+
+	// Networkgroups are piloted on the Java application backing the add-on
+	otoroshiRes := tmp.GetOtoroshi(ctx, r.Client(), plan.ID.ValueString())
+	if otoroshiRes.HasError() {
+		resp.Diagnostics.AddError("failed to get Otoroshi", otoroshiRes.Error().Error())
+	} else {
+		application.SyncNetworkGroups(ctx, r, otoroshiRes.Payload().Resources.Entrypoint, plan.Networkgroups, &resp.Diagnostics)
+		state.Networkgroups = plan.Networkgroups
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

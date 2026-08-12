@@ -5,6 +5,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/miton18/helper/set"
@@ -25,6 +26,26 @@ var networkgroupConfigSchema = map[string]attr.Type{
 	"fqdn":            types.StringType,
 }
 var NullNetworkgroupConfig = types.SetNull(types.ObjectType{AttrTypes: networkgroupConfigSchema})
+
+// NetworkgroupsAttribute is the shared schema for the "networkgroups"
+// attribute, used by application runtimes and by add-ons piloting their
+// underlying application
+var NetworkgroupsAttribute = schema.SetNestedAttribute{
+	Optional:            true,
+	MarkdownDescription: "List of networkgroups the application must be part of",
+	NestedObject: schema.NestedAttributeObject{
+		Attributes: map[string]schema.Attribute{
+			"networkgroup_id": schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "ID of the networkgroup",
+			},
+			"fqdn": schema.StringAttribute{
+				Required:            true,
+				MarkdownDescription: "domain name which will resolve to application instances inside the networkgroup",
+			},
+		},
+	},
+}
 
 func SyncNetworkGroups(
 	ctx context.Context,
