@@ -2,6 +2,7 @@ package postgresql
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +11,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/stdlib"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
@@ -46,26 +49,82 @@ func (r *ResourcePostgreSQL) Infos(ctx context.Context, diags *diag.Diagnostics)
 	return r.infos
 }
 
-// getLocaleFromDatabase connects to the PostgreSQL database and retrieves the LC_COLLATE setting
-// which indicates the locale used when the database was created.
-// Returns the locale in format "en_GB" or empty string if unable to retrieve.
-// Retries connection up to 30 times with 2 second delay to handle database startup time.
-func getLocaleFromDatabase(ctx context.Context, host string, port int64, database, user, password string) (string, error) {
-	// Build DSN (Data Source Name) for PostgreSQL connection
+// localePgConfig builds the pgx connection configuration used to read the
+// locale. The intended semantics are the ones libpq gives to sslmode=require:
+// encrypt the connection without verifying the server certificate, because
+// Clever Cloud managed databases serve self-signed certificates. pgx diverges
+// from libpq here and escalates require to verify-ca whenever a root CA is
+// discoverable (sslrootcert, PGSSLROOTCERT or ~/.postgresql/root.crt), which
+// makes the connection fail on the self-signed certificate; enforce the
+// intended semantics with an explicit TLS configuration instead.
+func localePgConfig(host string, port int64, database, user, password string) (*pgx.ConnConfig, error) {
 	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=require",
 		host, port, user, password, database)
 
-	var db *gorm.DB
-	var err error
+	cfg, err := pgx.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse database connection configuration: %w", err)
+	}
 
-	// Retry connection up to 30 times (60 seconds total) to allow database to start
+	cfg.TLSConfig = &tls.Config{InsecureSkipVerify: true} // #nosec G402 -- libpq sslmode=require semantics: encrypt without certificate verification
+	cfg.Fallbacks = nil
+
+	return cfg, nil
+}
+
+// isRetryableLocaleError reports whether a connection error may resolve by
+// itself (database still starting up). Authentication and TLS failures are
+// permanent: retrying them only wastes the 30 x 5s retry budget.
+func isRetryableLocaleError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	msg := err.Error()
+	for _, permanent := range []string{
+		"x509:",                          // TLS certificate verification
+		"tls:",                           // TLS handshake
+		"SQLSTATE 28",                    // invalid authorization (28000) / invalid password (28P01)
+		"password authentication failed", // in case the SQLSTATE is not surfaced
+	} {
+		if strings.Contains(msg, permanent) {
+			return false
+		}
+	}
+
+	return true
+}
+
+// getLocaleFromDatabase connects to the PostgreSQL database and retrieves the LC_COLLATE setting
+// which indicates the locale used when the database was created.
+// Returns the locale in format "en_GB" or empty string if unable to retrieve.
+// Retries connection up to 30 times with 5 second delay to handle database startup time.
+func getLocaleFromDatabase(ctx context.Context, host string, port int64, database, user, password string) (string, error) {
+	cfg, err := localePgConfig(host, port, database, user, password)
+	if err != nil {
+		return "", err
+	}
+
+	var db *gorm.DB
+
+	// Retry connection up to 30 times to allow the database to start, but fail
+	// fast on permanent errors (bad credentials, TLS failure)
 	maxRetries := 30
 	for i := range maxRetries {
-		db, err = gorm.Open(postgres.Open(dsn), &gorm.Config{
+		conn := stdlib.OpenDB(*cfg)
+		db, err = gorm.Open(postgres.New(postgres.Config{Conn: conn}), &gorm.Config{
 			Logger: logger.Default.LogMode(logger.Silent), // Silent mode to avoid logs
 		})
 		if err == nil {
 			break
+		}
+
+		if closeErr := conn.Close(); closeErr != nil {
+			tflog.Warn(ctx, "failed to close database connection", map[string]any{"error": closeErr.Error()})
+		}
+
+		if !isRetryableLocaleError(err) {
+			return "", fmt.Errorf("failed to connect to database: %w", err)
 		}
 
 		if i < maxRetries-1 {
@@ -271,21 +330,26 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	// Retrieve the actual locale value from the database by querying LC_COLLATE
-	// This is necessary because the API doesn't return the locale value
-	locale, err := getLocaleFromDatabase(
-		ctx,
-		pg.Host.ValueString(),
-		pg.Port.ValueInt64(),
-		pg.Database.ValueString(),
-		pg.User.ValueString(),
-		pg.Password.ValueString(),
-	)
-	if err != nil {
-		// On shared/dev plans, the user doesn't have permission to query pg_database
-		// This is expected, so we just log a warning
-		tflog.Warn(ctx, "Failed to retrieve locale from database, using default", map[string]any{"error": err.Error()})
-	} else {
-		pg.Locale = pkg.FromStr(locale)
+	// This is necessary because the API doesn't return the locale value.
+	// The locale is fixed at database creation time (LC_COLLATE cannot change
+	// afterwards) and reading it requires a live connection to the database:
+	// only do so when the state does not carry it yet (import)
+	if pg.Locale.IsNull() || pg.Locale.IsUnknown() {
+		locale, err := getLocaleFromDatabase(
+			ctx,
+			pg.Host.ValueString(),
+			pg.Port.ValueInt64(),
+			pg.Database.ValueString(),
+			pg.User.ValueString(),
+			pg.Password.ValueString(),
+		)
+		if err != nil {
+			// On shared/dev plans, the user doesn't have permission to query pg_database
+			// This is expected, so we just log a warning
+			tflog.Warn(ctx, "Failed to retrieve locale from database, using default", map[string]any{"error": err.Error()})
+		} else {
+			pg.Locale = pkg.FromStr(locale)
+		}
 	}
 
 	pg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonID, &resp.Diagnostics)
