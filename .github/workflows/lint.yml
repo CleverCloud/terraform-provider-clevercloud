@@ -8,11 +8,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v7
       with:
-        go-version: '1.25'
+        go-version-file: 'go.mod'
     # Provide a Terraform CLI on PATH so tests don't trigger hc-install's
     # GPG-verified download (HashiCorp's signing key periodically expires).
     - name: Setup Terraform
@@ -24,11 +24,11 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v7
       with:
-        go-version: '1.25'
+        go-version-file: 'go.mod'
     - name: golangci-lint
       uses: golangci/golangci-lint-action@v9
       with:
