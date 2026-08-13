@@ -111,6 +111,82 @@ func TestProvider_ConfigureInvalidEnvironmentVariables(t *testing.T) {
 	})
 }
 
+func TestProvider_ConfigureAPITokenConflictsWithOAuth1(t *testing.T) {
+	providerBlock := `
+provider "clevercloud" {
+  organisation = "orga_00000000-0000-0000-0000-000000000000"
+  api_token    = "some-api-token"
+  token        = "oauth1-token"
+}
+
+// dummy resource to trigger provider configuration
+resource "clevercloud_cellar" "test" {
+  name = "test"
+}
+`
+	expectedError := regexp.MustCompile(`Invalid Attribute Combination`)
+
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:               true,
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		Steps: []resource.TestStep{{
+			Config:      providerBlock,
+			ExpectError: expectedError,
+		}},
+	})
+}
+
+func TestProvider_ConfigureConflictingEnvCredentials(t *testing.T) {
+	defer envBackup("CLEVER_API_TOKEN", "CC_OAUTH_TOKEN", "CC_OAUTH_SECRET")()
+
+	// Both authentication methods provided through the environment: ambiguous
+	os.Setenv("CLEVER_API_TOKEN", "some-api-token")
+	os.Setenv("CC_OAUTH_TOKEN", "oauth1-token")
+	os.Setenv("CC_OAUTH_SECRET", "oauth1-secret")
+
+	provider := helper.NewProvider("clevercloud").SetOrganisation("orga_00000000-0000-0000-0000-000000000000")
+	cellar := helper.NewRessource("clevercloud_cellar", "test",
+		helper.SetKeyValues(map[string]any{"name": "test"}))
+
+	config := provider.Append(cellar).String()
+	expectedError := regexp.MustCompile(`Conflicting CleverCloud credentials`)
+
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:               true,
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		Steps: []resource.TestStep{{
+			Config:      config,
+			ExpectError: expectedError,
+		}},
+	})
+}
+
+func TestProvider_ConfigureAPITokenInvalid(t *testing.T) {
+	defer envBackup("CLEVER_API_TOKEN", "CC_OAUTH_TOKEN", "CC_OAUTH_SECRET")()
+
+	// Only an (invalid) API token: the provider must take the Bearer path and
+	// fail against the API bridge with an authentication error
+	os.Unsetenv("CC_OAUTH_TOKEN")
+	os.Unsetenv("CC_OAUTH_SECRET")
+	os.Setenv("CLEVER_API_TOKEN", "invalid_api_token")
+
+	provider := helper.NewProvider("clevercloud").SetOrganisation("orga_00000000-0000-0000-0000-000000000000")
+	cellar := helper.NewRessource("clevercloud_cellar", "test",
+		helper.SetKeyValues(map[string]any{"name": "test"}))
+
+	config := provider.Append(cellar).String()
+	expectedError := regexp.MustCompile(`CleverCloud authentication failed`)
+
+	resource.Test(t, resource.TestCase{
+		IsUnitTest:               true,
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		Steps: []resource.TestStep{{
+			Config:      config,
+			ExpectError: expectedError,
+		}},
+	})
+}
+
 // TestProvider_ConfigureNoCredentials must not run in parallel with other tests
 // as it temporarily removes the clever-tools.json file which affects other tests.
 // When running tests that include this one, use: go test -p 1 -run "TestProvider_Configure"

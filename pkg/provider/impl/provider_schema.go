@@ -17,6 +17,7 @@ type ProviderData struct {
 	Endpoint            types.String `tfsdk:"endpoint"`
 	Token               types.String `tfsdk:"token"`
 	Secret              types.String `tfsdk:"secret"`
+	APIToken            types.String `tfsdk:"api_token"`
 	Organisation        types.String `tfsdk:"organisation"`
 	ConsumerKey         types.String `tfsdk:"consumer_key"`
 	ConsumerSecret      types.String `tfsdk:"consumer_secret"`
@@ -44,6 +45,11 @@ func (p *Provider) Schema(_ context.Context, req provider.SchemaRequest, res *pr
 				Optional:            true, // // can be read from ~/.config by client
 				Sensitive:           true,
 				MarkdownDescription: "Clever Cloud OAuth1 secret, can be took from clever-tools after login. This parameter can also be provided via CC_OAUTH_SECRET environment variable.",
+			},
+			"api_token": schema.StringAttribute{
+				Optional:            true,
+				Sensitive:           true,
+				MarkdownDescription: "Clever Cloud API token, sent as a Bearer token to the API bridge (https://api-bridge.clever-cloud.com). Mutually exclusive with the OAuth1 parameters (token, secret, consumer_key, consumer_secret). This parameter can also be provided via the CLEVER_API_TOKEN environment variable. Note: API tokens cannot sign git operations, so application resources deploying code over git still require OAuth1 credentials.",
 			},
 			"organisation": schema.StringAttribute{
 				Sensitive:           true,
