@@ -41,10 +41,10 @@ func (r ResourceKubernetesNodegroup) Schema(_ context.Context, req resource.Sche
 		MarkdownDescription: resourceKubernetesNodegroupDoc,
 		Attributes: map[string]schema.Attribute{
 			"id":            schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"kubernetes_id": schema.StringAttribute{Required: true},
+			"kubernetes_id": schema.StringAttribute{Required: true, MarkdownDescription: "ID of the Kubernetes cluster"},
 			"name":          schema.StringAttribute{Required: true, MarkdownDescription: "Name of the node group"},
-			"flavor":        schema.StringAttribute{Required: true, Description: "flavor of nodes"},
-			"size":          schema.Int64Attribute{Required: true, Description: "count of nodes"}, // add validator with min=0, max=16
+			"flavor":        schema.StringAttribute{Required: true, MarkdownDescription: "Size of the nodes, see [available flavors](https://www.clever.cloud/developers/doc/kubernetes/)"},
+			"size":          schema.Int64Attribute{Required: true, MarkdownDescription: "Number of nodes"}, // add validator with min=0, max=16
 		},
 	}
 }

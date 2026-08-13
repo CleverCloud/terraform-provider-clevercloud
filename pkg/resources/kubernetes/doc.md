@@ -1,27 +1,28 @@
-# Kubernetes Resource
+Manage [Clever Kubernetes Engine](https://www.clever.cloud/developers/doc/kubernetes/) clusters.
 
-Provides a Kubernetes cluster managed by Clever Cloud.
+See [Kubernetes product specification](https://www.clever.cloud/developers/doc/kubernetes/).
 
 ## Example Usage
 
-```hcl
+### Kubernetes Cluster
+
+```terraform
 resource "clevercloud_kubernetes" "my_cluster" {
-  name       = "my-kubernetes-cluster"
+  name = "my-kubernetes-cluster"
+}
+```
+
+### Kubernetes Cluster with a Node Group
+
+```terraform
+resource "clevercloud_kubernetes" "my_cluster" {
+  name = "my-kubernetes-cluster"
 }
 
-## Argument Reference
-
-* `name` - (Required) Name of the Kubernetes cluster.
-
-## Attribute Reference
-
-* `id` - Unique identifier for the Kubernetes cluster.
-* `kubeconfig` - Kubernetes configuration file content for accessing the cluster.
-
-## Import
-
-Kubernetes clusters can be imported using the ID, e.g.,
-
-```
-$ terraform import clevercloud_kubernetes.my_cluster addon_12345
+resource "clevercloud_kubernetes_nodegroup" "workers" {
+  kubernetes_id = clevercloud_kubernetes.my_cluster.id
+  name          = "workers"
+  flavor        = "S"
+  size          = 2
+}
 ```
