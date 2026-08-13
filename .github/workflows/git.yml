@@ -8,13 +8,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Block Fixup Commits
       uses: 13rac1/block-fixup-merge-action@v2.0.0
   conventional-commit:
     name: Conventional Commits
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
       - uses: webiny/action-conventional-commits@v1.3.0
 

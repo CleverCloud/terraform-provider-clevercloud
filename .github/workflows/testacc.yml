@@ -31,11 +31,11 @@ jobs:
           - software
           - kubernetes
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v7
       with:
-        go-version: '1.25'
+        go-version-file: 'go.mod'
     - name: Setup Terraform
       id: setup-terraform
       uses: hashicorp/setup-terraform@v4
@@ -55,11 +55,11 @@ jobs:
     needs: acceptance
     if: ${{ always() }} # run even if acceptance job fail
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
     - name: Set up Go
-      uses: actions/setup-go@v5
+      uses: actions/setup-go@v7
       with:
-        go-version: '1.25'
+        go-version-file: 'go.mod'
     - name: Sweepers
       if: always()
       run: make sweep
