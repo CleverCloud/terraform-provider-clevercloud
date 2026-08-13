@@ -1,5 +1,24 @@
 # Changelog
 
+## [2.1.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.0.1...v2.1.0) (2026-08-13)
+
+
+### Features
+
+* **application:** support TCP redirections ([f594c4e](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/f594c4e18662d4c2fc112ee8166c6908e768eb28)), closes [#402](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/402)
+* **otoroshi:** support networkgroups ([e61808b](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/e61808b8738b3f7094db142134ffacc909a57d97)), closes [#417](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/417)
+
+
+### Bug Fixes
+
+* **application:** restart app when only env vars change ([df30f0c](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/df30f0ca41c52cdbaa8cc7949f4bae83a7224493))
+* **mysql:** populate feature defaults in Read to prevent force-replace on import ([#399](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/399)) ([c428116](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/c4281165f1f66a0c737812ce9469a4aa2ee02f94))
+* **ng:** handle null description, sync peers correctly ([d786f9f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/d786f9f8b1b2dbf3f1b656cb87c18d5f27d9ce62))
+* **otoroshi:** read API credentials from addon payload, guard nil API ([f3f5a28](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/f3f5a28ebf96a815f216338114545ad16060874b))
+* **postgresql,mongodb:** populate feature defaults in Read to prevent force-replace on import ([cf90fea](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/cf90fea72333fa08cef68a34d238e3e7bab0be48))
+* **postgresql:** refresh connection info after migration, pin computed attrs ([0ae5590](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/0ae55903e84251ba9e971d520a3693f14690988f))
+* **provider:** read clever-tools profiles config format ([187c318](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/187c318df00aaf4ddb7da47f3019763f006cc967)), closes [#408](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/408)
+
 ## [2.0.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.0.0...v2.0.1) (2026-04-23)
 
 
