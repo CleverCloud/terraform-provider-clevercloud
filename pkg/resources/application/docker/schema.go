@@ -5,7 +5,6 @@ import (
 	_ "embed"
 	"fmt"
 	"net"
-	"strconv"
 	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
@@ -19,7 +18,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
+
+func init() { resources.RegisterCodec("docker", dockerEnvCodec, &Docker{}) }
+
+var dockerEnvCodec = resources.Codec{
+	{StateField: "DaemonSocketMount", APIKeyName: "CC_MOUNT_DOCKER_SOCKET", Kind: resources.KindBoolString},
+}
 
 type Docker struct {
 	application.Runtime
@@ -200,7 +206,7 @@ func (p *Docker) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	pkg.IfIsSetStr(p.RegistryURL, func(s string) { env["CC_DOCKER_LOGIN_SERVER"] = s })
 	pkg.IfIsSetStr(p.RegistryUser, func(s string) { env["CC_DOCKER_LOGIN_USERNAME"] = s })
 	pkg.IfIsSetStr(p.RegistryPassword, func(s string) { env["CC_DOCKER_LOGIN_PASSWORD"] = s })
-	pkg.IfIsSetB(p.DaemonSocketMount, func(e bool) { env["CC_MOUNT_DOCKER_SOCKET"] = strconv.FormatBool(e) })
+	diags.Append(dockerEnvCodec.WriteEnv(p, env)...)
 
 	env = pkg.Merge(env, p.Hooks.ToEnv())
 	env = pkg.Merge(env, p.Integrations.ToEnv(ctx, diags))
@@ -217,7 +223,7 @@ func (p *Docker) FromEnv(ctx context.Context, env *maps.Map[string, string], dia
 	p.RegistryURL = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_LOGIN_SERVER"))
 	p.RegistryUser = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_LOGIN_USERNAME"))
 	p.RegistryPassword = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_LOGIN_PASSWORD"))
-	p.DaemonSocketMount = pkg.FromBoolPtr(env.PopPtr("CC_MOUNT_DOCKER_SOCKET"))
+	diags.Append(dockerEnvCodec.ReadEnv(env, p)...)
 
 	p.Integrations = attributes.FromEnvIntegrations(ctx, env, p.Integrations, diags)
 }

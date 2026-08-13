@@ -329,3 +329,38 @@ func TestAccElasticsearch_RefreshDeleted(t *testing.T) {
 		}},
 	})
 }
+
+func TestAccElasticsearch_Import(t *testing.T) {
+	t.Parallel()
+	rName := acctest.RandomWithPrefix("tf-test-es-import")
+	fullName := fmt.Sprintf("clevercloud_elasticsearch.%s", rName)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	esBlock := helper.NewRessource(
+		"clevercloud_elasticsearch",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+			"plan":   "xs",
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(t.Context()),
+		Steps: []resource.TestStep{
+			{
+				ResourceName: rName,
+				Config:       providerBlock.Append(esBlock).String(),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^elasticsearch_.*$`))),
+				},
+			},
+			{
+				ResourceName:      fullName,
+				ImportState:       true,
+				ImportStateVerify: true,
+			},
+		},
+	})
+}

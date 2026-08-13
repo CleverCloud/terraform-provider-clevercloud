@@ -15,7 +15,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
+
+func init() { resources.RegisterCodec("php", phpEnvFlagsCodec, &PHP{}) }
+
+var phpEnvFlagsCodec = resources.Codec{
+	{StateField: "DevDependencies", APIKeyName: "CC_PHP_DEV_DEPENDENCIES", Kind: resources.KindEnvFlag, TruthyValue: "install"},
+	{StateField: "RedisSessions", APIKeyName: "SESSION_TYPE", Kind: resources.KindEnvFlag, TruthyValue: "redis"},
+}
 
 type PHP struct {
 	application.Runtime
@@ -107,16 +115,7 @@ func (p *PHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	pkg.IfIsSetStr(p.AppFolder, func(s string) { env["APP_FOLDER"] = s })
 	pkg.IfIsSetStr(p.WebRoot, func(webroot string) { env["CC_WEBROOT"] = webroot })
 	pkg.IfIsSetStr(p.PHPVersion, func(version string) { env["CC_PHP_VERSION"] = version })
-	pkg.IfIsSetB(p.DevDependencies, func(devDeps bool) {
-		if devDeps {
-			env["CC_PHP_DEV_DEPENDENCIES"] = "install"
-		}
-	})
-	pkg.IfIsSetB(p.RedisSessions, func(redis bool) {
-		if redis {
-			env["SESSION_TYPE"] = "redis"
-		}
-	})
+	diags.Append(phpEnvFlagsCodec.WriteEnv(p, env)...)
 	env = pkg.Merge(env, p.Hooks.ToEnv())
 	env = pkg.Merge(env, p.Integrations.ToEnv(ctx, diags))
 
@@ -127,8 +126,7 @@ func (p *PHP) FromEnv(ctx context.Context, env *maps.Map[string, string], diags 
 	p.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 	p.WebRoot = pkg.FromStrPtr(env.PopPtr("CC_WEBROOT"))
 	p.PHPVersion = pkg.FromStrPtr(env.PopPtr("CC_PHP_VERSION"))
-	pkg.SetBoolIf(&p.DevDependencies, env.PopPtr("CC_PHP_DEV_DEPENDENCIES"), "install")
-	pkg.SetBoolIf(&p.RedisSessions, env.PopPtr("SESSION_TYPE"), "redis")
+	diags.Append(phpEnvFlagsCodec.ReadEnv(env, p)...)
 
 	p.Integrations = attributes.FromEnvIntegrations(ctx, env, p.Integrations, diags)
 }

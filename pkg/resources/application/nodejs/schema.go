@@ -15,7 +15,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
+
+func init() { resources.RegisterCodec("nodejs", nodejsEnvFlagsCodec, &NodeJS{}) }
+
+var nodejsEnvFlagsCodec = resources.Codec{
+	{StateField: "DevDependencies", APIKeyName: "CC_NODE_DEV_DEPENDENCIES", Kind: resources.KindEnvFlag, TruthyValue: "install"},
+}
 
 type NodeJS struct {
 	application.Runtime
@@ -123,7 +130,7 @@ func (node NodeJS) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	env = pkg.Merge(env, customEnv)
 
 	pkg.IfIsSetStr(node.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-	pkg.IfIsSetB(node.DevDependencies, func(s bool) { env["CC_NODE_DEV_DEPENDENCIES"] = "install" })
+	diags.Append(nodejsEnvFlagsCodec.WriteEnv(node, env)...)
 	pkg.IfIsSetStr(node.StartScript, func(s string) { env["CC_RUN_COMMAND"] = s })
 	pkg.IfIsSetStr(node.PackageManager, func(s string) { env["CC_NODE_BUILD_TOOL"] = s })
 	pkg.IfIsSetStr(node.Registry, func(s string) { env["CC_NPM_REGISTRY"] = s })
@@ -136,7 +143,7 @@ func (node NodeJS) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 
 func (node *NodeJS) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
 	node.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
-	pkg.SetBoolIf(&node.DevDependencies, env.PopPtr("CC_NODE_DEV_DEPENDENCIES"), "install")
+	diags.Append(nodejsEnvFlagsCodec.ReadEnv(env, node)...)
 	node.StartScript = pkg.FromStrPtr(env.PopPtr("CC_RUN_COMMAND"))
 	node.PackageManager = pkg.FromStrPtr(env.PopPtr("CC_NODE_BUILD_TOOL"))
 	node.Registry = pkg.FromStrPtr(env.PopPtr("CC_NPM_REGISTRY"))
