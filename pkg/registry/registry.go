@@ -46,6 +46,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/oauth_consumer"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/software/metabase"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/software/otoroshi"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/software/otoroshi/route"
 )
 
 var Datasources = []func() datasource.DataSource{
@@ -68,6 +69,7 @@ var Resources = []func() resource.Resource{
 	mysql.NewResourceMySQL,
 	nodejs.NewResourceNodeJS,
 	otoroshi.NewResourceOtoroshi,
+	route.NewResourceOtoroshiRoute,
 	php.NewResourcePHP,
 	postgresql.NewResourcePostgreSQL,
 	elasticsearch.NewResourceElasticsearch,
