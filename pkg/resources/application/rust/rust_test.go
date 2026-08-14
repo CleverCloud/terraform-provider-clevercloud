@@ -128,3 +128,104 @@ resource "clevercloud_rust" "test" {
 		},
 	})
 }
+
+const rustEnvSlotConfig = `
+resource "clevercloud_rust" "%[1]s" {
+  name               = "%[1]s"
+  region             = "par"
+  min_instance_count = 1
+  max_instance_count = 1
+  smallest_flavor    = "XS"
+  biggest_flavor     = "XS"
+
+  environment = {
+    APP_FOLDER        = "server"
+    CC_RUST_FEATURES  = "feature1,feature2"
+    CC_PRE_BUILD_HOOK = "echo pre-build"
+    MY_VAR            = "plain"
+  }
+}`
+
+const rustAttrSlotConfig = `
+resource "clevercloud_rust" "%[1]s" {
+  name               = "%[1]s"
+  region             = "par"
+  min_instance_count = 1
+  max_instance_count = 1
+  smallest_flavor    = "XS"
+  biggest_flavor     = "XS"
+
+  app_folder = "server"
+  features   = ["feature1", "feature2"]
+
+  environment = {
+    MY_VAR = "plain"
+  }
+
+  hooks {
+    pre_build = "echo pre-build"
+  }
+}`
+
+// TestAccRust_envSlotPreserved checks that a variable stays in the slot it was
+// declared in. Each config is followed by a refresh-only step expecting an empty
+// plan: that is where the bug showed, refresh moved attribute-backed variables out
+// of `environment` and the next plan reverted them for ever.
+func TestAccRust_envSlotPreserved(t *testing.T) {
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-rust-slot")
+	fullName := fmt.Sprintf("clevercloud_rust.%s", rName)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).String()
+
+	envSlotChecks := []statecheck.StateCheck{
+		statecheck.ExpectKnownValue(fullName, tfjsonpath.New("features"), knownvalue.Null()),
+		statecheck.ExpectKnownValue(fullName, tfjsonpath.New("hooks"), knownvalue.Null()),
+		statecheck.ExpectKnownValue(fullName, tfjsonpath.New("app_folder"), knownvalue.Null()),
+		statecheck.ExpectKnownValue(fullName, tfjsonpath.New("environment"), knownvalue.MapExact(map[string]knownvalue.Check{
+			"APP_FOLDER":        knownvalue.StringExact("server"),
+			"CC_RUST_FEATURES":  knownvalue.StringExact("feature1,feature2"),
+			"CC_PRE_BUILD_HOOK": knownvalue.StringExact("echo pre-build"),
+			"MY_VAR":            knownvalue.StringExact("plain"),
+		})),
+	}
+
+	attrSlotChecks := []statecheck.StateCheck{
+		statecheck.ExpectKnownValue(fullName, tfjsonpath.New("features"), knownvalue.SetExact([]knownvalue.Check{
+			knownvalue.StringExact("feature1"),
+			knownvalue.StringExact("feature2"),
+		})),
+		statecheck.ExpectKnownValue(fullName, tfjsonpath.New("hooks").AtMapKey("pre_build"), knownvalue.StringExact("echo pre-build")),
+		statecheck.ExpectKnownValue(fullName, tfjsonpath.New("app_folder"), knownvalue.StringExact("server")),
+		statecheck.ExpectKnownValue(fullName, tfjsonpath.New("environment"), knownvalue.MapExact(map[string]knownvalue.Check{
+			"MY_VAR": knownvalue.StringExact("plain"),
+		})),
+	}
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			Config:            providerBlock + fmt.Sprintf(rustEnvSlotConfig, rName),
+			ConfigStateChecks: envSlotChecks,
+		}, {
+			Config:             providerBlock + fmt.Sprintf(rustEnvSlotConfig, rName),
+			PlanOnly:           true,
+			ExpectNonEmptyPlan: false, // the fix: refresh leaves every variable in `environment`
+		}, {
+			Config:            providerBlock + fmt.Sprintf(rustAttrSlotConfig, rName),
+			ConfigStateChecks: attrSlotChecks,
+		}, {
+			Config:             providerBlock + fmt.Sprintf(rustAttrSlotConfig, rName),
+			PlanOnly:           true,
+			ExpectNonEmptyPlan: false, // default routing still applies when `environment` is empty
+		}, {
+			Config:            providerBlock + fmt.Sprintf(rustEnvSlotConfig, rName),
+			ConfigStateChecks: envSlotChecks,
+		}, {
+			Config:             providerBlock + fmt.Sprintf(rustEnvSlotConfig, rName),
+			PlanOnly:           true,
+			ExpectNonEmptyPlan: false, // attribute slot back to `environment` converges too
+		}},
+	})
+}
