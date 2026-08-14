@@ -37,6 +37,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/pulsar"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/database/redis"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/drain"
+	elasticsearch_cluster "go.clever-cloud.com/terraform-provider/pkg/resources/elasticsearch_cluster"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/kubernetes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/kubernetes/nodegroup"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/networkgroup"
@@ -99,6 +100,7 @@ var Resources = []func() resource.Resource{
 	configprovider.NewResourceConfigProvider,
 	dotnet.NewResourceDotnet,
 	oauth_consumer.NewResourceOAuthConsumer,
+	elasticsearch_cluster.NewResourceElasticsearchCluster,
 }
 
 var Actions = []func() action.Action{
