@@ -142,8 +142,8 @@ func (r *ResourceElasticsearch) Schema(_ context.Context, req resource.SchemaReq
 							MarkdownDescription: "ID of the networkgroup",
 						},
 						"fqdn": schema.StringAttribute{
-							Required:            true,
-							MarkdownDescription: "domain name which will resolve to addon instances inside the networkgroup",
+							Optional:            true,
+							MarkdownDescription: "domain name which will resolve to addon instances inside the networkgroup. When omitted, the platform naming scheme `<memberId>.m.<networkgroupId>.cc-ng.cloud` is used",
 						},
 					},
 				},

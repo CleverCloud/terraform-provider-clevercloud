@@ -56,5 +56,8 @@ resource "clevercloud_postgresql" "postgresql_database" {
 
 Required:
 
-- `fqdn` (String) domain name which will resolve to addon instances inside the networkgroup
 - `networkgroup_id` (String) ID of the networkgroup
+
+Optional:
+
+- `fqdn` (String) domain name which will resolve to addon instances inside the networkgroup. When omitted, the platform naming scheme `<memberId>.m.<networkgroupId>.cc-ng.cloud` is used

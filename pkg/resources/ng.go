@@ -2,6 +2,7 @@ package resources
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -27,9 +28,20 @@ var networkgroupConfigSchema = map[string]attr.Type{
 }
 var NullNetworkgroupConfig = types.SetNull(types.ObjectType{AttrTypes: networkgroupConfigSchema})
 
+// networkgroupZone is the DNS zone networkgroup members live in. An older zone,
+// ng.clever-cloud.com, is still served for historical members
+const networkgroupZone = "cc-ng.cloud"
+
+// CanonicalFQDN builds the domain name the platform assigns to a networkgroup member.
+// It is used whenever the configuration leaves fqdn empty, because that value cannot be
+// written by hand: it embeds the member ID, which only exists once the resource has been
+// created, and Terraform forbids a resource from referring to itself
+func CanonicalFQDN(memberID, networkgroupID string) string {
+	return fmt.Sprintf("%s.m.%s.%s", memberID, networkgroupID, networkgroupZone)
+}
+
 // NetworkgroupsAttribute is the shared schema for the "networkgroups"
-// attribute, used by application runtimes and by add-ons piloting their
-// underlying application
+// attribute, used by application runtimes and by add-ons
 var NetworkgroupsAttribute = schema.SetNestedAttribute{
 	Optional:            true,
 	MarkdownDescription: "List of networkgroups the application must be part of",
@@ -40,8 +52,8 @@ var NetworkgroupsAttribute = schema.SetNestedAttribute{
 				MarkdownDescription: "ID of the networkgroup",
 			},
 			"fqdn": schema.StringAttribute{
-				Required:            true,
-				MarkdownDescription: "domain name which will resolve to application instances inside the networkgroup",
+				Optional:            true,
+				MarkdownDescription: "domain name which will resolve to application instances inside the networkgroup. When omitted, the platform naming scheme `<memberId>.m.<networkgroupId>.cc-ng.cloud` is used",
 			},
 		},
 	},
@@ -83,9 +95,15 @@ func SyncNetworkGroups(
 	})
 	currentNG := set.New(_currentNg...)
 
+	// Resolve the target FQDN once, so that both the "is it up to date" comparison
+	// below and the member creation agree on the value an empty fqdn stands for
 	ngIDToFQDN := map[string]string{}
 	for _, config := range configs {
-		ngIDToFQDN[config.NetworkgroupID] = config.FQDN
+		fqdn := config.FQDN
+		if fqdn == "" {
+			fqdn = CanonicalFQDN(applicationID, config.NetworkgroupID)
+		}
+		ngIDToFQDN[config.NetworkgroupID] = fqdn
 	}
 
 	for inPlaceNG := range expectedNG.Intersection(currentNG).Iter() {
@@ -191,9 +209,16 @@ func ReadNetworkGroups(
 	for _, ng := range allNG {
 		for _, member := range ng.Members {
 			if member.ID == resourceID {
+				// A member carrying the canonical name is one we named ourselves from an
+				// empty fqdn, report it back as null so the configuration keeps matching
+				fqdn := types.StringValue(member.DomainName)
+				if member.DomainName == CanonicalFQDN(resourceID, ng.ID) {
+					fqdn = types.StringNull()
+				}
+
 				ngObj := types.ObjectValueMust(networkgroupConfigSchema, map[string]attr.Value{
 					"networkgroup_id": types.StringValue(ng.ID),
-					"fqdn":            types.StringValue(member.DomainName),
+					"fqdn":            fqdn,
 				})
 				networkgroups = append(networkgroups, ngObj)
 				break
