@@ -103,4 +103,5 @@ func (r *ResourceFrankenPHP) ModifyPlan(ctx context.Context, req resource.Modify
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "frankenphp", plan.Runtime, &res.Diagnostics)
+	application.ValidateEnvSlots(ctx, &plan, &res.Diagnostics)
 }

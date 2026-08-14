@@ -101,4 +101,5 @@ func (r *ResourceRust) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "rust", plan.Runtime, &res.Diagnostics)
+	application.ValidateEnvSlots(ctx, &plan, &res.Diagnostics)
 }

@@ -104,4 +104,5 @@ func (r *ResourceStatic) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "static", plan.Runtime, &res.Diagnostics)
+	application.ValidateEnvSlots(ctx, &plan, &res.Diagnostics)
 }

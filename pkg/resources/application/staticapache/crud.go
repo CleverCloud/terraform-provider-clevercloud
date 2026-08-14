@@ -104,4 +104,5 @@ func (r *ResourceStaticApache) ModifyPlan(ctx context.Context, req resource.Modi
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "static-apache", plan.Runtime, &res.Diagnostics)
+	application.ValidateEnvSlots(ctx, &plan, &res.Diagnostics)
 }

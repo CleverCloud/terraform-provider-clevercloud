@@ -133,8 +133,8 @@ var runtimeCommon = map[string]schema.Attribute{
 	"environment": schema.MapAttribute{
 		Optional:            true,
 		Sensitive:           true,
-		Description:         "Environment variables injected into the application. Null values are not allowed - use a for expression to filter optional variables.",
-		MarkdownDescription: "Environment variables injected into the application.\n\n**Note:** Null values are not allowed. To conditionally include variables, use a for expression:\n```hcl\nenvironment = { for k, v in {\n  VAR1 = \"value\"\n  VAR2 = var.optional_var\n} : k => v if v != null }\n```",
+		Description:         "Environment variables injected into the application. Null values are not allowed - use a for expression to filter optional variables. Prefer the dedicated attribute (java_version, hooks.pre_build...) when one exists: setting the variable here works but gives up typing and validation, and setting it in both slots never reaches a stable plan.",
+		MarkdownDescription: "Environment variables injected into the application.\n\n**Note:** Null values are not allowed. To conditionally include variables, use a for expression:\n```hcl\nenvironment = { for k, v in {\n  VAR1 = \"value\"\n  VAR2 = var.optional_var\n} : k => v if v != null }\n```\n\n**Note:** Prefer the dedicated attribute (`java_version`, `hooks.pre_build`...) whenever one exists. Declaring the variable here works but gives up the attribute's typing and validation. Declaring it in **both** slots never reaches a stable plan: the attribute wins when Terraform writes to Clever Cloud, this map wins on refresh.",
 		ElementType:         types.StringType,
 		Validators:          []validator.Map{pkg.NoNullMapValuesValidator()},
 	},
@@ -264,8 +264,8 @@ var runtimeCommonV0 = map[string]schema.Attribute{
 	"environment": schema.MapAttribute{
 		Optional:            true,
 		Sensitive:           true,
-		Description:         "Environment variables injected into the application. Null values are not allowed - use a for expression to filter optional variables.",
-		MarkdownDescription: "Environment variables injected into the application.\n\n**Note:** Null values are not allowed. To conditionally include variables, use a for expression:\n```hcl\nenvironment = { for k, v in {\n  VAR1 = \"value\"\n  VAR2 = var.optional_var\n} : k => v if v != null }\n```",
+		Description:         "Environment variables injected into the application. Null values are not allowed - use a for expression to filter optional variables. Prefer the dedicated attribute (java_version, hooks.pre_build...) when one exists: setting the variable here works but gives up typing and validation, and setting it in both slots never reaches a stable plan.",
+		MarkdownDescription: "Environment variables injected into the application.\n\n**Note:** Null values are not allowed. To conditionally include variables, use a for expression:\n```hcl\nenvironment = { for k, v in {\n  VAR1 = \"value\"\n  VAR2 = var.optional_var\n} : k => v if v != null }\n```\n\n**Note:** Prefer the dedicated attribute (`java_version`, `hooks.pre_build`...) whenever one exists. Declaring the variable here works but gives up the attribute's typing and validation. Declaring it in **both** slots never reaches a stable plan: the attribute wins when Terraform writes to Clever Cloud, this map wins on refresh.",
 		ElementType:         types.StringType,
 		Validators:          []validator.Map{pkg.NoNullMapValuesValidator()},
 	},

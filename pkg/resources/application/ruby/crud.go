@@ -104,4 +104,5 @@ func (r *ResourceRuby) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "ruby", plan.Runtime, &res.Diagnostics)
+	application.ValidateEnvSlots(ctx, &plan, &res.Diagnostics)
 }

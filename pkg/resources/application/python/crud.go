@@ -101,4 +101,5 @@ func (r *ResourcePython) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "python", plan.Runtime, &res.Diagnostics)
+	application.ValidateEnvSlots(ctx, &plan, &res.Diagnostics)
 }
