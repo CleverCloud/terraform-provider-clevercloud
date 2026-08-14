@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
-	"time"
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -74,39 +73,16 @@ func TestAccOtoroshi_networkgroup(t *testing.T) {
 	ctx := t.Context()
 	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-otoroshi")
-	ngName := acctest.RandomWithPrefix("tf-test-otoroshi-ng")
 	fullName := fmt.Sprintf("clevercloud_otoroshi.%s", rName)
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
-
-	ngBlock := helper.NewRessource(
-		"clevercloud_networkgroup",
-		ngName,
-		helper.SetKeyValues(map[string]any{
-			"name":        ngName,
-			"description": "for otoroshi ng tests",
-			"tags":        []string{"otoroshi"},
-		}),
-	)
 
 	otoroshiBlock := helper.NewRessource(
 		"clevercloud_otoroshi",
 		rName,
 		helper.SetKeyValues(map[string]any{
-			"name":   rName,
-			"region": "par",
-			"networkgroups": []map[string]string{{
-				"networkgroup_id": fmt.Sprintf("${clevercloud_networkgroup.%s.id}", ngName),
-				"fqdn":            "myotoroshi",
-			}}}),
-	)
-
-	otoroshiBlock2 := helper.NewRessource(
-		"clevercloud_otoroshi",
-		rName,
-		helper.SetKeyValues(map[string]any{
-			"name":          rName,
-			"region":        "par",
-			"networkgroups": nil,
+			"name":         rName,
+			"region":       "par",
+			"networkgroup": true,
 		}),
 	)
 
@@ -116,21 +92,15 @@ func TestAccOtoroshi_networkgroup(t *testing.T) {
 		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: "otoroshi_" + rName,
-			Config:       providerBlock.Append(ngBlock, otoroshiBlock).String(),
+			Config:       providerBlock.Append(otoroshiBlock).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^otoroshi_.*`))),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("networkgroups"), knownvalue.SetExact([]knownvalue.Check{
-					knownvalue.ObjectExact(map[string]knownvalue.Check{
-						"networkgroup_id": knownvalue.StringRegexp(regexp.MustCompile("^ng_.*$")),
-						"fqdn":            knownvalue.StringExact("myotoroshi"),
-					}),
-				})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("networkgroup"), knownvalue.Bool(true)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("networkgroup_id"), knownvalue.StringRegexp(regexp.MustCompile(`^ng_.*$`))),
 			},
 			Check: resource.ComposeAggregateTestCheckFunc(
 				func(s *terraform.State) error {
-					ngResource := s.RootModule().Resources["clevercloud_networkgroup."+ngName]
 					otoroshiResource := s.RootModule().Resources[fullName]
-					ngID := ngResource.Primary.ID
+					ngID := otoroshiResource.Primary.Attributes["networkgroup_id"]
 
 					otoroshiRes := tmp.GetOtoroshi(ctx, cc, otoroshiResource.Primary.ID)
 					if otoroshiRes.HasError() {
@@ -142,43 +112,16 @@ func TestAccOtoroshi_networkgroup(t *testing.T) {
 					if membersRes.HasError() {
 						return fmt.Errorf("failed to list members: %w", membersRes.Error())
 					}
-					members := *membersRes.Payload()
 
-					if len(members) != 1 {
-						return fmt.Errorf("expect 1 member, got: %d", len(members))
-					}
-					member := members[0]
-
-					if member.ID != entrypoint {
-						return fmt.Errorf("expect member to be the underlying app %s, got: %s", entrypoint, member.ID)
-					}
-					return nil
-				},
-			),
-		}, {
-			ResourceName: "otoroshi_" + rName,
-			Config:       providerBlock.Append(ngBlock, otoroshiBlock2).String(),
-			ConfigStateChecks: []statecheck.StateCheck{
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^otoroshi_.*`))),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("networkgroups"), knownvalue.Null()),
-			},
-			Check: resource.ComposeAggregateTestCheckFunc(
-				func(s *terraform.State) error {
-					time.Sleep(5 * time.Second) // NG API is asynchronous
-					ngResource := s.RootModule().Resources["clevercloud_networkgroup."+ngName]
-					ngID := ngResource.Primary.ID
-
-					membersRes := tmp.ListMembers(ctx, cc, tests.ORGANISATION, ngID)
-					if membersRes.HasError() {
-						return fmt.Errorf("failed to list members: %w", membersRes.Error())
-					}
-					members := *membersRes.Payload()
-
-					if len(members) != 0 {
-						return fmt.Errorf("expect 0 member, got: %+v", members)
+					// The add-on provider registers its own entrypoint, the provider must
+					// leave that membership alone or Otoroshi loses access to the network
+					for _, member := range *membersRes.Payload() {
+						if member.ID == entrypoint {
+							return nil
+						}
 					}
 
-					return nil
+					return fmt.Errorf("expect entrypoint %s to be a member of %s", entrypoint, ngID)
 				},
 			),
 		}},

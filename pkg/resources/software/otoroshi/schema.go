@@ -6,31 +6,32 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
 type Otoroshi struct {
 	ID types.String `tfsdk:"id"`
 
-	Name   types.String `tfsdk:"name"`
-	Region types.String `tfsdk:"region"`
+	Name         types.String `tfsdk:"name"`
+	Region       types.String `tfsdk:"region"`
+	NetworkGroup types.Bool   `tfsdk:"networkgroup"`
 
 	CreationDate types.Int64  `tfsdk:"creation_date"`
 	Version      types.String `tfsdk:"version"`
 
+	NetworkGroupID       types.String `tfsdk:"networkgroup_id"`
 	APIClientID          types.String `tfsdk:"api_client_id"`
 	APIClientSecret      types.String `tfsdk:"api_client_secret"`
 	APIURL               types.String `tfsdk:"api_url"`
 	InitialAdminLogin    types.String `tfsdk:"initial_admin_login"`
 	InitialAdminPassword types.String `tfsdk:"initial_admin_password"`
 	URL                  types.String `tfsdk:"url"`
-
-	Networkgroups types.Set `tfsdk:"networkgroups"`
 }
 
 //go:embed doc.md
@@ -38,7 +39,7 @@ var resourceOtoroshiDoc string
 
 func (r ResourceOtoroshi) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: resourceOtoroshiDoc,
 		Attributes: map[string]schema.Attribute{
 			// customer provided
@@ -56,7 +57,13 @@ func (r ResourceOtoroshi) Schema(_ context.Context, req resource.SchemaRequest, 
 				Optional:            true,
 				MarkdownDescription: "Otoroshi version to deploy",
 			},
-			"networkgroups": resources.NetworkgroupsAttribute,
+			"networkgroup": schema.BoolAttribute{
+				Optional:            true,
+				Computed:            true,
+				Default:             booldefault.StaticBool(false),
+				PlanModifiers:       []planmodifier.Bool{boolplanmodifier.RequiresReplace()},
+				MarkdownDescription: "Create a dedicated networkgroup for this Otoroshi, its ID is then exposed as `networkgroup_id`. This option can only be set at creation time.",
+			},
 
 			// provider
 			"id": schema.StringAttribute{
@@ -68,6 +75,11 @@ func (r ResourceOtoroshi) Schema(_ context.Context, req resource.SchemaRequest, 
 				Computed:            true,
 				MarkdownDescription: "Date of Otoroshi creation",
 				PlanModifiers:       []planmodifier.Int64{int64planmodifier.UseStateForUnknown()},
+			},
+			"networkgroup_id": schema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "ID of the dedicated networkgroup created alongside the add-on, null unless `networkgroup` is set",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"api_client_id": schema.StringAttribute{
 				Computed:            true,

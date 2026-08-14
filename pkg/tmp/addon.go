@@ -396,7 +396,7 @@ type OtoroshiInfo struct {
 	API               *OtoroshiAPI      `json:"api"`
 	AvailableVersions []string          `json:"availableVersions"`
 	Resources         OtoroshiResources `json:"resources"`
-	Features          map[string]any    `json:"features"`
+	Features          OtoroshiFeatures  `json:"features"`
 	EnvVars           map[string]string `json:"envVars"`
 	Initialredentials struct {
 		User      string `json:"user"`
@@ -407,6 +407,17 @@ type OtoroshiAPI struct {
 	URL    string `json:"url"`
 	User   string `json:"user"`
 	Secret string `json:"secret"`
+}
+
+type OtoroshiFeatures struct {
+	// NetworkGroup is set when the add-on has been created with the "networkgroup" option
+	NetworkGroup *OtoroshiNetworkGroup `json:"networkGroup,omitempty"`
+}
+
+type OtoroshiNetworkGroup struct {
+	// The Otoroshi add-on returns the networkgroup under "id", unlike Metabase and
+	// Keycloak which document a "networkGroupId" field
+	NetworkGroupID string `json:"id"`
 }
 
 type OtoroshiResources struct {

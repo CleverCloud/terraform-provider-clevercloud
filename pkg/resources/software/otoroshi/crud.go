@@ -6,10 +6,9 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/resources"
-	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -38,17 +37,20 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
+	options := map[string]string{}
+	if !state.Version.IsNull() && !state.Version.IsUnknown() {
+		options["version"] = state.Version.ValueString()
+	}
+	if state.NetworkGroup.ValueBool() {
+		options["networkgroup"] = "true"
+	}
+
 	addonReq := tmp.AddonRequest{
 		Name:       state.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: provider.ID,
 		Region:     state.Region.ValueString(),
-	}
-
-	if !state.Version.IsNull() && !state.Version.IsUnknown() {
-		addonReq.Options = map[string]string{
-			"version": state.Version.ValueString(),
-		}
+		Options:    options,
 	}
 
 	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
@@ -75,12 +77,29 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 		state.InitialAdminLogin = pkg.FromStr(otoroshi.Initialredentials.User)
 		state.InitialAdminPassword = pkg.FromStr(otoroshi.Initialredentials.Passsword)
 		state.URL = pkg.FromStr(otoroshi.AccessURL)
+		state.NetworkGroupID = networkGroupID(otoroshi.Features)
 
-		// Networkgroups are piloted on the Java application backing the add-on
-		application.SyncNetworkGroups(ctx, r, otoroshi.Resources.Entrypoint, state.Networkgroups, &resp.Diagnostics)
+		// The add-on provider silently ignores unknown options, surface it instead of
+		// letting the next plan report a permanent drift on the networkgroup attribute
+		if state.NetworkGroup.ValueBool() && otoroshi.Features.NetworkGroup == nil {
+			resp.Diagnostics.AddError(
+				"Otoroshi dedicated networkgroup was not created",
+				"The add-on was created but the API reported no networkgroup, while the networkgroup attribute is set to true.",
+			)
+		}
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+}
+
+// networkGroupID extracts the dedicated networkgroup ID from the add-on features,
+// null when the add-on has been created without the networkgroup option
+func networkGroupID(features tmp.OtoroshiFeatures) types.String {
+	if features.NetworkGroup == nil {
+		return types.StringNull()
+	}
+
+	return pkg.FromStr(features.NetworkGroup.NetworkGroupID)
 }
 
 func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -120,9 +139,8 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 		state.InitialAdminLogin = pkg.FromStr(otoroshi.Initialredentials.User)
 		state.InitialAdminPassword = pkg.FromStr(otoroshi.Initialredentials.Passsword)
 		state.URL = pkg.FromStr(otoroshi.AccessURL)
-
-		// Networkgroups are piloted on the Java application backing the add-on
-		state.Networkgroups = resources.ReadNetworkGroups(ctx, r, otoroshi.Resources.Entrypoint, &resp.Diagnostics)
+		state.NetworkGroupID = networkGroupID(otoroshi.Features)
+		state.NetworkGroup = pkg.FromBool(otoroshi.Features.NetworkGroup != nil)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
@@ -152,15 +170,6 @@ func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 	state.Name = pkg.FromStr(addonRes.Payload().Name)
-
-	// Networkgroups are piloted on the Java application backing the add-on
-	otoroshiRes := tmp.GetOtoroshi(ctx, r.Client(), plan.ID.ValueString())
-	if otoroshiRes.HasError() {
-		resp.Diagnostics.AddError("failed to get Otoroshi", otoroshiRes.Error().Error())
-	} else {
-		application.SyncNetworkGroups(ctx, r, otoroshiRes.Payload().Resources.Entrypoint, plan.Networkgroups, &resp.Diagnostics)
-		state.Networkgroups = plan.Networkgroups
-	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
