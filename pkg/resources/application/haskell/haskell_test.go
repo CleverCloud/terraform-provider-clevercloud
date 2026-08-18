@@ -1,4 +1,4 @@
-package nodejs_test
+package haskell_test
 
 import (
 	"context"
@@ -21,37 +21,37 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-func TestAccNodejs_basic(t *testing.T) {
-	t.Parallel()
-
+func TestAccHaskell_basic(t *testing.T) {
 	ctx := t.Context()
 	cc := client.New(client.WithAutoOauthConfig())
-	rName := acctest.RandomWithPrefix("tf-test-node")
-	rName2 := acctest.RandomWithPrefix("tf-test-node-2")
-	fullName := fmt.Sprintf("clevercloud_nodejs.%s", rName)
-	fullName2 := fmt.Sprintf("clevercloud_nodejs.%s", rName2)
+	rName := acctest.RandomWithPrefix("tf-test-haskell")
+	rName2 := acctest.RandomWithPrefix("tf-test-haskell-2")
+	fullName := fmt.Sprintf("clevercloud_haskell.%s", rName)
+	fullName2 := fmt.Sprintf("clevercloud_haskell.%s", rName2)
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
-	nodejsBlock := helper.NewRessource(
-		"clevercloud_nodejs",
+	haskellBlock := helper.NewRessource(
+		"clevercloud_haskell",
 		rName,
 		helper.SetKeyValues(map[string]any{
-			"name":               rName,
-			"region":             "par",
-			"min_instance_count": 1,
-			"max_instance_count": 2,
-			"smallest_flavor":    "XS",
-			"biggest_flavor":     "M",
-			"build_flavor":       "XL",
-			"redirect_https":     true,
-			"sticky_sessions":    true,
-			"app_folder":         "./app",
-			"environment":        map[string]any{"MY_KEY": "myval"},
-			"dependencies":       []string{},
+			"name":                               rName,
+			"region":                             "par",
+			"min_instance_count":                 1,
+			"max_instance_count":                 2,
+			"smallest_flavor":                    "XS",
+			"biggest_flavor":                     "M",
+			"build_flavor":                       "XL",
+			"redirect_https":                     true,
+			"sticky_sessions":                    true,
+			"environment":                        map[string]any{"MY_KEY": "myval"},
+			"dependencies":                       []string{},
+			"stack_target":                       "default-target",
+			"stack_setup_command":                "./setup",
+			"stack_install_command":              "./install",
+			"stack_install_dependencies_command": "./install-deps",
 		}),
-		helper.SetBlockValues("hooks", map[string]any{"post_build": "echo \"build is OK!\""}),
 	)
-	nodejsBlock2 := helper.NewRessource(
-		"clevercloud_nodejs",
+	haskellBlock2 := helper.NewRessource(
+		"clevercloud_haskell",
 		rName2,
 		helper.SetKeyValues(map[string]any{
 			"name":               rName2,
@@ -60,10 +60,11 @@ func TestAccNodejs_basic(t *testing.T) {
 			"max_instance_count": 2,
 			"smallest_flavor":    "XS",
 			"biggest_flavor":     "M",
+			"build_flavor":       "3XL",
 		}),
 		helper.SetBlockValues("deployment", map[string]any{
-			"repository": "https://github.com/CleverCloud/nodejs-example.git",
-			"commit":     "2474d0e99089096f2e5548e19a2c0ad0f684c674",
+			"repository": "https://github.com/CleverCloud/haskell-scotty-example",
+			"commit":     "fe61c758a1dceeb9fe1cfce6d6c9dd91f6bb677f",
 		}))
 
 	resource.Test(t, resource.TestCase{
@@ -72,7 +73,7 @@ func TestAccNodejs_basic(t *testing.T) {
 		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       providerBlock.Append(nodejsBlock).String(),
+			Config:       providerBlock.Append(haskellBlock).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
@@ -94,15 +95,15 @@ func TestAccNodejs_basic(t *testing.T) {
 					}
 
 					if app.Instance.MaxInstances != 2 {
-						return tests.AssertError("invalid name", app.Instance.MaxInstances, 2)
+						return tests.AssertError("invalid max instance count", app.Instance.MaxInstances, 2)
 					}
 
 					if app.Instance.MinFlavor.Name != "XS" {
-						return tests.AssertError("invalid name", app.Instance.MinFlavor.Name, "XS")
+						return tests.AssertError("invalid min flavor", app.Instance.MinFlavor.Name, "XS")
 					}
 
 					if app.Instance.MaxFlavor.Name != "M" {
-						return tests.AssertError("invalid max instance name", app.Instance.MaxFlavor.Name, "M")
+						return tests.AssertError("invalid max flavor", app.Instance.MaxFlavor.Name, "M")
 					}
 
 					if app.BuildFlavor.Name != "XL" {
@@ -131,25 +132,36 @@ func TestAccNodejs_basic(t *testing.T) {
 
 					v := env["MY_KEY"]
 					if v != "myval" {
-						return tests.AssertError("bad env var value MY_KEY", "myval3", v)
+						return tests.AssertError("bad env var value MY_KEY", v, "myval")
 					}
 
-					v2 := env["APP_FOLDER"]
-					if v2 != "./app" {
-						return tests.AssertError("bad env var value APP_FOLER", "./app", v2)
+					v1 := env["CC_HASKELL_STACK_TARGET"]
+					if v1 != "default-target" {
+						return tests.AssertError("Bad value when providing 'stack_target'", v1, "default-target")
 					}
 
-					v3 := env["CC_POST_BUILD_HOOK"]
-					if v3 != "echo \"build is OK!\"" {
-						return tests.AssertError("bad env var value CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
+					v2 := env["CC_HASKELL_STACK_SETUP_COMMAND"]
+					if v2 != "./setup" {
+						return tests.AssertError("Bad value when providing 'stack_setup_command'", v2, "./setup")
 					}
+
+					v3 := env["CC_HASKELL_STACK_INSTALL_COMMAND"]
+					if v3 != "./install" {
+						return tests.AssertError("Bad value when providing 'stack_install_command'", v3, "./install")
+					}
+
+					v4 := env["CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND"]
+					if v4 != "./install-deps" {
+						return tests.AssertError("Bad value when providing 'stack_install_dependencies_command'", v4, "./install-deps")
+					}
+
 					return nil
 				}),
 			},
 		}, {
 			ResourceName: rName,
 			Config: providerBlock.Append(
-				nodejsBlock.SetOneValue("min_instance_count", 2).SetOneValue("max_instance_count", 6),
+				haskellBlock.SetOneValue("min_instance_count", 2).SetOneValue("max_instance_count", 6),
 			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
@@ -157,7 +169,7 @@ func TestAccNodejs_basic(t *testing.T) {
 			},
 		}, {
 			ResourceName: rName2,
-			Config:       providerBlock.Append(nodejsBlock2).String(),
+			Config:       providerBlock.Append(haskellBlock2).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				tests.NewCheckRemoteResource(fullName2, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
 					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
@@ -176,59 +188,14 @@ func TestAccNodejs_basic(t *testing.T) {
 						return fmt.Errorf("there is no vhost for app: %s", id)
 					}
 
-					// Test deployed app
-					err := tests.HealthCheck(ctx, vhosts.CleverAppsFQDN(id).Fqdn, 2*time.Minute)
+					// Haskell apps build slowly, even on a big build instance
+					err := tests.HealthCheck(ctx, vhosts.CleverAppsFQDN(id).Fqdn, 25*time.Minute)
 					if err != nil {
 						return fmt.Errorf("application did not respond in the allowed time: %w", err)
 					}
 
 					return nil
 				}),
-			},
-		}},
-	})
-}
-
-func TestAccNodejs_tcpRedirection(t *testing.T) {
-	t.Parallel()
-	ctx := t.Context()
-	rName := acctest.RandomWithPrefix("tf-test-node")
-	fullName := fmt.Sprintf("clevercloud_nodejs.%s", rName)
-	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
-	nodejsBlock := helper.NewRessource(
-		"clevercloud_nodejs",
-		rName,
-		helper.SetKeyValues(map[string]any{
-			"name":               rName,
-			"region":             "par",
-			"min_instance_count": 1,
-			"max_instance_count": 1,
-			"smallest_flavor":    "XS",
-			"biggest_flavor":     "XS",
-			"redirection": map[string]any{
-				"namespace": "default",
-			},
-		}))
-
-	resource.Test(t, resource.TestCase{
-		ProtoV6ProviderFactories: tests.ProtoV6Provider,
-		PreCheck:                 tests.ExpectOrganisation(t),
-		CheckDestroy:             tests.CheckDestroy(ctx),
-		Steps: []resource.TestStep{{
-			Destroy:      false,
-			ResourceName: rName,
-			Config:       providerBlock.Append(nodejsBlock).String(),
-			ConfigStateChecks: []statecheck.StateCheck{
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("redirection").AtMapKey("namespace"), knownvalue.StringExact("default")),
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("redirection").AtMapKey("port"), knownvalue.NotNull()),
-			},
-		}, {
-			ResourceName: rName,
-			Config: providerBlock.Append(
-				nodejsBlock.UnsetOneValue("redirection"),
-			).String(),
-			ConfigStateChecks: []statecheck.StateCheck{
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("redirection"), knownvalue.Null()),
 			},
 		}},
 	})

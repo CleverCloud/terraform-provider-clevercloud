@@ -13,6 +13,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/dotnet"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/frankenphp"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/golang"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/application/haskell"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/java"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/linux"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/nodejs"
@@ -89,6 +90,7 @@ var Resources = []func() resource.Resource{
 	nodegroup.NewResourceKubernetesNodegroup,
 	redis.NewResourceRedis,
 	golang.NewResourceGo,
+	haskell.NewResourceHaskell,
 	frankenphp.NewResourceFrankenPHP,
 	play2.NewResourcePlay2(),
 	pulsar.NewResourcePulsar,

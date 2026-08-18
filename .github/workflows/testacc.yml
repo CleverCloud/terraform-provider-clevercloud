@@ -42,7 +42,33 @@ jobs:
       with:
         terraform_wrapper: false
     - name: Acceptance Tests
-      run: go test ./pkg/resources/${{ matrix.resource }}/... -v -timeout 15m ./...
+      # haskell is excluded here: it runs in its own job below, with a longer timeout
+      run: go test $(go list ./pkg/resources/${{ matrix.resource }}/... | grep -v application/haskell) -v -timeout 15m
+      env:
+        TF_ACC: 1
+        TF_ACC_TERRAFORM_PATH: ${{ steps.setup-terraform.outputs.terraform-path }}
+        CC_OAUTH_TOKEN: ${{ secrets.CC_OAUTH_TOKEN }}
+        CC_OAUTH_SECRET: ${{ secrets.CC_OAUTH_SECRET }}
+        ORGANISATION: ${{ secrets.ORGANISATION }}
+        CLONE_AUTH: ${{ secrets.CLONE_AUTH }}
+  # Haskell apps build very slowly (Stack compiles everything), so the test does
+  # not fit in the shared 15m budget and its failure must not block the PR.
+  acceptance-haskell:
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+    - uses: actions/checkout@v7
+    - name: Set up Go
+      uses: actions/setup-go@v7
+      with:
+        go-version-file: 'go.mod'
+    - name: Setup Terraform
+      id: setup-terraform
+      uses: hashicorp/setup-terraform@v4
+      with:
+        terraform_wrapper: false
+    - name: Acceptance Tests (haskell)
+      run: go test ./pkg/resources/application/haskell/... -v -timeout 40m
       env:
         TF_ACC: 1
         TF_ACC_TERRAFORM_PATH: ${{ steps.setup-terraform.outputs.terraform-path }}
@@ -52,7 +78,9 @@ jobs:
         CLONE_AUTH: ${{ secrets.CLONE_AUTH }}
   sweep:
     runs-on: ubuntu-latest
-    needs: acceptance
+    needs:
+      - acceptance
+      - acceptance-haskell
     if: ${{ always() }} # run even if acceptance job fail
     steps:
     - uses: actions/checkout@v7
