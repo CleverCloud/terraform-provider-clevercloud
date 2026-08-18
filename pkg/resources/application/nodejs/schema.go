@@ -3,12 +3,10 @@ package nodejs
 import (
 	"context"
 	_ "embed"
-	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -143,26 +141,4 @@ func (node *NodeJS) FromEnv(ctx context.Context, env *maps.Map[string, string], 
 	node.RegistryToken = pkg.FromStrPtr(env.PopPtr("NPM_TOKEN"))
 
 	node.Integrations = attributes.FromEnvIntegrations(ctx, env, node.Integrations, diags)
-}
-
-func (node NodeJS) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
-	if node.Deployment == nil || node.Deployment.Repository.IsNull() {
-		return nil
-	}
-
-	d := &application.Deployment{
-		Repository:    node.Deployment.Repository.ValueString(),
-		Commit:        node.Deployment.Commit.ValueStringPointer(),
-		CleverGitAuth: gitAuth,
-	}
-
-	if !node.Deployment.BasicAuthentication.IsNull() && !node.Deployment.BasicAuthentication.IsUnknown() {
-		// Expect validation to be done in the schema valisation step
-		userPass := node.Deployment.BasicAuthentication.ValueString()
-		splits := strings.SplitN(userPass, ":", 2)
-		d.Username = &splits[0]
-		d.Password = &splits[1]
-	}
-
-	return d
 }

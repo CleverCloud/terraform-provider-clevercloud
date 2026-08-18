@@ -64,7 +64,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	// happens when they differ
 	gitDeployed := false
 	if req.Deployment != nil {
-		gitDeployed = GitDeploy(ctx, req.Deployment, res.Application.DeployURL, res.Application.CommitID, &diags)
+		res.TargetCommit, gitDeployed = GitDeploy(ctx, req.Deployment, res.Application.DeployURL, res.Application.CommitID, &diags)
 		if diags.HasError() {
 			return res, diags
 		}
@@ -86,8 +86,13 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	return res, diags
 }
 
-// Update centralizes the common Update logic for all application runtimes
-func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, state T) diag.Diagnostics {
+// Update centralizes the common Update logic for all application runtimes.
+// config is needed on top of plan for the deployment block: `deployment.commit`
+// is Optional+Computed, so Terraform copies the previous state value (the last
+// deployed hash) into the plan when the attribute is not configured. Deploying
+// from the plan would pin that old hash instead of tracking the repository
+// HEAD, only the configuration carries the user intent.
+func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, config, state T) diag.Diagnostics {
 	diags := diag.Diagnostics{}
 
 	// Lookup instance by variant slug
@@ -147,7 +152,7 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 		},
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
-		Deployment:     plan.ToDeployment(resource.GitAuth()),
+		Deployment:     config.ToDeployment(resource.GitAuth()),
 		TriggerRestart: triggerRestart,
 	}
 
@@ -158,6 +163,9 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 	// Sync response even if there were errors (app might be updated)
 	if updatedApp != nil {
 		runtime.SetFromResponse(updatedApp, ctx, &diags)
+		resolveUnknownCommit(runtime.Deployment, updatedApp.TargetCommit)
+	} else {
+		resolveUnknownCommit(runtime.Deployment, "")
 	}
 
 	// TCP redirection

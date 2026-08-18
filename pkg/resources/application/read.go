@@ -154,5 +154,9 @@ func Read[T RuntimePlan](ctx context.Context, resource RuntimeResource, state T)
 	// Map API response to state
 	runtime.SetFromResponse(readRes, ctx, &diags)
 
+	// Reflect the commit currently running on the application, only when the
+	// user manages deployment through Terraform (deployment block present)
+	syncDeploymentCommit(runtime.Deployment, readRes.App.CommitID)
+
 	return false, diags
 }

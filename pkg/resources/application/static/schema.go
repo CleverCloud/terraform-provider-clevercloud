@@ -3,12 +3,10 @@ package static
 import (
 	"context"
 	_ "embed"
-	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -71,26 +69,4 @@ func (s *Static) FromEnv(ctx context.Context, env *maps.Map[string, string], dia
 	s.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 
 	s.Integrations = attributes.FromEnvIntegrations(ctx, env, s.Integrations, diags)
-}
-
-func (s *Static) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
-	if s.Deployment == nil || s.Deployment.Repository.IsNull() {
-		return nil
-	}
-
-	d := &application.Deployment{
-		Repository:    s.Deployment.Repository.ValueString(),
-		Commit:        s.Deployment.Commit.ValueStringPointer(),
-		CleverGitAuth: gitAuth,
-	}
-
-	if !s.Deployment.BasicAuthentication.IsNull() && !s.Deployment.BasicAuthentication.IsUnknown() {
-		// Expect validation to be done in the schema valisation step
-		userPass := s.Deployment.BasicAuthentication.ValueString()
-		splits := strings.SplitN(userPass, ":", 2)
-		d.Username = &splits[0]
-		d.Password = &splits[1]
-	}
-
-	return d
 }

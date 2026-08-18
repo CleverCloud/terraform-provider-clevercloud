@@ -3,7 +3,9 @@ package application
 import (
 	"context"
 	"fmt"
+	"strings"
 
+	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -123,4 +125,32 @@ func (r Runtime) VHostsAsStrings(ctx context.Context, diags *diag.Diagnostics) [
 // GetRuntimePtr returns a pointer to the Runtime struct for modification
 func (r *Runtime) GetRuntimePtr() *Runtime {
 	return r
+}
+
+// ToDeployment builds the git deployment configuration from the deployment block
+func (r *Runtime) ToDeployment(gitAuth *http.BasicAuth) *Deployment {
+	if r.Deployment == nil || r.Deployment.Repository.IsNull() {
+		return nil
+	}
+
+	d := &Deployment{
+		Repository:    r.Deployment.Repository.ValueString(),
+		CleverGitAuth: gitAuth,
+	}
+
+	// commit is Optional+Computed: an unknown value (resolved by the provider
+	// after the push) means no explicit target, the repository HEAD is deployed
+	if !r.Deployment.Commit.IsNull() && !r.Deployment.Commit.IsUnknown() {
+		d.Commit = r.Deployment.Commit.ValueStringPointer()
+	}
+
+	if !r.Deployment.BasicAuthentication.IsNull() && !r.Deployment.BasicAuthentication.IsUnknown() {
+		// Expect validation to be done in the schema validation step
+		userPass := r.Deployment.BasicAuthentication.ValueString()
+		splits := strings.SplitN(userPass, ":", 2)
+		d.Username = &splits[0]
+		d.Password = &splits[1]
+	}
+
+	return d
 }

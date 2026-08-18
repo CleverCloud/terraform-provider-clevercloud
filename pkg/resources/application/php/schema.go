@@ -3,12 +3,10 @@ package php
 import (
 	"context"
 	_ "embed"
-	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -131,26 +129,4 @@ func (p *PHP) FromEnv(ctx context.Context, env *maps.Map[string, string], diags 
 	pkg.SetBoolIf(&p.RedisSessions, env.PopPtr("SESSION_TYPE"), "redis")
 
 	p.Integrations = attributes.FromEnvIntegrations(ctx, env, p.Integrations, diags)
-}
-
-func (p *PHP) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
-	if p.Deployment == nil || p.Deployment.Repository.IsNull() {
-		return nil
-	}
-
-	d := &application.Deployment{
-		Repository:    p.Deployment.Repository.ValueString(),
-		Commit:        p.Deployment.Commit.ValueStringPointer(),
-		CleverGitAuth: gitAuth,
-	}
-
-	if !p.Deployment.BasicAuthentication.IsNull() && !p.Deployment.BasicAuthentication.IsUnknown() {
-		// Expect validation to be done in the schema valisation step
-		userPass := p.Deployment.BasicAuthentication.ValueString()
-		splits := strings.SplitN(userPass, ":", 2)
-		d.Username = &splits[0]
-		d.Password = &splits[1]
-	}
-
-	return d
 }

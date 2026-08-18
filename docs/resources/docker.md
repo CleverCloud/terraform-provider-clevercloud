@@ -90,7 +90,7 @@ environment = { for k, v in {
 Optional:
 
 - `authentication_basic` (String, Sensitive) user ans password ':' separated, (PersonalAccessToken in Github case)
-- `commit` (String) Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository
+- `commit` (String) Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository. When omitted, the repository HEAD is deployed and this attribute reflects the commit currently running on the application
 - `repository` (String) The repository URL to deploy, can be 'https://...', 'file://...'
 
 

@@ -10,6 +10,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -249,8 +251,14 @@ var blocks = map[string]schema.Block{
 			},
 			"commit": schema.StringAttribute{
 				Optional:            true,
+				Computed:            true,
 				Description:         "The git reference you want to deploy",
-				MarkdownDescription: "Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository",
+				MarkdownDescription: "Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository. When omitted, the repository HEAD is deployed and this attribute reflects the commit currently running on the application",
+				PlanModifiers: []planmodifier.String{
+					// when not configured, keep the deployed commit from the
+					// state instead of planning "known after apply" every time
+					stringplanmodifier.UseStateForUnknown(),
+				},
 				Validators: []validator.String{
 					pkg.NewValidator(
 						"if reference (not commit hash) is provided test it's syntax",

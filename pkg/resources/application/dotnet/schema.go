@@ -3,12 +3,10 @@ package dotnet
 import (
 	"context"
 	_ "embed"
-	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -82,26 +80,4 @@ func (dotnetapp *Dotnet) FromEnv(ctx context.Context, env *maps.Map[string, stri
 	dotnetapp.DotnetVersion = pkg.FromStrPtr(env.PopPtr("CC_DOTNET_VERSION"))
 
 	dotnetapp.Integrations = attributes.FromEnvIntegrations(ctx, env, dotnetapp.Integrations, diags)
-}
-
-func (dotnetapp Dotnet) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
-	if dotnetapp.Deployment == nil || dotnetapp.Deployment.Repository.IsNull() {
-		return nil
-	}
-
-	d := &application.Deployment{
-		Repository:    dotnetapp.Deployment.Repository.ValueString(),
-		Commit:        dotnetapp.Deployment.Commit.ValueStringPointer(),
-		CleverGitAuth: gitAuth,
-	}
-
-	if !dotnetapp.Deployment.BasicAuthentication.IsNull() && !dotnetapp.Deployment.BasicAuthentication.IsUnknown() {
-		// Expect validation to be done in the schema valisation step
-		userPass := dotnetapp.Deployment.BasicAuthentication.ValueString()
-		splits := strings.SplitN(userPass, ":", 2)
-		d.Username = &splits[0]
-		d.Password = &splits[1]
-	}
-
-	return d
 }

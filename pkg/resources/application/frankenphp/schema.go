@@ -3,12 +3,10 @@ package frankenphp
 import (
 	"context"
 	_ "embed"
-	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -69,26 +67,4 @@ func (fp *FrankenPHP) FromEnv(ctx context.Context, env *maps.Map[string, string]
 	pkg.SetBoolIf(&fp.DevDependencies, env.PopPtr("CC_PHP_DEV_DEPENDENCIES"), "install")
 
 	fp.Integrations = attributes.FromEnvIntegrations(ctx, env, fp.Integrations, diags)
-}
-
-func (fp *FrankenPHP) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
-	if fp.Deployment == nil || fp.Deployment.Repository.IsNull() {
-		return nil
-	}
-
-	d := &application.Deployment{
-		Repository:    fp.Deployment.Repository.ValueString(),
-		Commit:        fp.Deployment.Commit.ValueStringPointer(),
-		CleverGitAuth: gitAuth,
-	}
-
-	if !fp.Deployment.BasicAuthentication.IsNull() && !fp.Deployment.BasicAuthentication.IsUnknown() {
-		// Expect validation to be done in the schema valisation step
-		userPass := fp.Deployment.BasicAuthentication.ValueString()
-		splits := strings.SplitN(userPass, ":", 2)
-		d.Username = &splits[0]
-		d.Password = &splits[1]
-	}
-
-	return d
 }

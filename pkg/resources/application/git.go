@@ -24,23 +24,26 @@ import (
 // deployedCommit is the commit currently deployed on the application (CommitID
 // from the API, empty when unknown or never deployed): when the resolved
 // target commit already matches it, the push is skipped.
-// It returns true only when a push actually triggered a deployment, so the
-// caller can decide whether an explicit restart is still needed (e.g. when
-// only environment variables changed).
-func GitDeploy(ctx context.Context, d *Deployment, cleverRemote, deployedCommit string, diags *diag.Diagnostics) bool {
+// It returns the resolved target commit (empty when no deployment is
+// configured, the repository is handled by Github or the resolution failed)
+// and true only when a push actually triggered a deployment, so the caller
+// can decide whether an explicit restart is still needed (e.g. when only
+// environment variables changed).
+func GitDeploy(ctx context.Context, d *Deployment, cleverRemote, deployedCommit string, diags *diag.Diagnostics) (string, bool) {
 	var errs diag.Diagnostics
+	var commit string
 	var deployed bool
 
 	if d == nil {
-		return false
+		return "", false
 	}
 	if d.Commit != nil && strings.HasPrefix(*d.Commit, attributes.GITHUB_COMMIT_PREFIX) {
 		tflog.Warn(ctx, "repository deployment is handled by Github, skipping deployment")
-		return false
+		return "", false
 	}
 
 	for range 5 {
-		deployed, errs = gitDeploy(ctx, *d, cleverRemote, deployedCommit)
+		commit, deployed, errs = gitDeploy(ctx, *d, cleverRemote, deployedCommit)
 		if !errs.HasError() {
 			break
 		}
@@ -50,27 +53,27 @@ func GitDeploy(ctx context.Context, d *Deployment, cleverRemote, deployedCommit 
 
 	// only add last error
 	diags.Append(errs...)
-	return deployed
+	return commit, deployed
 }
 
-func gitDeploy(ctx context.Context, d Deployment, cleverRemote, deployedCommit string) (bool, diag.Diagnostics) {
+func gitDeploy(ctx context.Context, d Deployment, cleverRemote, deployedCommit string) (string, bool, diag.Diagnostics) {
 	cleverRemote = strings.Replace(cleverRemote, "git+ssh", "https", 1) // switch protocol
 
 	repo, diags := OpenOrClone(ctx, d.Repository, WithCommit(d.Commit), WithBasicAuth(d.Username, d.Password))
 	if diags.HasError() {
-		return false, diags
+		return "", false, diags
 	}
 
 	targetCommit, diags := resolveTargetCommit(repo, d.Commit)
 	if diags.HasError() {
-		return false, diags
+		return "", false, diags
 	}
 
 	if deployedCommit != "" && targetCommit == deployedCommit {
 		tflog.Info(ctx, "deployed commit is already the expected one, skipping git push", map[string]any{
 			"commit": targetCommit,
 		})
-		return false, diags
+		return targetCommit, false, diags
 	}
 
 	remoteOpts := &config.RemoteConfig{
@@ -85,13 +88,13 @@ func gitDeploy(ctx context.Context, d Deployment, cleverRemote, deployedCommit s
 	remote, err := repo.CreateRemote(remoteOpts)
 	if err != nil {
 		diags.AddError("failed to add clever remote", err.Error())
-		return false, diags
+		return "", false, diags
 	}
 
 	refSpec := config.RefSpec(fmt.Sprintf("%s:%s", targetCommit, plumbing.Master))
 	if err := refSpec.Validate(); err != nil {
 		diags.AddError("failed to build ref spec to push", err.Error())
-		return false, diags
+		return "", false, diags
 	}
 
 	pushOptions := &git.PushOptions{
@@ -110,14 +113,14 @@ func gitDeploy(ctx context.Context, d Deployment, cleverRemote, deployedCommit s
 	if err != nil {
 		if err == git.NoErrAlreadyUpToDate {
 			diags.AddWarning("Git push rejected", "repository is already up-to-date")
-			return false, diags
+			return targetCommit, false, diags
 		}
 
 		diags.AddError("failed to push to clever remote", err.Error())
-		return false, diags
+		return "", false, diags
 	}
 
-	return true, diags
+	return targetCommit, true, diags
 }
 
 // resolveTargetCommit resolves the commit hash to deploy: the explicit

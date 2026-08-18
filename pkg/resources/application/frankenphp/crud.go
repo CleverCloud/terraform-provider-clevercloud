@@ -33,7 +33,7 @@ func (r *ResourceFrankenPHP) Create(ctx context.Context, req resource.CreateRequ
 	application.SyncNetworkGroups(ctx, r, plan.ID.ValueString(), plan.Networkgroups, &resp.Diagnostics)
 	application.SyncExposedVariables(ctx, r, plan.ID.ValueString(), plan.ExposedEnvironment, &resp.Diagnostics)
 	application.SyncDependencies(ctx, r, plan.ID.ValueString(), plan.Dependencies, &resp.Diagnostics)
-	application.GitDeploy(ctx, plan.ToDeployment(r.GitAuth()), plan.DeployURL.ValueString(), "", &resp.Diagnostics)
+	application.Deploy(ctx, r, &plan, &resp.Diagnostics)
 
 	// Second save: persist secondary operations results
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
@@ -75,7 +75,12 @@ func (r *ResourceFrankenPHP) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	res.Diagnostics.Append(application.Update(ctx, r, &plan, &state)...)
+	config := helper.ConfigFrom[FrankenPHP](ctx, req.Config, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	res.Diagnostics.Append(application.Update(ctx, r, &plan, &config, &state)...)
 
 	// First save: persist changes even if there were partial errors
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
