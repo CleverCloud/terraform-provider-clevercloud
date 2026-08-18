@@ -95,6 +95,8 @@ func TestAccPython_localGit(t *testing.T) {
 			ConfigStateChecks: []statecheck.StateCheck{
 				// Test the state for provider's populated values
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+				// the pinned commit is kept as-is in the state
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deployment").AtMapKey("commit"), knownvalue.StringExact(hash.String())),
 			},
 		}},
 	})
@@ -203,6 +205,8 @@ func TestAccApplication_envChangeTriggersNewDeployment(t *testing.T) {
 			Config:       providerBlock.Append(pythonBlock).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+				// no commit configured: the computed value is the deployed hash
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deployment").AtMapKey("commit"), knownvalue.StringRegexp(regexp.MustCompile(`^[0-9a-f]{40}$`))),
 				expectDeployments(1),
 			},
 		}, {

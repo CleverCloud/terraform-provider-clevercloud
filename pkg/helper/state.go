@@ -19,6 +19,10 @@ func StateFrom[T any](ctx context.Context, s tfsdk.State, diags *diag.Diagnostic
 	return *From[T](ctx, s, diags)
 }
 
+func ConfigFrom[T any](ctx context.Context, c tfsdk.Config, diags *diag.Diagnostics) T {
+	return *From[T](ctx, c, diags)
+}
+
 func From[T any](ctx context.Context, src TFStruct, diags *diag.Diagnostics) *T {
 	if src == nil {
 		return nil

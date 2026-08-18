@@ -3,12 +3,10 @@ package haskell
 import (
 	"context"
 	_ "embed"
-	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -84,26 +82,4 @@ func (haskellapp *Haskell) FromEnv(ctx context.Context, env *maps.Map[string, st
 	haskellapp.StackInstallDependenciesCommand = pkg.FromStrPtr(env.PopPtr("CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND"))
 
 	haskellapp.Integrations = attributes.FromEnvIntegrations(ctx, env, haskellapp.Integrations, diags)
-}
-
-func (haskellapp Haskell) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
-	if haskellapp.Deployment == nil || haskellapp.Deployment.Repository.IsNull() {
-		return nil
-	}
-
-	d := &application.Deployment{
-		Repository:    haskellapp.Deployment.Repository.ValueString(),
-		Commit:        haskellapp.Deployment.Commit.ValueStringPointer(),
-		CleverGitAuth: gitAuth,
-	}
-
-	if !haskellapp.Deployment.BasicAuthentication.IsNull() && !haskellapp.Deployment.BasicAuthentication.IsUnknown() {
-		// Expect validation to be done in the schema valisation step
-		userPass := haskellapp.Deployment.BasicAuthentication.ValueString()
-		splits := strings.SplitN(userPass, ":", 2)
-		d.Username = &splits[0]
-		d.Password = &splits[1]
-	}
-
-	return d
 }

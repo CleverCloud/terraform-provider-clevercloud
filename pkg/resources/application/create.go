@@ -28,6 +28,9 @@ type CreateReq struct {
 // CreateRes represents the response from creating an application
 type CreateRes struct {
 	Application tmp.AppResponse
+	// TargetCommit is the commit resolved by the git deployment on Update
+	// (pushed or already running), empty when no deployment is configured
+	TargetCommit string
 }
 
 // Deployment contains git deployment configuration

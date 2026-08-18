@@ -4,12 +4,10 @@ import (
 	"context"
 	_ "embed"
 	"strconv"
-	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -306,26 +304,4 @@ func (ruby *Ruby) FromEnv(ctx context.Context, env *maps.Map[string, string], di
 	ruby.StaticWebroot = pkg.FromStrPtr(env.PopPtr("STATIC_WEBROOT"))
 
 	ruby.Integrations = attributes.FromEnvIntegrations(ctx, env, ruby.Integrations, diags)
-}
-
-func (ruby Ruby) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
-	if ruby.Deployment == nil || ruby.Deployment.Repository.IsNull() {
-		return nil
-	}
-
-	d := &application.Deployment{
-		Repository:    ruby.Deployment.Repository.ValueString(),
-		Commit:        ruby.Deployment.Commit.ValueStringPointer(),
-		CleverGitAuth: gitAuth,
-	}
-
-	if !ruby.Deployment.BasicAuthentication.IsNull() && !ruby.Deployment.BasicAuthentication.IsUnknown() {
-		// Expect validation to be done in the schema valisation step
-		userPass := ruby.Deployment.BasicAuthentication.ValueString()
-		splits := strings.SplitN(userPass, ":", 2)
-		d.Username = &splits[0]
-		d.Password = &splits[1]
-	}
-
-	return d
 }

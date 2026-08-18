@@ -3,14 +3,12 @@ package java
 import (
 	"context"
 	_ "embed"
-	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 
 	"maps"
 
-	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -84,26 +82,4 @@ func (plan *Java) FromEnv(ctx context.Context, env *helperMaps.Map[string, strin
 	plan.JavaVersion = pkg.FromStrPtr(env.PopPtr("CC_JAVA_VERSION"))
 
 	plan.Integrations = attributes.FromEnvIntegrations(ctx, env, plan.Integrations, diags)
-}
-
-func (plan *Java) ToDeployment(gitAuth *http.BasicAuth) *application.Deployment {
-	if plan.Deployment == nil || plan.Deployment.Repository.IsNull() {
-		return nil
-	}
-
-	d := &application.Deployment{
-		Repository:    plan.Deployment.Repository.ValueString(),
-		Commit:        plan.Deployment.Commit.ValueStringPointer(),
-		CleverGitAuth: gitAuth,
-	}
-
-	if !plan.Deployment.BasicAuthentication.IsNull() && !plan.Deployment.BasicAuthentication.IsUnknown() {
-		// Expect validation to be done in the schema valisation step
-		userPass := plan.Deployment.BasicAuthentication.ValueString()
-		splits := strings.SplitN(userPass, ":", 2)
-		d.Username = &splits[0]
-		d.Password = &splits[1]
-	}
-
-	return d
 }
