@@ -52,7 +52,7 @@ resource "clevercloud_docker" "docker_instance" {
 - `daemon_socket_mount` (Boolean) Set to true to access the host Docker socket from inside your container
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
-- `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
+- `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
 - `dockerfile` (String) The name of the Dockerfile to build
 - `enable_ipv6` (Boolean, Deprecated)

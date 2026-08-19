@@ -243,6 +243,7 @@ var IntegrationsAttribute = schema.SingleNestedAttribute{
 
 var blocks = map[string]schema.Block{
 	"deployment": schema.SingleNestedBlock{
+		MarkdownDescription: "Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour",
 		Attributes: map[string]schema.Attribute{
 			"repository": schema.StringAttribute{
 				Optional:            true, // If "deployment" attribute is defined, then repository is required
