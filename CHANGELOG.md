@@ -1,5 +1,19 @@
 # Changelog
 
+## [2.2.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.1.0...v2.2.0) (2026-08-19)
+
+
+### Features
+
+* **applications:** reflect the deployed commit in deployment.commit ([bb3209f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/bb3209fdfcbcac07ad52876975c6cb98ba288add))
+* **runtime:** add haskell runtime ([44d7296](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/44d7296241fb2317e4b85fd5fd9f3419ed42f737))
+
+
+### Bug Fixes
+
+* **drain:** decode percent-encoded Datadog URL segments on read ([aa7404e](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/aa7404e41d39d450fd3bd7f21063c9d67a38e2fc))
+* **postgresql:** pin explicit TLS semantics on the locale probe ([70dcae9](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/70dcae999e4ff873cef1ca822faa1ced9ada7893))
+
 ## [2.1.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.0.1...v2.1.0) (2026-08-13)
 
 
