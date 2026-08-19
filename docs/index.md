@@ -21,6 +21,17 @@ description: |-
   Gérer les applications de mes organisations
   Gérer les add-ons de mes organisations
   
+  Applications: deployment and the commit attribute
+  The deployment block drives how Terraform deploys your application, and its commit attribute reflects the commit currently running on it.
+  | configuration | behaviour |
+  |---|---|
+  | no `deployment` block | you deploy outside of Terraform (CLI, console, CI...), the provider never reconciles anything deployment-related and never shows a diff |
+  | block without `commit` | the repository HEAD is deployed on create/update; `commit` is computed with the running hash, and a deployment done outside of Terraform silently updates it on the next refresh |
+  | `commit = "<hash>"` | the commit is pinned: a deployment done outside of Terraform shows up as a diff and the next apply re-deploys the pinned hash |
+  | `commit = "refs/heads/..."` | the reference is resolved and deployed; the value is kept as-is in the state |
+  | `commit = "github_hook"` | deployments are delegated to GitHub, the provider never pushes nor reconciles the running commit |
+  Known limitations
+  Import: terraform import does not populate the deployment block (the provider cannot tell whether you want to manage deployments with Terraform). Add the block to your configuration to start tracking the running commit — be aware that the first apply then triggers a deployment.Git references: when commit holds a reference (refs/heads/...), the running commit is not reported and deployments done outside of Terraform are not detected (a local reference cannot be compared to the running hash without cloning the repository).Switching from a reference to the computed commit: removing commit = "refs/heads/..." from the configuration keeps the reference in the state; re-create the resource (or set an explicit hash once) to switch to the computed behaviour.Repository HEAD moves, nothing else changes: terraform plan does not clone the repository, so a new commit on your branch does not show up as a diff by itself; the push happens on the next apply that carries a change.State freshness on update: when an update deploys a new HEAD while commit is not configured, the state reports the new hash after the next refresh (Terraform requires the applied value to match the planned one).
   Applications: private repository deployment
   To deploy from a private GitHub repository, you need to generate a Personal Access Token (PAT) that will be used for authentication.
   Creating a GitHub Personal Access Token
@@ -67,6 +78,26 @@ Gérer mes organisations
 Gérer les applications de mes organisations
 Gérer les add-ons de mes organisations
 ```
+
+## Applications: deployment and the commit attribute
+
+The `deployment` block drives how Terraform deploys your application, and its `commit` attribute reflects the commit currently running on it.
+
+| configuration | behaviour |
+|---|---|
+| no `deployment` block | you deploy outside of Terraform (CLI, console, CI...), the provider never reconciles anything deployment-related and never shows a diff |
+| block without `commit` | the repository HEAD is deployed on create/update; `commit` is computed with the running hash, and a deployment done outside of Terraform silently updates it on the next refresh |
+| `commit = "<hash>"` | the commit is pinned: a deployment done outside of Terraform shows up as a diff and the next apply re-deploys the pinned hash |
+| `commit = "refs/heads/..."` | the reference is resolved and deployed; the value is kept as-is in the state |
+| `commit = "github_hook"` | deployments are delegated to GitHub, the provider never pushes nor reconciles the running commit |
+
+### Known limitations
+
+- **Import**: `terraform import` does not populate the `deployment` block (the provider cannot tell whether you want to manage deployments with Terraform). Add the block to your configuration to start tracking the running commit — be aware that the first apply then triggers a deployment.
+- **Git references**: when `commit` holds a reference (`refs/heads/...`), the running commit is not reported and deployments done outside of Terraform are not detected (a local reference cannot be compared to the running hash without cloning the repository).
+- **Switching from a reference to the computed commit**: removing `commit = "refs/heads/..."` from the configuration keeps the reference in the state; re-create the resource (or set an explicit hash once) to switch to the computed behaviour.
+- **Repository HEAD moves, nothing else changes**: `terraform plan` does not clone the repository, so a new commit on your branch does not show up as a diff by itself; the push happens on the next apply that carries a change.
+- **State freshness on update**: when an update deploys a new HEAD while `commit` is not configured, the state reports the new hash after the next refresh (Terraform requires the applied value to match the planned one).
 
 ## Applications: private repository deployment
 

@@ -94,7 +94,7 @@ resource "clevercloud_v" "myapp" {
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
-- `deployment` (Block, Optional) (see [below for nested schema](#nestedblock--deployment))
+- `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
 - `development_build` (Boolean) Set to true to compile without the `-prod` flag.
 - `environment` (Map of String, Sensitive) Environment variables injected into the application.
