@@ -109,4 +109,5 @@ func (r *ResourceNodeJS) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "node", plan.Runtime, &res.Diagnostics)
+	application.ValidateEnvSlots(ctx, &plan, &res.Diagnostics)
 }
