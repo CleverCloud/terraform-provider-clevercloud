@@ -31,10 +31,23 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 		return
 	}
 
+	zonesRes := tmp.GetZones(ctx, r.Client())
+	if zonesRes.HasError() {
+		res.Diagnostics.AddError("failed to get zones", zonesRes.Error().Error())
+		return
+	}
+
+	zones := *zonesRes.Payload()
+	if len(zones) == 0 {
+		res.Diagnostics.AddError("at least 1 zone is required", "no zones")
+		return
+	}
+
 	addonReq := tmp.AddonRequest{
-		Name:       addonConfigProvider.Name.ValueString(),
-		Plan:       plan.ID,
-		Region:     "par", // always provide a valid region, even if it's not used
+		Name: addonConfigProvider.Name.ValueString(),
+		Plan: plan.ID,
+		// Unused by this add-on, but the create API validates it, and a zone's own cc-api knows only its own region.
+		Region:     zones[0].Name,
 		ProviderID: "config-provider",
 	}
 
