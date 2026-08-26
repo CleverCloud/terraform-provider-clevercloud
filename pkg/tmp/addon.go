@@ -715,14 +715,15 @@ func FromMySQLReadOnlyUsers(users []MySQLReadOnlyUser) types.List {
 }
 
 type KubernetesInfo struct {
-	CreationDate string `json:"creationDate"`
-	Description  string `json:"description"`
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	Status       string `json:"status"` // ACTIVE, DELETED, DELETING, DEPLOYING, FAILED
-	Tag          string `json:"tag"`
-	TenantID     string `json:"tenantId"`
-	Version      string `json:"version"`
+	CreationDate string              `json:"creationDate"`
+	Description  string              `json:"description"`
+	Features     *KubernetesFeatures `json:"features,omitempty"`
+	ID           string              `json:"id"`
+	Name         string              `json:"name"`
+	Status       string              `json:"status"` // ACTIVE, DELETED, DELETING, DEPLOYING, FAILED, RECONCILING
+	Tag          string              `json:"tag"`
+	TenantID     string              `json:"tenantId"`
+	Version      string              `json:"version"`
 }
 
 // GetKubernetes retrieves Kubernetes cluster details using the cluster ID
@@ -738,25 +739,41 @@ func GetKubeconfig(ctx context.Context, cc *client.Client, organisationID, addon
 	return client.Get[client.PlainTextString](ctx, cc, path)
 }
 
+// KubernetesFeatures represents the optional features of a Kubernetes cluster.
+// Fields are pointers so "absent" and "false" stay distinguishable: the features
+// patch is a merge patch, an omitted field is left untouched by the API while an
+// explicit false disables the feature
+type KubernetesFeatures struct {
+	NodeAutoprovisioning *bool `json:"nodeAutoprovisioning,omitempty"`
+}
+
 // KubernetesCreateRequest represents the request body for creating a Kubernetes cluster
 type KubernetesCreateRequest struct {
-	Description      string  `json:"description,omitempty"`
-	KubeMajorVersion string  `json:"kubeMajorVersion,omitempty"`
-	Name             string  `json:"name"`
-	NetworkGroupID   *string `json:"networkGroupId,omitempty"`
-	Tag              string  `json:"tag,omitempty"`
+	Description      string              `json:"description,omitempty"`
+	Features         *KubernetesFeatures `json:"features,omitempty"`
+	KubeMajorVersion string              `json:"kubeMajorVersion,omitempty"`
+	Name             string              `json:"name"`
+	NetworkGroupID   *string             `json:"networkGroupId,omitempty"`
+	Tag              string              `json:"tag,omitempty"`
+}
+
+// KubernetesPatchRequest represents the request body for updating a Kubernetes
+// cluster, only the fields set here are modified
+type KubernetesPatchRequest struct {
+	Features *KubernetesFeatures `json:"features,omitempty"`
 }
 
 // ClusterView represents a Kubernetes cluster (same as KubernetesCreateResponse)
 type ClusterView struct {
-	CreationDate string `json:"creationDate"`
-	Description  string `json:"description"`
-	ID           string `json:"id"`
-	Name         string `json:"name"`
-	Status       string `json:"status"` // ACTIVE, DELETED, DELETING, DEPLOYING, FAILED
-	Tag          string `json:"tag"`
-	TenantID     string `json:"tenantId"`
-	Version      string `json:"version"`
+	CreationDate string              `json:"creationDate"`
+	Description  string              `json:"description"`
+	Features     *KubernetesFeatures `json:"features,omitempty"`
+	ID           string              `json:"id"`
+	Name         string              `json:"name"`
+	Status       string              `json:"status"` // ACTIVE, DELETED, DELETING, DEPLOYING, FAILED, RECONCILING
+	Tag          string              `json:"tag"`
+	TenantID     string              `json:"tenantId"`
+	Version      string              `json:"version"`
 }
 
 // KubernetesCreateResponse is an alias for ClusterView
@@ -778,6 +795,13 @@ func ListKubernetesClusters(ctx context.Context, cc *client.Client, organisation
 func GetKubernetesCluster(ctx context.Context, cc *client.Client, organisationID, clusterID string) client.Response[ClusterView] {
 	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s", organisationID, clusterID)
 	return client.Get[ClusterView](ctx, cc, path)
+}
+
+// UpdateKubernetes patches a Kubernetes cluster, only the fields set in the
+// payload are modified, the others are left untouched by the API
+func UpdateKubernetes(ctx context.Context, cc *client.Client, organisationID, clusterID string, req KubernetesPatchRequest) client.Response[ClusterView] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters/%s", organisationID, clusterID)
+	return client.Patch[ClusterView](ctx, cc, path, req)
 }
 
 // DeleteKubernetes deletes a Kubernetes cluster in the specified organization
