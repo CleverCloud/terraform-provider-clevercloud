@@ -52,4 +52,11 @@ delete them first.
 Installing and removing Karpenter takes time, and the API only reports the
 feature once the installation is complete, so `terraform apply` waits for it. A
 refresh that happens during that window can show a diff which disappears once the
-installation completes.
+installation completes. Should the installation or the removal fail, the whole
+cluster is left in a failed state and has to be resumed on the Clever Cloud side
+before it accepts any other change.
+
+Karpenter requires Kubernetes 1.34 or later, and the API does not check it for
+you. It is also mutually exclusive with the cluster wide `autoscalingEnabled`
+feature, which this provider does not expose: a cluster carrying it is refused
+until that feature is disabled.

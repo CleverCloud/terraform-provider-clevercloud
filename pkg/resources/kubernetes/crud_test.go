@@ -102,6 +102,12 @@ func TestClassifyPatchError(t *testing.T) {
 			wantRetryable: true,
 		},
 		{
+			name:       "400 points at the mutually exclusive autoscaling feature",
+			statusCode: http.StatusBadRequest,
+			enabled:    true,
+			wantDetail: "node group autoscaling",
+		},
+		{
 			name:       "409 on enable points at the foreign Karpenter",
 			statusCode: http.StatusConflict,
 			enabled:    true,

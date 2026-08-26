@@ -236,17 +236,21 @@ func featureEnabled(features *tmp.KubernetesFeatures) bool {
 
 // classifyPatchError maps the HTTP status of a features patch to a retry decision
 // and a user facing explanation. Features are locked while the cluster is not
-// ACTIVE, which the API signals with a 412 and resolves on its own, while a 409
-// is a conflict inside the cluster only the user can solve
+// ACTIVE, which the API signals with a 412 and resolves on its own, while a 400
+// and a 409 both need the user to change something first
 func classifyPatchError(statusCode int, enabled bool) (retryable bool, detail string) {
 	switch statusCode {
 	case http.StatusPreconditionFailed:
 		return true, ""
+	case http.StatusBadRequest:
+		// the cluster wide autoscalingEnabled feature is mutually exclusive with
+		// this one and is not exposed by this provider
+		return false, "node autoprovisioning cannot run alongside node group autoscaling, disable the autoscalingEnabled feature of the cluster first"
 	case http.StatusConflict:
 		if enabled {
 			return false, "a Karpenter installation already runs in the kube-system namespace of this cluster, remove it before enabling node_autoprovisioning"
 		}
-		return false, "Karpenter custom resources still exist in this cluster, delete every NodePool, NodeClaim, NodeOverlay and CleverNodeClass before disabling node_autoprovisioning"
+		return false, "Karpenter custom resources still exist in this cluster, delete every NodePool, NodeClaim, NodeOverlay and CleverNodeClass, let Karpenter drain the nodes, then retry"
 	case 0:
 		return false, "the request never reached the Clever Cloud API"
 	default:
@@ -352,7 +356,12 @@ func waitForNodeAutoprovisioning(
 		case res.HasError():
 			tflog.Warn(ctx, "failed to poll cluster features", map[string]any{"error": res.Error().Error()})
 		case res.Payload().Status == "FAILED":
-			diags.AddError("failed to provision kubernetes cluster", res.Payload().Status)
+			// installing or removing Karpenter fails the whole cluster, which
+			// stays FAILED until it is resumed on the Clever Cloud side
+			diags.AddError(
+				"failed to provision kubernetes cluster",
+				fmt.Sprintf("the cluster went %s while node autoprovisioning was being installed or removed, it has to be resumed before it accepts any other change", res.Payload().Status),
+			)
 			return
 		case featureEnabled(res.Payload().Features) == expected:
 			tflog.Info(ctx, "node autoprovisioning converged", map[string]any{"enabled": expected})
