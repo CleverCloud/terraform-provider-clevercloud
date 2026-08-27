@@ -21,6 +21,12 @@ type Rust struct {
 	Features types.Set `tfsdk:"features"`
 }
 
+// RustV0 is the schema version 0 shape of Rust, kept for state upgrades
+type RustV0 struct {
+	application.RuntimeV0
+	Features types.Set `tfsdk:"features"`
+}
+
 func (r Rust) FeaturesAsStrings(ctx context.Context, diags *diag.Diagnostics) []string {
 	features := []string{}
 	diags.Append(r.Features.ElementsAs(ctx, &features, true)...)
@@ -29,6 +35,21 @@ func (r Rust) FeaturesAsStrings(ctx context.Context, diags *diag.Diagnostics) []
 
 //go:embed doc.md
 var rustDoc string
+
+// schemaRustV0 is the schema version 0 as shipped up to 1.1.0, before vhosts became
+// {fqdn, path_begin} objects. Frozen: it must keep decoding states written back then.
+var schemaRustV0 = schema.Schema{
+	Version:             0,
+	MarkdownDescription: rustDoc,
+	Attributes: application.WithRuntimeCommonsV0(map[string]schema.Attribute{
+		"features": schema.SetAttribute{
+			ElementType:         types.StringType,
+			Optional:            true,
+			MarkdownDescription: "List of Rust features to enable during build",
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+}
 
 func (r ResourceRust) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 	res.Schema = schema.Schema{
