@@ -25,24 +25,26 @@ type V struct {
 //go:embed doc.md
 var vDoc string
 
+var schemaV = schema.Schema{
+	Version:             1,
+	MarkdownDescription: vDoc,
+	Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
+		"binary": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "The name of the output binary file. Default: `${APP_HOME}/v_bin_${APP_ID}`",
+		},
+		"development_build": schema.BoolAttribute{
+			Optional:            true,
+			Computed:            true,
+			Default:             booldefault.StaticBool(false),
+			MarkdownDescription: "Set to true to compile without the `-prod` flag.",
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+}
+
 func (r ResourceV) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-	res.Schema = schema.Schema{
-		Version:             1,
-		MarkdownDescription: vDoc,
-		Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
-			"binary": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "The name of the output binary file. Default: `${APP_HOME}/v_bin_${APP_ID}`",
-			},
-			"development_build": schema.BoolAttribute{
-				Optional:            true,
-				Computed:            true,
-				Default:             booldefault.StaticBool(false),
-				MarkdownDescription: "Set to true to compile without the `-prod` flag.",
-			},
-		}),
-		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
-	}
+	res.Schema = schemaV
 }
 
 func (vapp V) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
