@@ -21,8 +21,30 @@ type FrankenPHP struct {
 	DevDependencies types.Bool `tfsdk:"dev_dependencies"`
 }
 
+// FrankenPHPV0 is the schema version 0 shape of FrankenPHP, kept for state upgrades
+type FrankenPHPV0 struct {
+	application.RuntimeV0
+	DevDependencies types.Bool `tfsdk:"dev_dependencies"`
+}
+
 //go:embed doc.md
 var frankenphpDoc string
+
+// schemaFrankenPHPV0 is the schema version 0 as shipped in 1.1.0, before vhosts became
+// {fqdn, path_begin} objects. Frozen: it must keep decoding states written back then.
+var schemaFrankenPHPV0 = schema.Schema{
+	Version:             0,
+	MarkdownDescription: frankenphpDoc,
+	Attributes: application.WithRuntimeCommonsV0(map[string]schema.Attribute{
+		"dev_dependencies": schema.BoolAttribute{
+			Optional:            true,
+			Computed:            true,
+			MarkdownDescription: "Install development dependencies (Default: false)",
+			Default:             booldefault.StaticBool(false),
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+}
 
 func (r ResourceFrankenPHP) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
 	res.Schema = schema.Schema{
