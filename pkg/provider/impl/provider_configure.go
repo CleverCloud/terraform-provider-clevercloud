@@ -190,6 +190,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 	resp.DataSourceData = p
 	resp.ResourceData = p
 	resp.ActionData = p
+	resp.StateStoreData = p
 
 	tflog.Debug(ctx, "provider configured")
 }
