@@ -26,30 +26,32 @@ type Dotnet struct {
 //go:embed doc.md
 var dotnetDoc string
 
+var schemaDotnet = schema.Schema{
+	Version:             1,
+	MarkdownDescription: dotnetDoc,
+	Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
+		"profile": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Override the build configuration settings in your project. Default: Release",
+		},
+		"proj": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "The name of your project file to use for the build, without the .csproj / .fsproj / .vbproj extension.",
+		},
+		"tfm": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Compiles for a specific framework. The framework must be defined in the project file. Example : net5.0",
+		},
+		"version": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Choose the .NET Core version between 6.0, 8.0, 9.0. Default: '8.0'",
+		},
+	}),
+	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
+}
+
 func (r ResourceDotnet) Schema(ctx context.Context, req resource.SchemaRequest, res *resource.SchemaResponse) {
-	res.Schema = schema.Schema{
-		Version:             1,
-		MarkdownDescription: dotnetDoc,
-		Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
-			"profile": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "Override the build configuration settings in your project. Default: Release",
-			},
-			"proj": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "The name of your project file to use for the build, without the .csproj / .fsproj / .vbproj extension.",
-			},
-			"tfm": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "Compiles for a specific framework. The framework must be defined in the project file. Example : net5.0",
-			},
-			"version": schema.StringAttribute{
-				Optional:            true,
-				MarkdownDescription: "Choose the .NET Core version between 6.0, 8.0, 9.0. Default: '8.0'",
-			},
-		}),
-		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
-	}
+	res.Schema = schemaDotnet
 }
 
 func (dotnetapp Dotnet) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]string {
