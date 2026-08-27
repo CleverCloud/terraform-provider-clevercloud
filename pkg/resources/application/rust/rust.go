@@ -4,6 +4,9 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 )
 
@@ -17,6 +20,62 @@ func NewResourceRust() resource.Resource {
 
 func (r *ResourceRust) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
 	res.TypeName = req.ProviderTypeName + "_rust"
+}
+
+// UpgradeState implements state migration from version 0 to 1: vhosts turn from
+// "fqdn/path" strings into {fqdn, path_begin} objects, and the attributes added since
+// (networkgroups, exposed_environment, integrations, redirection) start out null.
+func (r *ResourceRust) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
+	return map[int64]resource.StateUpgrader{
+		0: {
+			PriorSchema: &schemaRustV0,
+			StateUpgrader: func(ctx context.Context, req resource.UpgradeStateRequest, res *resource.UpgradeStateResponse) {
+				tflog.Info(ctx, "Upgrading Rust resource state from version 0 to 1")
+
+				old := helper.StateFrom[RustV0](ctx, *req.State, &res.Diagnostics)
+				if res.Diagnostics.HasError() {
+					return
+				}
+
+				oldVhosts := []string{}
+				res.Diagnostics.Append(old.VHosts.ElementsAs(ctx, &oldVhosts, false)...)
+				if res.Diagnostics.HasError() {
+					return
+				}
+				vhosts := helper.VHostsFromAPIHosts(ctx, oldVhosts, old.VHosts, &res.Diagnostics)
+
+				newState := Rust{
+					Runtime: application.Runtime{
+						ID:                 old.ID,
+						Name:               old.Name,
+						Description:        old.Description,
+						MinInstanceCount:   old.MinInstanceCount,
+						MaxInstanceCount:   old.MaxInstanceCount,
+						SmallestFlavor:     old.SmallestFlavor,
+						BiggestFlavor:      old.BiggestFlavor,
+						BuildFlavor:        old.BuildFlavor,
+						Region:             old.Region,
+						StickySessions:     old.StickySessions,
+						RedirectHTTPS:      old.RedirectHTTPS,
+						VHosts:             vhosts,
+						DeployURL:          old.DeployURL,
+						Dependencies:       old.Dependencies,
+						Deployment:         old.Deployment,
+						Hooks:              old.Hooks,
+						Integrations:       nil,
+						Redirection:        nil,
+						AppFolder:          old.AppFolder,
+						Environment:        old.Environment,
+						Networkgroups:      resources.NullNetworkgroupConfig,
+						ExposedEnvironment: application.NullExposedEnv,
+					},
+					Features: old.Features,
+				}
+
+				res.Diagnostics.Append(res.State.Set(ctx, newState)...)
+			},
+		},
+	}
 }
 
 const CC_RUST_FEATURES = "CC_RUST_FEATURES"
