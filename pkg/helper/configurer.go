@@ -39,6 +39,12 @@ func (c *Configurer) ImportState(ctx context.Context, req resource.ImportStateRe
 	resource.ImportStatePassthroughID(ctx, attr, req, resp)
 }
 
+// UpgradeState is the default for resources still at their first schema version.
+// Bumping a schema Version requires the resource to override this method with an
+// upgrader for every prior version, otherwise Terraform refuses to load any state
+// holding an older instance. TestResources_stateUpgradersCoverEveryPriorVersion
+// in pkg/registry enforces it.
+//
 // https://developer.hashicorp.com/terraform/plugin/framework/resources/state-upgrade#implementing-state-upgrade-support
 func (c *Configurer) UpgradeState(ctx context.Context) map[int64]resource.StateUpgrader {
 	return map[int64]resource.StateUpgrader{}
