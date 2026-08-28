@@ -106,4 +106,5 @@ func (r *ResourceDocker) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "docker", plan.Runtime, &res.Diagnostics)
+	application.ValidateEnvSlots(ctx, &plan, &res.Diagnostics)
 }

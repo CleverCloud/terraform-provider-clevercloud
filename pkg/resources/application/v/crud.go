@@ -109,4 +109,5 @@ func (r *ResourceV) ModifyPlan(ctx context.Context, req resource.ModifyPlanReque
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "v", plan.Runtime, &res.Diagnostics)
+	application.ValidateEnvSlots(ctx, &plan, &res.Diagnostics)
 }

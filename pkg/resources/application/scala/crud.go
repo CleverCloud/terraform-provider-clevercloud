@@ -109,4 +109,5 @@ func (r *ResourceScala) ModifyPlan(ctx context.Context, req resource.ModifyPlanR
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "sbt", plan.Runtime, &res.Diagnostics)
+	application.ValidateEnvSlots(ctx, &plan, &res.Diagnostics)
 }
