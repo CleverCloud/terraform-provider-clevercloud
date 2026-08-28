@@ -82,9 +82,10 @@ func (provider *AddonProvider) FirstPlan() *AddonPlan {
 }
 
 type AddonProvider struct {
-	ID    string     `json:"id"`
-	Name  string     `json:"name"`
-	Plans AddonPlans `json:"plans"`
+	ID      string     `json:"id"`
+	Name    string     `json:"name"`
+	Plans   AddonPlans `json:"plans"`
+	Regions []string   `json:"regions"`
 }
 
 type PostgreSQL struct {
