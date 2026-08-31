@@ -62,6 +62,7 @@ var Resources = []func() resource.Resource{
 	fsbucket.NewResourceFSBucket,
 	java.NewResourceJava("war"),
 	java.NewResourceJava("jar"),
+	java.NewResourceJava("maven"),
 	linux.NewResourceLinux,
 	materiakv.NewResourceMateriaKV,
 	metabase.NewResourceMetabase,
