@@ -104,6 +104,40 @@ func TestAccJava_jar(t *testing.T) {
 	})
 }
 
+func TestAccJava_maven(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-java")
+	fullName := fmt.Sprintf("clevercloud_java_maven.%s", rName)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	javaBlock := helper.NewRessource(
+		"clevercloud_java_maven",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":               rName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 2,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "M",
+		}))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 tests.ExpectOrganisation(t),
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       providerBlock.Append(javaBlock).String(),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
+			},
+		}},
+		CheckDestroy: tests.CheckDestroy(ctx),
+	})
+}
+
 func TestAccJava_empty_vhosts(t *testing.T) {
 	t.Parallel()
 	cc := client.New(client.WithAutoOauthConfig())
