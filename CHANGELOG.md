@@ -1,5 +1,27 @@
 # Changelog
 
+## [2.2.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.1.0...v2.2.0) (2026-09-01)
+
+
+### Features
+
+* **applications:** reflect the deployed commit in deployment.commit ([bb3209f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/bb3209fdfcbcac07ad52876975c6cb98ba288add))
+* **networkgroup:** validate member fqdn against the platform DNS suffixes ([82b1179](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/82b1179e92fd43bd8d56334e5e12b40e30c7672e))
+* **runtime:** add haskell runtime ([44d7296](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/44d7296241fb2317e4b85fd5fd9f3419ed42f737))
+
+
+### Bug Fixes
+
+* **configprovider:** resolve the region from the API instead of hardcoding par ([ebddc0f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/ebddc0f375290d61a1b9e7c4c84f4d48cd7e2fec))
+* **configprovider:** take the region from the addon provider itself ([5cb7a30](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5cb7a30f21cd5be155f6201b5c0ef1b29f8c7648))
+* **deps:** bump hc-install to v0.9.5 to restore local make test ([#436](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/436)) ([403fd1c](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/403fd1c4bb20c7cd4e3bdcd1f9026e690fb25baf)), closes [#435](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/435)
+* **dotnet:** add state upgrader from schema version 0 to 1 ([6bb46a7](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/6bb46a745fc89df9b1237b4eaf0a58436784c63b)), closes [#433](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/433)
+* **drain:** decode percent-encoded Datadog URL segments on read ([aa7404e](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/aa7404e41d39d450fd3bd7f21063c9d67a38e2fc))
+* **frankenphp:** add state upgrader from schema version 0 to 1 ([9828c62](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/9828c628810fc18061a762a7a506784253cfb34e)), closes [#433](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/433)
+* **postgresql:** pin explicit TLS semantics on the locale probe ([70dcae9](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/70dcae999e4ff873cef1ca822faa1ced9ada7893))
+* **rust:** add state upgrader from schema version 0 to 1 ([5ac0601](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5ac060107994a7bdab2be640b7de069b6db854b1)), closes [#433](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/433)
+* **v:** add state upgrader from schema version 0 to 1 ([b9944b3](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/b9944b30364e4afe424b025d158a9ad47a3ddefc)), closes [#433](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/433)
+
 ## [2.1.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.0.1...v2.1.0) (2026-08-13)
 
 
