@@ -73,6 +73,7 @@ func TestAccOtoroshi_networkgroup(t *testing.T) {
 	t.Parallel()
 	ctx := t.Context()
 	cc := client.New(client.WithAutoOauthConfig())
+	memberFQDN := tests.NGMemberFQDN(t, "myotoroshi")
 	rName := acctest.RandomWithPrefix("tf-test-otoroshi")
 	ngName := acctest.RandomWithPrefix("tf-test-otoroshi-ng")
 	fullName := fmt.Sprintf("clevercloud_otoroshi.%s", rName)
@@ -96,7 +97,7 @@ func TestAccOtoroshi_networkgroup(t *testing.T) {
 			"region": "par",
 			"networkgroups": []map[string]string{{
 				"networkgroup_id": fmt.Sprintf("${clevercloud_networkgroup.%s.id}", ngName),
-				"fqdn":            "myotoroshi",
+				"fqdn":            memberFQDN,
 			}}}),
 	)
 
@@ -122,7 +123,7 @@ func TestAccOtoroshi_networkgroup(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("networkgroups"), knownvalue.SetExact([]knownvalue.Check{
 					knownvalue.ObjectExact(map[string]knownvalue.Check{
 						"networkgroup_id": knownvalue.StringRegexp(regexp.MustCompile("^ng_.*$")),
-						"fqdn":            knownvalue.StringExact("myotoroshi"),
+						"fqdn":            knownvalue.StringExact(memberFQDN),
 					}),
 				})),
 			},

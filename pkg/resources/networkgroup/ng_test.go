@@ -60,6 +60,7 @@ func TestAccNG_withPeers(t *testing.T) {
 	appName := acctest.RandomWithPrefix("tf-test-docker")
 	ngFullName := fmt.Sprintf("clevercloud_networkgroup.%s", ngName)
 	appFullName := fmt.Sprintf("clevercloud_docker.%s", appName)
+	memberFQDN := tests.NGMemberFQDN(t, "myapp")
 
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	ngBlock := helper.NewRessource(
@@ -86,7 +87,7 @@ func TestAccNG_withPeers(t *testing.T) {
 			"biggest_flavor":     "XS",
 			"networkgroups": []map[string]string{{
 				"networkgroup_id": fmt.Sprintf("${clevercloud_networkgroup.%s.id}", ngName),
-				"fqdn":            "myapp",
+				"fqdn":            memberFQDN,
 			}},
 		}),
 		helper.SetBlockValues("deployment", map[string]any{
