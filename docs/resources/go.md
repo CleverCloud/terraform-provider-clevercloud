@@ -225,7 +225,7 @@ Optional:
 
 Required:
 
-- `fqdn` (String) domain name which will resolve to application instances inside the networkgroup
+- `fqdn` (String) domain name which will resolve to application instances inside the networkgroup; must end with a dot followed by one of the platform DNS suffixes served on `GET /networkgroup/configuration` (`cc-ng.cloud` on the public platform)
 - `networkgroup_id` (String) ID of the networkgroup
 
 
