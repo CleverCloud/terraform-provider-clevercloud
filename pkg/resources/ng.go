@@ -2,6 +2,10 @@ package resources
 
 import (
 	"context"
+	"errors"
+	"fmt"
+	"slices"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -12,6 +16,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk"
 	"go.clever-cloud.dev/sdk/models"
 )
@@ -41,7 +46,7 @@ var NetworkgroupsAttribute = schema.SetNestedAttribute{
 			},
 			"fqdn": schema.StringAttribute{
 				Required:            true,
-				MarkdownDescription: "domain name which will resolve to application instances inside the networkgroup",
+				MarkdownDescription: "domain name which will resolve to application instances inside the networkgroup; must end with a dot followed by one of the platform DNS suffixes served on `GET /networkgroup/configuration` (`cc-ng.cloud` on the public platform)",
 			},
 		},
 	},
@@ -147,7 +152,20 @@ func SyncNetworkGroups(
 		tflog.Info(ctx, "removed member from NG")
 	}
 
-	for ng := range expectedNG.Difference(currentNG).Iter() {
+	missingNG := expectedNG.Difference(currentNG)
+
+	// Validate the FQDNs of the members about to be created: the platform
+	// rejects a domain name outside its allowed suffixes, and its 400 does not
+	// name them. Only members being (re)created are checked, so an existing
+	// member with a legacy name never blocks an apply.
+	if missingNG.Size() > 0 {
+		validateMemberFQDNs(ctx, prov, missingNG.Slice(), ngIDToFQDN, diags)
+		if diags.HasError() {
+			return
+		}
+	}
+
+	for ng := range missingNG.Iter() {
 		addRes := sdkClient.
 			V4().
 			Networkgroups().
@@ -162,7 +180,51 @@ func SyncNetworkGroups(
 				DomainName: ngIDToFQDN[ng],
 			})
 		if addRes.HasError() {
-			diags.AddError("failed to add member to NG", addRes.Error().Error())
+			detail := addRes.Error().Error()
+			var apiErr *client.APIError
+			if errors.As(addRes.Error(), &apiErr) && len(apiErr.Context) > 0 {
+				// the field-level validation detail only lives in the error context
+				detail = fmt.Sprintf("%s %v", apiErr.Message, apiErr.Context)
+			}
+			diags.AddError("failed to add member to NG", detail)
+		}
+	}
+}
+
+// validateMemberFQDNs checks the FQDN of each member about to be created against
+// the deployment's allowed DNS suffixes, fetched from the public
+// /networkgroup/configuration route. A deployment predating that route answers
+// 404: validation is then skipped and the create call remains the authority.
+func validateMemberFQDNs(
+	ctx context.Context,
+	prov provider.Provider,
+	ngIDs []string,
+	ngIDToFQDN map[string]string,
+	diags *diag.Diagnostics,
+) {
+	confRes := tmp.GetNetworkgroupConfiguration(ctx, prov.Client())
+	if confRes.HasError() {
+		tflog.Warn(ctx, "cannot fetch the networkgroup configuration, skipping FQDN validation", map[string]any{"error": confRes.Error().Error()})
+		return
+	}
+
+	suffixes := confRes.Payload().DNSSuffixes
+	if len(suffixes) == 0 {
+		return
+	}
+
+	for _, ng := range ngIDs {
+		fqdn := ngIDToFQDN[ng]
+		if !slices.ContainsFunc(suffixes, func(suffix string) bool {
+			return strings.HasSuffix(fqdn, "."+suffix)
+		}) {
+			diags.AddError(
+				"invalid networkgroup member fqdn",
+				fmt.Sprintf(
+					"%q must end with a dot followed by one of the platform DNS suffixes: %s (e.g. %q)",
+					fqdn, strings.Join(suffixes, ", "), "myapp."+suffixes[0],
+				),
+			)
 		}
 	}
 }

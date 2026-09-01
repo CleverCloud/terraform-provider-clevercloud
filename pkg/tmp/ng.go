@@ -76,6 +76,21 @@ func ListNetworkgroups(ctx context.Context, cc *client.Client, organisationID st
 	return client.Get[[]Networkgroup](ctx, cc, path)
 }
 
+// NetworkgroupConfiguration is the deployment-level networkgroups configuration:
+// a member domain name must end with a dot followed by one of DNSSuffixes
+// (e.g. "cc-ng.cloud" on the public platform).
+type NetworkgroupConfiguration struct {
+	DNSSuffixes []string `json:"dnsSuffixes"`
+}
+
+// GetNetworkgroupConfiguration fetches the deployment-level networkgroups
+// configuration. Public route, unversioned on purpose; deployments predating it
+// answer 404.
+// GET /networkgroup/configuration
+func GetNetworkgroupConfiguration(ctx context.Context, cc *client.Client) client.Response[NetworkgroupConfiguration] {
+	return client.Get[NetworkgroupConfiguration](ctx, cc, "/networkgroup/configuration")
+}
+
 // ListMembers lists all members in a networkgroup
 func ListMembers(ctx context.Context, cc *client.Client, organisationID, networkgroupID string) client.Response[[]Member] {
 	path := fmt.Sprintf("/v4/networkgroups/organisations/%s/networkgroups/%s/members", organisationID, networkgroupID)
