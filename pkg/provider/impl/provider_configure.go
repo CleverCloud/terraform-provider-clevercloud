@@ -8,6 +8,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.dev/client"
 )
@@ -69,6 +70,42 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
+// isSetStr reports whether a config attribute holds a known, non-empty value.
+func isSetStr(v types.String) bool {
+	return !v.IsUnknown() && !v.IsNull() && v.ValueString() != ""
+}
+
+// resolveAPIToken returns the API token to use for Bearer authentication and
+// whether it was read from the environment: the api_token provider parameter
+// takes precedence over the CLEVER_API_TOKEN environment variable.
+func resolveAPIToken(config ProviderData) (token string, fromEnv bool) {
+	if isSetStr(config.APIToken) {
+		return config.APIToken.ValueString(), false
+	}
+
+	return os.Getenv("CLEVER_API_TOKEN"), true
+}
+
+// bearerEndpoint returns the endpoint to use for API token (Bearer)
+// authentication. API tokens are only accepted by the API bridge, so the
+// endpoint defaults to it unless explicitly configured.
+func bearerEndpoint(endpoint string) string {
+	if endpoint == "" {
+		return client.BRIDGE_API_ENDPOINT
+	}
+
+	return endpoint
+}
+
+// bearerClientOptions returns the client options enabling API token (Bearer)
+// authentication.
+func bearerClientOptions(endpoint, apiToken string) []func(*client.Client) {
+	return []func(*client.Client){
+		client.WithEndpoint(bearerEndpoint(endpoint)),
+		client.WithBearerAuth(apiToken),
+	}
+}
+
 func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest, resp *provider.ConfigureResponse) {
 	var config ProviderData
 
@@ -90,14 +127,41 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 		return
 	}
 
+	// Explicit provider parameters always win over environment variables: an
+	// API token coming from CLEVER_API_TOKEN is ignored when OAuth1 tokens are
+	// set in the provider block (the parameter-level conflict is already
+	// rejected by ConfigValidators). Two competing environment variables are
+	// ambiguous, so fail with an actionable message.
+	apiToken, apiTokenFromEnv := resolveAPIToken(config)
+	useBearer := apiToken != ""
+	if useBearer && apiTokenFromEnv {
+		if isSetStr(config.Token) || isSetStr(config.Secret) {
+			useBearer = false
+		} else if os.Getenv("CC_OAUTH_TOKEN") != "" && os.Getenv("CC_OAUTH_SECRET") != "" {
+			resp.Diagnostics.AddError(
+				"Conflicting CleverCloud credentials",
+				"Both the CLEVER_API_TOKEN and the CC_OAUTH_TOKEN/CC_OAUTH_SECRET environment variables are set. Unset one of them, or select an authentication method explicitly with the api_token or token/secret provider parameters.",
+			)
+			return
+		}
+	}
+
 	// Allow to get creds from CLI config directory or by injected variables
 	var clientOptions []func(*client.Client)
-	if !config.Endpoint.IsUnknown() && !config.Endpoint.IsNull() && config.Endpoint.ValueString() != "" {
+
+	if useBearer {
+		clientOptions = bearerClientOptions(config.Endpoint.ValueString(), apiToken)
+
+		// API tokens cannot sign git operations: leave gitAuth unset, application
+		// resources deploying code over git require OAuth1 credentials.
+		tflog.Info(ctx, "using API token (Bearer) authentication, git deployments are unavailable")
+	} else if !config.Endpoint.IsUnknown() && !config.Endpoint.IsNull() && config.Endpoint.ValueString() != "" {
 		clientOptions = append(clientOptions, client.WithEndpoint(config.Endpoint.ValueString()))
 	}
 
 	// New branch: allow setting all OAuth1 params
-	if !config.ConsumerKey.IsUnknown() && !config.ConsumerKey.IsNull() && config.ConsumerKey.ValueString() != "" &&
+	if !useBearer &&
+		!config.ConsumerKey.IsUnknown() && !config.ConsumerKey.IsNull() && config.ConsumerKey.ValueString() != "" &&
 		!config.ConsumerSecret.IsUnknown() && !config.ConsumerSecret.IsNull() && config.ConsumerSecret.ValueString() != "" &&
 		!config.Token.IsUnknown() && !config.Token.IsNull() && config.Token.ValueString() != "" &&
 		!config.Secret.IsUnknown() && !config.Secret.IsNull() && config.Secret.ValueString() != "" {
@@ -109,10 +173,11 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 		))
 		p.gitAuth = &http.BasicAuth{Username: config.Token.ValueString(), Password: config.Secret.ValueString()}
 
-	} else if config.Secret.IsUnknown() ||
-		config.Token.IsUnknown() ||
-		config.Secret.IsNull() ||
-		config.Token.IsNull() {
+	} else if !useBearer &&
+		(config.Secret.IsUnknown() ||
+			config.Token.IsUnknown() ||
+			config.Secret.IsNull() ||
+			config.Token.IsNull()) {
 		creds, profile, diags := resolveCreds()
 		resp.Diagnostics.Append(diags...)
 		if resp.Diagnostics.HasError() {
@@ -128,7 +193,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 			resp.Diagnostics.AddError(
 				"CleverCloud authentication empty",
 				fmt.Sprintf(
-					"No credentials found (%s).\n\nEither set the CC_OAUTH_TOKEN and CC_OAUTH_SECRET environment variables, run 'clever login', or set the token and secret provider parameters.",
+					"No credentials found (%s).\n\nEither set the CC_OAUTH_TOKEN and CC_OAUTH_SECRET environment variables, run 'clever login', set the token and secret provider parameters, or provide an API token via the api_token parameter or the CLEVER_API_TOKEN environment variable.",
 					searched,
 				),
 			)
@@ -153,7 +218,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 
 		p.gitAuth = &http.BasicAuth{Username: creds.token, Password: creds.secret}
 
-	} else {
+	} else if !useBearer {
 		clientOptions = append(clientOptions, client.WithUserOauthConfig(
 			config.Token.ValueString(),
 			config.Secret.ValueString(),
@@ -172,7 +237,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 		if selfRes.StatusCode() == 401 || selfRes.StatusCode() == 403 {
 			resp.Diagnostics.AddError(
 				"CleverCloud authentication failed",
-				fmt.Sprintf("Status %d.\n\nCredential priority order:\n1. CC_OAUTH_TOKEN/CC_OAUTH_SECRET environment variables\n2. clever-tools configuration (~/.config/clever-cloud/clever-tools.json)\n3. Terraform provider token/secret parameters\n\nOriginal error: %s",
+				fmt.Sprintf("Status %d.\n\nCredential priority order:\n1. api_token provider parameter, then CLEVER_API_TOKEN environment variable (Bearer)\n2. token/secret provider parameters (OAuth1)\n3. CC_OAUTH_TOKEN/CC_OAUTH_SECRET environment variables\n4. clever-tools configuration (~/.config/clever-cloud/clever-tools.json)\n\nOriginal error: %s",
 					selfRes.StatusCode(), selfRes.Error().Error()),
 			)
 		} else {

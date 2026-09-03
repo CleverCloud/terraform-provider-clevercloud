@@ -3,6 +3,25 @@
 page_title: "clevercloud Provider"
 description: |-
   CleverCloud provider allow you to interact with CleverCloud platform.
+  Authentication
+  The provider supports two authentication modes, mutually exclusive:
+  OAuth1 (default): the credentials created by clever login, used against https://api.clever-cloud.com. They can be provided through the token/secret parameters, through environment variables, or read from the clever-tools configuration file.API token (Bearer): an API token created with clever tokens create, sent as a Bearer token to the API bridge (https://api-bridge.clever-cloud.com). It can be provided through the api_token parameter or the CLEVER_API_TOKEN environment variable.
+  Configuring both modes at the same time is an error. Explicit provider parameters always take precedence over environment variables.
+  | Environment variable | Mode | Description |
+  |---|---|---|
+  | `CLEVER_API_TOKEN` | API token | API token sent as a Bearer token to the API bridge |
+  | `CC_OAUTH_TOKEN` | OAuth1 | OAuth1 user token |
+  | `CC_OAUTH_SECRET` | OAuth1 | OAuth1 user secret |
+  | `CC_CONSUMER_KEY` | OAuth1 | Dedicated OAuth1 consumer key (optional) |
+  | `CC_CONSUMER_SECRET` | OAuth1 | Dedicated OAuth1 consumer secret (optional) |
+  | `CC_ORGANISATION` | both | Organisation identifier (`orga_xxx` or `user_xxx`) |
+  
+  provider "clevercloud" {
+    organisation = "orga_xxx"
+    api_token    = var.clever_api_token
+  }
+  
+  Note: API tokens cannot sign git operations. Application resources deploying code over git still require OAuth1 credentials.
   Dedicated OAuth consumer
   If you want to use a dedicated OAuth consumer and the acording user tokens,
   be sure the next rights are granted
@@ -89,6 +108,33 @@ description: |-
 # clevercloud Provider
 
 CleverCloud provider allow you to interact with CleverCloud platform.
+
+## Authentication
+
+The provider supports two authentication modes, mutually exclusive:
+
+- **OAuth1 (default)**: the credentials created by `clever login`, used against https://api.clever-cloud.com. They can be provided through the `token`/`secret` parameters, through environment variables, or read from the clever-tools configuration file.
+- **API token (Bearer)**: an API token created with `clever tokens create`, sent as a Bearer token to the API bridge (https://api-bridge.clever-cloud.com). It can be provided through the `api_token` parameter or the `CLEVER_API_TOKEN` environment variable.
+
+Configuring both modes at the same time is an error. Explicit provider parameters always take precedence over environment variables.
+
+| Environment variable | Mode | Description |
+|---|---|---|
+| `CLEVER_API_TOKEN` | API token | API token sent as a Bearer token to the API bridge |
+| `CC_OAUTH_TOKEN` | OAuth1 | OAuth1 user token |
+| `CC_OAUTH_SECRET` | OAuth1 | OAuth1 user secret |
+| `CC_CONSUMER_KEY` | OAuth1 | Dedicated OAuth1 consumer key (optional) |
+| `CC_CONSUMER_SECRET` | OAuth1 | Dedicated OAuth1 consumer secret (optional) |
+| `CC_ORGANISATION` | both | Organisation identifier (`orga_xxx` or `user_xxx`) |
+
+```hcl
+provider "clevercloud" {
+  organisation = "orga_xxx"
+  api_token    = var.clever_api_token
+}
+```
+
+Note: API tokens cannot sign git operations. Application resources deploying code over git still require OAuth1 credentials.
 
 ## Dedicated OAuth consumer
 
@@ -211,6 +257,7 @@ export AWS_REQUEST_CHECKSUM_CALCULATION=when_required
 
 ### Optional
 
+- `api_token` (String, Sensitive) Clever Cloud API token, sent as a Bearer token to the API bridge (https://api-bridge.clever-cloud.com). Mutually exclusive with the OAuth1 parameters (token, secret, consumer_key, consumer_secret). This parameter can also be provided via the CLEVER_API_TOKEN environment variable. Note: API tokens cannot sign git operations, so application resources deploying code over git still require OAuth1 credentials.
 - `consumer_key` (String) Clever Cloud OAuth1 consumer key. Allows using a dedicated OAuth consumer.
 - `consumer_secret` (String, Sensitive) CleverCloud OAuth1 consumer secret. Allows using a dedicated OAuth consumer.
 - `disable_networkgroups` (Boolean) Disable netorkgroups features
