@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -40,12 +41,12 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		Options:    map[string]string{},
 	}
 
-	if !mg.Encryption.IsNull() && !mg.Encryption.IsUnknown() {
-		addonReq.Options["encryption"] = fmt.Sprintf("%t", mg.Encryption.ValueBool())
-	}
-
-	if !mg.DirectHostOnly.IsNull() && !mg.DirectHostOnly.IsUnknown() {
-		addonReq.Options["direct-host-only"] = fmt.Sprintf("%t", mg.DirectHostOnly.ValueBool())
+	featureFlags := map[string]any{}
+	resp.Diagnostics.Append(mongodbFeaturesCodec.StateToAPI(&mg, featureFlags)...)
+	for k, v := range featureFlags {
+		if b, ok := v.(bool); ok {
+			addonReq.Options[k] = fmt.Sprintf("%t", b)
+		}
 	}
 
 	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
@@ -66,7 +67,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	r.readFromAPI(&mg, *mgInfoRes.Payload())
+	resp.Diagnostics.Append(r.readFromAPI(&mg, *mgInfoRes.Payload())...)
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -124,7 +125,7 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 	addonInfo := addonRes.Payload()
 
 	r.readFromAddon(&mg, *addonInfo)
-	r.readFromAPI(&mg, *addonMG)
+	resp.Diagnostics.Append(r.readFromAPI(&mg, *addonMG)...)
 
 	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
@@ -137,7 +138,7 @@ func (r *ResourceMongoDB) readFromAddon(state *MongoDB, addon tmp.AddonResponse)
 	state.CreationDate = pkg.FromI(addon.CreationDate)
 }
 
-func (r *ResourceMongoDB) readFromAPI(state *MongoDB, mg tmp.MongoDB) {
+func (r *ResourceMongoDB) readFromAPI(state *MongoDB, mg tmp.MongoDB) diag.Diagnostics {
 	state.Host = pkg.FromStr(mg.Host)
 	state.Port = pkg.FromI(int64(mg.Port))
 	state.User = pkg.FromStr(mg.User)
@@ -146,18 +147,16 @@ func (r *ResourceMongoDB) readFromAPI(state *MongoDB, mg tmp.MongoDB) {
 	state.Uri = pkg.FromStr(mg.Uri())
 
 	// Initialize to defaults so attributes are never null in state after import.
-	// The features loop below overrides with actual API values if present.
+	// The codec below overrides only the features the API actually reports.
 	state.Encryption = pkg.FromBool(false)
 	state.DirectHostOnly = pkg.FromBool(false)
 
+	features := map[string]any{}
 	for _, feature := range mg.Features {
-		switch feature.Name {
-		case "encryption":
-			state.Encryption = pkg.FromBool(feature.Enabled)
-		case "direct-host-only":
-			state.DirectHostOnly = pkg.FromBool(feature.Enabled)
-		}
+		features[feature.Name] = feature.Enabled
 	}
+
+	return mongodbFeaturesCodec.APIToState(features, state)
 }
 
 // Update resource

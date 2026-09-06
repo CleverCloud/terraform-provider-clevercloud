@@ -206,19 +206,12 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		addonReq.Options["version"] = pg.Version.ValueString()
 	})
 
-	if !pg.Backup.IsNull() && !pg.Backup.IsUnknown() {
-		backupValue := fmt.Sprintf("%t", pg.Backup.ValueBool())
-		addonReq.Options["do-backup"] = backupValue
-	} else {
-		addonReq.Options["do-backup"] = "true"
-	}
-
-	if !pg.Encryption.IsNull() && !pg.Encryption.IsUnknown() {
-		addonReq.Options["encryption"] = fmt.Sprintf("%t", pg.Encryption.ValueBool())
-	}
-
-	if !pg.DirectHostOnly.IsNull() && !pg.DirectHostOnly.IsUnknown() {
-		addonReq.Options["direct-host-only"] = fmt.Sprintf("%t", pg.DirectHostOnly.ValueBool())
+	featureFlags := map[string]any{"do-backup": true}
+	resp.Diagnostics.Append(postgresqlFeaturesCodec.StateToAPI(&pg, featureFlags)...)
+	for k, v := range featureFlags {
+		if b, ok := v.(bool); ok {
+			addonReq.Options[k] = fmt.Sprintf("%t", b)
+		}
 	}
 
 	if !pg.Locale.IsNull() && !pg.Locale.IsUnknown() {
@@ -243,7 +236,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	r.readFromAPI(&pg, *pgInfoRes.Payload())
+	resp.Diagnostics.Append(r.readFromAPI(&pg, *pgInfoRes.Payload())...)
 
 	addonPG := pgInfoRes.Payload()
 	if plan.IsDedicated() {
@@ -326,7 +319,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 			return
 		}
 
-		r.readFromAPI(&pg, *addonPG)
+		resp.Diagnostics.Append(r.readFromAPI(&pg, *addonPG)...)
 	}
 
 	// Retrieve the actual locale value from the database by querying LC_COLLATE
@@ -363,7 +356,7 @@ func (r *ResourcePostgreSQL) readFromAddon(state *PostgreSQL, addon tmp.AddonRes
 	state.CreationDate = pkg.FromI(addon.CreationDate)
 }
 
-func (r *ResourcePostgreSQL) readFromAPI(state *PostgreSQL, pg tmp.PostgreSQL) {
+func (r *ResourcePostgreSQL) readFromAPI(state *PostgreSQL, pg tmp.PostgreSQL) diag.Diagnostics {
 	state.Host = pkg.FromStr(pg.Host)
 	state.Port = pkg.FromI(int64(pg.Port))
 	state.Database = pkg.FromStr(pg.Database)
@@ -373,21 +366,17 @@ func (r *ResourcePostgreSQL) readFromAPI(state *PostgreSQL, pg tmp.PostgreSQL) {
 	state.Uri = pkg.FromStr(pg.Uri())
 
 	// Initialize to defaults so attributes are never null in state after import.
-	// The features loop below overrides with actual API values if present.
+	// The codec below overrides only the features the API actually reports.
 	state.Backup = pkg.FromBool(true)
 	state.Encryption = pkg.FromBool(false)
 	state.DirectHostOnly = pkg.FromBool(false)
 
+	features := map[string]any{}
 	for _, feature := range pg.Features {
-		switch feature.Name {
-		case "do-backup":
-			state.Backup = pkg.FromBool(feature.Enabled)
-		case "encryption":
-			state.Encryption = pkg.FromBool(feature.Enabled)
-		case "direct-host-only":
-			state.DirectHostOnly = pkg.FromBool(feature.Enabled)
-		}
+		features[feature.Name] = feature.Enabled
 	}
+
+	return postgresqlFeaturesCodec.APIToState(features, state)
 }
 
 func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {

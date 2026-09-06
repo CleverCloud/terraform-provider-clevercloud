@@ -21,8 +21,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/miton18/helper/set"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
+
+func init() { resources.RegisterCodec("elasticsearch", elasticsearchFeaturesCodec, &Elasticsearch{}) }
+
+var elasticsearchFeaturesCodec = resources.Codec{
+	{StateField: "Encryption", APIKeyName: "encryption", Kind: resources.KindBool},
+	{StateField: "Kibana", APIKeyName: "kibana", Kind: resources.KindBool},
+	{StateField: "Apm", APIKeyName: "apm", Kind: resources.KindBool},
+}
 
 type Elasticsearch struct {
 	ID            types.String `tfsdk:"id"`
