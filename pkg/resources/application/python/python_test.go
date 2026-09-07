@@ -462,3 +462,99 @@ func TestAccPython_networkgroup(t *testing.T) {
 		}},
 	})
 }
+
+func TestAccPython_import(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-python-import")
+	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
+	cc := client.New(client.WithAutoOauthConfig())
+
+	var appID string
+
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	// min_instance_count and max_instance_count are deliberately omitted: they used
+	// to be Required, which made `terraform import` fail before the config was even
+	// read. Leaving them out is what the import path must now support.
+	pythonBlock := helper.NewRessource(
+		"clevercloud_python",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":            rName,
+			"region":          "par",
+			"smallest_flavor": "XS",
+			"biggest_flavor":  "M",
+			// The platform injects CC_PYTHON_VERSION on its own and Read() maps it
+			// back to python_version, which is Optional without Computed: leaving it
+			// out of the config would plan it back to null on every run.
+			"python_version": "3",
+		}),
+	)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 tests.ExpectOrganisation(t),
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{
+			{
+				// Create the application through the API so Terraform has no prior
+				// state: Read() has to rebuild every attribute from the platform,
+				// which is the scenario issue #134 breaks on.
+				PreConfig: func() {
+					instancesRes := tmp.GetProductInstance(ctx, cc, nil)
+					if instancesRes.HasError() {
+						t.Fatalf("failed to get product instances: %s", instancesRes.Error())
+					}
+					instance := pkg.First(*instancesRes.Payload(), func(i tmp.ProductInstance) bool {
+						return strings.EqualFold(i.Variant.Slug, "python")
+					})
+					if instance == nil {
+						t.Fatal("no product instance matching variant slug 'python'")
+					}
+
+					res := tmp.CreateAppWithRetry(ctx, cc, tests.ORGANISATION, tmp.CreateAppRequest{
+						Name:            rName,
+						Deploy:          "git",
+						InstanceType:    instance.Type,
+						InstanceVariant: instance.Variant.ID,
+						InstanceVersion: instance.Version,
+						MinFlavor:       "XS",
+						MaxFlavor:       "M",
+						MinInstances:    1,
+						MaxInstances:    1,
+						Zone:            "par",
+						// The API rejects an empty forceHttps. "DISABLED" is what the
+						// provider sends for the schema default redirect_https = false,
+						// so the imported state matches the config on the PlanOnly step.
+						ForceHttps: "DISABLED",
+					})
+					if res.HasError() {
+						t.Fatalf("failed to create python app: %s", res.Error())
+					}
+					appID = res.Payload().ID
+
+					envRes := tmp.UpdateAppEnv(ctx, cc, tests.ORGANISATION, appID, map[string]string{
+						"CC_PYTHON_VERSION": "3",
+					}, false)
+					if envRes.HasError() {
+						t.Fatalf("failed to set app environment: %s", envRes.Error())
+					}
+				},
+				Config:             providerBlock.Append(pythonBlock).String(),
+				ResourceName:       fullName,
+				ImportState:        true,
+				ImportStatePersist: true,
+				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
+					return appID, nil
+				},
+			},
+			{
+				// Re-plan the same config on the imported state. Any attribute that
+				// Read() left null shows up here as a diff, and the ones carrying
+				// RequiresReplace would plan a destroy of the imported application.
+				Config:   providerBlock.Append(pythonBlock).String(),
+				PlanOnly: true,
+			},
+		},
+	})
+}
