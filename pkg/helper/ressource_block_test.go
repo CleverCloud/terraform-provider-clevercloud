@@ -1,6 +1,9 @@
 package helper
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestRessource_String(t *testing.T) {
 	tests := []struct {
@@ -56,5 +59,23 @@ func TestRessource_String(t *testing.T) {
 				t.Errorf("Ressource.String() = %v, want %v", got, tt.want)
 			}
 		})
+	}
+}
+
+func TestRessourceExpression(t *testing.T) {
+	res := NewRessource("clevercloud_kubernetes", "test", SetKeyValues(map[string]any{
+		"name":                  "tf-test",
+		"node_autoprovisioning": Expression("terraform_data.flag.output"),
+	}))
+
+	got := res.String()
+	if !strings.Contains(got, "node_autoprovisioning = terraform_data.flag.output\n") {
+		t.Errorf("expected the expression to be rendered unquoted, got:\n%s", got)
+	}
+	if strings.Contains(got, `"terraform_data.flag.output"`) {
+		t.Errorf("expected the expression not to be quoted, got:\n%s", got)
+	}
+	if !strings.Contains(got, `name = "tf-test"`) {
+		t.Errorf("expected plain strings to stay quoted, got:\n%s", got)
 	}
 }
