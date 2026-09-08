@@ -112,6 +112,13 @@ func (r *Ressource) AddNestedBlocks(blockName string, blocks []Block) *Ressource
 	return r
 }
 
+// Expression is an HCL expression rendered as it is written, without the quotes
+// a string gets: a reference to another resource, a function call, a
+// conditional. It is the only way to give an attribute a value the
+// configuration computes rather than spells out, and therefore the only way to
+// build a configuration whose value is unknown at plan time
+type Expression string
+
 // keyValues setter:
 //   - desc: set/add key: value to keyValues field of a Ressource then return the Ressource
 //   - args: map of string key + value
@@ -196,6 +203,9 @@ func map_String(m map[string]any, s, tab, separator string) string {
 `
 		case bool:
 			return acc + tab + key + ` = ` + strconv.FormatBool(m[key].(bool)) + `
+`
+		case Expression:
+			return acc + tab + key + ` = ` + string(c_type) + `
 `
 		case map[string]any:
 			acc := acc + tab + key + separator + ` {
