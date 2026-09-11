@@ -7,6 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -44,7 +46,12 @@ var versionAttrTypes = map[string]attr.Type{
 var resourceDoc string
 
 func (r ResourceElasticsearchCluster) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
-	atLeastOne := []validator.Int64{pkg.NewInt64AtLeastValidator(1)}
+	// The API refuses clusters under 3 nodes
+	atLeastThree := []validator.Int64{pkg.NewInt64AtLeastValidator(3)}
+	// The cluster API has no update endpoint: every user-facing attribute is
+	// immutable and a change recreates the cluster.
+	replaceStr := []planmodifier.String{stringplanmodifier.RequiresReplace()}
+	versionPart := []planmodifier.Int64{int64planmodifier.UseStateForUnknown()}
 
 	resp.Schema = schema.Schema{
 		Version:             0,
@@ -58,50 +65,57 @@ func (r ResourceElasticsearchCluster) Schema(_ context.Context, req resource.Sch
 			"name": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "Name of the Elasticsearch cluster",
+				PlanModifiers:       replaceStr,
 			},
 			"networkgroup_id": schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
-				MarkdownDescription: "Network group ID. If not provided, the API will assign one automatically",
-				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+				MarkdownDescription: "Network group the cluster is reachable from. If not provided, the API creates a dedicated one",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown(), stringplanmodifier.RequiresReplace()},
 			},
 			"version": schema.SingleNestedAttribute{
 				Optional:            true,
 				Computed:            true,
 				MarkdownDescription: "Elasticsearch version. Fields left unset will be chosen by the API",
 				Validators:          []validator.Object{validateVersionSemver},
+				PlanModifiers:       []planmodifier.Object{objectplanmodifier.UseStateForUnknown(), objectplanmodifier.RequiresReplace()},
 				Attributes: map[string]schema.Attribute{
 					"major": schema.Int64Attribute{
 						Optional:            true,
 						Computed:            true,
 						MarkdownDescription: "Major version number",
+						PlanModifiers:       versionPart,
 					},
 					"minor": schema.Int64Attribute{
 						Optional:            true,
 						Computed:            true,
 						MarkdownDescription: "Minor version number",
+						PlanModifiers:       versionPart,
 					},
 					"patch": schema.Int64Attribute{
 						Optional:            true,
 						Computed:            true,
 						MarkdownDescription: "Patch version number",
+						PlanModifiers:       versionPart,
 					},
 				},
 			},
 			"node_count": schema.Int64Attribute{
 				Optional:            true,
 				Computed:            true,
-				Default:             pkg.StaticInt64(1),
-				MarkdownDescription: "Number of nodes in the cluster",
-				Validators:          atLeastOne,
+				Default:             pkg.StaticInt64(3),
+				MarkdownDescription: "Number of nodes in the cluster (at least 3)",
+				Validators:          atLeastThree,
+				PlanModifiers:       []planmodifier.Int64{int64planmodifier.RequiresReplace()},
 			},
 			"plan": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "Node plan defining CPU, memory and disk per node (e.g. M, L, XL)",
+				PlanModifiers:       replaceStr,
 			},
 			"endpoint": schema.StringAttribute{
 				Computed:            true,
-				MarkdownDescription: "Endpoint to connect to the Elasticsearch cluster",
+				MarkdownDescription: "Host of the Elasticsearch cluster, only reachable from inside its network group (`networkgroup_id`)",
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"username": schema.StringAttribute{

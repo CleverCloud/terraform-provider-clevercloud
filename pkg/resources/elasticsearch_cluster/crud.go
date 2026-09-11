@@ -39,27 +39,27 @@ type apiCreateRequest struct {
 }
 
 type apiNode struct {
-	ID       string  `json:"id"`
-	CPU      int64   `json:"cpu"`
-	MemoryMB float64 `json:"memoryMB"`
-	DiskMB   float64 `json:"diskMB"`
+	ID   string   `json:"id"`
+	Plan *apiPlan `json:"plan"`
 }
 
+// deploymentStatusDeployed is the status reported by the API once every node
+// of the cluster is up.
+const deploymentStatusDeployed = "deployed"
+
 type apiClusterResponse struct {
-	ID             string     `json:"id"`
-	Name           string     `json:"name"`
-	Endpoint       string     `json:"endpoint"`
-	Username       string     `json:"username"`
-	Nodes          []apiNode  `json:"nodes"`
-	Plan           string     `json:"plan"`
-	Version        apiVersion `json:"version"`
-	NetworkGroupID string     `json:"networkGroupId"`
+	ID               string     `json:"id"`
+	Name             string     `json:"name"`
+	Username         string     `json:"username"`
+	Nodes            []apiNode  `json:"nodes"`
+	Version          apiVersion `json:"version"`
+	NetworkGroupID   string     `json:"networkGroupId"`
+	DeploymentStatus string     `json:"deploymentStatus"`
 }
 
 // apiCredentials is returned by the dedicated /credentials endpoint. The
-// password is no longer served on the cluster GET.
+// password is not served on the cluster GET.
 type apiCredentials struct {
-	Endpoint string `json:"endpoint"`
 	Username string `json:"username"`
 	Password string `json:"password"`
 }
@@ -77,15 +77,18 @@ func versionFromAPI(v apiVersion) types.Object {
 func stateFromAPI(cluster *apiClusterResponse, state *ElasticsearchCluster) {
 	state.ID = pkg.FromStr(cluster.ID)
 	state.Name = pkg.FromStr(cluster.Name)
-	state.Endpoint = pkg.FromStr(cluster.Endpoint)
 	state.Username = pkg.FromStr(cluster.Username)
 	state.NetworkGroupID = pkg.FromStr(cluster.NetworkGroupID)
 	state.Version = versionFromAPI(cluster.Version)
 	state.NodeCount = pkg.FromI(int64(len(cluster.Nodes)))
 
-	// The API may not echo the plan back; preserve the configured value if so.
-	if cluster.Plan != "" {
-		state.Plan = pkg.FromStr(cluster.Plan)
+	// The plan is only echoed back per node; every node shares the same one.
+	// Preserve the configured value while the nodes are not listed yet.
+	for _, node := range cluster.Nodes {
+		if node.Plan != nil && node.Plan.Name != "" {
+			state.Plan = pkg.FromStr(node.Plan.Name)
+			break
+		}
 	}
 }
 
@@ -211,15 +214,32 @@ func (r *ResourceElasticsearchCluster) fetchCredentials(ctx context.Context, clu
 // applyCredentials copies the connection details returned by /credentials into
 // the state, only overriding fields the endpoint actually populates.
 func applyCredentials(c *apiCredentials, state *ElasticsearchCluster) {
-	if c.Endpoint != "" {
-		state.Endpoint = pkg.FromStr(c.Endpoint)
-	}
 	if c.Username != "" {
 		state.Username = pkg.FromStr(c.Username)
 	}
 	if c.Password != "" {
 		state.Password = pkg.FromStr(c.Password)
 	}
+}
+
+// fetchEndpoint resolves the cluster endpoint: the cluster has no public
+// address, it is only reachable through its network group, as the member
+// domain name registered there.
+func (r *ResourceElasticsearchCluster) fetchEndpoint(ctx context.Context, networkGroupID, clusterID string) (string, error) {
+	res := r.SDK.V4().Networkgroups().Organisations().Ownerid(r.Organization()).
+		Networkgroups().Networkgroupid(networkGroupID).
+		Members().Listnetworkgroupmembers(ctx)
+	if res.HasError() {
+		return "", res.Error()
+	}
+
+	for _, member := range *res.Payload() {
+		if member.ID == clusterID {
+			return member.DomainName, nil
+		}
+	}
+
+	return "", fmt.Errorf("cluster %s is not a member of network group %s", clusterID, networkGroupID)
 }
 
 func connectionReady(s *ElasticsearchCluster) bool {
@@ -296,10 +316,11 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 	clusterID := cluster.ID
 	stateFromAPI(cluster, &plan)
 
-	// Poll until connection details are populated (the cluster may still be
-	// provisioning). The password lives on a dedicated /credentials endpoint.
+	// Poll until the cluster is deployed and its connection details are
+	// populated. The password lives on a dedicated /credentials endpoint and
+	// the endpoint is the cluster's network group member domain.
 	for range 60 {
-		if connectionReady(&plan) {
+		if cluster.DeploymentStatus == deploymentStatusDeployed && connectionReady(&plan) {
 			break
 		}
 
@@ -312,6 +333,11 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 		}
 		cluster = getRes.Payload()
 		stateFromAPI(cluster, &plan)
+		tflog.Debug(ctx, "ElasticsearchCluster polling", map[string]any{"status": cluster.DeploymentStatus})
+
+		if cluster.DeploymentStatus != deploymentStatusDeployed || cluster.NetworkGroupID == "" {
+			continue
+		}
 
 		creds, err := r.fetchCredentials(ctx, clusterID)
 		if err != nil {
@@ -319,12 +345,19 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 			continue
 		}
 		applyCredentials(creds, &plan)
+
+		endpoint, err := r.fetchEndpoint(ctx, cluster.NetworkGroupID, clusterID)
+		if err != nil {
+			tflog.Debug(ctx, "ElasticsearchCluster endpoint not ready, retrying...", map[string]any{"error": err.Error()})
+			continue
+		}
+		plan.Endpoint = pkg.FromStr(endpoint)
 	}
 
-	if !connectionReady(&plan) {
+	if cluster.DeploymentStatus != deploymentStatusDeployed || !connectionReady(&plan) {
 		resp.Diagnostics.AddError(
 			"elasticsearch cluster provisioning timeout",
-			"connection details (endpoint, username, password) were not available after 10 minutes",
+			fmt.Sprintf("cluster was not deployed with its connection details (endpoint, username, password) after 10 minutes, last status: %q", cluster.DeploymentStatus),
 		)
 		return
 	}
@@ -365,6 +398,15 @@ func (r *ResourceElasticsearchCluster) Read(ctx context.Context, req resource.Re
 		return
 	}
 	applyCredentials(creds, &state)
+
+	if cluster.NetworkGroupID != "" {
+		endpoint, err := r.fetchEndpoint(ctx, cluster.NetworkGroupID, cluster.ID)
+		if err != nil {
+			resp.Diagnostics.AddError("failed to read elasticsearch cluster endpoint", err.Error())
+			return
+		}
+		state.Endpoint = pkg.FromStr(endpoint)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
