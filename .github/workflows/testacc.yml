@@ -26,6 +26,7 @@ jobs:
           - database/redis
           - drain
           - database/elasticsearch
+          - elasticsearch_cluster
           - networkgroup
           - oauth_consumer
           - software
