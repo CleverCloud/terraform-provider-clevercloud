@@ -3,7 +3,9 @@ package tmp
 import (
 	"context"
 	"fmt"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.dev/client"
 )
 
@@ -45,6 +47,7 @@ type ElasticsearchCluster struct {
 	Version          ElasticsearchVersion `json:"version"`
 	NetworkGroupID   string               `json:"networkGroupId"`
 	DeploymentStatus string               `json:"deploymentStatus"`
+	CreationDate     time.Time            `json:"creationDate"`
 }
 
 type WannabeElasticsearchCluster struct {
@@ -82,8 +85,60 @@ func FetchElasticsearchAvailablePlans(ctx context.Context, cc *client.Client) cl
 	return client.Get[[]ElasticsearchPlan](ctx, cc, "/v4/elasticsearch/plans")
 }
 
+func ListElasticsearchClusters(ctx context.Context, cc *client.Client, organisationID string) client.Response[[]ElasticsearchCluster] {
+	return client.Get[[]ElasticsearchCluster](ctx, cc, elasticsearchClustersPath(organisationID))
+}
+
 func CreateElasticsearchCluster(ctx context.Context, cc *client.Client, organisationID string, req WannabeElasticsearchCluster) client.Response[ElasticsearchCluster] {
 	return client.Post[ElasticsearchCluster](ctx, cc, elasticsearchClustersPath(organisationID), req)
+}
+
+// CreateElasticsearchClusterWithRetry retries the creation on 5xx: the API
+// sometimes answers 500 to the first creation after a while. Before retrying,
+// it looks for a cluster with the requested name created since the first
+// attempt and adopts it, so a failure past the provisioning point does not
+// leave a second cluster behind.
+func CreateElasticsearchClusterWithRetry(ctx context.Context, cc *client.Client, organisationID string, req WannabeElasticsearchCluster) client.Response[ElasticsearchCluster] {
+	const maxAttempts = 3
+	// the creation date is server side, keep a margin for clock drift
+	start := time.Now().Add(-time.Minute)
+
+	var res client.Response[ElasticsearchCluster]
+	for attempt := range maxAttempts {
+		res = CreateElasticsearchCluster(ctx, cc, organisationID, req)
+		if !res.HasError() || res.StatusCode() < 500 {
+			return res
+		}
+
+		tflog.Warn(ctx, "CreateElasticsearchCluster failed", map[string]any{
+			"name":    req.Name,
+			"status":  res.StatusCode(),
+			"attempt": attempt + 1,
+			"error":   res.Error().Error(),
+		})
+
+		listRes := ListElasticsearchClusters(ctx, cc, organisationID)
+		if !listRes.HasError() {
+			for _, cluster := range *listRes.Payload() {
+				if cluster.Name == req.Name && cluster.CreationDate.After(start) {
+					tflog.Warn(ctx, "CreateElasticsearchCluster adopting the cluster provisioned by the failed attempt", map[string]any{"id": cluster.ID})
+					return GetElasticsearchCluster(ctx, cc, organisationID, cluster.ID)
+				}
+			}
+		}
+
+		if attempt == maxAttempts-1 {
+			break
+		}
+
+		select {
+		case <-ctx.Done():
+			return res
+		case <-time.After(time.Duration(2<<attempt) * time.Second):
+		}
+	}
+
+	return res
 }
 
 func GetElasticsearchCluster(ctx context.Context, cc *client.Client, organisationID, clusterID string) client.Response[ElasticsearchCluster] {
