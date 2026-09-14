@@ -211,7 +211,7 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 
 	tflog.Debug(ctx, "ElasticsearchCluster CREATE", map[string]any{"name": body.Name})
 
-	res := tmp.CreateElasticsearchCluster(ctx, r.Client(), r.Organization(), body)
+	res := tmp.CreateElasticsearchClusterWithRetry(ctx, r.Client(), r.Organization(), body)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create elasticsearch cluster", res.Error().Error())
 		return
