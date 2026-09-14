@@ -192,6 +192,13 @@ func (r *ResourceElasticsearchCluster) ModifyPlan(ctx context.Context, req resou
 }
 
 func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
+	// remove when GA
+	resp.Diagnostics.AddWarning(
+		"Elasticsearch cluster product is in alpha",
+		"It is not meant for production workloads: it can break or be reset at any time, use it at your own risks. "+
+			"The organisation also needs to be allow-listed by the support to create clusters.",
+	)
+
 	plan := helper.PlanFrom[ElasticsearchCluster](ctx, req.Plan, &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
