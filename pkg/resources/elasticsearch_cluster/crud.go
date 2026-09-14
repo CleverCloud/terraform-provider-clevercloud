@@ -194,9 +194,9 @@ func (r *ResourceElasticsearchCluster) ModifyPlan(ctx context.Context, req resou
 func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	// remove when GA
 	resp.Diagnostics.AddWarning(
-		"Elasticsearch cluster product is in alpha",
+		"Elasticsearch cluster product is in private alpha",
 		"It is not meant for production workloads: it can break or be reset at any time, use it at your own risks. "+
-			"The organisation also needs to be allow-listed by the support to create clusters.",
+			"Access is granted per organisation by the support, reach out to them to enable it or for any question.",
 	)
 
 	plan := helper.PlanFrom[ElasticsearchCluster](ctx, req.Plan, &resp.Diagnostics)
