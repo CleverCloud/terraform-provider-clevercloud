@@ -13,58 +13,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.dev/client"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
-const basePath = "/v4/elasticsearch/organisations/%s/clusters"
-
-type apiVersion struct {
-	Major int64 `json:"major"`
-	Minor int64 `json:"minor"`
-	Patch int64 `json:"patch"`
-}
-
-type apiVersionRequest struct {
-	Major *int64 `json:"major"`
-	Minor *int64 `json:"minor"`
-	Patch *int64 `json:"patch"`
-}
-
-type apiCreateRequest struct {
-	Name           string             `json:"name"`
-	Version        *apiVersionRequest `json:"version"`
-	NumberOfNodes  int64              `json:"numberOfNodes"`
-	Plan           string             `json:"plan"`
-	NetworkGroupID *string            `json:"networkGroupId,omitempty"`
-}
-
-type apiNode struct {
-	ID   string   `json:"id"`
-	Plan *apiPlan `json:"plan"`
-}
-
-// deploymentStatusDeployed is the status reported by the API once every node
-// of the cluster is up.
-const deploymentStatusDeployed = "deployed"
-
-type apiClusterResponse struct {
-	ID               string     `json:"id"`
-	Name             string     `json:"name"`
-	Username         string     `json:"username"`
-	Nodes            []apiNode  `json:"nodes"`
-	Version          apiVersion `json:"version"`
-	NetworkGroupID   string     `json:"networkGroupId"`
-	DeploymentStatus string     `json:"deploymentStatus"`
-}
-
-// apiCredentials is returned by the dedicated /credentials endpoint. The
-// password is not served on the cluster GET.
-type apiCredentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-}
-
-func versionFromAPI(v apiVersion) types.Object {
+func versionFromAPI(v tmp.ElasticsearchVersion) types.Object {
 	ver := Version{
 		Major: pkg.FromI(v.Major),
 		Minor: pkg.FromI(v.Minor),
@@ -74,7 +26,7 @@ func versionFromAPI(v apiVersion) types.Object {
 	return obj
 }
 
-func stateFromAPI(cluster *apiClusterResponse, state *ElasticsearchCluster) {
+func stateFromAPI(cluster *tmp.ElasticsearchCluster, state *ElasticsearchCluster) {
 	state.ID = pkg.FromStr(cluster.ID)
 	state.Name = pkg.FromStr(cluster.Name)
 	state.Username = pkg.FromStr(cluster.Username)
@@ -92,8 +44,8 @@ func stateFromAPI(cluster *apiClusterResponse, state *ElasticsearchCluster) {
 	}
 }
 
-func versionToAPI(ctx context.Context, obj types.Object, diags *diag.Diagnostics) *apiVersionRequest {
-	av := &apiVersionRequest{}
+func versionToAPI(ctx context.Context, obj types.Object, diags *diag.Diagnostics) *tmp.ElasticsearchVersionRequest {
+	av := &tmp.ElasticsearchVersionRequest{}
 
 	if obj.IsNull() || obj.IsUnknown() {
 		return av
@@ -112,17 +64,7 @@ func versionToAPI(ctx context.Context, obj types.Object, diags *diag.Diagnostics
 	return av
 }
 
-const versionsPath = "/v4/elasticsearch/versions"
-
-func (r *ResourceElasticsearchCluster) fetchAvailableVersions(ctx context.Context) ([]apiVersion, error) {
-	res := client.Get[[]apiVersion](ctx, r.Client(), versionsPath)
-	if res.HasError() {
-		return nil, res.Error()
-	}
-	return *res.Payload(), nil
-}
-
-func validateVersionAgainstAvailable(requested *apiVersionRequest, available []apiVersion) string {
+func validateVersionAgainstAvailable(requested *tmp.ElasticsearchVersionRequest, available []tmp.ElasticsearchVersion) string {
 	if requested == nil {
 		return ""
 	}
@@ -163,24 +105,7 @@ func validateVersionAgainstAvailable(requested *apiVersionRequest, available []a
 	)
 }
 
-const plansPath = "/v4/elasticsearch/plans"
-
-type apiPlan struct {
-	Name     string `json:"name"`
-	CPU      int64  `json:"cpu"`
-	MemoryMB int64  `json:"memoryMB"`
-	DiskMB   int64  `json:"diskMB"`
-}
-
-func (r *ResourceElasticsearchCluster) fetchAvailablePlans(ctx context.Context) ([]apiPlan, error) {
-	res := client.Get[[]apiPlan](ctx, r.Client(), plansPath)
-	if res.HasError() {
-		return nil, res.Error()
-	}
-	return *res.Payload(), nil
-}
-
-func validatePlanAgainstAvailable(requested string, available []apiPlan) string {
+func validatePlanAgainstAvailable(requested string, available []tmp.ElasticsearchPlan) string {
 	names := make([]string, len(available))
 	for i, p := range available {
 		if p.Name == requested {
@@ -191,29 +116,9 @@ func validatePlanAgainstAvailable(requested string, available []apiPlan) string 
 	return fmt.Sprintf("plan %q is not available, supported plans: %s", requested, strings.Join(names, ", "))
 }
 
-func clusterPath(orgID string) string {
-	return fmt.Sprintf(basePath, orgID)
-}
-
-func clusterIDPath(orgID, clusterID string) string {
-	return fmt.Sprintf(basePath+"/%s", orgID, clusterID)
-}
-
-func credentialsPath(orgID, clusterID string) string {
-	return fmt.Sprintf(basePath+"/%s/credentials", orgID, clusterID)
-}
-
-func (r *ResourceElasticsearchCluster) fetchCredentials(ctx context.Context, clusterID string) (*apiCredentials, error) {
-	res := client.Get[apiCredentials](ctx, r.Client(), credentialsPath(r.Organization(), clusterID))
-	if res.HasError() {
-		return nil, res.Error()
-	}
-	return res.Payload(), nil
-}
-
 // applyCredentials copies the connection details returned by /credentials into
 // the state, only overriding fields the endpoint actually populates.
-func applyCredentials(c *apiCredentials, state *ElasticsearchCluster) {
+func applyCredentials(c *tmp.ElasticsearchCredentials, state *ElasticsearchCluster) {
 	if c.Username != "" {
 		state.Username = pkg.FromStr(c.Username)
 	}
@@ -262,25 +167,25 @@ func (r *ResourceElasticsearchCluster) ModifyPlan(ctx context.Context, req resou
 			return
 		}
 
-		available, err := r.fetchAvailableVersions(ctx)
-		if err != nil {
-			res.Diagnostics.AddError("failed to fetch available Elasticsearch versions", err.Error())
+		availableRes := tmp.FetchElasticsearchAvailableVersions(ctx, r.Client())
+		if availableRes.HasError() {
+			res.Diagnostics.AddError("failed to fetch available Elasticsearch versions", availableRes.Error().Error())
 			return
 		}
 
-		if msg := validateVersionAgainstAvailable(version, available); msg != "" {
+		if msg := validateVersionAgainstAvailable(version, *availableRes.Payload()); msg != "" {
 			res.Diagnostics.AddError("Invalid Elasticsearch version", msg)
 		}
 	}
 
 	if !plan.Plan.IsNull() && !plan.Plan.IsUnknown() {
-		plans, err := r.fetchAvailablePlans(ctx)
-		if err != nil {
-			res.Diagnostics.AddError("failed to fetch available Elasticsearch plans", err.Error())
+		plansRes := tmp.FetchElasticsearchAvailablePlans(ctx, r.Client())
+		if plansRes.HasError() {
+			res.Diagnostics.AddError("failed to fetch available Elasticsearch plans", plansRes.Error().Error())
 			return
 		}
 
-		if msg := validatePlanAgainstAvailable(plan.Plan.ValueString(), plans); msg != "" {
+		if msg := validatePlanAgainstAvailable(plan.Plan.ValueString(), *plansRes.Payload()); msg != "" {
 			res.Diagnostics.AddError("Invalid Elasticsearch plan", msg)
 		}
 	}
@@ -292,7 +197,7 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 		return
 	}
 
-	body := apiCreateRequest{
+	body := tmp.WannabeElasticsearchCluster{
 		Name:          plan.Name.ValueString(),
 		Version:       versionToAPI(ctx, plan.Version, &resp.Diagnostics),
 		NumberOfNodes: plan.NodeCount.ValueInt64(),
@@ -306,7 +211,7 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 
 	tflog.Debug(ctx, "ElasticsearchCluster CREATE", map[string]any{"name": body.Name})
 
-	res := client.Post[apiClusterResponse](ctx, r.Client(), clusterPath(r.Organization()), body)
+	res := tmp.CreateElasticsearchCluster(ctx, r.Client(), r.Organization(), body)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create elasticsearch cluster", res.Error().Error())
 		return
@@ -320,13 +225,13 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 	// populated. The password lives on a dedicated /credentials endpoint and
 	// the endpoint is the cluster's network group member domain.
 	for range 60 {
-		if cluster.DeploymentStatus == deploymentStatusDeployed && connectionReady(&plan) {
+		if cluster.DeploymentStatus == tmp.ElasticsearchClusterDeployed && connectionReady(&plan) {
 			break
 		}
 
 		time.Sleep(10 * time.Second)
 
-		getRes := client.Get[apiClusterResponse](ctx, r.Client(), clusterIDPath(r.Organization(), clusterID))
+		getRes := tmp.GetElasticsearchCluster(ctx, r.Client(), r.Organization(), clusterID)
 		if getRes.HasError() {
 			tflog.Debug(ctx, "ElasticsearchCluster poll error, retrying...", map[string]any{"error": getRes.Error().Error()})
 			continue
@@ -335,16 +240,16 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 		stateFromAPI(cluster, &plan)
 		tflog.Debug(ctx, "ElasticsearchCluster polling", map[string]any{"status": cluster.DeploymentStatus})
 
-		if cluster.DeploymentStatus != deploymentStatusDeployed || cluster.NetworkGroupID == "" {
+		if cluster.DeploymentStatus != tmp.ElasticsearchClusterDeployed || cluster.NetworkGroupID == "" {
 			continue
 		}
 
-		creds, err := r.fetchCredentials(ctx, clusterID)
-		if err != nil {
-			tflog.Debug(ctx, "ElasticsearchCluster credentials not ready, retrying...", map[string]any{"error": err.Error()})
+		credsRes := tmp.GetElasticsearchClusterCredentials(ctx, r.Client(), r.Organization(), clusterID)
+		if credsRes.HasError() {
+			tflog.Debug(ctx, "ElasticsearchCluster credentials not ready, retrying...", map[string]any{"error": credsRes.Error().Error()})
 			continue
 		}
-		applyCredentials(creds, &plan)
+		applyCredentials(credsRes.Payload(), &plan)
 
 		endpoint, err := r.fetchEndpoint(ctx, cluster.NetworkGroupID, clusterID)
 		if err != nil {
@@ -354,7 +259,7 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 		plan.Endpoint = pkg.FromStr(endpoint)
 	}
 
-	if cluster.DeploymentStatus != deploymentStatusDeployed || !connectionReady(&plan) {
+	if cluster.DeploymentStatus != tmp.ElasticsearchClusterDeployed || !connectionReady(&plan) {
 		resp.Diagnostics.AddError(
 			"elasticsearch cluster provisioning timeout",
 			fmt.Sprintf("cluster was not deployed with its connection details (endpoint, username, password) after 10 minutes, last status: %q", cluster.DeploymentStatus),
@@ -379,7 +284,7 @@ func (r *ResourceElasticsearchCluster) Read(ctx context.Context, req resource.Re
 
 	tflog.Debug(ctx, "ElasticsearchCluster READ", map[string]any{"id": state.ID.ValueString()})
 
-	res := client.Get[apiClusterResponse](ctx, r.Client(), clusterIDPath(r.Organization(), state.ID.ValueString()))
+	res := tmp.GetElasticsearchCluster(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -392,12 +297,12 @@ func (r *ResourceElasticsearchCluster) Read(ctx context.Context, req resource.Re
 	cluster := res.Payload()
 	stateFromAPI(cluster, &state)
 
-	creds, err := r.fetchCredentials(ctx, state.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("failed to read elasticsearch cluster credentials", err.Error())
+	credsRes := tmp.GetElasticsearchClusterCredentials(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	if credsRes.HasError() {
+		resp.Diagnostics.AddError("failed to read elasticsearch cluster credentials", credsRes.Error().Error())
 		return
 	}
-	applyCredentials(creds, &state)
+	applyCredentials(credsRes.Payload(), &state)
 
 	if cluster.NetworkGroupID != "" {
 		endpoint, err := r.fetchEndpoint(ctx, cluster.NetworkGroupID, cluster.ID)
@@ -425,7 +330,7 @@ func (r *ResourceElasticsearchCluster) Delete(ctx context.Context, req resource.
 
 	tflog.Debug(ctx, "ElasticsearchCluster DELETE", map[string]any{"id": state.ID.ValueString()})
 
-	res := client.Delete[client.Nothing](ctx, r.Client(), clusterIDPath(r.Organization(), state.ID.ValueString()))
+	res := tmp.DeleteElasticsearchCluster(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete elasticsearch cluster", res.Error().Error())
 		return

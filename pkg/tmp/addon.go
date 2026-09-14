@@ -561,13 +561,15 @@ func GetMysqlInfos(ctx context.Context, cc *client.Client) client.Response[Mysql
 }
 
 type ElasticsearchInfos struct {
-	DefaultDedicatedVersion string                 `json:"defaultDedicatedVersion"`
-	ProviderID              string                 `json:"providerId"`
-	Clusters                []ElasticsearchCluster `json:"clusters"`
-	Dedicated               map[string]any         `json:"dedicated"`
+	DefaultDedicatedVersion string                         `json:"defaultDedicatedVersion"`
+	ProviderID              string                         `json:"providerId"`
+	Clusters                []ElasticsearchProviderCluster `json:"clusters"`
+	Dedicated               map[string]any                 `json:"dedicated"`
 }
 
-type ElasticsearchCluster struct {
+// ElasticsearchProviderCluster is a shared cluster of the es-addon provider,
+// unrelated to the dedicated ElasticsearchCluster product.
+type ElasticsearchProviderCluster struct {
 	ID       string `json:"id"`
 	Label    string `json:"label"`
 	Region   string `json:"zone"`
