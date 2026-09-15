@@ -79,21 +79,12 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 		addonReq.Options["version"] = my.Version.ValueString()
 	}
 
-	addonReq.Options["do-backup"] = "true"
-	if !my.Backup.IsNull() && !my.Backup.IsUnknown() {
-		addonReq.Options["do-backup"] = fmt.Sprintf("%t", my.Backup.ValueBool())
-	}
-
-	if !my.Encryption.IsNull() && !my.Encryption.IsUnknown() {
-		addonReq.Options["encryption"] = fmt.Sprintf("%t", my.Encryption.ValueBool())
-	}
-
-	if !my.DirectHostOnly.IsNull() && !my.DirectHostOnly.IsUnknown() {
-		addonReq.Options["direct-host-only"] = fmt.Sprintf("%t", my.DirectHostOnly.ValueBool())
-	}
-
-	if !my.SkipLogBin.IsNull() && !my.SkipLogBin.IsUnknown() {
-		addonReq.Options["skip-log-bin"] = fmt.Sprintf("%t", my.SkipLogBin.ValueBool())
+	featureFlags := map[string]any{"do-backup": true}
+	resp.Diagnostics.Append(mysqlFeaturesCodec.StateToAPI(&my, featureFlags)...)
+	for k, v := range featureFlags {
+		if b, ok := v.(bool); ok {
+			addonReq.Options[k] = fmt.Sprintf("%t", b)
+		}
 	}
 
 	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
@@ -113,7 +104,7 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 		resp.Diagnostics.AddError("failed to get mysql connection infos", myInfoRes.Error().Error())
 		return
 	} else {
-		r.readFromAPI(&my, *myInfoRes.Payload())
+		r.readFromAPI(&my, *myInfoRes.Payload(), &resp.Diagnostics)
 	}
 
 	addon.SyncNetworkGroups(
@@ -179,7 +170,7 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 			return
 		}
 
-		r.readFromAPI(&my, *addonMy)
+		r.readFromAPI(&my, *addonMy, &resp.Diagnostics)
 	}
 
 	my.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
@@ -193,7 +184,7 @@ func (r *ResourceMySQL) readFromAddon(state *MySQL, addon tmp.AddonResponse) {
 	state.CreationDate = pkg.FromI(addon.CreationDate)
 }
 
-func (r *ResourceMySQL) readFromAPI(state *MySQL, my tmp.MySQL) {
+func (r *ResourceMySQL) readFromAPI(state *MySQL, my tmp.MySQL, diags *diag.Diagnostics) {
 	state.Host = pkg.FromStr(my.Host)
 	state.Port = pkg.FromI(int64(my.Port))
 	state.Database = pkg.FromStr(my.Database)
@@ -203,25 +194,18 @@ func (r *ResourceMySQL) readFromAPI(state *MySQL, my tmp.MySQL) {
 	state.Uri = pkg.FromStr(my.Uri())
 	state.ReadOnlyUsers = tmp.FromMySQLReadOnlyUsers(my.ReadOnlyUsers)
 
-	// Initialize to defaults so attributes are never null in state after import.
-	// The features loop below overrides with actual API values if present.
-	state.Backup = pkg.FromBool(true)
-	state.Encryption = pkg.FromBool(false)
-	state.DirectHostOnly = pkg.FromBool(false)
-	state.SkipLogBin = pkg.FromBool(false)
+	features := map[string]any{
+		"do-backup":        true,
+		"encryption":       false,
+		"direct-host-only": false,
+		"skip-log-bin":     false,
+	}
 
 	for _, feature := range my.Features {
-		switch feature.Name {
-		case "do-backup":
-			state.Backup = pkg.FromBool(feature.Enabled)
-		case "encryption":
-			state.Encryption = pkg.FromBool(feature.Enabled)
-		case "direct-host-only":
-			state.DirectHostOnly = pkg.FromBool(feature.Enabled)
-		case "skip-log-bin":
-			state.SkipLogBin = pkg.FromBool(feature.Enabled)
-		}
+		features[feature.Name] = feature.Enabled
 	}
+
+	diags.Append(mysqlFeaturesCodec.APIToState(features, state)...)
 }
 
 // Update resource
