@@ -2,25 +2,18 @@ package postgresql
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/stdlib"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
-	"gorm.io/driver/postgres"
-	"gorm.io/gorm"
-	"gorm.io/gorm/logger"
 )
 
 func (r *ResourcePostgreSQL) FetchPostgresInfos(ctx context.Context, diags *diag.Diagnostics) {
@@ -47,131 +40,6 @@ func (r *ResourcePostgreSQL) Infos(ctx context.Context, diags *diag.Diagnostics)
 	}
 
 	return r.infos
-}
-
-// localePgConfig builds the pgx connection configuration used to read the
-// locale. The intended semantics are the ones libpq gives to sslmode=require:
-// encrypt the connection without verifying the server certificate, because
-// Clever Cloud managed databases serve self-signed certificates. pgx diverges
-// from libpq here and escalates require to verify-ca whenever a root CA is
-// discoverable (sslrootcert, PGSSLROOTCERT or ~/.postgresql/root.crt), which
-// makes the connection fail on the self-signed certificate; enforce the
-// intended semantics with an explicit TLS configuration instead.
-func localePgConfig(host string, port int64, database, user, password string) (*pgx.ConnConfig, error) {
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=require",
-		host, port, user, password, database)
-
-	cfg, err := pgx.ParseConfig(dsn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse database connection configuration: %w", err)
-	}
-
-	cfg.TLSConfig = &tls.Config{InsecureSkipVerify: true} // #nosec G402 -- libpq sslmode=require semantics: encrypt without certificate verification
-	cfg.Fallbacks = nil
-
-	return cfg, nil
-}
-
-// isRetryableLocaleError reports whether a connection error may resolve by
-// itself (database still starting up). Authentication and TLS failures are
-// permanent: retrying them only wastes the 30 x 5s retry budget.
-func isRetryableLocaleError(err error) bool {
-	if err == nil {
-		return false
-	}
-
-	msg := err.Error()
-	for _, permanent := range []string{
-		"x509:",                          // TLS certificate verification
-		"tls:",                           // TLS handshake
-		"SQLSTATE 28",                    // invalid authorization (28000) / invalid password (28P01)
-		"password authentication failed", // in case the SQLSTATE is not surfaced
-	} {
-		if strings.Contains(msg, permanent) {
-			return false
-		}
-	}
-
-	return true
-}
-
-// getLocaleFromDatabase connects to the PostgreSQL database and retrieves the LC_COLLATE setting
-// which indicates the locale used when the database was created.
-// Returns the locale in format "en_GB" or empty string if unable to retrieve.
-// Retries connection up to 30 times with 5 second delay to handle database startup time.
-func getLocaleFromDatabase(ctx context.Context, host string, port int64, database, user, password string) (string, error) {
-	cfg, err := localePgConfig(host, port, database, user, password)
-	if err != nil {
-		return "", err
-	}
-
-	var db *gorm.DB
-
-	// Retry connection up to 30 times to allow the database to start, but fail
-	// fast on permanent errors (bad credentials, TLS failure)
-	maxRetries := 30
-	for i := range maxRetries {
-		conn := stdlib.OpenDB(*cfg)
-		db, err = gorm.Open(postgres.New(postgres.Config{Conn: conn}), &gorm.Config{
-			Logger: logger.Default.LogMode(logger.Silent), // Silent mode to avoid logs
-		})
-		if err == nil {
-			break
-		}
-
-		if closeErr := conn.Close(); closeErr != nil {
-			tflog.Warn(ctx, "failed to close database connection", map[string]any{"error": closeErr.Error()})
-		}
-
-		if !isRetryableLocaleError(err) {
-			return "", fmt.Errorf("failed to connect to database: %w", err)
-		}
-
-		if i < maxRetries-1 {
-			tflog.Debug(ctx, "Database not ready, retrying...", map[string]any{
-				"attempt":     i + 1,
-				"max_retries": maxRetries,
-				"error":       err.Error(),
-			})
-			time.Sleep(5 * time.Second)
-		}
-	}
-
-	if err != nil {
-		return "", fmt.Errorf("failed to connect to database after %d attempts: %w", maxRetries, err)
-	}
-
-	// Get the underlying *sql.DB to close it later
-	sqlDB, err := db.WithContext(ctx).DB()
-	if err != nil {
-		return "", fmt.Errorf("failed to get database instance: %w", err)
-	}
-	defer func() {
-		if closeErr := sqlDB.Close(); closeErr != nil {
-			tflog.Warn(ctx, "failed to close database connection", map[string]any{"error": closeErr.Error()})
-		}
-	}()
-
-	// Set connection timeout
-	sqlDB.SetConnMaxLifetime(5 * time.Second)
-
-	// Query LC_COLLATE setting from pg_database
-	// SHOW LC_COLLATE doesn't work on all PostgreSQL versions, so we query pg_database instead
-	var lcCollate string
-	query := "SELECT datcollate FROM pg_database WHERE datname = current_database()"
-	result := db.Raw(query).Scan(&lcCollate)
-	if result.Error != nil {
-		return "", fmt.Errorf("failed to query LC_COLLATE: %w", result.Error)
-	}
-
-	// LC_COLLATE returns format like "en_GB.UTF-8", we need to extract "en_GB"
-	// Split by "." and take the first part
-	parts := strings.Split(lcCollate, ".")
-	if len(parts) > 0 && parts[0] != "" {
-		return parts[0], nil
-	}
-
-	return lcCollate, nil
 }
 
 func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -243,29 +111,9 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	r.readFromAPI(&pg, *pgInfoRes.Payload())
-
-	addonPG := pgInfoRes.Payload()
-	if plan.IsDedicated() {
-		locale, err := getLocaleFromDatabase(
-			ctx,
-			addonPG.Host,
-			int64(addonPG.Port),
-			addonPG.Database,
-			addonPG.User,
-			addonPG.Password,
-		)
-		if err != nil {
-			resp.Diagnostics.AddAttributeError(
-				path.Root("locale"),
-				"Failed to retrieve locale from database",
-				err.Error())
-		} else {
-			pg.Locale = pkg.FromStr(locale)
-		}
-	} else {
-		pg.Locale = pkg.FromStr("en_GB")
-	}
+	// readFromAPI syncs the locale from the API response; the plan value
+	// (defaulted to en_GB by the schema) is kept when the API does not expose it
+	r.readFromAPI(ctx, &pg, *pgInfoRes.Payload())
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -326,30 +174,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 			return
 		}
 
-		r.readFromAPI(&pg, *addonPG)
-	}
-
-	// Retrieve the actual locale value from the database by querying LC_COLLATE
-	// This is necessary because the API doesn't return the locale value.
-	// The locale is fixed at database creation time (LC_COLLATE cannot change
-	// afterwards) and reading it requires a live connection to the database:
-	// only do so when the state does not carry it yet (import)
-	if pg.Locale.IsNull() || pg.Locale.IsUnknown() {
-		locale, err := getLocaleFromDatabase(
-			ctx,
-			pg.Host.ValueString(),
-			pg.Port.ValueInt64(),
-			pg.Database.ValueString(),
-			pg.User.ValueString(),
-			pg.Password.ValueString(),
-		)
-		if err != nil {
-			// On shared/dev plans, the user doesn't have permission to query pg_database
-			// This is expected, so we just log a warning
-			tflog.Warn(ctx, "Failed to retrieve locale from database, using default", map[string]any{"error": err.Error()})
-		} else {
-			pg.Locale = pkg.FromStr(locale)
-		}
+		r.readFromAPI(ctx, &pg, *addonPG)
 	}
 
 	pg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonID, &resp.Diagnostics)
@@ -363,7 +188,10 @@ func (r *ResourcePostgreSQL) readFromAddon(state *PostgreSQL, addon tmp.AddonRes
 	state.CreationDate = pkg.FromI(addon.CreationDate)
 }
 
-func (r *ResourcePostgreSQL) readFromAPI(state *PostgreSQL, pg tmp.PostgreSQL) {
+// defaultLocale is the locale the platform uses when none is requested at creation
+const defaultLocale = "en_GB"
+
+func (r *ResourcePostgreSQL) readFromAPI(ctx context.Context, state *PostgreSQL, pg tmp.PostgreSQL) {
 	state.Host = pkg.FromStr(pg.Host)
 	state.Port = pkg.FromI(int64(pg.Port))
 	state.Database = pkg.FromStr(pg.Database)
@@ -371,6 +199,17 @@ func (r *ResourcePostgreSQL) readFromAPI(state *PostgreSQL, pg tmp.PostgreSQL) {
 	state.Password = pkg.FromStr(pg.Password)
 	state.Version = pkg.FromStr(pg.Version)
 	state.Uri = pkg.FromStr(pg.Uri())
+
+	// The locale is fixed at creation time (LC_COLLATE cannot change afterwards)
+	// and exposed by the API. When the API does not return it, keep the value
+	// already in state (config or default) and only fall back on import.
+	switch {
+	case pg.Locale != "":
+		state.Locale = pkg.FromStr(pg.Locale)
+	case state.Locale.IsNull() || state.Locale.IsUnknown():
+		tflog.Warn(ctx, "API did not return the PostgreSQL locale, using default", map[string]any{"locale": defaultLocale})
+		state.Locale = pkg.FromStr(defaultLocale)
+	}
 
 	// Initialize to defaults so attributes are never null in state after import.
 	// The features loop below overrides with actual API values if present.

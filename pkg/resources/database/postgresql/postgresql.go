@@ -85,35 +85,14 @@ func (r *ResourcePostgreSQL) UpgradeState(ctx context.Context) map[int64]resourc
 					DirectHostOnly:   oldState.DirectHostOnly,
 				}
 
-				// Convert old Bool locale to new String locale
-				// If old locale was true, try to retrieve actual locale from database
-				// If old locale was false or null, default to en_GB
+				// Convert old Bool locale to new String locale.
+				// The locale is exposed by the API: read it from there, defaulting to en_GB
+				// when it cannot be resolved (API not reachable, addon gone, older API)
+				newState.Locale = pkg.FromStr(defaultLocale)
 				if !oldState.Locale.IsNull() && !oldState.Locale.IsUnknown() && oldState.Locale.ValueBool() {
-					// Locale was enabled, try to get actual value from database
-					if !newState.Host.IsNull() && !newState.Port.IsNull() &&
-						!newState.Database.IsNull() && !newState.User.IsNull() && !newState.Password.IsNull() {
-						locale, err := getLocaleFromDatabase(
-							ctx,
-							newState.Host.ValueString(),
-							newState.Port.ValueInt64(),
-							newState.Database.ValueString(),
-							newState.User.ValueString(),
-							newState.Password.ValueString(),
-						)
-						if err != nil {
-							tflog.Warn(ctx, "Failed to retrieve locale from database during migration, defaulting to en_GB",
-								map[string]any{"error": err.Error()})
-							newState.Locale = pkg.FromStr("en_GB")
-						} else {
-							tflog.Debug(ctx, "Retrieved locale from database during migration", map[string]any{"locale": locale})
-							newState.Locale = pkg.FromStr(locale)
-						}
-					} else {
-						newState.Locale = pkg.FromStr("en_GB")
+					if locale := r.localeFromAPI(ctx, newState.ID.ValueString()); locale != "" {
+						newState.Locale = pkg.FromStr(locale)
 					}
-				} else {
-					// Locale was false or not set, default to en_GB
-					newState.Locale = pkg.FromStr("en_GB")
 				}
 
 				tflog.Info(ctx, "Successfully upgraded PostgreSQL state", map[string]any{"locale": newState.Locale.ValueString()})
@@ -204,4 +183,26 @@ func (r *ResourcePostgreSQL) ModifyPlan(ctx context.Context, req resource.Modify
 			"Locale support is only available on dedicated PostgreSQL plans (not 'dev'). Please either remove the locale option or upgrade to a dedicated plan (e.g., 'xs_sml', 'xxs_sml').",
 		)
 	}
+}
+
+// localeFromAPI resolves the locale of an addon from the API, given its real ID
+// (postgresql_xxx). Returns an empty string when it cannot be resolved.
+func (r *ResourcePostgreSQL) localeFromAPI(ctx context.Context, realID string) string {
+	if r.Provider == nil || r.Client() == nil {
+		return ""
+	}
+
+	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), realID)
+	if err != nil {
+		tflog.Warn(ctx, "failed to resolve addon ID while reading locale", map[string]any{"error": err.Error()})
+		return ""
+	}
+
+	res := tmp.GetPostgreSQL(ctx, r.Client(), addonID)
+	if res.HasError() {
+		tflog.Warn(ctx, "failed to read locale from the API", map[string]any{"error": res.Error().Error()})
+		return ""
+	}
+
+	return res.Payload().Locale
 }
