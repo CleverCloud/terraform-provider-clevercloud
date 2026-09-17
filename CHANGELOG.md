@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.2.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.2.0...v2.2.1) (2026-09-17)
+
+
+### Bug Fixes
+
+* **postgresql:** read the locale from the API instead of the database ([566f256](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/566f2565127860cabac747112e8ed96cd41c44f0)), closes [#441](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/441)
+
 ## [2.2.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.1.0...v2.2.0) (2026-09-14)
 
 
