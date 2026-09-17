@@ -105,6 +105,8 @@ type PostgreSQL struct {
 	Version  string              `json:"version"` // 14
 	Zone     string              `json:"zone" example:"par"`
 	Features []PostgreSQLFeature `json:"features"`
+	// Locale the database was created with (e.g. "en_GB"); empty when the API does not expose it
+	Locale string `json:"locale"`
 }
 
 func (p PostgreSQL) Uri() string {
