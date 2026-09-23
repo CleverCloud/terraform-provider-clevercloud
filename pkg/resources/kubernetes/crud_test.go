@@ -106,7 +106,7 @@ func TestClassifyPatchError(t *testing.T) {
 			name:       "400 points at the mutually exclusive autoscaling feature",
 			statusCode: http.StatusBadRequest,
 			enabled:    true,
-			wantDetail: "node group autoscaling",
+			wantDetail: "cluster wide autoscalingEnabled",
 		},
 		{
 			name:       "409 on enable points at the foreign Karpenter",
@@ -444,8 +444,14 @@ func TestPatchExpiryDetail(t *testing.T) {
 			notWant:    "features stay locked",
 		},
 		{
-			name:       "anything else says only what is known",
+			name:       "an unreadable 2xx says the API accepted, not that it refused",
 			lastStatus: http.StatusOK,
+			want:       "accepted the change but none of its responses could be read",
+			notWant:    "never accepted",
+		},
+		{
+			name:       "anything else says only what is known",
+			lastStatus: http.StatusInternalServerError,
 			want:       "never accepted the change",
 			notWant:    "features stay locked",
 		},
