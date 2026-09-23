@@ -142,6 +142,7 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 	kubernetesRes := tmp.GetKubernetes(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
 	if kubernetesRes.HasError() {
 		resp.Diagnostics.AddError("Failed to get kubernetes instance", kubernetesRes.Error().Error())
+		return
 	}
 
 	k8sInfo := kubernetesRes.Payload()
@@ -345,7 +346,7 @@ func classifyPatchError(statusCode int, enabled bool) (retryable bool, detail st
 	case http.StatusBadRequest:
 		// the cluster wide autoscalingEnabled feature is mutually exclusive with
 		// this one and is not exposed by this provider
-		return false, "node autoprovisioning cannot run alongside node group autoscaling, disable the autoscalingEnabled feature of the cluster first"
+		return false, "node autoprovisioning cannot run alongside the cluster wide autoscalingEnabled feature, disable it first"
 	case http.StatusConflict:
 		if enabled {
 			return false, "a Karpenter installation already runs in the kube-system namespace of this cluster, remove it before enabling node_autoprovisioning"
@@ -381,9 +382,15 @@ func patchExpiryDetail(lastStatus int, timeout time.Duration) string {
 		return fmt.Sprintf("the cluster never accepted the change in %s, its features stay locked while it is not ACTIVE", timeout)
 	case 0:
 		return fmt.Sprintf("the Clever Cloud API could not be reached for %s, the change may or may not have been applied", timeout)
-	default:
-		return fmt.Sprintf("the cluster never accepted the change in %s", timeout)
 	}
+
+	// an unreadable 2xx is retried, so running out of budget on one means the
+	// API kept accepting the change while none of its answers could be read
+	if lastStatus >= 200 && lastStatus < 300 {
+		return fmt.Sprintf("the API accepted the change but none of its responses could be read in %s, run terraform plan to check whether it was applied", timeout)
+	}
+
+	return fmt.Sprintf("the cluster never accepted the change in %s", timeout)
 }
 
 // terminalStatusDetail explains a status the feature can never converge from. A
