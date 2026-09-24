@@ -6,6 +6,8 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -23,7 +25,7 @@ func (r ResourceAddon) Schema(_ context.Context, req resource.SchemaRequest, res
 		Version:             0,
 		MarkdownDescription: resourcePostgresqlDoc,
 		Attributes: WithAddonCommons(map[string]schema.Attribute{
-			"third_party_provider": schema.StringAttribute{Required: true, MarkdownDescription: "Provider ID"},
+			"third_party_provider": schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Provider ID", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			// provider
 			"configurations": schema.MapAttribute{
 				Computed:            true,

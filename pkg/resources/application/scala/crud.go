@@ -108,5 +108,7 @@ func (r *ResourceScala) ModifyPlan(ctx context.Context, req resource.ModifyPlanR
 		return
 	}
 
-	application.ValidateRuntimeFlavors(ctx, r, "sbt", plan.Runtime, &res.Diagnostics)
+	if application.DefaultAndValidateRuntimePlan(ctx, r, "sbt", &plan.Runtime, &res.Diagnostics) {
+		res.Diagnostics.Append(res.Plan.Set(ctx, plan)...)
+	}
 }
