@@ -334,7 +334,7 @@ func TestAccElasticsearch_RefreshDeleted(t *testing.T) {
 
 func TestAccElasticsearch_Import(t *testing.T) {
 	t.Parallel()
-	cc := client.New(client.WithAutoOauthConfig())
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-es-import")
 	fullName := fmt.Sprintf("clevercloud_elasticsearch.%s", rName)
