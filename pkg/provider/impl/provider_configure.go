@@ -9,6 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/provider"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.dev/client"
 )
 
@@ -161,6 +162,8 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 
 		p.gitAuth = &http.BasicAuth{Username: config.Token.ValueString(), Password: config.Secret.ValueString()}
 	}
+
+	clientOptions = append(clientOptions, client.WithRetryPolicy(pkg.RetryServerErrors))
 
 	p.cc = client.New(clientOptions...)
 
