@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
@@ -27,7 +28,7 @@ func CheckDestroy(ctx context.Context) func(*terraform.State) error {
 
 // checkDestroy is the internal implementation that verifies resources are destroyed.
 func checkDestroy(ctx context.Context, state *terraform.State) error {
-	cc := client.New(client.WithAutoOauthConfig())
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
 
 	for resourceName, resource := range state.RootModule().Resources {
 		// Extract resource type from resource (e.g., "clevercloud_python")
