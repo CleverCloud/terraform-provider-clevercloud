@@ -17,7 +17,7 @@ require (
 	github.com/hashicorp/terraform-plugin-testing v1.13.3
 	github.com/minio/minio-go/v7 v7.0.95
 	github.com/miton18/helper v0.0.4
-	go.clever-cloud.dev/client v0.1.8
+	go.clever-cloud.dev/client v0.1.9
 	go.clever-cloud.dev/sdk v0.2.10
 	golang.org/x/exp v0.0.0-20251017212417-90e834f514db
 )
