@@ -1,6 +1,7 @@
 package elasticsearch_test
 
 import (
+	"context"
 	_ "embed"
 	"fmt"
 	"regexp"
@@ -12,6 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -327,5 +329,84 @@ func TestAccElasticsearch_RefreshDeleted(t *testing.T) {
 			// plan should contain elasticsearch re-creation
 			ExpectNonEmptyPlan: true,
 		}},
+	})
+}
+
+func TestAccElasticsearch_Import(t *testing.T) {
+	t.Parallel()
+	cc := client.New(client.WithAutoOauthConfig())
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-es-import")
+	fullName := fmt.Sprintf("clevercloud_elasticsearch.%s", rName)
+
+	var addonID string
+	var realID string
+
+	// Cleanup addon created via API in case the import step fails
+	// before Terraform takes ownership of the resource.
+	t.Cleanup(func() {
+		if addonID != "" {
+			tmp.DeleteAddon(context.Background(), cc, tests.ORGANISATION, addonID)
+		}
+	})
+
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	elasticsearchBlock := helper.NewRessource(
+		"clevercloud_elasticsearch",
+		rName,
+		helper.SetKeyValues(map[string]any{
+			"name":   rName,
+			"region": "par",
+			"plan":   "xs",
+		}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{
+			{
+				// Create the Elasticsearch addon through the API to simulate a
+				// pre-existing resource, then import it into Terraform state.
+				PreConfig: func() {
+					addonsProvidersRes := tmp.GetAddonsProviders(ctx, cc)
+					if addonsProvidersRes.HasError() {
+						t.Fatalf("failed to get addon providers: %s", addonsProvidersRes.Error())
+					}
+					prov := pkg.LookupAddonProvider(*addonsProvidersRes.Payload(), "es-addon")
+					plan := pkg.LookupProviderPlan(prov, "xs")
+					if plan == nil {
+						t.Fatal("failed to find xs plan for es-addon")
+					}
+
+					res := tmp.CreateAddon(ctx, cc, tests.ORGANISATION, tmp.AddonRequest{
+						Name:       rName,
+						Plan:       plan.ID,
+						ProviderID: "es-addon",
+						Region:     "par",
+					})
+					if res.HasError() {
+						t.Fatalf("failed to create elasticsearch addon: %s", res.Error())
+					}
+					addonID = res.Payload().ID
+					realID = res.Payload().RealID
+				},
+				Config:             providerBlock.Append(elasticsearchBlock).String(),
+				ResourceName:       fullName,
+				ImportState:        true,
+				ImportStatePersist: true,
+				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
+					return realID, nil
+				},
+			},
+			{
+				// Re-apply the same config after import: the plan must be empty.
+				// If kibana/apm are left null in state, their schema defaults
+				// create a diff, and both carry RequiresReplace, so this step
+				// fails on a force-replace plan.
+				Config:   providerBlock.Append(elasticsearchBlock).String(),
+				PlanOnly: true,
+			},
+		},
 	})
 }

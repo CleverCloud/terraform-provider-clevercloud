@@ -158,6 +158,12 @@ func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic tmp.El
 			return acc
 		})
 
+	// Set the toggles themselves, not only the credentials they unlock: left null
+	// in state after an import, their schema defaults create a diff, and both carry
+	// RequiresReplace, so the next plan destroys and recreates the add-on.
+	state.Kibana = pkg.FromBool(features["kibana"])
+	state.Apm = pkg.FromBool(features["apm"])
+
 	state.KibanaUser = basetypes.NewStringNull()
 	state.KibanaPassword = basetypes.NewStringNull()
 	state.KibanaHost = basetypes.NewStringNull()
