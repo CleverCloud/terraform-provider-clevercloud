@@ -106,6 +106,8 @@ environment = { for k, v in {
   VAR2 = var.optional_var
 } : k => v if v != null }
 ```
+
+**Note:** Prefer the dedicated attribute (`java_version`, `hooks.pre_build`...) whenever one exists. Declaring the variable here works but gives up the attribute's typing and validation. Declaring it in **both** slots never reaches a stable plan: the attribute wins when Terraform writes to Clever Cloud, this map wins on refresh.
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))

@@ -106,4 +106,5 @@ func (r *ResourcePHP) ModifyPlan(ctx context.Context, req resource.ModifyPlanReq
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "php", plan.Runtime, &res.Diagnostics)
+	application.ValidateEnvSlots(ctx, &plan, &res.Diagnostics)
 }
