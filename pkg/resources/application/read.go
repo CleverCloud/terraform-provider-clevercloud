@@ -133,10 +133,17 @@ func Read[T RuntimePlan](ctx context.Context, resource RuntimeResource, state T)
 	// Read TCP redirection
 	runtime.Redirection = ReadTCPRedirection(ctx, resource.Client(), resource.Organization(), runtime.ID.ValueString(), runtime.Redirection, &diags)
 
+	// Variables the practitioner declares in `environment` keep that slot
+	withheld := withholdUserManagedEnv(env, runtime.Environment)
+
 	// Map environment variables to runtime-specific fields
 	state.FromEnv(ctx, env, &diags)
 
 	runtime.Hooks = attributes.FromEnvHooks(env, runtime.Hooks)
+
+	for key, value := range withheld {
+		env.Set(key, value)
+	}
 
 	if env.Size() > 0 {
 		nativeEnvMap := maps.Collect(env.All)

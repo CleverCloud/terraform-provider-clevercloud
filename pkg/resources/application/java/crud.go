@@ -109,4 +109,5 @@ func (r *ResourceJava) ModifyPlan(ctx context.Context, req resource.ModifyPlanRe
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, r.profile, plan.Runtime, &res.Diagnostics)
+	application.ValidateEnvSlots(ctx, &plan, &res.Diagnostics)
 }
