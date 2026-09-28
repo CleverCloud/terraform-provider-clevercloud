@@ -116,6 +116,30 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
+	// The Materia payload carries neither name nor region: they live on the
+	// add-on itself. Without this an import leaves name null, and the required
+	// attribute makes the plan fail.
+	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonID)
+	if addonRes.IsNotFoundError() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to get materiakv addon", addonRes.Error().Error())
+		return
+	}
+
+	addon := addonRes.Payload()
+	kv.Name = pkg.FromStr(addon.Name)
+	kv.Region = pkg.FromStr(addon.Region)
+	kv.CreationDate = pkg.FromI(addon.CreationDate)
+
 	tflog.Debug(ctx, "STATE", map[string]any{"kv": kv})
 	tflog.Debug(ctx, "API", map[string]any{"kv": addonKV})
 	kv.Host = pkg.FromStr(addonKV.Host)
