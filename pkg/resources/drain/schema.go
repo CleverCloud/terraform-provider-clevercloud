@@ -93,7 +93,7 @@ func (r DatadogDrain) Attributes() map[string]schema.Attribute {
 		},
 		"api_key": schema.StringAttribute{
 			Required:            true,
-			Sensitive:           true,
+			Sensitive:           !pkg.BypassSensitiveImports(),
 			MarkdownDescription: "Datadog API key for log ingestion",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
@@ -188,7 +188,7 @@ func (r NewRelicDrain) Attributes() map[string]schema.Attribute {
 		},
 		"api_key": schema.StringAttribute{
 			Required:            true,
-			Sensitive:           true,
+			Sensitive:           !pkg.BypassSensitiveImports(),
 			MarkdownDescription: "New Relic API key used for ingestion",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
@@ -261,7 +261,7 @@ func (r ElasticsearchDrain) Attributes() map[string]schema.Attribute {
 		},
 		"password": schema.StringAttribute{
 			Required:            true,
-			Sensitive:           true,
+			Sensitive:           !pkg.BypassSensitiveImports(),
 			MarkdownDescription: "Elasticsearch password",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
@@ -352,7 +352,7 @@ func (r SyslogUDPDrain) Attributes() map[string]schema.Attribute {
 		},
 		"token": schema.StringAttribute{
 			Optional:            true,
-			Sensitive:           true,
+			Sensitive:           !pkg.BypassSensitiveImports(),
 			MarkdownDescription: "Authentication token",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
@@ -419,7 +419,7 @@ func (r SyslogTCPDrain) Attributes() map[string]schema.Attribute {
 		},
 		"token": schema.StringAttribute{
 			Optional:            true,
-			Sensitive:           true,
+			Sensitive:           !pkg.BypassSensitiveImports(),
 			MarkdownDescription: "Authentication token",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),
@@ -535,7 +535,7 @@ func (r OVHDrain) Attributes() map[string]schema.Attribute {
 		},
 		"token": schema.StringAttribute{
 			Required:            true,
-			Sensitive:           true,
+			Sensitive:           !pkg.BypassSensitiveImports(),
 			MarkdownDescription: "OVH authentication token",
 			PlanModifiers: []planmodifier.String{
 				stringplanmodifier.RequiresReplace(),

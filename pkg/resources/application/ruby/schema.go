@@ -95,7 +95,7 @@ var schemaRuby = schema.Schema{
 		// CC_HTTP_BASIC_AUTH
 		"http_basic_auth": schema.StringAttribute{
 			Optional:            true,
-			Sensitive:           true,
+			Sensitive:           !pkg.BypassSensitiveImports(),
 			MarkdownDescription: "Restrict HTTP access to your application (format: 'login:password')",
 		},
 		// CC_NGINX_PROXY_BUFFERS
@@ -184,7 +184,7 @@ var schemaRubyV0 = schema.Schema{
 		// CC_HTTP_BASIC_AUTH
 		"http_basic_auth": schema.StringAttribute{
 			Optional:            true,
-			Sensitive:           true,
+			Sensitive:           !pkg.BypassSensitiveImports(),
 			MarkdownDescription: "Restrict HTTP access to your application (format: 'login:password')",
 		},
 		// CC_NGINX_PROXY_BUFFERS

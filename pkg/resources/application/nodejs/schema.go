@@ -67,7 +67,7 @@ var schemaNodeJS = schema.Schema{
 		// NPM_TOKEN
 		"registry_token": schema.StringAttribute{
 			Optional:            true,
-			Sensitive:           true,
+			Sensitive:           !pkg.BypassSensitiveImports(),
 			MarkdownDescription: "Private repository token",
 		},
 	}),
@@ -101,7 +101,7 @@ var schemaNodeJSV0 = schema.Schema{
 		// NPM_TOKEN
 		"registry_token": schema.StringAttribute{
 			Optional:            true,
-			Sensitive:           true,
+			Sensitive:           !pkg.BypassSensitiveImports(),
 			MarkdownDescription: "Private repository token",
 		},
 	}),

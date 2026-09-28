@@ -103,7 +103,7 @@ var schemaDocker = schema.Schema{
 		},
 		"registry_password": schema.StringAttribute{
 			Optional:            true,
-			Sensitive:           true,
+			Sensitive:           !pkg.BypassSensitiveImports(),
 			MarkdownDescription: "The password of your username",
 		},
 		"daemon_socket_mount": schema.BoolAttribute{
@@ -165,7 +165,7 @@ var schemaDockerV0 = schema.Schema{
 		},
 		"registry_password": schema.StringAttribute{
 			Optional:            true,
-			Sensitive:           true,
+			Sensitive:           !pkg.BypassSensitiveImports(),
 			MarkdownDescription: "The password of your username",
 		},
 		"daemon_socket_mount": schema.BoolAttribute{
