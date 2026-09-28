@@ -96,6 +96,26 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
+	// The env endpoint says nothing about the add-on itself. Without this an
+	// import leaves name null, and the required attribute makes the plan fail.
+	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
+		return
+	}
+
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonID)
+	if addonRes.IsNotFoundError() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	if addonRes.HasError() {
+		resp.Diagnostics.AddError("failed to get config provider addon", addonRes.Error().Error())
+		return
+	}
+
+	addonConfigProvider.Name = pkg.FromStr(addonRes.Payload().Name)
+
 	addonEnvRes := tmp.GetConfigProviderEnv(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString())
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
