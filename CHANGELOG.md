@@ -1,5 +1,29 @@
 # Changelog
 
+## [2.3.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.2.1...v2.3.0) (2026-09-28)
+
+
+### Features
+
+* BYPASS_SENSITIVE_IMPORTS writes environment maps into generated config ([4d9fb3b](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/4d9fb3ba4f866cc32706d35a9b0223525ebcea31))
+* **kubernetes:** add node auto-provisioning API payloads ([3ec7b2e](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/3ec7b2e5b4971c52447c02bc40b2ef4ba7efd96c))
+* **kubernetes:** expose node autoscaling on the cluster resource ([1ef3e54](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1ef3e5420f22754e7f6ba8228ce03bbe47c38c44))
+
+
+### Bug Fixes
+
+* **addon:** accept the plan slug as the provider spells it ([27a9db7](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/27a9db77b8a92407f7352fb62b983c1c143f075d)), closes [#449](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/449)
+* **addonprovider:** delete features by name, not base64 ([4940292](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/4940292f17e2b4a0e8fee8d83b379253146e5b12))
+* **addonprovider:** fail when a feature deletion did not happen ([8fc0c2f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/8fc0c2f68fc9394737324e753f3899b78b15a594))
+* clear the last drift left on a generated configuration ([299d57e](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/299d57e240d47a797bb018d532d1b029611d49cd))
+* **elasticsearch:** populate kibana and apm in Read to prevent force-replace on import ([5ccaa7a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5ccaa7aea8d325a072032389873c8997225f7708)), closes [#445](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/445)
+* **keycloak:** only validate a version the user is asking for ([a032811](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/a0328110a5ef4974a6806eea09622d839a1e9bfe)), closes [#450](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/450)
+* **kubernetes:** protect Karpenter-managed node groups ([a9c251b](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/a9c251b20cba5b629e58ae1a4e736b0d36632ccd))
+* **kubernetes:** stop reading the cluster on a failed refresh ([b8f6cec](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/b8f6cec87d602bdb1d6ba90c3a108ccdc147b0a0))
+* **postgresql:** only refuse a locale the practitioner is asking for ([3ec792c](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/3ec792c6f0690a6bb50dc5666937acd1af65079b)), closes [#451](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/451)
+* read the add-on name back on import for materia_kv and configprovider ([4d2e7be](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/4d2e7be47517beee77c46a864109be0122941746)), closes [#447](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/447)
+* retry server errors instead of failing on them ([76e7e44](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/76e7e44707fdd9a31b938a4cbf1e36bda15bfc63))
+
 ## [2.2.1](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.2.0...v2.2.1) (2026-09-17)
 
 
