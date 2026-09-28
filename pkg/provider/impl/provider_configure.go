@@ -75,6 +75,19 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 
 	tflog.Debug(ctx, "configure provider...")
 
+	// Warn on every command while the bypass is set, not only on the one that
+	// generates the configuration: the schema is fixed for the whole process, so
+	// environment maps stay unredacted in every plan it prints.
+	if pkg.BypassSensitiveImports() {
+		resp.Diagnostics.AddWarning(
+			"Environment variables are not redacted",
+			fmt.Sprintf(
+				"%s is set, so environment and exposed_environment are reported as non-sensitive: Terraform prints their values in plan output and writes them into generated configuration.",
+				pkg.BypassSensitiveImportsEnvVar,
+			),
+		)
+	}
+
 	resp.Diagnostics.Append(req.Config.Get(ctx, &config)...)
 	if resp.Diagnostics.HasError() {
 		return
