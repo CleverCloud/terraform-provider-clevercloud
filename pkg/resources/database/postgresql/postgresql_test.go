@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -401,6 +402,98 @@ func TestAccPostgreSQL_Import(t *testing.T) {
 			},
 			{
 				Config:   providerBlock.Append(pgBlock).String(),
+				PlanOnly: true,
+			},
+		},
+	})
+}
+
+// A shared-plan add-on can already carry a locale the platform gave it. Read
+// puts it in state and `terraform plan -generate-config-out` writes it into the
+// generated configuration, so refusing it outright made the add-on impossible to
+// import or even to plan against.
+func TestAccPostgreSQL_LocaleImportOnDevPlan(t *testing.T) {
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skip("no flag for running acceptance tests")
+	}
+
+	t.Parallel()
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-pg-locale-dev-import")
+	fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
+
+	var addonID string
+	var realID string
+
+	t.Cleanup(func() {
+		if addonID != "" {
+			tmp.DeleteAddon(context.Background(), cc, tests.ORGANISATION, addonID)
+		}
+	})
+
+	// The API exposes no locale for a shared-plan add-on, so Read falls back to
+	// the platform default and config generation writes that value out. The
+	// configuration below is what `-generate-config-out` produces.
+	const generatedLocale string = "en_GB"
+
+	config := helper.NewProvider("clevercloud").
+		SetOrganisation(tests.ORGANISATION).
+		Append(helper.NewRessource(
+			"clevercloud_postgresql",
+			rName,
+			helper.SetKeyValues(map[string]any{
+				"name":   rName,
+				"region": "par",
+				"plan":   "dev",
+				"locale": generatedLocale,
+			}))).String()
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{
+			{
+				// Create the add-on through the API to simulate a pre-existing
+				// resource, then import it into Terraform state.
+				PreConfig: func() {
+					addonsProvidersRes := tmp.GetAddonsProviders(ctx, cc)
+					if addonsProvidersRes.HasError() {
+						t.Fatalf("failed to get addon providers: %s", addonsProvidersRes.Error())
+					}
+
+					prov := pkg.LookupAddonProvider(*addonsProvidersRes.Payload(), "postgresql-addon")
+					addonPlan := pkg.LookupProviderPlan(prov, "dev")
+					if addonPlan == nil {
+						t.Fatal("failed to find dev plan for postgresql-addon")
+					}
+
+					createRes := tmp.CreateAddon(ctx, cc, tests.ORGANISATION, tmp.AddonRequest{
+						Name:       rName,
+						Plan:       addonPlan.ID,
+						ProviderID: "postgresql-addon",
+						Region:     "par",
+					})
+					if createRes.HasError() {
+						t.Fatalf("failed to create postgresql addon: %s", createRes.Error())
+					}
+					addonID = createRes.Payload().ID
+					realID = createRes.Payload().RealID
+				},
+				Config:             config,
+				ResourceName:       fullName,
+				ImportState:        true,
+				ImportStatePersist: true,
+				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
+					return realID, nil
+				},
+			},
+			{
+				// The locale is the one the add-on already has, so nothing is
+				// being asked for and the plan must be empty. Refusing it here is
+				// what made a shared-plan add-on impossible to import.
+				Config:   config,
 				PlanOnly: true,
 			},
 		},

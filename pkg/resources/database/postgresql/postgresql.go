@@ -174,6 +174,23 @@ func (r *ResourcePostgreSQL) ModifyPlan(ctx context.Context, req resource.Modify
 		return
 	}
 
+	// A shared-plan add-on can already carry a locale the platform gave it, and
+	// Read puts that value in state. `terraform plan -generate-config-out` then
+	// writes it into the generated configuration, so refusing it outright makes
+	// the add-on impossible to import, or even to plan against. Only refuse a
+	// locale the practitioner is introducing or changing.
+	if !req.State.Raw.IsNull() {
+		var stateLocale types.String
+		res.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("locale"), &stateLocale)...)
+		if res.Diagnostics.HasError() {
+			return
+		}
+
+		if stateLocale.Equal(configLocale) {
+			return
+		}
+	}
+
 	// Only validate if user explicitly provided a locale value (not null = user set it)
 	// If it's null, the default or computed value will be used, which is fine
 	if !configLocale.IsNull() && !configLocale.IsUnknown() && !isDedicated {
