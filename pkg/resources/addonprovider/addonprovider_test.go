@@ -774,8 +774,6 @@ func TestAccAddonProvider_updateFeatures(t *testing.T) {
 
 // TestAccAddonProvider_updatePlans tests adding, updating, and removing plans
 func TestAccAddonProvider_updatePlans(t *testing.T) {
-	t.Skip("Skipping due to API bug: DELETE /plans/{id} returns 500 - See issue cc-api#847")
-
 	ctx := t.Context()
 	cc := client.New(client.WithAutoOauthConfig())
 	rName := acctest.RandomWithPrefix("tf-test-ap")
