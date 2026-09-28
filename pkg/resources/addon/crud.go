@@ -110,7 +110,16 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 
 	a := addonRes.Payload()
 	ad.Name = pkg.FromStr(a.Name)
-	ad.Plan = pkg.FromStr(a.Plan.Slug)
+	// Providers do not agree on the case of their plan slugs: jenkins answers S,
+	// M, L while postgresql answers dev, xs_sml. LookupProviderPlan matches
+	// case-insensitively, so both spellings create the same add-on; keep the one
+	// already in state so a plan never drifts on case alone. An import has
+	// nothing in state yet and takes the provider's spelling.
+	plan := a.Plan.Slug
+	if configured := ad.Plan.ValueString(); strings.EqualFold(configured, plan) {
+		plan = configured
+	}
+	ad.Plan = pkg.FromStr(plan)
 	ad.Region = pkg.FromStr(a.Region)
 	ad.ThirdPartyProvider = pkg.FromStr(a.Provider.ID)
 	ad.CreationDate = pkg.FromI(a.CreationDate)

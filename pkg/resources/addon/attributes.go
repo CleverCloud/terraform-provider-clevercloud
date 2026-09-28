@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 )
@@ -25,8 +24,7 @@ var addonCommon = map[string]schema.Attribute{
 	"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
 	"plan": schema.StringAttribute{
 		Required:            true,
-		MarkdownDescription: "Database size and spec (must be lowercase)",
-		Validators:          []validator.String{pkg.NewLowercaseValidator()},
+		MarkdownDescription: "Database size and spec, spelled as the provider spells it",
 	},
 	"region": schema.StringAttribute{
 		Optional:            true,
