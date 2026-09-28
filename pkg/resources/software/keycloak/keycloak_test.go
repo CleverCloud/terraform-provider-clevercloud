@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.dev/client"
@@ -149,5 +150,60 @@ func TestAccKeycloak_versionUpgrade(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^keycloak_.*`))),
 			},
 		}},
+	})
+}
+
+// Version validation now only fires on a version the user is asking for, so
+// that an add-on running a retired version stays importable. Make sure that did
+// not switch it off on updates: creating on a valid version and then moving to a
+// bogus one must still be rejected.
+func TestAccKeycloak_invalidVersionOnUpdate(t *testing.T) {
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skip("no flag for running acceptance tests")
+	}
+
+	// Deliberately not parallel: the package already provisions two Keycloak
+	// add-ons concurrently, and a third one makes creation flake on the API.
+	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	rName := acctest.RandomWithPrefix("tf-test-kc")
+
+	keycloakSDK := sdk.NewSDK(sdk.WithClient(cc))
+	infosRes := keycloakSDK.V4().AddonProviders().Keycloak().Getkeycloakproviderinformation(ctx)
+	if infosRes.HasError() {
+		t.Fatalf("failed to get Keycloak provider information: %s", infosRes.Error().Error())
+	}
+
+	versions := make([]string, 0, len(infosRes.Payload().Dedicated))
+	for version := range infosRes.Payload().Dedicated {
+		versions = append(versions, version)
+	}
+	if len(versions) == 0 {
+		t.Skip("no available version to create from")
+	}
+
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	valid := helper.NewRessource("clevercloud_keycloak", rName, helper.SetKeyValues(map[string]any{
+		"name": rName, "region": "par", "version": versions[0],
+	}))
+	invalid := helper.NewRessource("clevercloud_keycloak", rName, helper.SetKeyValues(map[string]any{
+		"name": rName, "region": "par", "version": "99.99.99",
+	}))
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{
+			{
+				ResourceName: rName,
+				Config:       providerBlock.Append(valid).String(),
+			},
+			{
+				ResourceName: rName,
+				Config:       providerBlock.Append(invalid).String(),
+				ExpectError:  regexp.MustCompile("unavailable version"),
+			},
+		},
 	})
 }

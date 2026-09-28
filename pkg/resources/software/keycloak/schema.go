@@ -62,6 +62,21 @@ func (r ResourceKeycloak) ModifyPlan(ctx context.Context, req resource.ModifyPla
 		return
 	}
 
+	// Only validate a version the user is actually asking for. An add-on that has
+	// been running for a while may sit on a version the provider no longer
+	// offers; rejecting it would make it impossible to import or even to plan
+	// against — precisely the add-ons that most need to come under Terraform.
+	if !req.State.Raw.IsNull() {
+		state := helper.From[Keycloak](ctx, req.State, &res.Diagnostics)
+		if res.Diagnostics.HasError() {
+			return
+		}
+
+		if state.Version.Equal(plan.Version) {
+			return
+		}
+	}
+
 	// Skip validation if version is not specified
 	if !plan.Version.IsNull() && !plan.Version.IsUnknown() {
 		infosRes := r.SDK.V4().AddonProviders().Keycloak().Getkeycloakproviderinformation(ctx)
