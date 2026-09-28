@@ -3,9 +3,9 @@ package tmp
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"math"
+	"net/url"
 	"strings"
 	"time"
 
@@ -920,12 +920,11 @@ func CreateAddonProviderFeature(ctx context.Context, cc *client.Client, organisa
 	return client.Post[AddonProviderFeatureView](ctx, cc, path, feature)
 }
 
-// DeleteAddonProviderFeature deletes a feature from an addon provider
-// The featureName is base64-encoded before being sent to the API
+// DeleteAddonProviderFeature deletes a feature from an addon provider.
+// The API identifies the feature by its name, and answers 200 whatever segment it
+// gets, so a wrong name silently deletes nothing.
 func DeleteAddonProviderFeature(ctx context.Context, cc *client.Client, organisationID string, providerID string, featureName string) client.Response[client.Nothing] {
-	// Encode feature name in base64 (API requires this)
-	encodedName := base64.StdEncoding.EncodeToString([]byte(featureName))
-	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s/features/%s", organisationID, providerID, encodedName)
+	path := fmt.Sprintf("/v2/organisations/%s/addonproviders/%s/features/%s", organisationID, providerID, url.PathEscape(featureName))
 	return client.Delete[client.Nothing](ctx, cc, path)
 }
 
