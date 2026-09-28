@@ -92,6 +92,7 @@ func SyncFeatures(
 	})
 
 	// Step 2: Delete features that are no longer expected (current - expected)
+	deletedFeatures := set.New[string]()
 	for featureName := range currentSet.Difference(expectedSet).Iter() {
 		tflog.Debug(ctx, "deleting feature", map[string]any{"name": featureName})
 
@@ -101,6 +102,33 @@ func SyncFeatures(
 				fmt.Sprintf("failed to delete feature %s", featureName),
 				delRes.Error().Error(),
 			)
+
+			continue
+		}
+
+		deletedFeatures.Add(featureName)
+	}
+
+	// The API answers 200 to a feature deletion it did not perform, so read the
+	// features back to make sure they are really gone instead of reporting a
+	// success that leaves the provider out of sync with the state.
+	if deletedFeatures.Size() > 0 {
+		remainingRes := tmp.ListAddonProviderFeatures(ctx, cc, organization, providerID)
+		if remainingRes.HasError() && !remainingRes.IsNotFoundError() {
+			diags.AddError("failed to list addon provider features", remainingRes.Error().Error())
+			return nil
+		} else if !remainingRes.IsNotFoundError() {
+			remainingFeatures := set.New[string]()
+			for _, f := range *remainingRes.Payload() {
+				remainingFeatures.Add(f.Name)
+			}
+
+			for featureName := range deletedFeatures.Intersection(remainingFeatures).Iter() {
+				diags.AddError(
+					fmt.Sprintf("failed to delete feature %s", featureName),
+					"the API reported a success but the feature is still on the addon provider",
+				)
+			}
 		}
 	}
 
