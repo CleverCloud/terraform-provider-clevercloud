@@ -98,13 +98,9 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 
 	// The env endpoint says nothing about the add-on itself. Without this an
 	// import leaves name null, and the required attribute makes the plan fail.
-	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString())
-	if err != nil {
-		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
-		return
-	}
-
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonID)
+	// The v2 add-on endpoint takes a real ID as readily as an add-on ID, so no
+	// lookup is needed here.
+	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString())
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
