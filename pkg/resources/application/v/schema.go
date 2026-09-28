@@ -74,7 +74,7 @@ func (vapp V) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 
 func (vapp *V) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
 	vapp.Binary = pkg.FromStrPtr(env.PopPtr("CC_V_BINARY"))
-	pkg.SetBoolIf(&vapp.DevelopmentBuild, env.PopPtr("ENVIRONMENT"), "development")
+	pkg.SetBool(&vapp.DevelopmentBuild, env.PopPtr("ENVIRONMENT"), "development")
 
 	vapp.Integrations = attributes.FromEnvIntegrations(ctx, env, vapp.Integrations, diags)
 }

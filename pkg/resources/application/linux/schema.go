@@ -95,7 +95,7 @@ func (l *Linux) FromEnv(ctx context.Context, env *maps.Map[string, string], diag
 	l.BuildCommand = pkg.FromStrPtr(env.PopPtr("CC_BUILD_COMMAND"))
 	l.Makefile = pkg.FromStrPtr(env.PopPtr("CC_MAKEFILE"))
 	l.MiseFilePath = pkg.FromStrPtr(env.PopPtr("CC_MISE_FILE_PATH"))
-	pkg.SetBoolIf(&l.DisableMise, env.PopPtr("CC_DISABLE_MISE"), "true")
+	pkg.SetBool(&l.DisableMise, env.PopPtr("CC_DISABLE_MISE"), "true")
 
 	l.Integrations = attributes.FromEnvIntegrations(ctx, env, l.Integrations, diags)
 }

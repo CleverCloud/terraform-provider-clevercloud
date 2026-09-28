@@ -30,7 +30,7 @@ func (r ResourceConfigProvider) Schema(_ context.Context, req resource.SchemaReq
 		Attributes: map[string]schema.Attribute{
 			"environment": schema.MapAttribute{
 				Required:    true,
-				Sensitive:   true,
+				Sensitive:   !pkg.BypassSensitiveImports(),
 				Description: "Environment variables injected into the application",
 				ElementType: types.StringType,
 				Validators:  []validator.Map{pkg.NoNullMapValuesValidator()},

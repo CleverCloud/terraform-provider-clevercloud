@@ -120,7 +120,7 @@ func (r ResourceAddonProvider) Schema(_ context.Context, req resource.SchemaRequ
 			},
 			"password": schema.StringAttribute{
 				Required:            true,
-				Sensitive:           true,
+				Sensitive:           !pkg.BypassSensitiveImports(),
 				MarkdownDescription: "API password (minimum 35 characters)",
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(35),
@@ -128,7 +128,7 @@ func (r ResourceAddonProvider) Schema(_ context.Context, req resource.SchemaRequ
 			},
 			"sso_salt": schema.StringAttribute{
 				Required:            true,
-				Sensitive:           true,
+				Sensitive:           !pkg.BypassSensitiveImports(),
 				MarkdownDescription: "SSO salt (minimum 35 characters)",
 				Validators: []validator.String{
 					stringvalidator.LengthAtLeast(35),

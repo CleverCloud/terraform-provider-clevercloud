@@ -149,7 +149,7 @@ var IntegrationsAttribute = schema.SingleNestedAttribute{
 			Attributes: map[string]schema.Attribute{
 				"project_key": schema.StringAttribute{
 					Required:            true,
-					Sensitive:           true,
+					Sensitive:           !pkg.BypassSensitiveImports(),
 					MarkdownDescription: "Your Redirection.io project key ([CC_REDIRECTIONIO_PROJECT_KEY](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#redirectionio))",
 				},
 				"instance_name": schema.StringAttribute{
@@ -168,7 +168,7 @@ var IntegrationsAttribute = schema.SingleNestedAttribute{
 			Attributes: map[string]schema.Attribute{
 				"license_key": schema.StringAttribute{
 					Required:            true,
-					Sensitive:           true,
+					Sensitive:           !pkg.BypassSensitiveImports(),
 					MarkdownDescription: "Your New Relic license key ([NEW_RELIC_LICENSE_KEY](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#new-relic))",
 				},
 				"app_name": schema.StringAttribute{
@@ -211,7 +211,7 @@ var IntegrationsAttribute = schema.SingleNestedAttribute{
 				},
 				"password": schema.StringAttribute{
 					Optional:            true,
-					Sensitive:           true,
+					Sensitive:           !pkg.BypassSensitiveImports(),
 					MarkdownDescription: "Define the password for the basic auth of the Prometheus endpoint ([CC_METRICS_PROMETHEUS_PASSWORD](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#prometheus))",
 				},
 				"path": schema.StringAttribute{
@@ -284,7 +284,7 @@ var blocks = map[string]schema.Block{
 				},
 			},
 			"authentication_basic": schema.StringAttribute{
-				Sensitive: true,
+				Sensitive: !pkg.BypassSensitiveImports(),
 				Optional:  true,
 				// TODO: investigate behaviour (not available in plan, but available in config ?)
 				//WriteOnly:           true,

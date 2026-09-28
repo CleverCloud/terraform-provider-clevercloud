@@ -108,6 +108,17 @@ func SetBoolIf(target *types.Bool, s *string, expected string) {
 	}
 }
 
+// SetBool assigns target from whether s matches expected, false included.
+//
+// Use it over SetBoolIf for an attribute carrying a schema default: SetBoolIf
+// leaves the attribute null when the variable is absent, and an import has
+// nothing else to fill it with. The default then materialises on the next plan
+// and the plan is never empty. An attribute with no default is better served by
+// SetBoolIf, which keeps null meaning "not configured".
+func SetBool(target *types.Bool, s *string, expected string) {
+	*target = types.BoolValue(s != nil && *s == expected)
+}
+
 // FromSetSplit splits *string by separator and returns types.Set.
 // Returns null set if pointer is nil or string is empty.
 func FromSetSplit(s *string, sep string, diags *diag.Diagnostics) types.Set {

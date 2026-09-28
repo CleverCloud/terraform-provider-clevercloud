@@ -95,7 +95,7 @@ func (r ResourceMySQL) Schema(_ context.Context, req resource.SchemaRequest, res
 						},
 						"password": schema.StringAttribute{
 							Required:            true,
-							Sensitive:           true,
+							Sensitive:           !pkg.BypassSensitiveImports(),
 							MarkdownDescription: "Password for read-only user",
 						},
 					},

@@ -85,21 +85,23 @@ description: |-
   
   export AWS_REQUEST_CHECKSUM_CALCULATION=when_required
   
-  Importing applications and their environment
+  Importing resources with sensitive attributes
   Terraform never writes a value it considers sensitive into the configuration it
-  generates, and an application's environment is one. So importing an application and
-  running terraform plan -generate-config-out yields:
+  generates. So importing a resource and running terraform plan -generate-config-out
+  yields, for an application's environment and for every other sensitive attribute the
+  provider could have filled in:
   
   resource "clevercloud_nodejs" "my_app" {
     environment = null # sensitive
     ...
   }
   
-  Applying that file removes every variable the application had.
+  Applying that file removes what the configuration could not carry — every variable the
+  application had, in this case.
   Set BYPASS_SENSITIVE_IMPORTS=true for the command that generates the configuration —
   yes, 1 and anything else strconv.ParseBool accepts work too, case-insensitively.
-  environment and exposed_environment are then reported as non-sensitive and Terraform
-  writes them out:
+  Resource attributes normally reported as sensitive are then reported as ordinary ones,
+  and Terraform writes them out:
   
   BYPASS_SENSITIVE_IMPORTS=true terraform plan -generate-config-out=generated.tf
   terraform plan   # unset again: the generated configuration is valid either way
@@ -107,6 +109,9 @@ description: |-
   The provider warns on every command while the variable is set, because the schema is
   fixed for the whole provider process: values are printed unredacted in all plans that
   process serves, not only the generating one. Unset it once the configuration is written.
+  The provider's own credentials — token, secret, consumer_secret, organisation —
+  stay redacted regardless: configuration generation never writes a provider block, so
+  there is nothing to gain from unmasking them.
   The generated file then holds the variables in clear text. Many of them are ordinary
   configuration; deciding which are secrets and belong in a secret manager instead is
   yours to make.
@@ -229,11 +234,12 @@ Until Cellar supports trailing checksums, disable them through the AWS SDK envir
 ```bash
 export AWS_REQUEST_CHECKSUM_CALCULATION=when_required
 ```
-## Importing applications and their environment
+## Importing resources with sensitive attributes
 
 Terraform never writes a value it considers sensitive into the configuration it
-generates, and an application's `environment` is one. So importing an application and
-running `terraform plan -generate-config-out` yields:
+generates. So importing a resource and running `terraform plan -generate-config-out`
+yields, for an application's `environment` and for every other sensitive attribute the
+provider could have filled in:
 
 ```hcl
 resource "clevercloud_nodejs" "my_app" {
@@ -242,12 +248,13 @@ resource "clevercloud_nodejs" "my_app" {
 }
 ```
 
-Applying that file removes every variable the application had.
+Applying that file removes what the configuration could not carry — every variable the
+application had, in this case.
 
 Set `BYPASS_SENSITIVE_IMPORTS=true` for the command that generates the configuration —
 `yes`, `1` and anything else `strconv.ParseBool` accepts work too, case-insensitively.
-`environment` and `exposed_environment` are then reported as non-sensitive and Terraform
-writes them out:
+Resource attributes normally reported as sensitive are then reported as ordinary ones,
+and Terraform writes them out:
 
 ```bash
 BYPASS_SENSITIVE_IMPORTS=true terraform plan -generate-config-out=generated.tf
@@ -257,6 +264,10 @@ terraform plan   # unset again: the generated configuration is valid either way
 The provider warns on every command while the variable is set, because the schema is
 fixed for the whole provider process: values are printed unredacted in *all* plans that
 process serves, not only the generating one. Unset it once the configuration is written.
+
+The provider's own credentials — `token`, `secret`, `consumer_secret`, `organisation` —
+stay redacted regardless: configuration generation never writes a provider block, so
+there is nothing to gain from unmasking them.
 
 The generated file then holds the variables in clear text. Many of them are ordinary
 configuration; deciding which are secrets and belong in a secret manager instead is
