@@ -44,6 +44,7 @@ func checkDestroy(ctx context.Context, state *terraform.State) error {
 			resourceType == "clevercloud_go",
 			resourceType == "clevercloud_haskell",
 			resourceType == "clevercloud_java_jar",
+			resourceType == "clevercloud_java_maven",
 			resourceType == "clevercloud_java_war",
 			resourceType == "clevercloud_linux",
 			resourceType == "clevercloud_nodejs",
