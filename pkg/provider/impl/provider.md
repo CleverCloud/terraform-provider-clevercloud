@@ -140,7 +140,63 @@ Until Cellar supports trailing checksums, disable them through the AWS SDK envir
 ```bash
 export AWS_REQUEST_CHECKSUM_CALCULATION=when_required
 ```
-## Importing resources with sensitive attributes
+## Importing existing resources
+
+Every resource this provider exposes can be imported. Two workflows exist, and they do
+not behave the same.
+
+### Import blocks — recommended
+
+Declare what you want to adopt, let Terraform write the configuration:
+
+```hcl
+import {
+  to = clevercloud_python.my_app
+  id = "app_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+}
+```
+
+```bash
+terraform plan -generate-config-out=generated.tf
+```
+
+Terraform reads the resource, drafts the HCL for it, and shows you the plan before
+anything touches state. The draft is yours to review, split across files and commit.
+
+Add-ons are imported by their real ID (`postgresql_…`, `redis_…`, `cellar_…`), except
+`clevercloud_addon`, which takes the add-on ID (`addon_…`).
+
+To import a whole organisation at once,
+[clever-tools](https://github.com/CleverCloud/clever-tools) generates the blocks for you:
+
+```bash
+clever terraform generate --org orga_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx > import.tf
+terraform plan -generate-config-out=generated.tf
+```
+
+It emits one block per application and add-on, skips what an add-on manages on your
+behalf — a Keycloak's own application and database, an Elasticsearch's Kibana — and
+reports what has no Terraform equivalent.
+
+### The `terraform import` command
+
+```bash
+terraform import clevercloud_python.my_app app_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+```
+
+This writes to state immediately, with no plan and no generated configuration: the
+resource block is yours to write beforehand, in full. Every required attribute must be
+present, including `min_instance_count`, `max_instance_count`, `smallest_flavor` and
+`biggest_flavor` on an application, and `plan` on an add-on — otherwise the next
+`terraform plan` stops on `Missing required argument`.
+
+Those attributes stay required on purpose. They decide what the resource costs, so the
+provider will not let a configuration stay silent about them and adopt whatever the
+platform happens to run. Import blocks write the real values into the generated
+configuration, which is the reason to prefer them: what you end up committing states the
+sizing explicitly.
+
+### Sensitive attributes are not written into the generated configuration
 
 Terraform never writes a value it considers sensitive into the configuration it
 generates. So importing a resource and running `terraform plan -generate-config-out`
