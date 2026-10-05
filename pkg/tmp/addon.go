@@ -719,17 +719,11 @@ func FromMySQLReadOnlyUsers(users []MySQLReadOnlyUser) types.List {
 	return types.ListValueMust(objectType, objects)
 }
 
-type KubernetesInfo struct {
-	CreationDate string              `json:"creationDate"`
-	Description  string              `json:"description"`
-	Features     *KubernetesFeatures `json:"features,omitempty"`
-	ID           string              `json:"id"`
-	Name         string              `json:"name"`
-	Status       string              `json:"status"` // ACTIVE, DELETED, DELETING, DEPLOYING, FAILED, RECONCILING
-	Tag          string              `json:"tag"`
-	TenantID     string              `json:"tenantId"`
-	Version      string              `json:"version"`
-}
+// KubernetesInfo is an alias for ClusterView, like KubernetesCreateResponse:
+// the cluster read answers the very payload the create does — same nine fields,
+// same types, same JSON tags — so one mapper serves every kubernetes call
+// instead of two that have to be kept in step.
+type KubernetesInfo = ClusterView
 
 // GetKubernetes retrieves Kubernetes cluster details using the cluster ID
 // This now returns the same structure as GetKubernetesCluster (ClusterView)
