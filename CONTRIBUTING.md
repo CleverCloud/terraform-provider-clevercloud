@@ -67,6 +67,13 @@ func (s *T) From<APIType>(ctx context.Context, payload *<APIType>, diags *diag.D
    type, then `FromEnv`. The CRUD diff then reduces to "delete N lines, insert
    one chain".
 
+The one documented exception to rule 1 is the drains: `ResourceDrain[T]` is
+generic over `DrainAttributes` and reaches its mapper through that interface, and
+an interface method cannot return the concrete type — so `FromDrain` returns
+nothing, because there is nothing to chain onto. Their mappers also stay in
+`drain/schema.go` next to the seven structs they belong to. Every other rule
+applies to them unchanged.
+
 ### Which absent-value policy
 
 The hard part of a mapper is not the assignment, it is deciding what an absent

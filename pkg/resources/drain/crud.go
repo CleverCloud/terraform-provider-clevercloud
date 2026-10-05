@@ -61,9 +61,8 @@ func (r *ResourceDrain[T]) Read(ctx context.Context, req resource.ReadRequest, r
 	drain := drainRes.Payload()
 
 	// Update state from API data while preserving sensitive values
-	err := state.FromAPI(*drain)
-	if err != nil {
-		resp.Diagnostics.AddError("Failed to parse drain data", err.Error())
+	state.FromDrain(ctx, drain, &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
 		return
 	}
 

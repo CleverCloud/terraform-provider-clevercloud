@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -68,7 +69,12 @@ func (r ResourceDrain[T]) Schema(_ context.Context, req resource.SchemaRequest, 
 type DrainAttributes interface {
 	Attributes() map[string]schema.Attribute
 	ToRecipient() []byte
-	FromAPI(drain tmp.Drain) error
+	// FromDrain maps the API payload onto the state. It is the only mapper in
+	// the provider that does not return its receiver: drains are consumed
+	// polymorphically through this interface, and an interface method cannot
+	// return the concrete type, so there is nothing to chain onto. Every other
+	// rule of the convention applies — see CONTRIBUTING.md.
+	FromDrain(ctx context.Context, drain *tmp.Drain, diags *diag.Diagnostics)
 	GetDrain() Drain
 	SetDrain(common Drain)
 }
@@ -119,10 +125,15 @@ func (r DatadogDrain) ToRecipient() []byte {
 	return v
 }
 
-func (r *DatadogDrain) FromAPI(drain tmp.Drain) error {
+func (r *DatadogDrain) FromDrain(ctx context.Context, drain *tmp.Drain, diags *diag.Diagnostics) {
+	if r == nil || drain == nil {
+		return
+	}
+
 	var recipient tmp.RecipientDatadog
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
+		diags.AddError("Failed to parse drain data", err.Error())
+		return
 	}
 
 	// Parse the URL to extract endpoint and API key
@@ -153,7 +164,6 @@ func (r *DatadogDrain) FromAPI(drain tmp.Drain) error {
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 // unescapeOrRaw decodes percent-encoding, falling back to the raw input on
@@ -209,10 +219,15 @@ func (r NewRelicDrain) ToRecipient() []byte {
 	return v
 }
 
-func (r *NewRelicDrain) FromAPI(drain tmp.Drain) error {
+func (r *NewRelicDrain) FromDrain(ctx context.Context, drain *tmp.Drain, diags *diag.Diagnostics) {
+	if r == nil || drain == nil {
+		return
+	}
+
 	var recipient tmp.RecipientNewrelic
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
+		diags.AddError("Failed to parse drain data", err.Error())
+		return
 	}
 	// Preserve URL from state if already set, otherwise use API value
 	if r.URL.IsNull() || r.URL.IsUnknown() {
@@ -226,7 +241,6 @@ func (r *NewRelicDrain) FromAPI(drain tmp.Drain) error {
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 func (r NewRelicDrain) GetDrain() Drain { return r.Drain }
@@ -301,10 +315,15 @@ func (r ElasticsearchDrain) ToRecipient() []byte {
 	return v
 }
 
-func (r *ElasticsearchDrain) FromAPI(drain tmp.Drain) error {
+func (r *ElasticsearchDrain) FromDrain(ctx context.Context, drain *tmp.Drain, diags *diag.Diagnostics) {
+	if r == nil || drain == nil {
+		return
+	}
+
 	var recipient tmp.RecipientElasticsearch
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
+		diags.AddError("Failed to parse drain data", err.Error())
+		return
 	}
 	// Preserve non-sensitive attributes from state if already set
 	if r.URL.IsNull() || r.URL.IsUnknown() {
@@ -327,7 +346,6 @@ func (r *ElasticsearchDrain) FromAPI(drain tmp.Drain) error {
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 func (r ElasticsearchDrain) GetDrain() Drain { return r.Drain }
@@ -373,10 +391,15 @@ func (r SyslogUDPDrain) ToRecipient() []byte {
 	return v
 }
 
-func (r *SyslogUDPDrain) FromAPI(drain tmp.Drain) error {
+func (r *SyslogUDPDrain) FromDrain(ctx context.Context, drain *tmp.Drain, diags *diag.Diagnostics) {
+	if r == nil || drain == nil {
+		return
+	}
+
 	var recipient tmp.RecipientSyslogUDP
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
+		diags.AddError("Failed to parse drain data", err.Error())
+		return
 	}
 	// Preserve URL from state if already set, otherwise use API value
 	if r.URL.IsNull() || r.URL.IsUnknown() {
@@ -394,7 +417,6 @@ func (r *SyslogUDPDrain) FromAPI(drain tmp.Drain) error {
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 func (r SyslogUDPDrain) GetDrain() Drain { return r.Drain }
@@ -440,10 +462,15 @@ func (r SyslogTCPDrain) ToRecipient() []byte {
 	return v
 }
 
-func (r *SyslogTCPDrain) FromAPI(drain tmp.Drain) error {
+func (r *SyslogTCPDrain) FromDrain(ctx context.Context, drain *tmp.Drain, diags *diag.Diagnostics) {
+	if r == nil || drain == nil {
+		return
+	}
+
 	var recipient tmp.RecipientSyslogTCP
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
+		diags.AddError("Failed to parse drain data", err.Error())
+		return
 	}
 	// Preserve URL from state if already set, otherwise use API value
 	if r.URL.IsNull() || r.URL.IsUnknown() {
@@ -461,7 +488,6 @@ func (r *SyslogTCPDrain) FromAPI(drain tmp.Drain) error {
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 func (r SyslogTCPDrain) GetDrain() Drain { return r.Drain }
@@ -497,10 +523,15 @@ func (r HTTPDrain) ToRecipient() []byte {
 	return v
 }
 
-func (r *HTTPDrain) FromAPI(drain tmp.Drain) error {
+func (r *HTTPDrain) FromDrain(ctx context.Context, drain *tmp.Drain, diags *diag.Diagnostics) {
+	if r == nil || drain == nil {
+		return
+	}
+
 	var recipient tmp.RecipientRaw
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
+		diags.AddError("Failed to parse drain data", err.Error())
+		return
 	}
 	// Preserve URL from state if already set, otherwise use API value
 	if r.URL.IsNull() || r.URL.IsUnknown() {
@@ -509,7 +540,6 @@ func (r *HTTPDrain) FromAPI(drain tmp.Drain) error {
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 func (r HTTPDrain) GetDrain() Drain { return r.Drain }
@@ -564,10 +594,15 @@ func (r OVHDrain) ToRecipient() []byte {
 	return v
 }
 
-func (r *OVHDrain) FromAPI(drain tmp.Drain) error {
+func (r *OVHDrain) FromDrain(ctx context.Context, drain *tmp.Drain, diags *diag.Diagnostics) {
+	if r == nil || drain == nil {
+		return
+	}
+
 	var recipient tmp.RecipientOVH
 	if err := json.Unmarshal(drain.Recipient, &recipient); err != nil {
-		return err
+		diags.AddError("Failed to parse drain data", err.Error())
+		return
 	}
 	// Preserve URL from state if already set, otherwise use API value
 	if r.URL.IsNull() || r.URL.IsUnknown() {
@@ -588,7 +623,6 @@ func (r *OVHDrain) FromAPI(drain tmp.Drain) error {
 	r.ID = types.StringValue(drain.ID)
 	r.ResourceID = types.StringValue(drain.ApplicationID)
 	r.Kind = types.StringValue(string(drain.Kind))
-	return nil
 }
 
 func (r OVHDrain) GetDrain() Drain { return r.Drain }
