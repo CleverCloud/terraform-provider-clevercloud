@@ -4,12 +4,15 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type Metabase struct {
@@ -38,4 +41,31 @@ func (r ResourceMetabase) Schema(_ context.Context, req resource.SchemaRequest, 
 			"host": schema.StringAttribute{Computed: true, MarkdownDescription: "Metabase host, used to connect to"},
 		},
 	}
+}
+
+// The API-to-state mappers for clevercloud_metabase follow.
+// See CONTRIBUTING.md § "API → state mapping".
+
+// FromAddon maps the generic add-on view, the only source of region for this
+// resource — the product view carries the name too, but not the region.
+func (mb *Metabase) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *Metabase {
+	if mb == nil || addon == nil {
+		return mb
+	}
+
+	mb.Name = pkg.FromStr(addon.Name)
+	mb.Region = pkg.FromStr(addon.Region)
+
+	return mb
+}
+
+// FromMetabase maps the product view: the access URL.
+func (mb *Metabase) FromMetabase(ctx context.Context, api *tmp.Metabase, diags *diag.Diagnostics) *Metabase {
+	if mb == nil || api == nil {
+		return mb
+	}
+
+	mb.Host = pkg.FromStr(api.AccessURL)
+
+	return mb
 }

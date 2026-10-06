@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -11,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type OAuthConsumer struct {
@@ -72,4 +75,36 @@ func (r ResourceOAuthConsumer) Schema(_ context.Context, req resource.SchemaRequ
 			},
 		},
 	}
+}
+
+// The API-to-state mappers for clevercloud_oauth_consumer follow.
+// See CONTRIBUTING.md § "API → state mapping".
+
+// FromConsumer maps the consumer view, rights included.
+//
+// The secret is not here: it comes from a separate endpoint, hence FromSecret.
+func (c *OAuthConsumer) FromConsumer(ctx context.Context, api *tmp.OAuthConsumerResponse, diags *diag.Diagnostics) *OAuthConsumer {
+	if c == nil || api == nil {
+		return c
+	}
+
+	c.Name = pkg.FromStr(api.Name)
+	c.Description = pkg.FromStr(api.Description)
+	c.BaseURL = pkg.FromStr(api.BaseURL)
+	c.LogoURL = pkg.FromStr(api.LogoURL)
+	c.WebsiteURL = pkg.FromStr(api.WebsiteURL)
+	c.Rights = rightsResponseToSet(ctx, api.Rights, diags)
+
+	return c
+}
+
+// FromSecret maps the separate secret endpoint.
+func (c *OAuthConsumer) FromSecret(ctx context.Context, api *tmp.OAuthConsumerSecretResponse, diags *diag.Diagnostics) *OAuthConsumer {
+	if c == nil || api == nil {
+		return c
+	}
+
+	c.Secret = pkg.FromStr(api.Secret)
+
+	return c
 }

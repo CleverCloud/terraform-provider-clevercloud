@@ -62,10 +62,11 @@ func (s *T) From<APIType>(ctx context.Context, payload *<APIType>, diags *diag.D
    `RemoveResource`, status checks and the `Sync*` calls all stay in the CRUD,
    above the chain. A mapper never removes a resource.
 
-7. **Mappers live in `mapping.go`**, next to `schema.go`, and that file holds
-   nothing else. Order within it: the generic add-on view first, then the product
-   type, then `FromEnv`. The CRUD diff then reduces to "delete N lines, insert
-   one chain".
+7. **Mappers live in `schema.go`**, after the state struct and the schema, next
+   to the `ToEnv` they are the mirror of. Order: the generic add-on view first,
+   then the product type, then `FromEnv`. They do not get a file of their own —
+   a file per resource buys a header and an import block and little else, and
+   keeping each mapper beside its opposite direction is worth more.
 
 **Rule 1 has one structural exception: mappers reached through an interface.**
 `ResourceDrain[T]` is generic over `DrainAttributes`, and `application.Read[T]`
@@ -74,7 +75,7 @@ and an interface method cannot return the concrete type. So `FromDrain` and the
 runtimes' `FromEnv` return nothing — there is nothing to chain onto, and each of
 those structs has exactly one mapper anyway. They also stay where they are: the
 drains' next to their seven structs in `drain/schema.go`, each runtime's beside
-the `ToEnv` it is the mirror of. Every other rule applies to them unchanged.
+its own `ToEnv`. Every other rule applies to them unchanged.
 
 In practice the fluent form is what the add-on and software resources use, where
 two or three payloads land in one state struct and the mapper is called on a

@@ -4,12 +4,15 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type Matomo struct {
@@ -40,4 +43,32 @@ func (r ResourceMatomo) Schema(_ context.Context, req resource.SchemaRequest, re
 			"version": schema.StringAttribute{Computed: true, MarkdownDescription: "Current version of Matomo"},
 		},
 	}
+}
+
+// The API-to-state mappers for clevercloud_matomo follow.
+// See CONTRIBUTING.md § "API → state mapping".
+
+// FromAddon maps the generic add-on view, the only source of region for this
+// resource — the product view carries the name too, but not the region.
+func (m *Matomo) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *Matomo {
+	if m == nil || addon == nil {
+		return m
+	}
+
+	m.Name = pkg.FromStr(addon.Name)
+	m.Region = pkg.FromStr(addon.Region)
+
+	return m
+}
+
+// FromMatomo maps the product view: the access URL and the version.
+func (m *Matomo) FromMatomo(ctx context.Context, api *tmp.Matomo, diags *diag.Diagnostics) *Matomo {
+	if m == nil || api == nil {
+		return m
+	}
+
+	m.Host = pkg.FromStr(api.AccessURL)
+	m.Version = pkg.FromStr(api.Version)
+
+	return m
 }

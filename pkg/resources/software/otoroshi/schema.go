@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
@@ -11,7 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type Otoroshi struct {
@@ -103,4 +106,45 @@ func (r ResourceOtoroshi) Schema(_ context.Context, req resource.SchemaRequest, 
 			},
 		},
 	}
+}
+
+// The API-to-state mappers for clevercloud_otoroshi follow.
+// See CONTRIBUTING.md § "API → state mapping".
+
+// FromAddon maps the generic add-on view, the only source of name, region and
+// creation_date for this resource.
+func (o *Otoroshi) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *Otoroshi {
+	if o == nil || addon == nil {
+		return o
+	}
+
+	o.Name = pkg.FromStr(addon.Name)
+	o.Region = pkg.FromStr(addon.Region)
+	o.CreationDate = pkg.FromI(addon.CreationDate)
+
+	return o
+}
+
+// FromOtoroshi maps the product view: the access URL, the admin credentials and
+// the API client, which only exists once the API is reachable.
+//
+// The entrypoint application the networkgroup sync needs is deliberately not
+// mapped: it is not a state attribute, and the CRUD reads it off the payload
+// itself — a mapper has no side effect.
+func (o *Otoroshi) FromOtoroshi(ctx context.Context, api *tmp.OtoroshiInfo, diags *diag.Diagnostics) *Otoroshi {
+	if o == nil || api == nil {
+		return o
+	}
+
+	if api.API != nil {
+		o.APIURL = pkg.FromStr(api.API.URL)
+		o.APIClientID = pkg.FromStr(api.API.User)
+		o.APIClientSecret = pkg.FromStr(api.API.Secret)
+	}
+
+	o.InitialAdminLogin = pkg.FromStr(api.Initialredentials.User)
+	o.InitialAdminPassword = pkg.FromStr(api.Initialredentials.Passsword)
+	o.URL = pkg.FromStr(api.AccessURL)
+
+	return o
 }

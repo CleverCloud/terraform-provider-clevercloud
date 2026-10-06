@@ -6,12 +6,15 @@ import (
 	"fmt"
 
 	"github.com/apache/pulsar-client-go/pulsaradmin"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type Pulsar struct {
@@ -59,4 +62,58 @@ func (r ResourcePulsar) Schema(_ context.Context, req resource.SchemaRequest, re
 			"retention_period": schema.Int64Attribute{Optional: true, MarkdownDescription: "Pulsar namespace retention policy in minutes"},
 		},
 	}
+}
+
+// The API-to-state mappers for clevercloud_pulsar follow.
+// See CONTRIBUTING.md § "API → state mapping".
+//
+// readRetention is deliberately not here: it talks to the Pulsar admin API, and
+// a mapper makes no API call.
+
+// FromAddon maps the generic add-on view, the only source of name and region
+// for this resource.
+func (p *Pulsar) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *Pulsar {
+	if p == nil || addon == nil {
+		return p
+	}
+
+	p.Name = pkg.FromStr(addon.Name)
+	p.Region = pkg.FromStr(addon.Region)
+
+	return p
+}
+
+// FromPulsar maps the product view: the tenant, namespace and token.
+func (p *Pulsar) FromPulsar(ctx context.Context, api *tmp.Pulsar, diags *diag.Diagnostics) *Pulsar {
+	if p == nil || api == nil {
+		return p
+	}
+
+	p.Tenant = pkg.FromStr(api.Tenant)
+	p.Namespace = pkg.FromStr(api.Namespace)
+	p.Token = pkg.FromStr(api.Token)
+
+	return p
+}
+
+// FromCluster assembles the two endpoint URLs. The scheme follows the presence
+// of a TLS port: the cluster answers both, and only one of each pair is live.
+func (p *Pulsar) FromCluster(ctx context.Context, cluster *tmp.PulsarCluster, diags *diag.Diagnostics) *Pulsar {
+	if p == nil || cluster == nil {
+		return p
+	}
+
+	if cluster.PulsarTLSPort != 0 {
+		p.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar+ssl://%s:%d", cluster.URL, cluster.PulsarTLSPort))
+	} else {
+		p.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar://%s:%d", cluster.URL, cluster.PulsarPort))
+	}
+
+	if cluster.WebTLSPort != 0 {
+		p.HTTPUrl = pkg.FromStr(fmt.Sprintf("https://%s:%d", cluster.URL, cluster.WebTLSPort))
+	} else {
+		p.HTTPUrl = pkg.FromStr(fmt.Sprintf("http://%s:%d", cluster.URL, cluster.WebPort))
+	}
+
+	return p
 }
