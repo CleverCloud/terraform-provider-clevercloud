@@ -102,9 +102,7 @@ func (r *ResourceKubernetesNodegroup) Read(ctx context.Context, req resource.Rea
 	}
 
 	state.ID = identity.ID
-	state.Name = pkg.FromStr(nodegroup.Name)
-	state.Flavor = pkg.FromStr(string(nodegroup.Flavor))
-	state.Size = pkg.FromI(nodegroup.TargetNodeCount)
+	state.FromNodeGroup(ctx, nodegroup, &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }

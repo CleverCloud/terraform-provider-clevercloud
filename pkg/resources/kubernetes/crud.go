@@ -124,7 +124,7 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		resp.Diagnostics.AddWarning("failed to get kubeconfig", kubeConfigRes.Error().Error())
 	} else {
 		kubeconfig := kubeConfigRes.Payload()
-		state.KubeConfig = pkg.FromStr(string(*kubeconfig))
+		state.FromKubeconfig(ctx, (*string)(kubeconfig), &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
@@ -145,16 +145,13 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	k8sInfo := kubernetesRes.Payload()
 	state.ID = identity.ID
-	state.Name = pkg.FromStr(k8sInfo.Name)
-	state.NodeAutoprovisioning = pkg.FromBool(autoprovisioningFeatureEnabled(k8sInfo.Features))
+	state.FromCluster(ctx, kubernetesRes.Payload(), &resp.Diagnostics)
 
 	// Get kubeconfig
 	kubeConfigRes := tmp.GetKubeconfig(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
 	if !kubeConfigRes.HasError() {
-		kubeconfig := kubeConfigRes.Payload()
-		state.KubeConfig = pkg.FromStr(string(*kubeconfig))
+		state.FromKubeconfig(ctx, (*string)(kubeConfigRes.Payload()), &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

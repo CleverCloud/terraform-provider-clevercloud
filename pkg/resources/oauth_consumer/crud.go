@@ -48,8 +48,7 @@ func (r *ResourceOAuthConsumer) Create(ctx context.Context, req resource.CreateR
 		resp.Diagnostics.AddError("failed to get OAuth consumer secret", secretRes.Error().Error())
 		return
 	}
-	secretData := secretRes.Payload()
-	consumer.Secret = pkg.FromStr(secretData.Secret)
+	consumer.FromSecret(ctx, secretRes.Payload(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, consumer)...)
 }
@@ -73,20 +72,14 @@ func (r *ResourceOAuthConsumer) Read(ctx context.Context, req resource.ReadReque
 		resp.Diagnostics.AddError("failed to get OAuth consumer", consumerRes.Error().Error())
 	} else {
 		consumerData := consumerRes.Payload()
-		consumer.Name = pkg.FromStr(consumerData.Name)
-		consumer.Description = pkg.FromStr(consumerData.Description)
-		consumer.BaseURL = pkg.FromStr(consumerData.BaseURL)
-		consumer.LogoURL = pkg.FromStr(consumerData.LogoURL)
-		consumer.WebsiteURL = pkg.FromStr(consumerData.WebsiteURL)
-		consumer.Rights = r.rightsResponseToSet(ctx, consumerData.Rights, &resp.Diagnostics)
+		consumer.FromConsumer(ctx, consumerData, &resp.Diagnostics)
 	}
 
 	secretRes := tmp.GetOAuthConsumerSecret(ctx, r.Client(), r.Organization(), consumer.ID.ValueString())
 	if secretRes.HasError() {
 		resp.Diagnostics.AddError("failed to get OAuth consumer secret", secretRes.Error().Error())
 	} else {
-		secretData := secretRes.Payload()
-		consumer.Secret = pkg.FromStr(secretData.Secret)
+		consumer.FromSecret(ctx, secretRes.Payload(), &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, consumer)...)
@@ -125,12 +118,7 @@ func (r *ResourceOAuthConsumer) Update(ctx context.Context, req resource.UpdateR
 		return
 	} else {
 		updated := res.Payload()
-		state.Name = pkg.FromStr(updated.Name)
-		state.Description = pkg.FromStr(updated.Description)
-		state.BaseURL = pkg.FromStr(updated.BaseURL)
-		state.LogoURL = pkg.FromStr(updated.LogoURL)
-		state.WebsiteURL = pkg.FromStr(updated.WebsiteURL)
-		state.Rights = r.rightsResponseToSet(ctx, updated.Rights, &resp.Diagnostics)
+		state.FromConsumer(ctx, updated, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

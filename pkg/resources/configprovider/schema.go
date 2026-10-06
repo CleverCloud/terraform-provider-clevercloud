@@ -46,12 +46,3 @@ func (appCp ConfigProvider) toEnv(ctx context.Context, diags *diag.Diagnostics) 
 	diags.Append(appCp.Environment.ElementsAs(ctx, &env, false)...)
 	return env
 }
-
-func (appCp *ConfigProvider) fromEnv(ctx context.Context, env map[string]string, diags *diag.Diagnostics) {
-	m, d := types.MapValueFrom(ctx, types.StringType, env)
-	diags.Append(d...)
-	if diags.HasError() {
-		return
-	}
-	appCp.Environment = m
-}

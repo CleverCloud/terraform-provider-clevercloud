@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
@@ -110,22 +109,15 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	addonConfigProvider.Name = pkg.FromStr(addonRes.Payload().Name)
-
 	addonEnvRes := tmp.GetConfigProviderEnv(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString())
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
 	}
 
-	// Convert the environment variables to a map
-	envVars := pkg.Reduce(*addonEnvRes.Payload(), map[string]string{}, func(acc map[string]string, envVar tmp.EnvVar) map[string]string {
-		acc[envVar.Name] = envVar.Value
-		return acc
-	})
-
-	// Update the environment in the state
-	addonConfigProvider.fromEnv(ctx, envVars, &resp.Diagnostics)
+	addonConfigProvider.
+		FromAddon(ctx, addonRes.Payload(), &resp.Diagnostics).
+		FromEnv(ctx, *addonEnvRes.Payload(), &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -179,16 +171,10 @@ func (r *ResourceConfigProvider) Update(ctx context.Context, req resource.Update
 		return
 	}
 
-	envVarsFromAPI := pkg.Reduce(*envRes.Payload(), map[string]string{}, func(acc map[string]string, envVar tmp.EnvVar) map[string]string {
-		acc[envVar.Name] = envVar.Value
-		return acc
-	})
-	m, d := types.MapValueFrom(ctx, types.StringType, envVarsFromAPI)
-	resp.Diagnostics.Append(d...)
+	state.FromEnv(ctx, *envRes.Payload(), &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
-	state.Environment = m
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

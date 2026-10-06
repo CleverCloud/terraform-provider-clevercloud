@@ -16,14 +16,6 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-// apiFeatureToState converts an API feature response to a state Feature
-func apiFeatureToState(apiFeature tmp.AddonProviderFeatureView) Feature {
-	return Feature{
-		Name: pkg.FromStr(apiFeature.Name),
-		Type: pkg.FromStr(apiFeature.Type),
-	}
-}
-
 // apiPlanToState converts an API plan response to a state Plan
 func apiPlanToState(apiPlan tmp.AddonProviderPlanView) Plan {
 	// Convert API features to state features
@@ -406,11 +398,7 @@ func (r *ResourceAddonProvider) Read(ctx context.Context, req resource.ReadReque
 	} else if featuresRes.IsNotFoundError() {
 		ap.Features = []Feature{}
 	} else {
-		apiFeatures := *featuresRes.Payload()
-		ap.Features = make([]Feature, 0, len(apiFeatures))
-		for _, apiFeature := range apiFeatures {
-			ap.Features = append(ap.Features, apiFeatureToState(apiFeature))
-		}
+		ap.FromFeatures(ctx, *featuresRes.Payload(), &resp.Diagnostics)
 	}
 
 	// Read plans from API
@@ -421,11 +409,7 @@ func (r *ResourceAddonProvider) Read(ctx context.Context, req resource.ReadReque
 	} else if plansRes.IsNotFoundError() {
 		ap.Plans = []Plan{}
 	} else {
-		apiPlans := *plansRes.Payload()
-		ap.Plans = make([]Plan, 0, len(apiPlans))
-		for _, apiPlan := range apiPlans {
-			ap.Plans = append(ap.Plans, apiPlanToState(apiPlan))
-		}
+		ap.FromPlans(ctx, *plansRes.Payload(), &resp.Diagnostics)
 	}
 
 	// Keep the current state - the API returns provider info but we can't reconstruct

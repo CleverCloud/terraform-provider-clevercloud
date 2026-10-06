@@ -16,34 +16,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
-func versionFromAPI(v tmp.ElasticsearchVersion) types.Object {
-	ver := Version{
-		Major: pkg.FromI(v.Major),
-		Minor: pkg.FromI(v.Minor),
-		Patch: pkg.FromI(v.Patch),
-	}
-	obj, _ := types.ObjectValueFrom(context.Background(), versionAttrTypes, ver)
-	return obj
-}
-
-func stateFromAPI(cluster *tmp.ElasticsearchCluster, state *ElasticsearchCluster) {
-	state.ID = pkg.FromStr(cluster.ID)
-	state.Name = pkg.FromStr(cluster.Name)
-	state.Username = pkg.FromStr(cluster.Username)
-	state.NetworkGroupID = pkg.FromStr(cluster.NetworkGroupID)
-	state.Version = versionFromAPI(cluster.Version)
-	state.NodeCount = pkg.FromI(int64(len(cluster.Nodes)))
-
-	// The plan is only echoed back per node; every node shares the same one.
-	// Preserve the configured value while the nodes are not listed yet.
-	for _, node := range cluster.Nodes {
-		if node.Plan != nil && node.Plan.Name != "" {
-			state.Plan = pkg.FromStr(node.Plan.Name)
-			break
-		}
-	}
-}
-
 func versionToAPI(ctx context.Context, obj types.Object, diags *diag.Diagnostics) *tmp.ElasticsearchVersionRequest {
 	av := &tmp.ElasticsearchVersionRequest{}
 
@@ -114,17 +86,6 @@ func validatePlanAgainstAvailable(requested string, available []tmp.Elasticsearc
 		names[i] = p.Name
 	}
 	return fmt.Sprintf("plan %q is not available, supported plans: %s", requested, strings.Join(names, ", "))
-}
-
-// applyCredentials copies the connection details returned by /credentials into
-// the state, only overriding fields the endpoint actually populates.
-func applyCredentials(c *tmp.ElasticsearchCredentials, state *ElasticsearchCluster) {
-	if c.Username != "" {
-		state.Username = pkg.FromStr(c.Username)
-	}
-	if c.Password != "" {
-		state.Password = pkg.FromStr(c.Password)
-	}
 }
 
 // fetchEndpoint resolves the cluster endpoint: the cluster has no public
@@ -226,7 +187,7 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 
 	cluster := res.Payload()
 	clusterID := cluster.ID
-	stateFromAPI(cluster, &plan)
+	plan.FromCluster(ctx, cluster, &resp.Diagnostics)
 
 	// Poll until the cluster is deployed and its connection details are
 	// populated. The password lives on a dedicated /credentials endpoint and
@@ -244,7 +205,7 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 			continue
 		}
 		cluster = getRes.Payload()
-		stateFromAPI(cluster, &plan)
+		plan.FromCluster(ctx, cluster, &resp.Diagnostics)
 		tflog.Debug(ctx, "ElasticsearchCluster polling", map[string]any{"status": cluster.DeploymentStatus})
 
 		if cluster.DeploymentStatus != tmp.ElasticsearchClusterDeployed || cluster.NetworkGroupID == "" {
@@ -256,7 +217,7 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 			tflog.Debug(ctx, "ElasticsearchCluster credentials not ready, retrying...", map[string]any{"error": credsRes.Error().Error()})
 			continue
 		}
-		applyCredentials(credsRes.Payload(), &plan)
+		plan.FromCredentials(ctx, credsRes.Payload(), &resp.Diagnostics)
 
 		endpoint, err := r.fetchEndpoint(ctx, cluster.NetworkGroupID, clusterID)
 		if err != nil {
@@ -302,14 +263,14 @@ func (r *ResourceElasticsearchCluster) Read(ctx context.Context, req resource.Re
 	}
 
 	cluster := res.Payload()
-	stateFromAPI(cluster, &state)
+	state.FromCluster(ctx, cluster, &resp.Diagnostics)
 
 	credsRes := tmp.GetElasticsearchClusterCredentials(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if credsRes.HasError() {
 		resp.Diagnostics.AddError("failed to read elasticsearch cluster credentials", credsRes.Error().Error())
 		return
 	}
-	applyCredentials(credsRes.Payload(), &state)
+	state.FromCredentials(ctx, credsRes.Payload(), &resp.Diagnostics)
 
 	if cluster.NetworkGroupID != "" {
 		endpoint, err := r.fetchEndpoint(ctx, cluster.NetworkGroupID, cluster.ID)
