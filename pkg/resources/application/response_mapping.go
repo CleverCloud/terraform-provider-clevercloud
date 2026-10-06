@@ -33,6 +33,7 @@ func (r *Runtime) FromApp(ctx context.Context, res AppResponseProvider, diags *d
 	r.StickySessions = pkg.FromBool(app.StickySessions)
 	r.RedirectHTTPS = pkg.FromBool(ToForceHTTPS(app.ForceHTTPS))
 	r.DeployURL = pkg.FromStr(app.DeployURL)
+	r.Branch = pkg.FromStr(app.Branch)
 
 	// The prior value goes in so the mapper can tell a null set from an empty one.
 	r.VHosts = helper.VHostsFromAPIHosts(ctx, app.Vhosts.AsString(), r.VHosts, diags)

@@ -254,7 +254,7 @@ var blocks = map[string]schema.Block{
 				Optional:            true,
 				Computed:            true,
 				Description:         "The git reference you want to deploy",
-				MarkdownDescription: "Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository. When omitted, the repository HEAD is deployed and this attribute reflects the commit currently running on the application",
+				MarkdownDescription: "Support multiple syntax like `refs/heads/[BRANCH]`, `github_hook` or `[COMMIT]`, when using the special value `github_hook`, we will link the application to the Github repository. When linked, the top-level `branch` attribute selects the branch to deploy and is required. When omitted, the repository HEAD is deployed and this attribute reflects the commit currently running on the application",
 				PlanModifiers: []planmodifier.String{
 					// when not configured, keep the deployed commit from the
 					// state instead of planning "known after apply" every time
