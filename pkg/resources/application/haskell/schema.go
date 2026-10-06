@@ -76,6 +76,10 @@ func (haskellapp Haskell) ToEnv(ctx context.Context, diags *diag.Diagnostics) ma
 }
 
 func (haskellapp *Haskell) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	if haskellapp == nil || env == nil {
+		return
+	}
+
 	haskellapp.StackTarget = pkg.FromStrPtr(env.PopPtr("CC_HASKELL_STACK_TARGET"))
 	haskellapp.StackSetupCommand = pkg.FromStrPtr(env.PopPtr("CC_HASKELL_STACK_SETUP_COMMAND"))
 	haskellapp.StackInstallCommand = pkg.FromStrPtr(env.PopPtr("CC_HASKELL_STACK_INSTALL_COMMAND"))

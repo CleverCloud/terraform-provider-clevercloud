@@ -86,6 +86,10 @@ func (fp *FrankenPHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[st
 }
 
 func (fp *FrankenPHP) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	if fp == nil || env == nil {
+		return
+	}
+
 	pkg.SetBool(&fp.DevDependencies, env.PopPtr("CC_PHP_DEV_DEPENDENCIES"), "install")
 
 	fp.Integrations = attributes.FromEnvIntegrations(ctx, env, fp.Integrations, diags)

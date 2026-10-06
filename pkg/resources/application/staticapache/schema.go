@@ -66,6 +66,10 @@ func (plan *StaticApache) ToEnv(ctx context.Context, diags *diag.Diagnostics) ma
 }
 
 func (s *StaticApache) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	if s == nil || env == nil {
+		return
+	}
+
 	s.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 
 	s.Integrations = attributes.FromEnvIntegrations(ctx, env, s.Integrations, diags)

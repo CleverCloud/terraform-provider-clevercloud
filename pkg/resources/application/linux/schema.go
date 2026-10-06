@@ -90,6 +90,10 @@ func (l *Linux) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]s
 }
 
 func (l *Linux) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	if l == nil || env == nil {
+		return
+	}
+
 	l.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 	l.RunCommand = pkg.FromStrPtr(env.PopPtr("CC_RUN_COMMAND"))
 	l.BuildCommand = pkg.FromStrPtr(env.PopPtr("CC_BUILD_COMMAND"))

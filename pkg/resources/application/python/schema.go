@@ -92,6 +92,10 @@ func (py Python) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 }
 
 func (py *Python) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	if py == nil || env == nil {
+		return
+	}
+
 	py.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 	py.PythonVersion = pkg.FromStrPtr(env.PopPtr("CC_PYTHON_VERSION"))
 	py.PipRequirements = pkg.FromStrPtr(env.PopPtr("CC_PIP_REQUIREMENTS_FILE"))
