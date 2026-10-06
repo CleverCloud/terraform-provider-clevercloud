@@ -50,25 +50,21 @@ func (r ResourceMatomo) Schema(_ context.Context, req resource.SchemaRequest, re
 
 // FromAddon maps the generic add-on view, the only source of region for this
 // resource — the product view carries the name too, but not the region.
-func (m *Matomo) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *Matomo {
+func (m *Matomo) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
 	if m == nil || addon == nil {
-		return m
+		return
 	}
 
 	m.Name = pkg.FromStr(addon.Name)
 	m.Region = pkg.FromStr(addon.Region)
-
-	return m
 }
 
 // FromMatomo maps the product view: the access URL and the version.
-func (m *Matomo) FromMatomo(ctx context.Context, api *tmp.Matomo, diags *diag.Diagnostics) *Matomo {
+func (m *Matomo) FromMatomo(ctx context.Context, api *tmp.Matomo, diags *diag.Diagnostics) {
 	if m == nil || api == nil {
-		return m
+		return
 	}
 
 	m.Host = pkg.FromStr(api.AccessURL)
 	m.Version = pkg.FromStr(api.Version)
-
-	return m
 }

@@ -28,9 +28,8 @@ func TestCellarFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &cellar.Cellar{}
 
-	state.
-		FromAddon(t.Context(), apiAddon(), &diags).
-		FromEnv(t.Context(), apiEnv(), &diags)
+	state.FromAddon(t.Context(), apiAddon(), &diags)
+	state.FromEnv(t.Context(), apiEnv(), &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -60,9 +59,8 @@ func TestCellarFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &cellar.Cellar{Host: types.StringValue("kept-host")}
 
-	state.
-		FromAddon(t.Context(), nil, &diags).
-		FromEnv(t.Context(), nil, &diags)
+	state.FromAddon(t.Context(), nil, &diags)
+	state.FromEnv(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

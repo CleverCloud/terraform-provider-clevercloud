@@ -41,14 +41,13 @@ func TestMySQLFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &mysql.MySQL{}
 
-	state.
-		FromAddon(t.Context(), apiAddon(), &diags).
-		FromMySQL(t.Context(), apiMySQL(
-			tmp.MySQLFeature{Name: "do-backup", Enabled: true},
-			tmp.MySQLFeature{Name: "encryption", Enabled: true},
-			tmp.MySQLFeature{Name: "direct-host-only", Enabled: true},
-			tmp.MySQLFeature{Name: "skip-log-bin", Enabled: true},
-		), &diags)
+	state.FromAddon(t.Context(), apiAddon(), &diags)
+	state.FromMySQL(t.Context(), apiMySQL(
+		tmp.MySQLFeature{Name: "do-backup", Enabled: true},
+		tmp.MySQLFeature{Name: "encryption", Enabled: true},
+		tmp.MySQLFeature{Name: "direct-host-only", Enabled: true},
+		tmp.MySQLFeature{Name: "skip-log-bin", Enabled: true},
+	), &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -162,9 +161,8 @@ func TestMySQLFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &mysql.MySQL{Host: types.StringValue("kept-host")}
 
-	state.
-		FromAddon(t.Context(), nil, &diags).
-		FromMySQL(t.Context(), nil, &diags)
+	state.FromAddon(t.Context(), nil, &diags)
+	state.FromMySQL(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

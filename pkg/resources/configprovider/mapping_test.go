@@ -13,9 +13,8 @@ func TestConfigProviderFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &configprovider.ConfigProvider{}
 
-	state.
-		FromAddon(t.Context(), &tmp.AddonResponse{Name: "tf-test-cp"}, &diags).
-		FromEnv(t.Context(), tmp.EnvVars{{Name: "SOME_VAR", Value: "value"}}, &diags)
+	state.FromAddon(t.Context(), &tmp.AddonResponse{Name: "tf-test-cp"}, &diags)
+	state.FromEnv(t.Context(), tmp.EnvVars{{Name: "SOME_VAR", Value: "value"}}, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -43,9 +42,8 @@ func TestConfigProviderFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &configprovider.ConfigProvider{Name: types.StringValue("kept-name")}
 
-	state.
-		FromAddon(t.Context(), nil, &diags).
-		FromEnv(t.Context(), nil, &diags)
+	state.FromAddon(t.Context(), nil, &diags)
+	state.FromEnv(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

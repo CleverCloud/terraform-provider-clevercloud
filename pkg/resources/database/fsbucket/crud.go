@@ -93,9 +93,8 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddError("failed to get addon env", addonEnvRes.Error().Error())
 		return
 	}
-	fsbucket.
-		FromAddon(ctx, addon, &resp.Diagnostics).
-		FromEnv(ctx, *addonEnvRes.Payload(), &resp.Diagnostics)
+	fsbucket.FromAddon(ctx, addon, &resp.Diagnostics)
+	fsbucket.FromEnv(ctx, *addonEnvRes.Payload(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, fsbucket)...)
 }

@@ -69,11 +69,9 @@ func (r ResourceDrain[T]) Schema(_ context.Context, req resource.SchemaRequest, 
 type DrainAttributes interface {
 	Attributes() map[string]schema.Attribute
 	ToRecipient() []byte
-	// FromDrain maps the API payload onto the state. It is the only mapper in
-	// the provider that does not return its receiver: drains are consumed
-	// polymorphically through this interface, and an interface method cannot
-	// return the concrete type, so there is nothing to chain onto. Every other
-	// rule of the convention applies — see CONTRIBUTING.md.
+	// FromDrain maps the API payload onto the state, on the convention every
+	// mapper in the provider follows — see CONTRIBUTING.md. It sits on this
+	// interface because the drains are consumed polymorphically through it.
 	FromDrain(ctx context.Context, drain *tmp.Drain, diags *diag.Diagnostics)
 	GetDrain() Drain
 	SetDrain(common Drain)

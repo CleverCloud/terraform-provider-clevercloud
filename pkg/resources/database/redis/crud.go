@@ -116,9 +116,8 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	rd.
-		FromAddon(ctx, addonRD, &resp.Diagnostics).
-		FromEnv(ctx, *envRes.Payload(), &resp.Diagnostics)
+	rd.FromAddon(ctx, addonRD, &resp.Diagnostics)
+	rd.FromEnv(ctx, *envRes.Payload(), &resp.Diagnostics)
 
 	rd.Networkgroups = resources.ReadNetworkGroups(ctx, r, rd.ID.ValueString(), &resp.Diagnostics)
 

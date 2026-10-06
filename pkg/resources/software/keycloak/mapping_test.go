@@ -29,9 +29,8 @@ func TestKeycloakFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &keycloak.Keycloak{}
 
-	state.
-		FromAddon(t.Context(), &tmp.AddonResponse{Name: "tf-test-keycloak", Region: "par"}, &diags).
-		FromKeycloak(t.Context(), apiKeycloak(), &diags)
+	state.FromAddon(t.Context(), &tmp.AddonResponse{Name: "tf-test-keycloak", Region: "par"}, &diags)
+	state.FromKeycloak(t.Context(), apiKeycloak(), &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -67,9 +66,8 @@ func TestKeycloakFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &keycloak.Keycloak{Host: types.StringValue("kept-host")}
 
-	state.
-		FromAddon(t.Context(), nil, &diags).
-		FromKeycloak(t.Context(), nil, &diags)
+	state.FromAddon(t.Context(), nil, &diags)
+	state.FromKeycloak(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

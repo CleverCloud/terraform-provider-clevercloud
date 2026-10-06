@@ -59,14 +59,12 @@ func (r ResourceKubernetesNodegroup) Schema(_ context.Context, req resource.Sche
 //
 // id is deliberately not mapped: this resource keeps it in the Terraform
 // identity, which is its source of truth, and the CRUD copies it from there.
-func (ng *KubernetesNodegroup) FromNodeGroup(ctx context.Context, api *models.NodeGroup, diags *diag.Diagnostics) *KubernetesNodegroup {
+func (ng *KubernetesNodegroup) FromNodeGroup(ctx context.Context, api *models.NodeGroup, diags *diag.Diagnostics) {
 	if ng == nil || api == nil {
-		return ng
+		return
 	}
 
 	ng.Name = pkg.FromStr(api.Name)
 	ng.Flavor = pkg.FromStr(string(api.Flavor))
 	ng.Size = pkg.FromI(api.TargetNodeCount)
-
-	return ng
 }

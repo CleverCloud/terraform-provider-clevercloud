@@ -13,9 +13,8 @@ func TestMatomoFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &matomo.Matomo{}
 
-	state.
-		FromAddon(t.Context(), &tmp.AddonResponse{Name: "tf-test-matomo", Region: "par"}, &diags).
-		FromMatomo(t.Context(), &tmp.Matomo{AccessURL: "https://matomo.example.com", Version: "5.1"}, &diags)
+	state.FromAddon(t.Context(), &tmp.AddonResponse{Name: "tf-test-matomo", Region: "par"}, &diags)
+	state.FromMatomo(t.Context(), &tmp.Matomo{AccessURL: "https://matomo.example.com", Version: "5.1"}, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -46,9 +45,8 @@ func TestMatomoFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &matomo.Matomo{Host: types.StringValue("kept-host")}
 
-	state.
-		FromAddon(t.Context(), nil, &diags).
-		FromMatomo(t.Context(), nil, &diags)
+	state.FromAddon(t.Context(), nil, &diags)
+	state.FromMatomo(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

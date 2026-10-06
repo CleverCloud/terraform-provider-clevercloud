@@ -121,9 +121,8 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 		resp.Diagnostics.AddError("failed to get MongoDB addon", addonRes.Error().Error())
 		return
 	}
-	mg.
-		FromAddon(ctx, addonRes.Payload(), &resp.Diagnostics).
-		FromMongoDB(ctx, addonMG, &resp.Diagnostics)
+	mg.FromAddon(ctx, addonRes.Payload(), &resp.Diagnostics)
+	mg.FromMongoDB(ctx, addonMG, &resp.Diagnostics)
 
 	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)

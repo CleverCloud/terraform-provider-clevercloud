@@ -110,15 +110,13 @@ func (r ResourceKeycloak) ModifyPlan(ctx context.Context, req resource.ModifyPla
 
 // FromAddon maps the generic add-on view, the only source of name and region
 // for this resource.
-func (kc *Keycloak) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *Keycloak {
+func (kc *Keycloak) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
 	if kc == nil || addon == nil {
-		return kc
+		return
 	}
 
 	kc.Name = pkg.FromStr(addon.Name)
 	kc.Region = pkg.FromStr(addon.Region)
-
-	return kc
 }
 
 // FromKeycloak maps the product view: the access URL, the initial credentials,
@@ -127,9 +125,9 @@ func (kc *Keycloak) FromAddon(ctx context.Context, addon *tmp.AddonResponse, dia
 // access_domain lives in the payload's own env map rather than in a field of its
 // own, which is why this resource has no FromEnv: there is no add-on env call to
 // make, the variable arrives inside the product view.
-func (kc *Keycloak) FromKeycloak(ctx context.Context, api *models.Keycloak, diags *diag.Diagnostics) *Keycloak {
+func (kc *Keycloak) FromKeycloak(ctx context.Context, api *models.Keycloak, diags *diag.Diagnostics) {
 	if kc == nil || api == nil {
-		return kc
+		return
 	}
 
 	kc.Host = pkg.FromStr(api.AccessURL)
@@ -138,6 +136,4 @@ func (kc *Keycloak) FromKeycloak(ctx context.Context, api *models.Keycloak, diag
 	kc.Version = pkg.FromStr(api.Version)
 	kc.AccessDomain = pkg.FromStr(api.EnvVars["CC_KEYCLOAK_HOSTNAME"])
 	kc.FSBucketID = types.StringPointerValue(api.Resources.FsbucketID)
-
-	return kc
 }

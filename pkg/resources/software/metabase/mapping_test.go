@@ -13,9 +13,8 @@ func TestMetabaseFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &metabase.Metabase{}
 
-	state.
-		FromAddon(t.Context(), &tmp.AddonResponse{Name: "tf-test-metabase", Region: "par"}, &diags).
-		FromMetabase(t.Context(), &tmp.Metabase{AccessURL: "https://metabase.example.com"}, &diags)
+	state.FromAddon(t.Context(), &tmp.AddonResponse{Name: "tf-test-metabase", Region: "par"}, &diags)
+	state.FromMetabase(t.Context(), &tmp.Metabase{AccessURL: "https://metabase.example.com"}, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -44,9 +43,8 @@ func TestMetabaseFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &metabase.Metabase{Host: types.StringValue("kept-host")}
 
-	state.
-		FromAddon(t.Context(), nil, &diags).
-		FromMetabase(t.Context(), nil, &diags)
+	state.FromAddon(t.Context(), nil, &diags)
+	state.FromMetabase(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

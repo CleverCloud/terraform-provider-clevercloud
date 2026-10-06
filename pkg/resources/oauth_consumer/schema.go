@@ -83,9 +83,9 @@ func (r ResourceOAuthConsumer) Schema(_ context.Context, req resource.SchemaRequ
 // FromConsumer maps the consumer view, rights included.
 //
 // The secret is not here: it comes from a separate endpoint, hence FromSecret.
-func (c *OAuthConsumer) FromConsumer(ctx context.Context, api *tmp.OAuthConsumerResponse, diags *diag.Diagnostics) *OAuthConsumer {
+func (c *OAuthConsumer) FromConsumer(ctx context.Context, api *tmp.OAuthConsumerResponse, diags *diag.Diagnostics) {
 	if c == nil || api == nil {
-		return c
+		return
 	}
 
 	c.Name = pkg.FromStr(api.Name)
@@ -94,17 +94,13 @@ func (c *OAuthConsumer) FromConsumer(ctx context.Context, api *tmp.OAuthConsumer
 	c.LogoURL = pkg.FromStr(api.LogoURL)
 	c.WebsiteURL = pkg.FromStr(api.WebsiteURL)
 	c.Rights = rightsResponseToSet(ctx, api.Rights, diags)
-
-	return c
 }
 
 // FromSecret maps the separate secret endpoint.
-func (c *OAuthConsumer) FromSecret(ctx context.Context, api *tmp.OAuthConsumerSecretResponse, diags *diag.Diagnostics) *OAuthConsumer {
+func (c *OAuthConsumer) FromSecret(ctx context.Context, api *tmp.OAuthConsumerSecretResponse, diags *diag.Diagnostics) {
 	if c == nil || api == nil {
-		return c
+		return
 	}
 
 	c.Secret = pkg.FromStr(api.Secret)
-
-	return c
 }

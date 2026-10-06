@@ -48,24 +48,20 @@ func (r ResourceMetabase) Schema(_ context.Context, req resource.SchemaRequest, 
 
 // FromAddon maps the generic add-on view, the only source of region for this
 // resource — the product view carries the name too, but not the region.
-func (mb *Metabase) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *Metabase {
+func (mb *Metabase) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
 	if mb == nil || addon == nil {
-		return mb
+		return
 	}
 
 	mb.Name = pkg.FromStr(addon.Name)
 	mb.Region = pkg.FromStr(addon.Region)
-
-	return mb
 }
 
 // FromMetabase maps the product view: the access URL.
-func (mb *Metabase) FromMetabase(ctx context.Context, api *tmp.Metabase, diags *diag.Diagnostics) *Metabase {
+func (mb *Metabase) FromMetabase(ctx context.Context, api *tmp.Metabase, diags *diag.Diagnostics) {
 	if mb == nil || api == nil {
-		return mb
+		return
 	}
 
 	mb.Host = pkg.FromStr(api.AccessURL)
-
-	return mb
 }

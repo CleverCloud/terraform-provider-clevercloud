@@ -185,9 +185,9 @@ func versionFromAPI(v tmp.ElasticsearchVersion) types.Object {
 }
 
 // FromCluster maps the cluster view.
-func (c *ElasticsearchCluster) FromCluster(ctx context.Context, api *tmp.ElasticsearchCluster, diags *diag.Diagnostics) *ElasticsearchCluster {
+func (c *ElasticsearchCluster) FromCluster(ctx context.Context, api *tmp.ElasticsearchCluster, diags *diag.Diagnostics) {
 	if c == nil || api == nil {
-		return c
+		return
 	}
 
 	c.ID = pkg.FromStr(api.ID)
@@ -205,8 +205,6 @@ func (c *ElasticsearchCluster) FromCluster(ctx context.Context, api *tmp.Elastic
 			break
 		}
 	}
-
-	return c
 }
 
 // FromCredentials maps the credentials call.
@@ -214,9 +212,9 @@ func (c *ElasticsearchCluster) FromCluster(ctx context.Context, api *tmp.Elastic
 // The API answers them empty while the cluster boots, and the password is never
 // returned again afterwards, so an empty value must leave state alone rather
 // than clear a credential the practitioner still needs.
-func (c *ElasticsearchCluster) FromCredentials(ctx context.Context, api *tmp.ElasticsearchCredentials, diags *diag.Diagnostics) *ElasticsearchCluster {
+func (c *ElasticsearchCluster) FromCredentials(ctx context.Context, api *tmp.ElasticsearchCredentials, diags *diag.Diagnostics) {
 	if c == nil || api == nil {
-		return c
+		return
 	}
 
 	if api.Username != "" {
@@ -225,6 +223,4 @@ func (c *ElasticsearchCluster) FromCredentials(ctx context.Context, api *tmp.Ela
 	if api.Password != "" {
 		c.Password = pkg.FromStr(api.Password)
 	}
-
-	return c
 }

@@ -18,16 +18,21 @@ func (s *T) From<APIType>(ctx context.Context, payload *<APIType>, diags *diag.D
 
 ### The rules
 
-1. **Pointer receiver, return the receiver**, so mappers chain. The value from
-   `helper.StateFrom[T]` is addressable, so the chain reads naturally:
+1. **Pointer receiver, no return value.** A mapper fills the struct it is called
+   on; there is nothing to hand back:
 
    ```go
    state := helper.StateFrom[Elasticsearch](ctx, req.State, &resp.Diagnostics)
 
-   state.
-       FromAddon(ctx, addonRes.Payload(), &resp.Diagnostics).
-       FromElasticsearch(ctx, esRes.Payload(), &resp.Diagnostics)
+   state.FromAddon(ctx, addonRes.Payload(), &resp.Diagnostics)
+   state.FromElasticsearch(ctx, esRes.Payload(), &resp.Diagnostics)
    ```
+
+   Returning the receiver so the calls could chain was tried and dropped: it cost
+   a `return` line per mapper and a blank line before it, bought one saved
+   repetition of a short variable name, and could not apply to the two families
+   reached through an interface (see below) — so the convention was uniform
+   nowhere and shorter nowhere that mattered.
 
 2. **Name the method after the API response type, never after the endpoint**:
    `FromAddon(*tmp.AddonResponse)`, `FromMySQL(*tmp.MySQL)`, `FromDrain(tmp.Drain)`.
@@ -68,18 +73,13 @@ func (s *T) From<APIType>(ctx context.Context, payload *<APIType>, diags *diag.D
    a file per resource buys a header and an import block and little else, and
    keeping each mapper beside its opposite direction is worth more.
 
-**Rule 1 has one structural exception: mappers reached through an interface.**
-`ResourceDrain[T]` is generic over `DrainAttributes`, and `application.Read[T]`
-is generic over `RuntimePlan`; both reach their mapper through that interface,
-and an interface method cannot return the concrete type. So `FromDrain` and the
-runtimes' `FromEnv` return nothing — there is nothing to chain onto, and each of
-those structs has exactly one mapper anyway. They also stay where they are: the
-drains' next to their seven structs in `drain/schema.go`, each runtime's beside
-its own `ToEnv`. Every other rule applies to them unchanged.
-
-In practice the fluent form is what the add-on and software resources use, where
-two or three payloads land in one state struct and the mapper is called on a
-concrete type.
+Two families are reached through an interface rather than on their concrete
+type: `ResourceDrain[T]` is generic over `DrainAttributes`, and
+`application.Read[T]` over `RuntimePlan`. That is what settled rule 1 — an
+interface method cannot return the concrete type, so a chaining convention could
+never have covered them. They keep their mappers where they are: the drains' next
+to their seven structs in `drain/schema.go`, each runtime's beside its own
+`ToEnv`.
 
 ### Which absent-value policy
 

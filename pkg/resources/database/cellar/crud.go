@@ -93,9 +93,8 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
 	}
-	cellar.
-		FromAddon(ctx, addon, &resp.Diagnostics).
-		FromEnv(ctx, *addonEnvRes.Payload(), &resp.Diagnostics)
+	cellar.FromAddon(ctx, addon, &resp.Diagnostics)
+	cellar.FromEnv(ctx, *addonEnvRes.Payload(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
 }

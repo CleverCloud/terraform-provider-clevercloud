@@ -115,9 +115,8 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	addonConfigProvider.
-		FromAddon(ctx, addonRes.Payload(), &resp.Diagnostics).
-		FromEnv(ctx, *addonEnvRes.Payload(), &resp.Diagnostics)
+	addonConfigProvider.FromAddon(ctx, addonRes.Payload(), &resp.Diagnostics)
+	addonConfigProvider.FromEnv(ctx, *addonEnvRes.Payload(), &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}

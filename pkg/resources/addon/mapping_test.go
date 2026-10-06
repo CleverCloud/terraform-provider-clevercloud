@@ -22,9 +22,8 @@ func TestAddonFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &addon.Addon{}
 
-	state.
-		FromAddon(t.Context(), apiAddon("S"), &diags).
-		FromEnv(t.Context(), tmp.EnvVars{{Name: "SOME_VAR", Value: "value"}}, &diags)
+	state.FromAddon(t.Context(), apiAddon("S"), &diags)
+	state.FromEnv(t.Context(), tmp.EnvVars{{Name: "SOME_VAR", Value: "value"}}, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -77,9 +76,8 @@ func TestAddonFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	state := &addon.Addon{}
 	state.Name = types.StringValue("kept-name")
 
-	state.
-		FromAddon(t.Context(), nil, &diags).
-		FromEnv(t.Context(), nil, &diags)
+	state.FromAddon(t.Context(), nil, &diags)
+	state.FromEnv(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

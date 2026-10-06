@@ -58,27 +58,23 @@ func (r ResourceMateriaKV) Schema(_ context.Context, req resource.SchemaRequest,
 // The Materia payload carries neither name nor region — they live on the add-on
 // itself — so this is the only source of name, region and creation_date. Without
 // it an import leaves name null and the required attribute fails the plan (#447).
-func (kv *MateriaKV) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *MateriaKV {
+func (kv *MateriaKV) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
 	if kv == nil || addon == nil {
-		return kv
+		return
 	}
 
 	kv.Name = pkg.FromStr(addon.Name)
 	kv.Region = pkg.FromStr(addon.Region)
 	kv.CreationDate = pkg.FromI(addon.CreationDate)
-
-	return kv
 }
 
 // FromMateriaDB maps the product view: the connection details.
-func (kv *MateriaKV) FromMateriaDB(ctx context.Context, api *models.MateriaDB, diags *diag.Diagnostics) *MateriaKV {
+func (kv *MateriaKV) FromMateriaDB(ctx context.Context, api *models.MateriaDB, diags *diag.Diagnostics) {
 	if kv == nil || api == nil {
-		return kv
+		return
 	}
 
 	kv.Host = pkg.FromStr(api.Host)
 	kv.Port = pkg.FromI(int64(api.Port))
 	kv.Token = pkg.FromStr(api.Token)
-
-	return kv
 }

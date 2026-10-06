@@ -75,9 +75,9 @@ var validateLabel = pkg.NewStringValidator(
 // For the optional fields (description, tags), the rule is:
 //   - state null + API empty → keep null (user never set it, nothing to sync)
 //   - otherwise              → sync from API (state was set, or API returned a value)
-func (ng *Networkgroup) FromNetworkGroup(ctx context.Context, api *models.NetworkGroup1, diags *diag.Diagnostics) *Networkgroup {
+func (ng *Networkgroup) FromNetworkGroup(ctx context.Context, api *models.NetworkGroup1, diags *diag.Diagnostics) {
 	if ng == nil || api == nil {
-		return ng
+		return
 	}
 
 	ng.Name = pkg.FromStrMaxLen(api.Label)
@@ -93,6 +93,4 @@ func (ng *Networkgroup) FromNetworkGroup(ctx context.Context, api *models.Networ
 	}
 
 	ng.Network = pkg.FromStr(api.NetworkIP)
-
-	return ng
 }

@@ -28,12 +28,11 @@ func TestMongoDBFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &mongodb.MongoDB{}
 
-	state.
-		FromAddon(t.Context(), apiAddon(), &diags).
-		FromMongoDB(t.Context(), apiMongoDB(
-			tmp.MongoDBFeature{Name: "encryption", Enabled: true},
-			tmp.MongoDBFeature{Name: "direct-host-only", Enabled: true},
-		), &diags)
+	state.FromAddon(t.Context(), apiAddon(), &diags)
+	state.FromMongoDB(t.Context(), apiMongoDB(
+		tmp.MongoDBFeature{Name: "encryption", Enabled: true},
+		tmp.MongoDBFeature{Name: "direct-host-only", Enabled: true},
+	), &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -92,9 +91,8 @@ func TestMongoDBFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &mongodb.MongoDB{Host: types.StringValue("kept-host")}
 
-	state.
-		FromAddon(t.Context(), nil, &diags).
-		FromMongoDB(t.Context(), nil, &diags)
+	state.FromAddon(t.Context(), nil, &diags)
+	state.FromMongoDB(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

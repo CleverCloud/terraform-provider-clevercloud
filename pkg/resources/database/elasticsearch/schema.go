@@ -199,16 +199,14 @@ func (r *ResourceElasticsearch) ModifyPlan(ctx context.Context, req resource.Mod
 
 // FromAddon maps the generic add-on view. It is the only source of name, plan
 // and region: tmp.Elasticsearch carries none of them.
-func (es *Elasticsearch) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *Elasticsearch {
+func (es *Elasticsearch) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
 	if es == nil || addon == nil {
-		return es
+		return
 	}
 
 	es.Name = pkg.FromStr(addon.Name)
 	es.Plan = pkg.FromStr(addon.Plan.Slug)
 	es.Region = pkg.FromStr(addon.Region)
-
-	return es
 }
 
 // FromElasticsearch maps the product view: the toggles, the credentials each one
@@ -219,9 +217,9 @@ func (es *Elasticsearch) FromAddon(ctx context.Context, addon *tmp.AddonResponse
 // import their defaults create a diff, and the next plan destroys and recreates
 // the add-on. They are therefore assigned on every read, absent from the API or
 // not (#452).
-func (es *Elasticsearch) FromElasticsearch(ctx context.Context, api *tmp.Elasticsearch, diags *diag.Diagnostics) *Elasticsearch {
+func (es *Elasticsearch) FromElasticsearch(ctx context.Context, api *tmp.Elasticsearch, diags *diag.Diagnostics) {
 	if es == nil || api == nil {
-		return es
+		return
 	}
 
 	es.Host = pkg.FromStr(api.Host)
@@ -279,6 +277,4 @@ func (es *Elasticsearch) FromElasticsearch(ctx context.Context, api *tmp.Elastic
 	if len(api.Plugins) > 0 {
 		es.Plugins = pkg.FromSetString(api.Plugins, diags)
 	}
-
-	return es
 }

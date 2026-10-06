@@ -25,11 +25,10 @@ func TestOtoroshiFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &otoroshi.Otoroshi{}
 
-	state.
-		FromAddon(t.Context(), &tmp.AddonResponse{
-			Name: "tf-test-otoroshi", Region: "par", CreationDate: 1759000000000,
-		}, &diags).
-		FromOtoroshi(t.Context(), apiOtoroshi(), &diags)
+	state.FromAddon(t.Context(), &tmp.AddonResponse{
+		Name: "tf-test-otoroshi", Region: "par", CreationDate: 1759000000000,
+	}, &diags)
+	state.FromOtoroshi(t.Context(), apiOtoroshi(), &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -72,9 +71,8 @@ func TestOtoroshiFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &otoroshi.Otoroshi{URL: types.StringValue("kept-url")}
 
-	state.
-		FromAddon(t.Context(), nil, &diags).
-		FromOtoroshi(t.Context(), nil, &diags)
+	state.FromAddon(t.Context(), nil, &diags)
+	state.FromOtoroshi(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

@@ -282,9 +282,9 @@ func TestAccMySQL_Import(t *testing.T) {
 					addonID = res.Payload().ID
 					realID = res.Payload().RealID
 				},
-				Config:       providerBlock.Append(mysqlBlock).String(),
-				ResourceName: fullName,
-				ImportState:  true,
+				Config:             providerBlock.Append(mysqlBlock).String(),
+				ResourceName:       fullName,
+				ImportState:        true,
 				ImportStatePersist: true,
 				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
 					return realID, nil

@@ -41,17 +41,15 @@ func (r ResourceRedis) Schema(_ context.Context, req resource.SchemaRequest, res
 
 // FromAddon maps the generic add-on view, the only source of name, plan, region
 // and creation_date for this resource.
-func (rd *Redis) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *Redis {
+func (rd *Redis) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
 	if rd == nil || addon == nil {
-		return rd
+		return
 	}
 
 	rd.Name = pkg.FromStr(addon.Name)
 	rd.Plan = pkg.FromStr(addon.Plan.Slug)
 	rd.Region = pkg.FromStr(addon.Region)
 	rd.CreationDate = pkg.FromI(addon.CreationDate)
-
-	return rd
 }
 
 // FromEnv maps the connection details, which Redis only exposes as environment
@@ -59,9 +57,9 @@ func (rd *Redis) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags 
 //
 // Non-destructive, unlike the application runtimes' FromEnv: an add-on has no
 // catch-all `environment` attribute for a residue, so there is nothing to pop.
-func (rd *Redis) FromEnv(ctx context.Context, env tmp.EnvVars, diags *diag.Diagnostics) *Redis {
+func (rd *Redis) FromEnv(ctx context.Context, env tmp.EnvVars, diags *diag.Diagnostics) {
 	if rd == nil || env == nil {
-		return rd
+		return
 	}
 
 	vars := env.Map()
@@ -76,6 +74,4 @@ func (rd *Redis) FromEnv(ctx context.Context, env tmp.EnvVars, diags *diag.Diagn
 	} else {
 		rd.Port = types.Int64Null()
 	}
-
-	return rd
 }

@@ -39,13 +39,12 @@ func TestElasticsearchFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &elasticsearch.Elasticsearch{}
 
-	state.
-		FromAddon(t.Context(), apiAddon(), &diags).
-		FromElasticsearch(t.Context(), apiElasticsearch(
-			tmp.ElasticsearchFeature{Name: "encryption", Enabled: true},
-			tmp.ElasticsearchFeature{Name: "kibana", Enabled: true},
-			tmp.ElasticsearchFeature{Name: "apm", Enabled: true},
-		), &diags)
+	state.FromAddon(t.Context(), apiAddon(), &diags)
+	state.FromElasticsearch(t.Context(), apiElasticsearch(
+		tmp.ElasticsearchFeature{Name: "encryption", Enabled: true},
+		tmp.ElasticsearchFeature{Name: "kibana", Enabled: true},
+		tmp.ElasticsearchFeature{Name: "apm", Enabled: true},
+	), &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -161,9 +160,8 @@ func TestElasticsearchFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &elasticsearch.Elasticsearch{Host: types.StringValue("kept-host")}
 
-	state.
-		FromAddon(t.Context(), nil, &diags).
-		FromElasticsearch(t.Context(), nil, &diags)
+	state.FromAddon(t.Context(), nil, &diags)
+	state.FromElasticsearch(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

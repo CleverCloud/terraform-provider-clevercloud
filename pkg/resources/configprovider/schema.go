@@ -56,29 +56,25 @@ func (appCp ConfigProvider) toEnv(ctx context.Context, diags *diag.Diagnostics) 
 // The config-provider env endpoint carries no name, so this is the only source
 // of it. Without it an import left the required attribute null and the plan
 // failed (#447).
-func (cp *ConfigProvider) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *ConfigProvider {
+func (cp *ConfigProvider) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
 	if cp == nil || addon == nil {
-		return cp
+		return
 	}
 
 	cp.Name = pkg.FromStr(addon.Name)
-
-	return cp
 }
 
 // FromEnv maps the configured variables, which are this resource's whole point.
 // Non-destructive — see CONTRIBUTING.md.
-func (cp *ConfigProvider) FromEnv(ctx context.Context, env tmp.EnvVars, diags *diag.Diagnostics) *ConfigProvider {
+func (cp *ConfigProvider) FromEnv(ctx context.Context, env tmp.EnvVars, diags *diag.Diagnostics) {
 	if cp == nil || env == nil {
-		return cp
+		return
 	}
 
 	environment, d := types.MapValueFrom(ctx, types.StringType, env.Map())
 	diags.Append(d...)
 	if d.HasError() {
-		return cp
+		return
 	}
 	cp.Environment = environment
-
-	return cp
 }

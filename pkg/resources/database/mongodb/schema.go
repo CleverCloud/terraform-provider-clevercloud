@@ -63,17 +63,15 @@ func (r ResourceMongoDB) Schema(_ context.Context, req resource.SchemaRequest, r
 
 // FromAddon maps the generic add-on view. It is the only source of name, plan,
 // region and creation_date: tmp.MongoDB carries none of them.
-func (mg *MongoDB) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *MongoDB {
+func (mg *MongoDB) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
 	if mg == nil || addon == nil {
-		return mg
+		return
 	}
 
 	mg.Name = pkg.FromStr(addon.Name)
 	mg.Plan = pkg.FromStr(addon.Plan.Slug)
 	mg.Region = pkg.FromStr(addon.Region)
 	mg.CreationDate = pkg.FromI(addon.CreationDate)
-
-	return mg
 }
 
 // FromMongoDB maps the product view: connection details and the feature toggles.
@@ -81,9 +79,9 @@ func (mg *MongoDB) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diag
 // The feature list is sparse and both toggles are Computed, so an absent one
 // resolves to its fallback and never to a null — a null is what left an
 // imported add-on with a non-empty plan (#404).
-func (mg *MongoDB) FromMongoDB(ctx context.Context, api *tmp.MongoDB, diags *diag.Diagnostics) *MongoDB {
+func (mg *MongoDB) FromMongoDB(ctx context.Context, api *tmp.MongoDB, diags *diag.Diagnostics) {
 	if mg == nil || api == nil {
-		return mg
+		return
 	}
 
 	mg.Host = pkg.FromStr(api.Host)
@@ -98,6 +96,4 @@ func (mg *MongoDB) FromMongoDB(ctx context.Context, api *tmp.MongoDB, diags *dia
 	})
 	features.Or(&mg.Encryption, "encryption", false)
 	features.Or(&mg.DirectHostOnly, "direct-host-only", false)
-
-	return mg
 }

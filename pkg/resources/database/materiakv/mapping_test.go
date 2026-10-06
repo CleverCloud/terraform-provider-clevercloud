@@ -14,13 +14,12 @@ func TestMateriaKVFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &materiakv.MateriaKV{}
 
-	state.
-		FromAddon(t.Context(), &tmp.AddonResponse{
-			ID: "addon_1", Name: "tf-test-kv", Region: "par", CreationDate: 1759000000000,
-		}, &diags).
-		FromMateriaDB(t.Context(), &models.MateriaDB{
-			Host: "host.services.clever-cloud.com", Port: 6379, Token: "secret",
-		}, &diags)
+	state.FromAddon(t.Context(), &tmp.AddonResponse{
+		ID: "addon_1", Name: "tf-test-kv", Region: "par", CreationDate: 1759000000000,
+	}, &diags)
+	state.FromMateriaDB(t.Context(), &models.MateriaDB{
+		Host: "host.services.clever-cloud.com", Port: 6379, Token: "secret",
+	}, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -58,9 +57,8 @@ func TestMateriaKVFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &materiakv.MateriaKV{Host: types.StringValue("kept-host")}
 
-	state.
-		FromAddon(t.Context(), nil, &diags).
-		FromMateriaDB(t.Context(), nil, &diags)
+	state.FromAddon(t.Context(), nil, &diags)
+	state.FromMateriaDB(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

@@ -83,9 +83,8 @@ func TestElasticsearchClusterFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &ElasticsearchCluster{Name: types.StringValue("kept-name")}
 
-	state.
-		FromCluster(t.Context(), nil, &diags).
-		FromCredentials(t.Context(), nil, &diags)
+	state.FromCluster(t.Context(), nil, &diags)
+	state.FromCredentials(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

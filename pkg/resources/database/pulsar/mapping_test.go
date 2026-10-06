@@ -13,12 +13,11 @@ func TestPulsarFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &pulsar.Pulsar{}
 
-	state.
-		FromAddon(t.Context(), &tmp.AddonResponse{Name: "tf-test-pulsar", Region: "par"}, &diags).
-		FromPulsar(t.Context(), &tmp.Pulsar{Tenant: "tenant", Namespace: "ns", Token: "secret"}, &diags).
-		FromCluster(t.Context(), &tmp.PulsarCluster{
-			URL: "pulsar.services.clever-cloud.com", PulsarTLSPort: 6651, WebTLSPort: 8443,
-		}, &diags)
+	state.FromAddon(t.Context(), &tmp.AddonResponse{Name: "tf-test-pulsar", Region: "par"}, &diags)
+	state.FromPulsar(t.Context(), &tmp.Pulsar{Tenant: "tenant", Namespace: "ns", Token: "secret"}, &diags)
+	state.FromCluster(t.Context(), &tmp.PulsarCluster{
+		URL: "pulsar.services.clever-cloud.com", PulsarTLSPort: 6651, WebTLSPort: 8443,
+	}, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -91,10 +90,9 @@ func TestPulsarFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &pulsar.Pulsar{Tenant: types.StringValue("kept-tenant")}
 
-	state.
-		FromAddon(t.Context(), nil, &diags).
-		FromPulsar(t.Context(), nil, &diags).
-		FromCluster(t.Context(), nil, &diags)
+	state.FromAddon(t.Context(), nil, &diags)
+	state.FromPulsar(t.Context(), nil, &diags)
+	state.FromCluster(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

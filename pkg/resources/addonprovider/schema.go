@@ -254,15 +254,13 @@ func (r ResourceAddonProvider) Schema(_ context.Context, req resource.SchemaRequ
 // or the prior state. Do not "complete" them.
 
 // FromProvider maps the provider view: its name and the regions it is released in.
-func (ap *AddonProvider) FromProvider(ctx context.Context, api *tmp.AddonProviderInfo, diags *diag.Diagnostics) *AddonProvider {
+func (ap *AddonProvider) FromProvider(ctx context.Context, api *tmp.AddonProviderInfo, diags *diag.Diagnostics) {
 	if ap == nil || api == nil {
-		return ap
+		return
 	}
 
 	ap.Name = pkg.FromStr(api.Name)
 	ap.Regions = pkg.FromSetString(api.Regions, diags)
-
-	return ap
 }
 
 // apiFeatureToState converts one API feature view to a state Feature. It is
@@ -275,29 +273,25 @@ func apiFeatureToState(apiFeature tmp.AddonProviderFeatureView) Feature {
 }
 
 // FromFeatures maps the feature list.
-func (ap *AddonProvider) FromFeatures(ctx context.Context, api []tmp.AddonProviderFeatureView, diags *diag.Diagnostics) *AddonProvider {
+func (ap *AddonProvider) FromFeatures(ctx context.Context, api []tmp.AddonProviderFeatureView, diags *diag.Diagnostics) {
 	if ap == nil || api == nil {
-		return ap
+		return
 	}
 
 	ap.Features = make([]Feature, 0, len(api))
 	for _, feature := range api {
 		ap.Features = append(ap.Features, apiFeatureToState(feature))
 	}
-
-	return ap
 }
 
 // FromPlans maps the plan list, each plan with the features carrying a value.
-func (ap *AddonProvider) FromPlans(ctx context.Context, api []tmp.AddonProviderPlanView, diags *diag.Diagnostics) *AddonProvider {
+func (ap *AddonProvider) FromPlans(ctx context.Context, api []tmp.AddonProviderPlanView, diags *diag.Diagnostics) {
 	if ap == nil || api == nil {
-		return ap
+		return
 	}
 
 	ap.Plans = make([]Plan, 0, len(api))
 	for _, plan := range api {
 		ap.Plans = append(ap.Plans, apiPlanToState(plan))
 	}
-
-	return ap
 }

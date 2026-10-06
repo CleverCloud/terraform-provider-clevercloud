@@ -72,35 +72,31 @@ func (r ResourcePulsar) Schema(_ context.Context, req resource.SchemaRequest, re
 
 // FromAddon maps the generic add-on view, the only source of name and region
 // for this resource.
-func (p *Pulsar) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *Pulsar {
+func (p *Pulsar) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
 	if p == nil || addon == nil {
-		return p
+		return
 	}
 
 	p.Name = pkg.FromStr(addon.Name)
 	p.Region = pkg.FromStr(addon.Region)
-
-	return p
 }
 
 // FromPulsar maps the product view: the tenant, namespace and token.
-func (p *Pulsar) FromPulsar(ctx context.Context, api *tmp.Pulsar, diags *diag.Diagnostics) *Pulsar {
+func (p *Pulsar) FromPulsar(ctx context.Context, api *tmp.Pulsar, diags *diag.Diagnostics) {
 	if p == nil || api == nil {
-		return p
+		return
 	}
 
 	p.Tenant = pkg.FromStr(api.Tenant)
 	p.Namespace = pkg.FromStr(api.Namespace)
 	p.Token = pkg.FromStr(api.Token)
-
-	return p
 }
 
 // FromCluster assembles the two endpoint URLs. The scheme follows the presence
 // of a TLS port: the cluster answers both, and only one of each pair is live.
-func (p *Pulsar) FromCluster(ctx context.Context, cluster *tmp.PulsarCluster, diags *diag.Diagnostics) *Pulsar {
+func (p *Pulsar) FromCluster(ctx context.Context, cluster *tmp.PulsarCluster, diags *diag.Diagnostics) {
 	if p == nil || cluster == nil {
-		return p
+		return
 	}
 
 	if cluster.PulsarTLSPort != 0 {
@@ -114,6 +110,4 @@ func (p *Pulsar) FromCluster(ctx context.Context, cluster *tmp.PulsarCluster, di
 	} else {
 		p.HTTPUrl = pkg.FromStr(fmt.Sprintf("http://%s:%d", cluster.URL, cluster.WebPort))
 	}
-
-	return p
 }

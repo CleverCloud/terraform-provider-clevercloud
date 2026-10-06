@@ -44,9 +44,9 @@ func (r ResourceAddon) Schema(_ context.Context, req resource.SchemaRequest, res
 // See CONTRIBUTING.md § "API → state mapping".
 
 // FromAddon maps the generic add-on view.
-func (ad *Addon) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *Addon {
+func (ad *Addon) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
 	if ad == nil || addon == nil {
-		return ad
+		return
 	}
 
 	ad.Name = pkg.FromStr(addon.Name)
@@ -65,15 +65,13 @@ func (ad *Addon) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags 
 	ad.Region = pkg.FromStr(addon.Region)
 	ad.ThirdPartyProvider = pkg.FromStr(addon.Provider.ID)
 	ad.CreationDate = pkg.FromI(addon.CreationDate)
-
-	return ad
 }
 
 // FromEnv maps the add-on's whole environment into the configurations map.
 // Non-destructive — see CONTRIBUTING.md.
-func (ad *Addon) FromEnv(ctx context.Context, env tmp.EnvVars, diags *diag.Diagnostics) *Addon {
+func (ad *Addon) FromEnv(ctx context.Context, env tmp.EnvVars, diags *diag.Diagnostics) {
 	if ad == nil || env == nil {
-		return ad
+		return
 	}
 
 	values := map[string]attr.Value{}
@@ -81,6 +79,4 @@ func (ad *Addon) FromEnv(ctx context.Context, env tmp.EnvVars, diags *diag.Diagn
 		values[name] = pkg.FromStr(value)
 	}
 	ad.Configurations = types.MapValueMust(types.StringType, values)
-
-	return ad
 }

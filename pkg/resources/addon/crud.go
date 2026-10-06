@@ -97,9 +97,8 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	ad.
-		FromAddon(ctx, addonRes.Payload(), &resp.Diagnostics).
-		FromEnv(ctx, *addonEnvRes.Payload(), &resp.Diagnostics)
+	ad.FromAddon(ctx, addonRes.Payload(), &resp.Diagnostics)
+	ad.FromEnv(ctx, *addonEnvRes.Payload(), &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, ad)
 	resp.Diagnostics.Append(diags...)

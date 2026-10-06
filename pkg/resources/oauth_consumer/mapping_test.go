@@ -22,9 +22,8 @@ func TestOAuthConsumerFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &oauthconsumer.OAuthConsumer{}
 
-	state.
-		FromConsumer(t.Context(), apiConsumer(), &diags).
-		FromSecret(t.Context(), &tmp.OAuthConsumerSecretResponse{Secret: "secret"}, &diags)
+	state.FromConsumer(t.Context(), apiConsumer(), &diags)
+	state.FromSecret(t.Context(), &tmp.OAuthConsumerSecretResponse{Secret: "secret"}, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -59,9 +58,8 @@ func TestOAuthConsumerFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &oauthconsumer.OAuthConsumer{Name: types.StringValue("kept-name")}
 
-	state.
-		FromConsumer(t.Context(), nil, &diags).
-		FromSecret(t.Context(), nil, &diags)
+	state.FromConsumer(t.Context(), nil, &diags)
+	state.FromSecret(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

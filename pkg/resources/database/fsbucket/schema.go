@@ -72,28 +72,24 @@ func (r ResourceFSBucket) Schema(_ context.Context, req resource.SchemaRequest, 
 
 // FromAddon maps the generic add-on view, the only source of name and region
 // for this resource.
-func (fs *FSBucket) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *FSBucket {
+func (fs *FSBucket) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
 	if fs == nil || addon == nil {
-		return fs
+		return
 	}
 
 	fs.Name = pkg.FromStr(addon.Name)
 	fs.Region = pkg.FromStr(addon.Region)
-
-	return fs
 }
 
 // FromEnv maps the FTP credentials, which the bucket only exposes as
 // environment variables. Non-destructive — see CONTRIBUTING.md.
-func (fs *FSBucket) FromEnv(ctx context.Context, env tmp.EnvVars, diags *diag.Diagnostics) *FSBucket {
+func (fs *FSBucket) FromEnv(ctx context.Context, env tmp.EnvVars, diags *diag.Diagnostics) {
 	if fs == nil || env == nil {
-		return fs
+		return
 	}
 
 	vars := env.Map()
 	fs.Host = pkg.FromStr(vars["BUCKET_HOST"])
 	fs.FTPUsername = pkg.FromStr(vars["BUCKET_FTP_USERNAME"])
 	fs.FTPPassword = pkg.FromStr(vars["BUCKET_FTP_PASSWORD"])
-
-	return fs
 }

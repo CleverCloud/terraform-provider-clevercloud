@@ -66,9 +66,8 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 	if keycloakRes.HasError() {
 		res.Diagnostics.AddError("failed to get Keycloak", keycloakRes.Error().Error())
 	} else {
-		plan.
-			FromAddon(ctx, addon, &res.Diagnostics).
-			FromKeycloak(ctx, keycloakRes.Payload(), &res.Diagnostics)
+		plan.FromAddon(ctx, addon, &res.Diagnostics)
+		plan.FromKeycloak(ctx, keycloakRes.Payload(), &res.Diagnostics)
 	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)

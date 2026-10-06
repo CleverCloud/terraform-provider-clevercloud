@@ -15,9 +15,9 @@ import (
 // payload" rule: GetBuildFlavor() encodes the "no separate build means no build
 // flavour" rule, which is state logic rather than API shape, and Create, Read
 // and Update have to share it. Do not widen that exception — see CONTRIBUTING.md.
-func (r *Runtime) FromApp(ctx context.Context, res AppResponseProvider, diags *diag.Diagnostics) *Runtime {
+func (r *Runtime) FromApp(ctx context.Context, res AppResponseProvider, diags *diag.Diagnostics) {
 	if r == nil || res == nil || res.GetApp() == nil {
-		return r
+		return
 	}
 
 	app := res.GetApp()
@@ -36,8 +36,6 @@ func (r *Runtime) FromApp(ctx context.Context, res AppResponseProvider, diags *d
 
 	// The prior value goes in so the mapper can tell a null set from an empty one.
 	r.VHosts = helper.VHostsFromAPIHosts(ctx, app.Vhosts.AsString(), r.VHosts, diags)
-
-	return r
 }
 
 // FromForceHTTPS converts a boolean to Clever Cloud's ForceHTTPS enum

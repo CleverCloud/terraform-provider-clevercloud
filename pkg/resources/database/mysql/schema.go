@@ -173,17 +173,15 @@ func (r ResourceMySQL) validateMyVersion(ctx context.Context, req validator.Stri
 
 // FromAddon maps the generic add-on view. It is the only source of name, plan,
 // region and creation_date: tmp.MySQL carries none of them.
-func (my *MySQL) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) *MySQL {
+func (my *MySQL) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
 	if my == nil || addon == nil {
-		return my
+		return
 	}
 
 	my.Name = pkg.FromStr(addon.Name)
 	my.Plan = pkg.FromStr(addon.Plan.Slug)
 	my.Region = pkg.FromStr(addon.Region)
 	my.CreationDate = pkg.FromI(addon.CreationDate)
-
-	return my
 }
 
 // FromMySQL maps the product view: connection details and the feature toggles.
@@ -193,9 +191,9 @@ func (my *MySQL) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags 
 // fallback and never to a null. A null is what left an imported add-on with a
 // non-empty plan (#404); backup additionally carries a schema default, which
 // its fallback has to match.
-func (my *MySQL) FromMySQL(ctx context.Context, api *tmp.MySQL, diags *diag.Diagnostics) *MySQL {
+func (my *MySQL) FromMySQL(ctx context.Context, api *tmp.MySQL, diags *diag.Diagnostics) {
 	if my == nil || api == nil {
-		return my
+		return
 	}
 
 	my.Host = pkg.FromStr(api.Host)
@@ -214,6 +212,4 @@ func (my *MySQL) FromMySQL(ctx context.Context, api *tmp.MySQL, diags *diag.Diag
 	features.Or(&my.Encryption, "encryption", false)
 	features.Or(&my.DirectHostOnly, "direct-host-only", false)
 	features.Or(&my.SkipLogBin, "skip-log-bin", false)
-
-	return my
 }

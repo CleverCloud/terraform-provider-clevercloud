@@ -14,12 +14,11 @@ func TestKubernetesFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &Kubernetes{}
 
-	state.
-		FromCluster(t.Context(), &tmp.ClusterView{
-			ID: "cluster_1", Name: "tf-test-k8s",
-			Features: &tmp.KubernetesFeatures{NodeAutoprovisioning: boolPtr(true)},
-		}, &diags).
-		FromKubeconfig(t.Context(), strPtr("apiVersion: v1"), &diags)
+	state.FromCluster(t.Context(), &tmp.ClusterView{
+		ID: "cluster_1", Name: "tf-test-k8s",
+		Features: &tmp.KubernetesFeatures{NodeAutoprovisioning: boolPtr(true)},
+	}, &diags)
+	state.FromKubeconfig(t.Context(), strPtr("apiVersion: v1"), &diags)
 
 	if diags.HasError() {
 		t.Fatalf("mapping reported %v", diags.Errors())
@@ -49,9 +48,8 @@ func TestKubernetesFromAPI_NilPayloadIsANoOp(t *testing.T) {
 	var diags diag.Diagnostics
 	state := &Kubernetes{Name: types.StringValue("kept-name")}
 
-	state.
-		FromCluster(t.Context(), nil, &diags).
-		FromKubeconfig(t.Context(), nil, &diags)
+	state.FromCluster(t.Context(), nil, &diags)
+	state.FromKubeconfig(t.Context(), nil, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())

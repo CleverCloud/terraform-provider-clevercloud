@@ -71,24 +71,20 @@ func (r ResourceKubernetes) IdentitySchema(_ context.Context, req resource.Ident
 //
 // id is deliberately not mapped here: this resource keeps it in the Terraform
 // identity, which is its source of truth, and the CRUD copies it from there.
-func (k *Kubernetes) FromCluster(ctx context.Context, api *tmp.ClusterView, diags *diag.Diagnostics) *Kubernetes {
+func (k *Kubernetes) FromCluster(ctx context.Context, api *tmp.ClusterView, diags *diag.Diagnostics) {
 	if k == nil || api == nil {
-		return k
+		return
 	}
 
 	k.Name = pkg.FromStr(api.Name)
 	k.NodeAutoprovisioning = pkg.FromBool(autoprovisioningFeatureEnabled(api.Features))
-
-	return k
 }
 
 // FromKubeconfig maps the separate kubeconfig call.
-func (k *Kubernetes) FromKubeconfig(ctx context.Context, kubeconfig *string, diags *diag.Diagnostics) *Kubernetes {
+func (k *Kubernetes) FromKubeconfig(ctx context.Context, kubeconfig *string, diags *diag.Diagnostics) {
 	if k == nil || kubeconfig == nil {
-		return k
+		return
 	}
 
 	k.KubeConfig = pkg.FromStr(*kubeconfig)
-
-	return k
 }
