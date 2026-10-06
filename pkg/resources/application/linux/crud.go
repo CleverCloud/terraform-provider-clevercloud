@@ -109,4 +109,5 @@ func (r *ResourceLinux) ModifyPlan(ctx context.Context, req resource.ModifyPlanR
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "linux", plan.Runtime, &res.Diagnostics)
+	application.PlanDeploymentCommit(ctx, req, res)
 }
