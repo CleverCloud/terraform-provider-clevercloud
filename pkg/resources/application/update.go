@@ -162,7 +162,7 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 
 	// Sync response even if there were errors (app might be updated)
 	if updatedApp != nil {
-		runtime.SetFromResponse(updatedApp, ctx, &diags)
+		runtime.FromApp(ctx, updatedApp, &diags)
 		resolveUnknownCommit(runtime.Deployment, updatedApp.TargetCommit)
 	} else {
 		resolveUnknownCommit(runtime.Deployment, "")

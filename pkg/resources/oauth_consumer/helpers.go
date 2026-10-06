@@ -115,7 +115,7 @@ func (r *ResourceOAuthConsumer) setToRightsRequest(ctx context.Context, rightsSe
 }
 
 // rightsResponseToSet converts an OAuthConsumerRightsResponse to a Terraform Set
-func (r *ResourceOAuthConsumer) rightsResponseToSet(ctx context.Context, rightsResp tmp.OAuthConsumerRightsResponse, diags *diag.Diagnostics) types.Set {
+func rightsResponseToSet(ctx context.Context, rightsResp tmp.OAuthConsumerRightsResponse, diags *diag.Diagnostics) types.Set {
 	var rightsSlice []string
 
 	// Add each enabled right to the slice

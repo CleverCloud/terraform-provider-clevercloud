@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/drain"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -26,14 +27,16 @@ func datadogAPIDrain(t *testing.T, url string) tmp.Drain {
 	}
 }
 
-func TestDatadogDrainFromAPI_DecodesPercentEncodedSegments(t *testing.T) {
+func TestDatadogDrainFromDrain_DecodesPercentEncodedSegments(t *testing.T) {
 	// %2D -> '-', %2F -> '/', %3D -> '=': encoded inside the key segment,
 	// so the literal "/" split still lands on the endpoint/key boundary.
 	apiDrain := datadogAPIDrain(t, "https://http-intake.logs.datadoghq.eu/v1/input/fake%2Dapi%2Dkey%2F123%3D%3D")
 
 	d := &drain.DatadogDrain{}
-	if err := d.FromAPI(apiDrain); err != nil {
-		t.Fatalf("FromAPI returned error: %v", err)
+	var diags diag.Diagnostics
+	d.FromDrain(t.Context(), &apiDrain, &diags)
+	if diags.HasError() {
+		t.Fatalf("FromDrain reported %v", diags.Errors())
 	}
 
 	if got := d.Endpoint.ValueString(); got != "https://http-intake.logs.datadoghq.eu/v1/input" {
@@ -44,12 +47,14 @@ func TestDatadogDrainFromAPI_DecodesPercentEncodedSegments(t *testing.T) {
 	}
 }
 
-func TestDatadogDrainFromAPI_UnencodedURLUnchanged(t *testing.T) {
+func TestDatadogDrainFromDrain_UnencodedURLUnchanged(t *testing.T) {
 	apiDrain := datadogAPIDrain(t, "https://http-intake.logs.datadoghq.com/v1/input/fake-api-key-plain-123")
 
 	d := &drain.DatadogDrain{}
-	if err := d.FromAPI(apiDrain); err != nil {
-		t.Fatalf("FromAPI returned error: %v", err)
+	var diags diag.Diagnostics
+	d.FromDrain(t.Context(), &apiDrain, &diags)
+	if diags.HasError() {
+		t.Fatalf("FromDrain reported %v", diags.Errors())
 	}
 
 	if got := d.Endpoint.ValueString(); got != "https://http-intake.logs.datadoghq.com/v1/input" {
@@ -60,17 +65,19 @@ func TestDatadogDrainFromAPI_UnencodedURLUnchanged(t *testing.T) {
 	}
 }
 
-func TestDatadogDrainFromAPI_PreservesExistingState(t *testing.T) {
+func TestDatadogDrainFromDrain_PreservesExistingState(t *testing.T) {
 	// API returns a different (and differently-encoded) URL, but since the
-	// state already has known values, FromAPI must not overwrite them.
+	// state already has known values, FromDrain must not overwrite them.
 	apiDrain := datadogAPIDrain(t, "https://http-intake.logs.datadoghq.eu/v1/input/other%2Dkey")
 
 	d := &drain.DatadogDrain{
 		Endpoint: types.StringValue("https://http-intake.logs.datadoghq.com/v1/input"),
 		APIKey:   types.StringValue("state-api-key-123"),
 	}
-	if err := d.FromAPI(apiDrain); err != nil {
-		t.Fatalf("FromAPI returned error: %v", err)
+	var diags diag.Diagnostics
+	d.FromDrain(t.Context(), &apiDrain, &diags)
+	if diags.HasError() {
+		t.Fatalf("FromDrain reported %v", diags.Errors())
 	}
 
 	if got := d.Endpoint.ValueString(); got != "https://http-intake.logs.datadoghq.com/v1/input" {
@@ -81,17 +88,41 @@ func TestDatadogDrainFromAPI_PreservesExistingState(t *testing.T) {
 	}
 }
 
-func TestDatadogDrainFromAPI_InvalidEscapeKeepsRawValue(t *testing.T) {
+func TestDatadogDrainFromDrain_InvalidEscapeKeepsRawValue(t *testing.T) {
 	// "%zz" is not a valid percent-escape; PathUnescape errors and the raw
 	// segment must be kept rather than failing the Read.
 	apiDrain := datadogAPIDrain(t, "https://http-intake.logs.datadoghq.eu/v1/input/fake%zzkey")
 
 	d := &drain.DatadogDrain{}
-	if err := d.FromAPI(apiDrain); err != nil {
-		t.Fatalf("FromAPI returned error: %v", err)
+	var diags diag.Diagnostics
+	d.FromDrain(t.Context(), &apiDrain, &diags)
+	if diags.HasError() {
+		t.Fatalf("FromDrain reported %v", diags.Errors())
 	}
 
 	if got := d.APIKey.ValueString(); got != "fake%zzkey" {
 		t.Errorf("APIKey = %q, want raw value %q preserved on invalid escape", got, "fake%zzkey")
+	}
+}
+
+// A failed fetch hands the mapper no payload, and prior state must survive it
+// untouched — a read that errors never blanks state.
+func TestDatadogDrainFromDrain_NilPayloadIsANoOp(t *testing.T) {
+	d := drain.DatadogDrain{
+		Endpoint: types.StringValue("https://http-intake.logs.datadoghq.com/v1/input"),
+		APIKey:   types.StringValue("kept-secret"),
+	}
+
+	var diags diag.Diagnostics
+	d.FromDrain(t.Context(), nil, &diags)
+
+	if diags.HasError() {
+		t.Fatalf("a nil payload must not report an error, got %v", diags.Errors())
+	}
+	if got := d.Endpoint.ValueString(); got != "https://http-intake.logs.datadoghq.com/v1/input" {
+		t.Errorf("endpoint = %q, want it preserved", got)
+	}
+	if got := d.APIKey.ValueString(); got != "kept-secret" {
+		t.Errorf("api_key = %q, want it preserved", got)
 	}
 }

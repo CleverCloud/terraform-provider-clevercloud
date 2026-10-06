@@ -66,6 +66,10 @@ func (plan *Static) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[stri
 }
 
 func (s *Static) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	if s == nil || env == nil {
+		return
+	}
+
 	s.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 
 	s.Integrations = attributes.FromEnvIntegrations(ctx, env, s.Integrations, diags)

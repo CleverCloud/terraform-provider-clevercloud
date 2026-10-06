@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/identityschema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -11,6 +12,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 // nodeAutoprovisioningDefault is what the schema gives the attribute when the
@@ -57,4 +60,31 @@ func (r ResourceKubernetes) IdentitySchema(_ context.Context, req resource.Ident
 			"id": identityschema.StringAttribute{RequiredForImport: true},
 		},
 	}
+}
+
+// The API-to-state mappers for clevercloud_kubernetes follow.
+// See CONTRIBUTING.md § "API → state mapping".
+
+// FromCluster maps the cluster view, which the create, the read and the cluster
+// poll all answer with — tmp.KubernetesInfo and tmp.KubernetesCreateResponse
+// are both aliases of tmp.ClusterView, so one mapper serves all three.
+//
+// id is deliberately not mapped here: this resource keeps it in the Terraform
+// identity, which is its source of truth, and the CRUD copies it from there.
+func (k *Kubernetes) FromCluster(ctx context.Context, api *tmp.ClusterView, diags *diag.Diagnostics) {
+	if k == nil || api == nil {
+		return
+	}
+
+	k.Name = pkg.FromStr(api.Name)
+	k.NodeAutoprovisioning = pkg.FromBool(autoprovisioningFeatureEnabled(api.Features))
+}
+
+// FromKubeconfig maps the separate kubeconfig call.
+func (k *Kubernetes) FromKubeconfig(ctx context.Context, kubeconfig *string, diags *diag.Diagnostics) {
+	if k == nil || kubeconfig == nil {
+		return
+	}
+
+	k.KubeConfig = pkg.FromStr(*kubeconfig)
 }

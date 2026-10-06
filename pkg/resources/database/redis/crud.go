@@ -3,7 +3,6 @@ package redis
 import (
 	"context"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -62,21 +61,7 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	env := *envRes.Payload()
-	envAsMap := pkg.Reduce(env, map[string]types.String{}, func(acc map[string]types.String, v tmp.EnvVar) map[string]types.String {
-		acc[v.Name] = pkg.FromStr(v.Value)
-		return acc
-	})
-	tflog.Debug(ctx, "API response", map[string]any{
-		"payload": fmt.Sprintf("%+v", envAsMap),
-	})
-	port, err := strconv.ParseInt(envAsMap["REDIS_PORT"].ValueString(), 10, 64)
-	if err != nil {
-		resp.Diagnostics.AddError("invalid port received", "expect REDIS_PORT to be an Integer")
-	}
-	rd.Host = envAsMap["REDIS_HOST"]
-	rd.Port = pkg.FromI(port)
-	rd.Token = envAsMap["REDIS_PASSWORD"]
+	rd.FromEnv(ctx, *envRes.Payload(), &resp.Diagnostics)
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -131,25 +116,8 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	env := *envRes.Payload()
-	envAsMap := pkg.Reduce(env, map[string]types.String{}, func(acc map[string]types.String, v tmp.EnvVar) map[string]types.String {
-		acc[v.Name] = pkg.FromStr(v.Value)
-		return acc
-	})
-	tflog.Debug(ctx, "API response", map[string]any{
-		"payload": fmt.Sprintf("%+v", envAsMap),
-	})
-	port, err := strconv.ParseInt(envAsMap["REDIS_PORT"].ValueString(), 10, 64)
-	if err != nil {
-		resp.Diagnostics.AddError("invalid port received", "expect REDIS_PORT to be an Integer")
-	}
-
-	rd.Name = pkg.FromStr(addonRD.Name)
-	rd.Host = envAsMap["REDIS_HOST"]
-	rd.Plan = pkg.FromStr(addonRD.Plan.Slug)
-	rd.Port = pkg.FromI(port)
-	rd.Region = pkg.FromStr(addonRD.Region)
-	rd.Token = envAsMap["REDIS_PASSWORD"]
+	rd.FromAddon(ctx, addonRD, &resp.Diagnostics)
+	rd.FromEnv(ctx, *envRes.Payload(), &resp.Diagnostics)
 
 	rd.Networkgroups = resources.ReadNetworkGroups(ctx, r, rd.ID.ValueString(), &resp.Diagnostics)
 

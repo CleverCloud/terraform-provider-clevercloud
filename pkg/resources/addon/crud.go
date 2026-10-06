@@ -5,9 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
@@ -62,11 +60,7 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	envAsMap := pkg.Reduce(*envRes.Payload(), map[string]attr.Value{}, func(acc map[string]attr.Value, v tmp.EnvVar) map[string]attr.Value {
-		acc[v.Name] = pkg.FromStr(v.Value)
-		return acc
-	})
-	ad.Configurations = types.MapValueMust(types.StringType, envAsMap)
+	ad.FromEnv(ctx, *envRes.Payload(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, ad)...)
 }
@@ -103,27 +97,8 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	envAsMap := pkg.Reduce(*addonEnvRes.Payload(), map[string]attr.Value{}, func(acc map[string]attr.Value, v tmp.EnvVar) map[string]attr.Value {
-		acc[v.Name] = pkg.FromStr(v.Value)
-		return acc
-	})
-
-	a := addonRes.Payload()
-	ad.Name = pkg.FromStr(a.Name)
-	// Providers do not agree on the case of their plan slugs: jenkins answers S,
-	// M, L while postgresql answers dev, xs_sml. LookupProviderPlan matches
-	// case-insensitively, so both spellings create the same add-on; keep the one
-	// already in state so a plan never drifts on case alone. An import has
-	// nothing in state yet and takes the provider's spelling.
-	plan := a.Plan.Slug
-	if configured := ad.Plan.ValueString(); strings.EqualFold(configured, plan) {
-		plan = configured
-	}
-	ad.Plan = pkg.FromStr(plan)
-	ad.Region = pkg.FromStr(a.Region)
-	ad.ThirdPartyProvider = pkg.FromStr(a.Provider.ID)
-	ad.CreationDate = pkg.FromI(a.CreationDate)
-	ad.Configurations = types.MapValueMust(types.StringType, envAsMap)
+	ad.FromAddon(ctx, addonRes.Payload(), &resp.Diagnostics)
+	ad.FromEnv(ctx, *addonEnvRes.Payload(), &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, ad)
 	resp.Diagnostics.Append(diags...)

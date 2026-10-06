@@ -29,7 +29,7 @@ func setOf(t *testing.T, items ...string) basetypes.SetValue {
 	return out
 }
 
-func TestReadFromAPI_Description(t *testing.T) {
+func TestNetworkgroupFromAPI_Description(t *testing.T) {
 	cases := []struct {
 		name      string
 		stateDesc basetypes.StringValue
@@ -73,7 +73,7 @@ func TestReadFromAPI_Description(t *testing.T) {
 			}
 			var diags diag.Diagnostics
 
-			readFromAPI(state, ng, &diags)
+			state.FromNetworkGroup(t.Context(), ng, &diags)
 
 			if diags.HasError() {
 				t.Fatalf("unexpected diagnostics: %v", diags)
@@ -94,7 +94,7 @@ func TestReadFromAPI_Description(t *testing.T) {
 	}
 }
 
-func TestReadFromAPI_Tags(t *testing.T) {
+func TestNetworkgroupFromAPI_Tags(t *testing.T) {
 	cases := []struct {
 		name      string
 		stateTags basetypes.SetValue
@@ -138,7 +138,7 @@ func TestReadFromAPI_Tags(t *testing.T) {
 			}
 			var diags diag.Diagnostics
 
-			readFromAPI(state, ng, &diags)
+			state.FromNetworkGroup(t.Context(), ng, &diags)
 
 			if diags.HasError() {
 				t.Fatalf("unexpected diagnostics: %v", diags)
@@ -175,12 +175,12 @@ func TestReadFromAPI_Tags(t *testing.T) {
 	}
 }
 
-func TestReadFromAPI_RequiredFields(t *testing.T) {
+func TestNetworkgroupFromAPI_RequiredFields(t *testing.T) {
 	state := &Networkgroup{Description: basetypes.NewStringNull(), Tags: setNull()}
 	ng := &models.NetworkGroup1{Label: "myng", NetworkIP: "10.42.0.0/16"}
 	var diags diag.Diagnostics
 
-	readFromAPI(state, ng, &diags)
+	state.FromNetworkGroup(t.Context(), ng, &diags)
 
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
@@ -193,9 +193,10 @@ func TestReadFromAPI_RequiredFields(t *testing.T) {
 	}
 }
 
-func TestReadFromAPI_NilSafe(t *testing.T) {
+func TestNetworkgroupFromAPI_NilSafe(t *testing.T) {
 	var diags diag.Diagnostics
 	// Should not panic.
-	readFromAPI(nil, &models.NetworkGroup1{}, &diags)
-	readFromAPI(&Networkgroup{}, nil, &diags)
+	var nilState *Networkgroup
+	nilState.FromNetworkGroup(t.Context(), &models.NetworkGroup1{}, &diags)
+	(&Networkgroup{}).FromNetworkGroup(t.Context(), nil, &diags)
 }

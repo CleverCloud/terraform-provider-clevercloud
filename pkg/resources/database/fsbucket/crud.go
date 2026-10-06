@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
@@ -59,15 +58,7 @@ func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateReques
 		return
 	}
 
-	envVars := envRes.Payload()
-	envMap := pkg.Reduce(*envVars, map[string]types.String{}, func(m map[string]types.String, v tmp.EnvVar) map[string]types.String {
-		m[v.Name] = pkg.FromStr(v.Value)
-		return m
-	})
-
-	fsbucket.Host = envMap["BUCKET_HOST"]
-	fsbucket.FTPUsername = envMap["BUCKET_FTP_USERNAME"]
-	fsbucket.FTPPassword = envMap["BUCKET_FTP_PASSWORD"]
+	fsbucket.FromEnv(ctx, *envRes.Payload(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, fsbucket)...)
 }
@@ -102,17 +93,8 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddError("failed to get addon env", addonEnvRes.Error().Error())
 		return
 	}
-	addonEnv := addonEnvRes.Payload()
-	addonMap := pkg.Reduce(*addonEnv, map[string]types.String{}, func(m map[string]types.String, v tmp.EnvVar) map[string]types.String {
-		m[v.Name] = pkg.FromStr(v.Value)
-		return m
-	})
-
-	fsbucket.Name = pkg.FromStr(addon.Name)
-	fsbucket.Region = pkg.FromStr(addon.Region)
-	fsbucket.Host = addonMap["BUCKET_HOST"]
-	fsbucket.FTPUsername = addonMap["BUCKET_FTP_USERNAME"]
-	fsbucket.FTPPassword = addonMap["BUCKET_FTP_PASSWORD"]
+	fsbucket.FromAddon(ctx, addon, &resp.Diagnostics)
+	fsbucket.FromEnv(ctx, *addonEnvRes.Payload(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, fsbucket)...)
 }

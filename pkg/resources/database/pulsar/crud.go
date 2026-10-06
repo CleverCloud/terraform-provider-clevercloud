@@ -60,7 +60,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 	pulsar := pulsarRes.Payload()
-	readAddon(&plan, pulsar, &resp.Diagnostics)
+	plan.FromPulsar(ctx, pulsar, &resp.Diagnostics)
 
 	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.Client(), pulsar.ClusterID)
 	if pulsarClusterRes.HasError() {
@@ -68,7 +68,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 	pulsarCluster := pulsarClusterRes.Payload()
-	readCluster(&plan, pulsarCluster, &resp.Diagnostics)
+	plan.FromCluster(ctx, pulsarCluster, &resp.Diagnostics)
 
 	setRetention(ctx, &plan, &resp.Diagnostics)
 
@@ -100,7 +100,7 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 	pulsar := pulsarRes.Payload()
-	readAddon(&state, pulsar, &resp.Diagnostics)
+	state.FromPulsar(ctx, pulsar, &resp.Diagnostics)
 
 	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.Client(), pulsar.ClusterID)
 	if pulsarClusterRes.HasError() {
@@ -108,7 +108,7 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 	pulsarCluster := pulsarClusterRes.Payload()
-	readCluster(&state, pulsarCluster, &resp.Diagnostics)
+	state.FromCluster(ctx, pulsarCluster, &resp.Diagnostics)
 
 	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if addonRes.HasError() {
@@ -116,48 +116,11 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 	addon := addonRes.Payload()
-	readOldAddon(&state, addon, &resp.Diagnostics)
+	state.FromAddon(ctx, addon, &resp.Diagnostics)
 
 	readRetention(ctx, &state, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
-}
-
-func readAddon(state *Pulsar, addon *tmp.Pulsar, diags *diag.Diagnostics) {
-	if addon == nil {
-		return
-	}
-
-	state.Tenant = pkg.FromStr(addon.Tenant)
-	state.Namespace = pkg.FromStr(addon.Namespace)
-	state.Token = pkg.FromStr(addon.Token)
-}
-
-func readOldAddon(state *Pulsar, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
-	if addon == nil {
-		return
-	}
-
-	state.Name = pkg.FromStr(addon.Name)
-	state.Region = pkg.FromStr(addon.Region)
-}
-
-func readCluster(state *Pulsar, cluster *tmp.PulsarCluster, diags *diag.Diagnostics) {
-	if cluster == nil {
-		return
-	}
-
-	if cluster.PulsarTLSPort != 0 {
-		state.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar+ssl://%s:%d", cluster.URL, cluster.PulsarTLSPort))
-	} else {
-		state.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar://%s:%d", cluster.URL, cluster.PulsarPort))
-	}
-
-	if cluster.WebTLSPort != 0 {
-		state.HTTPUrl = pkg.FromStr(fmt.Sprintf("https://%s:%d", cluster.URL, cluster.WebTLSPort))
-	} else {
-		state.HTTPUrl = pkg.FromStr(fmt.Sprintf("http://%s:%d", cluster.URL, cluster.WebPort))
-	}
 }
 
 func readRetention(ctx context.Context, state *Pulsar, diags *diag.Diagnostics) {

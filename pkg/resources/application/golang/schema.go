@@ -63,6 +63,10 @@ func (g Go) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]strin
 }
 
 func (g *Go) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	if g == nil || env == nil {
+		return
+	}
+
 	g.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 
 	g.Integrations = attributes.FromEnvIntegrations(ctx, env, g.Integrations, diags)

@@ -4,12 +4,15 @@ import (
 	"context"
 	_ "embed"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type MongoDB struct {
@@ -53,4 +56,44 @@ func (r ResourceMongoDB) Schema(_ context.Context, req resource.SchemaRequest, r
 			},
 		}),
 	}
+}
+
+// The API-to-state mappers for clevercloud_mongodb follow.
+// See CONTRIBUTING.md § "API → state mapping".
+
+// FromAddon maps the generic add-on view. It is the only source of name, plan,
+// region and creation_date: tmp.MongoDB carries none of them.
+func (mg *MongoDB) FromAddon(ctx context.Context, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
+	if mg == nil || addon == nil {
+		return
+	}
+
+	mg.Name = pkg.FromStr(addon.Name)
+	mg.Plan = pkg.FromStr(addon.Plan.Slug)
+	mg.Region = pkg.FromStr(addon.Region)
+	mg.CreationDate = pkg.FromI(addon.CreationDate)
+}
+
+// FromMongoDB maps the product view: connection details and the feature toggles.
+//
+// The feature list is sparse and both toggles are Computed, so an absent one
+// resolves to its fallback and never to a null — a null is what left an
+// imported add-on with a non-empty plan (#404).
+func (mg *MongoDB) FromMongoDB(ctx context.Context, api *tmp.MongoDB, diags *diag.Diagnostics) {
+	if mg == nil || api == nil {
+		return
+	}
+
+	mg.Host = pkg.FromStr(api.Host)
+	mg.Port = pkg.FromI(api.Port)
+	mg.User = pkg.FromStr(api.User)
+	mg.Password = pkg.FromStr(api.Password)
+	mg.Database = pkg.FromStr(api.Database)
+	mg.Uri = pkg.FromStr(api.Uri())
+
+	features := pkg.FeaturesOf(api.Features, func(f tmp.MongoDBFeature) (string, bool) {
+		return f.Name, f.Enabled
+	})
+	features.Or(&mg.Encryption, "encryption", false)
+	features.Or(&mg.DirectHostOnly, "direct-host-only", false)
 }

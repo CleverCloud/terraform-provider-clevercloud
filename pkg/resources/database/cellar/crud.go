@@ -7,7 +7,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/s3"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -59,12 +58,7 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 		resp.Diagnostics.AddError("failed to get add-on env vars", envRes.Error().Error())
 		return
 	}
-	envVars := envRes.Payload()
-
-	creds := s3.FromEnvVars(*envVars)
-	cellar.Host = pkg.FromStr(creds.Host)
-	cellar.KeyID = pkg.FromStr(creds.KeyID)
-	cellar.KeySecret = pkg.FromStr(creds.KeySecret)
+	cellar.FromEnv(ctx, *envRes.Payload(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
 }
@@ -99,14 +93,8 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
 	}
-	addonEnv := addonEnvRes.Payload()
-
-	creds := s3.FromEnvVars(*addonEnv)
-	cellar.Name = pkg.FromStr(addon.Name)
-	cellar.Region = pkg.FromStr(addon.Region)
-	cellar.Host = pkg.FromStr(creds.Host)
-	cellar.KeyID = pkg.FromStr(creds.KeyID)
-	cellar.KeySecret = pkg.FromStr(creds.KeySecret)
+	cellar.FromAddon(ctx, addon, &resp.Diagnostics)
+	cellar.FromEnv(ctx, *addonEnvRes.Payload(), &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
 }

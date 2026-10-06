@@ -104,7 +104,7 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 	createdMy := res.Payload()
 
 	my.ID = pkg.FromStr(createdMy.RealID)
-	r.readFromAddon(&my, *createdMy)
+	my.FromAddon(ctx, createdMy, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, my)...)
 
@@ -113,7 +113,7 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 		resp.Diagnostics.AddError("failed to get mysql connection infos", myInfoRes.Error().Error())
 		return
 	} else {
-		r.readFromAPI(&my, *myInfoRes.Payload())
+		my.FromMySQL(ctx, myInfoRes.Payload(), &resp.Diagnostics)
 	}
 
 	addon.SyncNetworkGroups(
@@ -159,10 +159,8 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Mysql resource", addonRes.Error().Error())
 		return
-	} else {
-		addonInfo := addonRes.Payload()
-		r.readFromAddon(&my, *addonInfo)
 	}
+	my.FromAddon(ctx, addonRes.Payload(), &resp.Diagnostics)
 
 	addonMyRes := tmp.GetMySQL(ctx, r.Client(), addonId)
 	if addonMyRes.IsNotFoundError() {
@@ -172,56 +170,15 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 	if addonMyRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Mysql resource", addonMyRes.Error().Error())
 		return
-	} else {
-		addonMy := addonMyRes.Payload()
-		if addonMy.Status == "TO_DELETE" {
-			resp.State.RemoveResource(ctx)
-			return
-		}
-
-		r.readFromAPI(&my, *addonMy)
 	}
+	if addonMyRes.Payload().Status == "TO_DELETE" {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	my.FromMySQL(ctx, addonMyRes.Payload(), &resp.Diagnostics)
 
 	my.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, my)...)
-}
-
-func (r *ResourceMySQL) readFromAddon(state *MySQL, addon tmp.AddonResponse) {
-	state.Name = pkg.FromStr(addon.Name)
-	state.Plan = pkg.FromStr(addon.Plan.Slug)
-	state.Region = pkg.FromStr(addon.Region)
-	state.CreationDate = pkg.FromI(addon.CreationDate)
-}
-
-func (r *ResourceMySQL) readFromAPI(state *MySQL, my tmp.MySQL) {
-	state.Host = pkg.FromStr(my.Host)
-	state.Port = pkg.FromI(int64(my.Port))
-	state.Database = pkg.FromStr(my.Database)
-	state.User = pkg.FromStr(my.User)
-	state.Password = pkg.FromStr(my.Password)
-	state.Version = pkg.FromStr(my.Version)
-	state.Uri = pkg.FromStr(my.Uri())
-	state.ReadOnlyUsers = tmp.FromMySQLReadOnlyUsers(my.ReadOnlyUsers)
-
-	// Initialize to defaults so attributes are never null in state after import.
-	// The features loop below overrides with actual API values if present.
-	state.Backup = pkg.FromBool(true)
-	state.Encryption = pkg.FromBool(false)
-	state.DirectHostOnly = pkg.FromBool(false)
-	state.SkipLogBin = pkg.FromBool(false)
-
-	for _, feature := range my.Features {
-		switch feature.Name {
-		case "do-backup":
-			state.Backup = pkg.FromBool(feature.Enabled)
-		case "encryption":
-			state.Encryption = pkg.FromBool(feature.Enabled)
-		case "direct-host-only":
-			state.DirectHostOnly = pkg.FromBool(feature.Enabled)
-		case "skip-log-bin":
-			state.SkipLogBin = pkg.FromBool(feature.Enabled)
-		}
-	}
 }
 
 // Update resource

@@ -76,8 +76,8 @@ func TestAccNG_withPeers(t *testing.T) {
 		"clevercloud_docker",
 		appName,
 		helper.SetKeyValues(map[string]any{
-			"name":               appName,
-			"region":             "par",
+			"name":   appName,
+			"region": "par",
 			// Boot a real instance so the NG actually registers a peer.
 			// Without a peer the API never returns the union-typed `peers` field
 			// and the SDK unmarshal bug stays hidden.

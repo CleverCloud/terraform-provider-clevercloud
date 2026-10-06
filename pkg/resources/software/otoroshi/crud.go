@@ -67,14 +67,7 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.AddError("failed to get Otorshi", otoroshiRes.Error().Error())
 	} else {
 		otoroshi := otoroshiRes.Payload()
-		if otoroshi.API != nil {
-			state.APIURL = pkg.FromStr(otoroshi.API.URL)
-			state.APIClientID = pkg.FromStr(otoroshi.API.User)
-			state.APIClientSecret = pkg.FromStr(otoroshi.API.Secret)
-		}
-		state.InitialAdminLogin = pkg.FromStr(otoroshi.Initialredentials.User)
-		state.InitialAdminPassword = pkg.FromStr(otoroshi.Initialredentials.Passsword)
-		state.URL = pkg.FromStr(otoroshi.AccessURL)
+		state.FromOtoroshi(ctx, otoroshi, &resp.Diagnostics)
 
 		// Networkgroups are piloted on the Java application backing the add-on
 		application.SyncNetworkGroups(ctx, r, otoroshi.Resources.Entrypoint, state.Networkgroups, &resp.Diagnostics)
@@ -102,9 +95,7 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddError("failed to get Otoroshi", addonRes.Error().Error())
 	} else {
 		addon := addonRes.Payload()
-		state.Name = pkg.FromStr(addon.Name)
-		state.Region = pkg.FromStr(addon.Region)
-		state.CreationDate = pkg.FromI(addon.CreationDate)
+		state.FromAddon(ctx, addon, &resp.Diagnostics)
 	}
 
 	otoroshiRes := tmp.GetOtoroshi(ctx, r.Client(), state.ID.ValueString())
@@ -112,14 +103,7 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddError("failed to get Otorshi", otoroshiRes.Error().Error())
 	} else {
 		otoroshi := otoroshiRes.Payload()
-		if otoroshi.API != nil {
-			state.APIURL = pkg.FromStr(otoroshi.API.URL)
-			state.APIClientID = pkg.FromStr(otoroshi.API.User)
-			state.APIClientSecret = pkg.FromStr(otoroshi.API.Secret)
-		}
-		state.InitialAdminLogin = pkg.FromStr(otoroshi.Initialredentials.User)
-		state.InitialAdminPassword = pkg.FromStr(otoroshi.Initialredentials.Passsword)
-		state.URL = pkg.FromStr(otoroshi.AccessURL)
+		state.FromOtoroshi(ctx, otoroshi, &resp.Diagnostics)
 
 		// Networkgroups are piloted on the Java application backing the add-on
 		state.Networkgroups = resources.ReadNetworkGroups(ctx, r, otoroshi.Resources.Entrypoint, &resp.Diagnostics)
