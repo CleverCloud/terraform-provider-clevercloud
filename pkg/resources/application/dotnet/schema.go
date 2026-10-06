@@ -76,6 +76,10 @@ func (dotnetapp Dotnet) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[
 }
 
 func (dotnetapp *Dotnet) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	if dotnetapp == nil || env == nil {
+		return
+	}
+
 	dotnetapp.DotnetProfile = pkg.FromStrPtr(env.PopPtr("CC_DOTNET_PROFILE"))
 	dotnetapp.DotnetProj = pkg.FromStrPtr(env.PopPtr("CC_DOTNET_PROJ"))
 	dotnetapp.DotnetTFM = pkg.FromStrPtr(env.PopPtr("CC_DOTNET_TFM"))

@@ -133,6 +133,10 @@ func (node NodeJS) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 }
 
 func (node *NodeJS) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	if node == nil || env == nil {
+		return
+	}
+
 	node.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 	pkg.SetBoolIf(&node.DevDependencies, env.PopPtr("CC_NODE_DEV_DEPENDENCIES"), "install")
 	node.StartScript = pkg.FromStrPtr(env.PopPtr("CC_RUN_COMMAND"))

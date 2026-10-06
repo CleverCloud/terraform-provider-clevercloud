@@ -165,7 +165,7 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 	// Map response even if there were errors (app might be created)
 	if createRes != nil {
 		runtime.ID = pkg.FromStr(createRes.Application.ID)
-		runtime.SetFromResponse(createRes, ctx, &diags)
+		runtime.FromApp(ctx, createRes, &diags)
 
 		// TCP redirection
 		runtime.Redirection = SyncTCPRedirection(ctx, resource.Client(), resource.Organization(), createRes.Application.ID, runtime.Redirection, nil, &diags)

@@ -8,8 +8,18 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 )
 
-// SetFromResponse maps API response fields to Runtime fields
-func (r *Runtime) SetFromResponse(res AppResponseProvider, ctx context.Context, diags *diag.Diagnostics) {
+// FromApp maps the application view onto the fields every runtime shares.
+//
+// It takes the AppResponseProvider interface rather than a *tmp.AppResponse,
+// which is the one deviation from the convention's "name and type the API
+// payload" rule: GetBuildFlavor() encodes the "no separate build means no build
+// flavour" rule, which is state logic rather than API shape, and Create, Read
+// and Update have to share it. Do not widen that exception — see CONTRIBUTING.md.
+func (r *Runtime) FromApp(ctx context.Context, res AppResponseProvider, diags *diag.Diagnostics) {
+	if r == nil || res == nil || res.GetApp() == nil {
+		return
+	}
+
 	app := res.GetApp()
 
 	r.Name = pkg.FromStr(app.Name)
@@ -24,6 +34,7 @@ func (r *Runtime) SetFromResponse(res AppResponseProvider, ctx context.Context, 
 	r.RedirectHTTPS = pkg.FromBool(ToForceHTTPS(app.ForceHTTPS))
 	r.DeployURL = pkg.FromStr(app.DeployURL)
 
+	// The prior value goes in so the mapper can tell a null set from an empty one.
 	r.VHosts = helper.VHostsFromAPIHosts(ctx, app.Vhosts.AsString(), r.VHosts, diags)
 }
 

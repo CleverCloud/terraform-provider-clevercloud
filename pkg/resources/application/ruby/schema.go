@@ -285,6 +285,10 @@ func (ruby Ruby) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 }
 
 func (ruby *Ruby) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	if ruby == nil || env == nil {
+		return
+	}
+
 	ruby.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 	ruby.RubyVersion = pkg.FromStrPtr(env.PopPtr("CC_RUBY_VERSION"))
 	pkg.SetBoolIf(&ruby.EnableSidekiq, env.PopPtr("CC_ENABLE_SIDEKIQ"), "true")

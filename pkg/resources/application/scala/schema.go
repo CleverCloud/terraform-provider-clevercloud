@@ -66,6 +66,10 @@ func (plan *Scala) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 }
 
 func (scala *Scala) FromEnv(ctx context.Context, env *helperMaps.Map[string, string], diags *diag.Diagnostics) {
+	if scala == nil || env == nil {
+		return
+	}
+
 	scala.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 
 	scala.Integrations = attributes.FromEnvIntegrations(ctx, env, scala.Integrations, diags)

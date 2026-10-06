@@ -207,6 +207,10 @@ func (p *Docker) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 }
 
 func (p *Docker) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	if p == nil || env == nil {
+		return
+	}
+
 	p.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 	p.Dockerfile = pkg.FromStrPtr(env.PopPtr("CC_DOCKERFILE"))
 	p.ContainerPort = pkg.FromIntPtr(env.PopPtr("CC_DOCKER_EXPOSED_HTTP_PORT"))
