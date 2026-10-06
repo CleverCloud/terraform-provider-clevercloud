@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.4.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.3.0...v2.4.0) (2026-10-06)
+
+
+### Features
+
+* **apps:** java maven profile ([529ef70](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/529ef7038ea381958c3b13f4593a164c9b407ca3))
+* **provider:** support api token bearer authentication ([bfd23d0](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/bfd23d08c43f0f983355b04590620b172dc8d085))
+
 ## [2.3.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.2.1...v2.3.0) (2026-09-28)
 
 
