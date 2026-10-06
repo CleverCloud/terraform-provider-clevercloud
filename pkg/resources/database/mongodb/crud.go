@@ -56,7 +56,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 
 	createdMg := res.Payload()
 	mg.ID = pkg.FromStr(createdMg.RealID)
-	r.readFromAddon(&mg, *createdMg)
+	mg.FromAddon(ctx, createdMg, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 
@@ -66,7 +66,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	r.readFromAPI(&mg, *mgInfoRes.Payload())
+	mg.FromMongoDB(ctx, mgInfoRes.Payload(), &resp.Diagnostics)
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -121,43 +121,12 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 		resp.Diagnostics.AddError("failed to get MongoDB addon", addonRes.Error().Error())
 		return
 	}
-	addonInfo := addonRes.Payload()
-
-	r.readFromAddon(&mg, *addonInfo)
-	r.readFromAPI(&mg, *addonMG)
+	mg.
+		FromAddon(ctx, addonRes.Payload(), &resp.Diagnostics).
+		FromMongoDB(ctx, addonMG, &resp.Diagnostics)
 
 	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
-}
-
-func (r *ResourceMongoDB) readFromAddon(state *MongoDB, addon tmp.AddonResponse) {
-	state.Name = pkg.FromStr(addon.Name)
-	state.Plan = pkg.FromStr(addon.Plan.Slug)
-	state.Region = pkg.FromStr(addon.Region)
-	state.CreationDate = pkg.FromI(addon.CreationDate)
-}
-
-func (r *ResourceMongoDB) readFromAPI(state *MongoDB, mg tmp.MongoDB) {
-	state.Host = pkg.FromStr(mg.Host)
-	state.Port = pkg.FromI(int64(mg.Port))
-	state.User = pkg.FromStr(mg.User)
-	state.Password = pkg.FromStr(mg.Password)
-	state.Database = pkg.FromStr(mg.Database)
-	state.Uri = pkg.FromStr(mg.Uri())
-
-	// Initialize to defaults so attributes are never null in state after import.
-	// The features loop below overrides with actual API values if present.
-	state.Encryption = pkg.FromBool(false)
-	state.DirectHostOnly = pkg.FromBool(false)
-
-	for _, feature := range mg.Features {
-		switch feature.Name {
-		case "encryption":
-			state.Encryption = pkg.FromBool(feature.Enabled)
-		case "direct-host-only":
-			state.DirectHostOnly = pkg.FromBool(feature.Enabled)
-		}
-	}
 }
 
 // Update resource

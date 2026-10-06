@@ -2,14 +2,9 @@ package elasticsearch
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
-	"github.com/Masterminds/semver/v3"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
@@ -76,13 +71,13 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 	plan.ID = pkg.FromStr(createdAddon.RealID)
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 
-	r.readFromAddon(&plan, *createdAddon)
+	plan.FromAddon(ctx, createdAddon, &res.Diagnostics)
 
 	esRes := tmp.GetElasticsearch(ctx, r.Client(), createdAddon.ID)
 	if esRes.HasError() {
 		res.Diagnostics.AddError("failed to get Elasticsearch", esRes.Error().Error())
 	} else {
-		r.readFromAPI(&plan, *esRes.Payload(), &res.Diagnostics)
+		plan.FromElasticsearch(ctx, esRes.Payload(), &res.Diagnostics)
 	}
 
 	addon.SyncNetworkGroups(
@@ -111,7 +106,7 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 	if addonRes.HasError() {
 		res.Diagnostics.AddError("failed to get addon", addonRes.Error().Error())
 	} else {
-		r.readFromAddon(&state, *addonRes.Payload())
+		state.FromAddon(ctx, addonRes.Payload(), &res.Diagnostics)
 	}
 
 	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
@@ -122,82 +117,13 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 		if elasticRes.HasError() {
 			res.Diagnostics.AddError("failed to get Elasticsearch resource", elasticRes.Error().Error())
 		} else {
-			r.readFromAPI(&state, *elasticRes.Payload(), &res.Diagnostics)
+			state.FromElasticsearch(ctx, elasticRes.Payload(), &res.Diagnostics)
 		}
 	}
 
 	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
-}
-
-func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic tmp.Elasticsearch, diags *diag.Diagnostics) {
-	state.Host = pkg.FromStr(elastic.Host)
-	state.User = pkg.FromStr(elastic.User)
-	state.Password = pkg.FromStr(elastic.Password)
-
-	if elastic.Version != "" {
-		v, err := semver.NewVersion(elastic.Version)
-		if err != nil {
-			parts := strings.Split(elastic.Version, ".")
-			if len(parts) > 0 {
-				state.Version = pkg.FromStr(parts[0])
-			} else {
-				state.Version = pkg.FromStr(elastic.Version)
-			}
-		} else {
-			state.Version = pkg.FromStr(fmt.Sprintf("%d", v.Major()))
-		}
-	}
-
-	features := pkg.Reduce(
-		elastic.Features,
-		map[string]bool{},
-		func(acc map[string]bool, feature tmp.ElasticsearchFeature) map[string]bool {
-			acc[feature.Name] = feature.Enabled
-			return acc
-		})
-
-	// Set the toggles themselves, not only the credentials they unlock: left null
-	// in state after an import, their schema defaults create a diff, and both carry
-	// RequiresReplace, so the next plan destroys and recreates the add-on.
-	state.Kibana = pkg.FromBool(features["kibana"])
-	state.Apm = pkg.FromBool(features["apm"])
-
-	state.KibanaUser = basetypes.NewStringNull()
-	state.KibanaPassword = basetypes.NewStringNull()
-	state.KibanaHost = basetypes.NewStringNull()
-	if features["kibana"] {
-		state.KibanaUser = pkg.FromStr(elastic.KibanaUser)
-		state.KibanaPassword = pkg.FromStr(elastic.KibanaPassword)
-	}
-	if elastic.KibanaHost != nil {
-		state.KibanaHost = pkg.FromStr(*elastic.KibanaHost)
-	}
-
-	state.ApmUser = basetypes.NewStringNull()
-	state.ApmPassword = basetypes.NewStringNull()
-	state.ApmToken = basetypes.NewStringNull()
-	state.ApmHost = basetypes.NewStringNull()
-	if features["apm"] {
-		state.ApmUser = pkg.FromStr(elastic.ApmUser)
-		state.ApmPassword = pkg.FromStr(elastic.ApmPassword)
-		state.ApmToken = pkg.FromStr(elastic.ApmAuthToken)
-		state.ApmHost = pkg.FromStr(*elastic.ApmHost)
-	}
-
-	state.Encryption = pkg.FromBool(features["encryption"])
-
-	state.Plugins = basetypes.NewSetNull(types.StringType)
-	if len(elastic.Plugins) > 0 {
-		state.Plugins = pkg.FromSetString(elastic.Plugins, diags)
-	}
-}
-
-func (r *ResourceElasticsearch) readFromAddon(state *Elasticsearch, addon tmp.AddonResponse) {
-	state.Plan = pkg.FromStr(addon.Plan.Slug)
-	state.Name = pkg.FromStr(addon.Name)
-	state.Region = pkg.FromStr(addon.Region)
 }
 
 func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {

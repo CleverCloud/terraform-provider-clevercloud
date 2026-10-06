@@ -101,7 +101,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	createdPg := res.Payload()
 
 	pg.ID = pkg.FromStr(createdPg.RealID)
-	r.readFromAddon(&pg, *createdPg)
+	pg.FromAddon(ctx, createdPg, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 
@@ -111,9 +111,9 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	// readFromAPI syncs the locale from the API response; the plan value
+	// FromPostgreSQL syncs the locale from the API response; the plan value
 	// (defaulted to en_GB by the schema) is kept when the API does not expose it
-	r.readFromAPI(ctx, &pg, *pgInfoRes.Payload())
+	pg.FromPostgreSQL(ctx, pgInfoRes.Payload(), &resp.Diagnostics)
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -158,7 +158,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	} else if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Postgres resource", addonRes.Error().Error())
 	} else {
-		r.readFromAddon(&pg, *addonRes.Payload())
+		pg.FromAddon(ctx, addonRes.Payload(), &resp.Diagnostics)
 	}
 
 	addonPGRes := tmp.GetPostgreSQL(ctx, r.Client(), addonID)
@@ -174,59 +174,11 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 			return
 		}
 
-		r.readFromAPI(ctx, &pg, *addonPG)
+		pg.FromPostgreSQL(ctx, addonPG, &resp.Diagnostics)
 	}
 
 	pg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonID, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
-}
-
-func (r *ResourcePostgreSQL) readFromAddon(state *PostgreSQL, addon tmp.AddonResponse) {
-	state.Name = pkg.FromStr(addon.Name)
-	state.Plan = pkg.FromStr(addon.Plan.Slug)
-	state.Region = pkg.FromStr(addon.Region)
-	state.CreationDate = pkg.FromI(addon.CreationDate)
-}
-
-// defaultLocale is the locale the platform uses when none is requested at creation
-const defaultLocale = "en_GB"
-
-func (r *ResourcePostgreSQL) readFromAPI(ctx context.Context, state *PostgreSQL, pg tmp.PostgreSQL) {
-	state.Host = pkg.FromStr(pg.Host)
-	state.Port = pkg.FromI(int64(pg.Port))
-	state.Database = pkg.FromStr(pg.Database)
-	state.User = pkg.FromStr(pg.User)
-	state.Password = pkg.FromStr(pg.Password)
-	state.Version = pkg.FromStr(pg.Version)
-	state.Uri = pkg.FromStr(pg.Uri())
-
-	// The locale is fixed at creation time (LC_COLLATE cannot change afterwards)
-	// and exposed by the API. When the API does not return it, keep the value
-	// already in state (config or default) and only fall back on import.
-	switch {
-	case pg.Locale != "":
-		state.Locale = pkg.FromStr(pg.Locale)
-	case state.Locale.IsNull() || state.Locale.IsUnknown():
-		tflog.Warn(ctx, "API did not return the PostgreSQL locale, using default", map[string]any{"locale": defaultLocale})
-		state.Locale = pkg.FromStr(defaultLocale)
-	}
-
-	// Initialize to defaults so attributes are never null in state after import.
-	// The features loop below overrides with actual API values if present.
-	state.Backup = pkg.FromBool(true)
-	state.Encryption = pkg.FromBool(false)
-	state.DirectHostOnly = pkg.FromBool(false)
-
-	for _, feature := range pg.Features {
-		switch feature.Name {
-		case "do-backup":
-			state.Backup = pkg.FromBool(feature.Enabled)
-		case "encryption":
-			state.Encryption = pkg.FromBool(feature.Enabled)
-		case "direct-host-only":
-			state.DirectHostOnly = pkg.FromBool(feature.Enabled)
-		}
-	}
 }
 
 func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
