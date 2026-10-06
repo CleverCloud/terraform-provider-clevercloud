@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
@@ -67,14 +66,9 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 	if keycloakRes.HasError() {
 		res.Diagnostics.AddError("failed to get Keycloak", keycloakRes.Error().Error())
 	} else {
-		keycloak := keycloakRes.Payload()
-		plan.Name = pkg.FromStr(keycloak.Name)
-		plan.Host = pkg.FromStr(keycloak.AccessURL)
-		plan.AdminUsername = pkg.FromStr(keycloak.InitialCredentials.User)
-		plan.AdminPassword = pkg.FromStr(keycloak.InitialCredentials.Password)
-		plan.Version = pkg.FromStr(keycloak.Version)
-		plan.AccessDomain = pkg.FromStr(keycloak.EnvVars["CC_KEYCLOAK_HOSTNAME"])
-		plan.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
+		plan.
+			FromAddon(ctx, addon, &res.Diagnostics).
+			FromKeycloak(ctx, keycloakRes.Payload(), &res.Diagnostics)
 	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
@@ -100,8 +94,7 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddError("failed to get Keycloak addon", addonRes.Error().Error())
 	} else {
 		addon := addonRes.Payload()
-		state.Name = pkg.FromStr(addon.Name)
-		state.Region = pkg.FromStr(addon.Region)
+		state.FromAddon(ctx, addon, &resp.Diagnostics)
 	}
 
 	keycloakRes := r.SDK.
@@ -117,13 +110,7 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 	} else if keycloakRes.HasError() {
 		resp.Diagnostics.AddError("failed to get keycloak", keycloakRes.Error().Error())
 	} else {
-		keycloak := keycloakRes.Payload()
-		state.Host = pkg.FromStr(keycloak.AccessURL)
-		state.AdminUsername = pkg.FromStr(keycloak.InitialCredentials.User)
-		state.AdminPassword = pkg.FromStr(keycloak.InitialCredentials.Password)
-		state.Version = pkg.FromStr(keycloak.Version)
-		state.AccessDomain = pkg.FromStr(keycloak.EnvVars["CC_KEYCLOAK_HOSTNAME"])
-		state.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
+		state.FromKeycloak(ctx, keycloakRes.Payload(), &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
@@ -170,13 +157,7 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 			resp.Diagnostics.AddError("failed to update Keycloak version", versionRes.Error().Error())
 			return
 		} else {
-			kc := versionRes.Payload()
-			state.Version = pkg.FromStr(kc.Version)
-			state.Host = pkg.FromStr(kc.AccessURL)
-			state.AdminUsername = pkg.FromStr(kc.InitialCredentials.User)
-			state.AdminPassword = pkg.FromStr(kc.InitialCredentials.Password)
-			state.AccessDomain = pkg.FromStr(kc.EnvVars["CC_KEYCLOAK_HOSTNAME"])
-			state.FSBucketID = types.StringPointerValue(kc.Resources.FsbucketID)
+			state.FromKeycloak(ctx, versionRes.Payload(), &resp.Diagnostics)
 		}
 	}
 

@@ -54,7 +54,7 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.AddError("failed to get Metabase", metabaseRes.Error().Error())
 	} else {
 		metabase := metabaseRes.Payload()
-		mb.Host = pkg.FromStr(metabase.AccessURL)
+		mb.FromMetabase(ctx, metabase, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
@@ -80,8 +80,8 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddError("failed to get Metabase resource", addonMBRes.Error().Error())
 	} else {
 		metabase := addonMBRes.Payload()
+		state.FromMetabase(ctx, metabase, &resp.Diagnostics)
 		state.Name = pkg.FromStr(metabase.Name)
-		state.Host = pkg.FromStr(metabase.AccessURL)
 	}
 
 	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
@@ -95,7 +95,7 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddError("failed to get Metabase addon", addonRes.Error().Error())
 	} else {
 		addon := addonRes.Payload()
-		state.Region = pkg.FromStr(addon.Region)
+		state.FromAddon(ctx, addon, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
