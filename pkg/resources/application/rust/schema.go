@@ -96,6 +96,10 @@ func (r Rust) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 }
 
 func (r *Rust) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	if r == nil || env == nil {
+		return
+	}
+
 	r.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 	r.Features = pkg.FromSetSplit(env.PopPtr(CC_RUST_FEATURES), ",", diags)
 

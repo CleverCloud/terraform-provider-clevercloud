@@ -67,12 +67,18 @@ func (s *T) From<APIType>(ctx context.Context, payload *<APIType>, diags *diag.D
    type, then `FromEnv`. The CRUD diff then reduces to "delete N lines, insert
    one chain".
 
-The one documented exception to rule 1 is the drains: `ResourceDrain[T]` is
-generic over `DrainAttributes` and reaches its mapper through that interface, and
-an interface method cannot return the concrete type — so `FromDrain` returns
-nothing, because there is nothing to chain onto. Their mappers also stay in
-`drain/schema.go` next to the seven structs they belong to. Every other rule
-applies to them unchanged.
+**Rule 1 has one structural exception: mappers reached through an interface.**
+`ResourceDrain[T]` is generic over `DrainAttributes`, and `application.Read[T]`
+is generic over `RuntimePlan`; both reach their mapper through that interface,
+and an interface method cannot return the concrete type. So `FromDrain` and the
+runtimes' `FromEnv` return nothing — there is nothing to chain onto, and each of
+those structs has exactly one mapper anyway. They also stay where they are: the
+drains' next to their seven structs in `drain/schema.go`, each runtime's beside
+the `ToEnv` it is the mirror of. Every other rule applies to them unchanged.
+
+In practice the fluent form is what the add-on and software resources use, where
+two or three payloads land in one state struct and the mapper is called on a
+concrete type.
 
 ### Which absent-value policy
 

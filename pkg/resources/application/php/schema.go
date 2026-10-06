@@ -122,6 +122,10 @@ func (p *PHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 }
 
 func (p *PHP) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *diag.Diagnostics) {
+	if p == nil || env == nil {
+		return
+	}
+
 	p.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 	p.WebRoot = pkg.FromStrPtr(env.PopPtr("CC_WEBROOT"))
 	p.PHPVersion = pkg.FromStrPtr(env.PopPtr("CC_PHP_VERSION"))

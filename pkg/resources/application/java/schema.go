@@ -78,6 +78,10 @@ func (plan *Java) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string
 }
 
 func (plan *Java) FromEnv(ctx context.Context, env *helperMaps.Map[string, string], diags *diag.Diagnostics) {
+	if plan == nil || env == nil {
+		return
+	}
+
 	plan.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 	plan.JavaVersion = pkg.FromStrPtr(env.PopPtr("CC_JAVA_VERSION"))
 

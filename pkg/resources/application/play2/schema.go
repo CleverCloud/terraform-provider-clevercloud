@@ -64,6 +64,10 @@ func (plan *Play2) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 }
 
 func (play2 *Play2) FromEnv(ctx context.Context, env *helperMaps.Map[string, string], diags *diag.Diagnostics) {
+	if play2 == nil || env == nil {
+		return
+	}
+
 	play2.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
 	play2.Integrations = attributes.FromEnvIntegrations(ctx, env, play2.Integrations, diags)
 }
