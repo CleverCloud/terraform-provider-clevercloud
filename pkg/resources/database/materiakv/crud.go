@@ -68,9 +68,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 	tflog.Debug(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", kvInfo),
 	})
-	kv.Host = pkg.FromStr(kvInfo.Host)
-	kv.Port = pkg.FromI(int64(kvInfo.Port))
-	kv.Token = pkg.FromStr(kvInfo.Token)
+	kv.FromMateriaDB(ctx, kvInfo, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
 }
@@ -132,15 +130,11 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 
 	addon := addonRes.Payload()
-	kv.Name = pkg.FromStr(addon.Name)
-	kv.Region = pkg.FromStr(addon.Region)
-	kv.CreationDate = pkg.FromI(addon.CreationDate)
+	kv.FromAddon(ctx, addon, &resp.Diagnostics)
 
 	tflog.Debug(ctx, "STATE", map[string]any{"kv": kv})
 	tflog.Debug(ctx, "API", map[string]any{"kv": addonKV})
-	kv.Host = pkg.FromStr(addonKV.Host)
-	kv.Port = pkg.FromI(int64(addonKV.Port))
-	kv.Token = pkg.FromStr(addonKV.Token)
+	kv.FromMateriaDB(ctx, addonKV, &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, kv)
 	resp.Diagnostics.Append(diags...)
