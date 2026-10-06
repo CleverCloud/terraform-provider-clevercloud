@@ -131,6 +131,13 @@ Every mapper carries three unit tests, named the same way everywhere, after
 - `TestXFromAPI_AbsentFeatureUsesFallback` — a sparse or empty toggle list: every
   `Computed` attribute is non-null and equal to its schema default.
 
-`pkg/registry/mapping_contract_test.go` enforces the last one across every
-registered resource: a new resource, or a new `Computed` attribute, cannot ship
-without being mapped. Read its doc comment for what it does *not* prove.
+`pkg/registry/mapping_contract_test.go` is the cross-resource half: every
+registered resource has to name the state struct it fills, and that struct has
+to carry at least one `From*` method whose signature follows the convention. So
+a new resource cannot ship without someone looking at its mapping, and a mapper
+cannot be renamed or deleted unnoticed. A resource that genuinely reads nothing
+back goes in its `unmapped` table, with the reason.
+
+It deliberately proves nothing about the values: read its doc comment for what
+it does *not* cover, and do not let its green substitute for the three cases
+above.
