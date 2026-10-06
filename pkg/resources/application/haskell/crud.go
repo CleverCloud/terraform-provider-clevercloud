@@ -109,4 +109,5 @@ func (r *ResourceHaskell) ModifyPlan(ctx context.Context, req resource.ModifyPla
 	}
 
 	application.ValidateRuntimeFlavors(ctx, r, "haskell", plan.Runtime, &res.Diagnostics)
+	application.PlanDeploymentCommit(ctx, req, res)
 }

@@ -65,7 +65,7 @@ The `deployment` block drives how Terraform deploys your application, and its `c
 - **Import**: `terraform import` does not populate the `deployment` block (the provider cannot tell whether you want to manage deployments with Terraform). Add the block to your configuration to start tracking the running commit — be aware that the first apply then triggers a deployment.
 - **Git references**: when `commit` holds a reference (`refs/heads/...`), the running commit is not reported and deployments done outside of Terraform are not detected (a local reference cannot be compared to the running hash without cloning the repository).
 - **Switching from a reference to the computed commit**: removing `commit = "refs/heads/..."` from the configuration keeps the reference in the state; re-create the resource (or set an explicit hash once) to switch to the computed behaviour.
-- **Repository HEAD moves, nothing else changes**: `terraform plan` does not clone the repository, so a new commit on your branch does not show up as a diff by itself; the push happens on the next apply that carries a change.
+- **Repository HEAD is resolved at plan time**: without `commit`, `terraform plan` reads the repository HEAD (a `file://` repository is opened, a remote one is only listed like `git ls-remote`, never cloned) and plans a deployment when it differs from the running commit. An unreachable repository only emits a warning and the plan goes on without it.
 - **State freshness on update**: when an update deploys a new HEAD while `commit` is not configured, the state reports the new hash after the next refresh (Terraform requires the applied value to match the planned one).
 
 ## Applications: private repository deployment
