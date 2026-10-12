@@ -60,7 +60,7 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 		appMatomo.Version = pkg.FromStr(matomo.Version)
 	}
 
-	resources.SyncAddonTags(ctx, r, addon.ID, appMatomo.Tags, &res.Diagnostics)
+	appMatomo.Tags = resources.SyncAddonTags(ctx, r, addon.ID, appMatomo.Tags, resources.NullTags, &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, appMatomo)...)
 }
@@ -134,8 +134,7 @@ func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	if !plan.Tags.Equal(state.Tags) {
-		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
-		state.Tags = plan.Tags
+		state.Tags = resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

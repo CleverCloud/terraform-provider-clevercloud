@@ -67,7 +67,7 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 	cellar.KeyID = pkg.FromStr(creds.KeyID)
 	cellar.KeySecret = pkg.FromStr(creds.KeySecret)
 
-	resources.SyncAddonTags(ctx, r, addonRes.ID, cellar.Tags, &resp.Diagnostics)
+	cellar.Tags = resources.SyncAddonTags(ctx, r, addonRes.ID, cellar.Tags, resources.NullTags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
 }
@@ -144,8 +144,7 @@ func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest,
 	state.Name = pkg.FromStr(addonRes.Payload().Name)
 
 	if !plan.Tags.Equal(state.Tags) {
-		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
-		state.Tags = plan.Tags
+		state.Tags = resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

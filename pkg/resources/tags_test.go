@@ -2,13 +2,14 @@ package resources
 
 import (
 	"context"
+	"errors"
+	"slices"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
-	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.dev/client"
 )
 
 func TestTagsFromAPI(t *testing.T) {
@@ -46,39 +47,104 @@ func TestTagsFromAPI(t *testing.T) {
 	}
 }
 
-func TestTagsValidator(t *testing.T) {
+func TestReadTags(t *testing.T) {
 	ctx := context.Background()
-	cases := []struct {
-		tags    []string
-		wantErr bool
-	}{
-		{[]string{"simple", "key:value", "a:b:c"}, false},
-		{[]string{""}, true},
-		{[]string{":value"}, true},
-		{[]string{"key:"}, true},
-		{[]string{" "}, true},
-	}
 
-	for _, tc := range cases {
-		res := &validator.SetResponse{}
-		tagsValidator.ValidateSet(ctx, validator.SetRequest{
-			Path:        path.Root("tags"),
-			ConfigValue: mustSet(t, tc.tags...),
-		}, res)
-		if res.Diagnostics.HasError() != tc.wantErr {
-			t.Errorf("tags %q: hasError=%v, want %v (%v)", tc.tags, res.Diagnostics.HasError(), tc.wantErr, res.Diagnostics)
+	t.Run("unmanaged tags are not fetched", func(t *testing.T) {
+		diags := diag.Diagnostics{}
+		got := ReadTags(ctx, NullTags, func() client.Response[[]string] {
+			t.Fatal("fetch must not be called")
+			return nil
+		}, &diags)
+		if diags.HasError() || !got.IsNull() {
+			t.Fatalf("got %v (%v), want null", got, diags)
 		}
-	}
+	})
 
-	// null and unknown must pass
-	for _, v := range []types.Set{types.SetNull(types.StringType), types.SetUnknown(types.StringType)} {
-		res := &validator.SetResponse{}
-		tagsValidator.ValidateSet(ctx, validator.SetRequest{Path: path.Root("tags"), ConfigValue: v}, res)
-		if res.Diagnostics.HasError() {
-			t.Errorf("null/unknown set must not error: %v", res.Diagnostics)
+	t.Run("api error keeps the state value", func(t *testing.T) {
+		diags := diag.Diagnostics{}
+		state := mustSet(t, "a")
+		got := ReadTags(ctx, state, func() client.Response[[]string] {
+			return fakeResponse{err: errors.New("boom")}
+		}, &diags)
+		if !diags.HasError() {
+			t.Fatal("expected an error")
 		}
-	}
+		if !got.Equal(state) {
+			t.Fatalf("got %v, want %v", got, state)
+		}
+	})
+
+	t.Run("api wins once managed", func(t *testing.T) {
+		diags := diag.Diagnostics{}
+		got := ReadTags(ctx, mustSet(t, "a"), func() client.Response[[]string] {
+			return fakeResponse{payload: []string{"b"}}
+		}, &diags)
+		if diags.HasError() || !got.Equal(mustSet(t, "b")) {
+			t.Fatalf("got %v (%v), want [b]", got, diags)
+		}
+	})
 }
+
+func TestSyncTags(t *testing.T) {
+	ctx := context.Background()
+	current := mustSet(t, "old")
+	planned := mustSet(t, "new", "env:prod")
+
+	t.Run("null plan sends nothing", func(t *testing.T) {
+		diags := diag.Diagnostics{}
+		got := SyncTags(ctx, NullTags, current, func([]string) client.Response[[]string] {
+			t.Fatal("replace must not be called")
+			return nil
+		}, &diags)
+		if diags.HasError() || !got.IsNull() {
+			t.Fatalf("got %v (%v), want null", got, diags)
+		}
+	})
+
+	t.Run("success stores the plan", func(t *testing.T) {
+		diags := diag.Diagnostics{}
+		var sent []string
+		got := SyncTags(ctx, planned, current, func(tags []string) client.Response[[]string] {
+			sent = tags
+			return fakeResponse{payload: tags}
+		}, &diags)
+		if diags.HasError() || !got.Equal(planned) {
+			t.Fatalf("got %v (%v), want %v", got, diags, planned)
+		}
+		slices.Sort(sent)
+		if !slices.Equal(sent, []string{"env:prod", "new"}) {
+			t.Fatalf("sent %v", sent)
+		}
+	})
+
+	t.Run("failure keeps the current value", func(t *testing.T) {
+		diags := diag.Diagnostics{}
+		got := SyncTags(ctx, planned, current, func([]string) client.Response[[]string] {
+			return fakeResponse{err: errors.New("boom")}
+		}, &diags)
+		if !diags.HasError() {
+			t.Fatal("expected an error")
+		}
+		if !got.Equal(current) {
+			t.Fatalf("got %v, want %v", got, current)
+		}
+	})
+}
+
+// fakeResponse is a canned API response, the client does not export one
+type fakeResponse struct {
+	payload []string
+	err     error
+}
+
+func (r fakeResponse) Error() error                         { return r.err }
+func (r fakeResponse) HasError() bool                       { return r.err != nil }
+func (r fakeResponse) StatusCode() int                      { return 200 }
+func (r fakeResponse) IsNotFoundError() bool                { return false }
+func (r fakeResponse) SozuID() string                       { return "" }
+func (r fakeResponse) Equal(client.Response[[]string]) bool { return false }
+func (r fakeResponse) Payload() *[]string                   { return &r.payload }
 
 func mustSet(t *testing.T, items ...string) types.Set {
 	t.Helper()

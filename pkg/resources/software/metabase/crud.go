@@ -58,7 +58,7 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 		mb.Host = pkg.FromStr(metabase.AccessURL)
 	}
 
-	resources.SyncAddonTags(ctx, r, addon.ID, mb.Tags, &resp.Diagnostics)
+	mb.Tags = resources.SyncAddonTags(ctx, r, addon.ID, mb.Tags, resources.NullTags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
 }
@@ -134,8 +134,7 @@ func (r *ResourceMetabase) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	if !plan.Tags.Equal(state.Tags) {
-		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
-		state.Tags = plan.Tags
+		state.Tags = resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

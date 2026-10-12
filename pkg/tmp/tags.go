@@ -7,8 +7,8 @@ import (
 	"go.clever-cloud.dev/client"
 )
 
-// Tags are semantic tags: either a plain word ("prod") or a key/value pair
-// ("env:prod"). The API rejects empty tags, empty keys and empty values.
+// Tags are free-form strings, by convention either a plain word ("prod") or a
+// key/value pair ("env:prod"). The API does not validate them.
 
 // GetAppTags returns the tags of an application
 func GetAppTags(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[[]string] {

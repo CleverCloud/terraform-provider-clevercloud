@@ -76,7 +76,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		&mg.Networkgroups,
 		&resp.Diagnostics,
 	)
-	addon.SyncTags(ctx, r, createdMg.ID, mg.Tags, &mg.Tags, &resp.Diagnostics)
+	mg.Tags = resources.SyncAddonTags(ctx, r, createdMg.ID, mg.Tags, resources.NullTags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 }
@@ -198,7 +198,7 @@ func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest
 		&resp.Diagnostics,
 	)
 	if !plan.Tags.Equal(state.Tags) {
-		addon.SyncTags(ctx, r, plan.ID.ValueString(), plan.Tags, &state.Tags, &resp.Diagnostics)
+		state.Tags = resources.SyncAddonTags(ctx, r, plan.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

@@ -172,7 +172,7 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 	runtime.Redirection = SyncTCPRedirection(ctx, resource.Client(), resource.Organization(), stateRuntime.ID.ValueString(), runtime.Redirection, stateRuntime.Redirection, &diags)
 
 	if !runtime.Tags.Equal(stateRuntime.Tags) {
-		SyncTags(ctx, resource, stateRuntime.ID.ValueString(), runtime.Tags, &diags)
+		runtime.Tags = SyncTags(ctx, resource, stateRuntime.ID.ValueString(), runtime.Tags, stateRuntime.Tags, &diags)
 	}
 
 	return diags

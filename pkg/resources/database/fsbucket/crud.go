@@ -70,7 +70,7 @@ func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateReques
 	fsbucket.FTPUsername = envMap["BUCKET_FTP_USERNAME"]
 	fsbucket.FTPPassword = envMap["BUCKET_FTP_PASSWORD"]
 
-	resources.SyncAddonTags(ctx, r, addonRes.ID, fsbucket.Tags, &resp.Diagnostics)
+	fsbucket.Tags = resources.SyncAddonTags(ctx, r, addonRes.ID, fsbucket.Tags, resources.NullTags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, fsbucket)...)
 }
@@ -150,8 +150,7 @@ func (r *ResourceFSBucket) Update(ctx context.Context, req resource.UpdateReques
 	state.Name = pkg.FromStr(addonRes.Payload().Name)
 
 	if !plan.Tags.Equal(state.Tags) {
-		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
-		state.Tags = plan.Tags
+		state.Tags = resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

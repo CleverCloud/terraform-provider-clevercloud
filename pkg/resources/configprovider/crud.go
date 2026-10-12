@@ -80,7 +80,7 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	resources.SyncAddonTags(ctx, r, createdAddon.ID, addonConfigProvider.Tags, &res.Diagnostics)
+	addonConfigProvider.Tags = resources.SyncAddonTags(ctx, r, createdAddon.ID, addonConfigProvider.Tags, resources.NullTags, &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, addonConfigProvider)...)
 }
@@ -196,8 +196,7 @@ func (r *ResourceConfigProvider) Update(ctx context.Context, req resource.Update
 	state.Environment = m
 
 	if !plan.Tags.Equal(state.Tags) {
-		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
-		state.Tags = plan.Tags
+		state.Tags = resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
