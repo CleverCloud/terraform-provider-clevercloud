@@ -44,6 +44,7 @@ type Runtime struct {
 	ID               types.String             `tfsdk:"id"`
 	Name             types.String             `tfsdk:"name"`
 	Description      types.String             `tfsdk:"description"`
+	Tags             types.Set                `tfsdk:"tags"`
 	MinInstanceCount types.Int64              `tfsdk:"min_instance_count"`
 	MaxInstanceCount types.Int64              `tfsdk:"max_instance_count"`
 	SmallestFlavor   types.String             `tfsdk:"smallest_flavor"`

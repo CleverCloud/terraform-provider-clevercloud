@@ -31,6 +31,7 @@ var runtimeCommon = map[string]schema.Attribute{
 		Optional:            true,
 		MarkdownDescription: "Application description",
 	},
+	"tags": resources.TagsAttribute,
 	"min_instance_count": schema.Int64Attribute{
 		Required:            true,
 		MarkdownDescription: "Minimum instance count",

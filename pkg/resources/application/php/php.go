@@ -62,6 +62,7 @@ func (r *ResourcePHP) UpgradeState(ctx context.Context) map[int64]resource.State
 						AppFolder:          old.AppFolder,
 						Environment:        old.Environment,
 						Networkgroups:      resources.NullNetworkgroupConfig,
+						Tags:               resources.NullTags,
 						ExposedEnvironment: application.NullExposedEnv,
 					},
 					PHPVersion:      old.PHPVersion,

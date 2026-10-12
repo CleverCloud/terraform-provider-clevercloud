@@ -169,6 +169,8 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 
 		// TCP redirection
 		runtime.Redirection = SyncTCPRedirection(ctx, resource.Client(), resource.Organization(), createRes.Application.ID, runtime.Redirection, nil, &diags)
+
+		SyncTags(ctx, resource, createRes.Application.ID, runtime.Tags, &diags)
 	}
 
 	return diags
