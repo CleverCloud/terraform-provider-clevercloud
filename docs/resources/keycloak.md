@@ -25,7 +25,7 @@ See [Keycloak product specification](https://www.clever.cloud/developers/doc/add
 
 - `access_domain` (String) Main domaine to access the instance
 - `region` (String) Geographical region where the data will be stored
-- `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags managed outside Terraform are left untouched and never show up in the state, imports included
+- `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
 - `version` (String) Keycloak official version
 
 ### Read-Only

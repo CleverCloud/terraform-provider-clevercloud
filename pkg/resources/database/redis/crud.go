@@ -86,7 +86,7 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 		&rd.Networkgroups,
 		&resp.Diagnostics,
 	)
-	addon.SyncTags(ctx, r, res.Payload().ID, rd.Tags, &rd.Tags, &resp.Diagnostics)
+	rd.Tags = resources.SyncAddonTags(ctx, r, res.Payload().ID, rd.Tags, resources.NullTags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, rd)...)
 }
@@ -195,7 +195,7 @@ func (r *ResourceRedis) Update(ctx context.Context, req resource.UpdateRequest, 
 		&resp.Diagnostics,
 	)
 	if !plan.Tags.Equal(state.Tags) {
-		addon.SyncTags(ctx, r, plan.ID.ValueString(), plan.Tags, &state.Tags, &resp.Diagnostics)
+		state.Tags = resources.SyncAddonTags(ctx, r, plan.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

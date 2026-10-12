@@ -123,7 +123,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		&pg.Networkgroups,
 		&resp.Diagnostics,
 	)
-	addon.SyncTags(ctx, r, createdPg.ID, pg.Tags, &pg.Tags, &resp.Diagnostics)
+	pg.Tags = resources.SyncAddonTags(ctx, r, createdPg.ID, pg.Tags, resources.NullTags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 }
@@ -266,7 +266,7 @@ func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequ
 		&resp.Diagnostics,
 	)
 	if !plan.Tags.Equal(state.Tags) {
-		addon.SyncTags(ctx, r, plan.ID.ValueString(), plan.Tags, &state.Tags, &resp.Diagnostics)
+		state.Tags = resources.SyncAddonTags(ctx, r, plan.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

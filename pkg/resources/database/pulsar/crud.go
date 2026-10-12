@@ -73,7 +73,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 
 	setRetention(ctx, &plan, &resp.Diagnostics)
 
-	resources.SyncAddonTags(ctx, r, addon.ID, plan.Tags, &resp.Diagnostics)
+	plan.Tags = resources.SyncAddonTags(ctx, r, addon.ID, plan.Tags, resources.NullTags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 	if resp.Diagnostics.HasError() {
@@ -258,8 +258,7 @@ func (r *ResourcePulsar) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	} else {
 		if !plan.Tags.Equal(state.Tags) {
-			resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
-			state.Tags = plan.Tags
+			state.Tags = resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
 		}
 
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

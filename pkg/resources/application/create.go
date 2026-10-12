@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
@@ -170,7 +171,7 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 		// TCP redirection
 		runtime.Redirection = SyncTCPRedirection(ctx, resource.Client(), resource.Organization(), createRes.Application.ID, runtime.Redirection, nil, &diags)
 
-		SyncTags(ctx, resource, createRes.Application.ID, runtime.Tags, &diags)
+		runtime.Tags = SyncTags(ctx, resource, createRes.Application.ID, runtime.Tags, resources.NullTags, &diags)
 	}
 
 	return diags

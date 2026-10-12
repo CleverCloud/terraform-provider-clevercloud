@@ -78,7 +78,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		plan.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
 	}
 
-	resources.SyncAddonTags(ctx, r, addon.ID, plan.Tags, &res.Diagnostics)
+	plan.Tags = resources.SyncAddonTags(ctx, r, addon.ID, plan.Tags, resources.NullTags, &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
@@ -186,8 +186,7 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	if !plan.Tags.Equal(state.Tags) {
-		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
-		state.Tags = plan.Tags
+		state.Tags = resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
