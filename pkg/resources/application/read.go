@@ -130,6 +130,8 @@ func Read[T RuntimePlan](ctx context.Context, resource RuntimeResource, state T)
 	// Read linked dependencies (addons)
 	runtime.Dependencies = ReadDependencies(ctx, resource.Client(), resource.Organization(), runtime.ID.ValueString(), runtime.Dependencies, &diags)
 
+	runtime.Tags = ReadTags(ctx, resource, runtime.ID.ValueString(), runtime.Tags, &diags)
+
 	// Read TCP redirection
 	runtime.Redirection = ReadTCPRedirection(ctx, resource.Client(), resource.Organization(), runtime.ID.ValueString(), runtime.Redirection, &diags)
 

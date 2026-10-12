@@ -116,6 +116,7 @@ environment = { for k, v in {
 - `stack_setup_command` (String) Only use this variable to override the default `setup` Stack step command.
 - `stack_target` (String) Specify Stack package target.
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
+- `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags managed outside Terraform are left untouched and never show up in the state, imports included
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
 
 ### Read-Only

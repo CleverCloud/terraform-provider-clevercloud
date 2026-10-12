@@ -114,6 +114,7 @@ environment = { for k, v in {
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
+- `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags managed outside Terraform are left untouched and never show up in the state, imports included
 - `tfm` (String) Compiles for a specific framework. The framework must be defined in the project file. Example : net5.0
 - `version` (String) Choose the .NET Core version between 6.0, 8.0, 9.0. Default: '8.0'
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))

@@ -67,6 +67,7 @@ func (r *ResourceFrankenPHP) UpgradeState(ctx context.Context) map[int64]resourc
 						AppFolder:          old.AppFolder,
 						Environment:        old.Environment,
 						Networkgroups:      resources.NullNetworkgroupConfig,
+						Tags:               resources.NullTags,
 						ExposedEnvironment: application.NullExposedEnv,
 					},
 					DevDependencies: old.DevDependencies,

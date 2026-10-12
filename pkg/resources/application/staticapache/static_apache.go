@@ -64,6 +64,7 @@ func (r *ResourceStaticApache) UpgradeState(ctx context.Context) map[int64]resou
 						AppFolder:          old.AppFolder,
 						Environment:        old.Environment,
 						Networkgroups:      resources.NullNetworkgroupConfig,
+						Tags:               resources.NullTags,
 						ExposedEnvironment: application.NullExposedEnv,
 					},
 				}

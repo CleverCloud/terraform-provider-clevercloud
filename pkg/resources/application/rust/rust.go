@@ -67,6 +67,7 @@ func (r *ResourceRust) UpgradeState(ctx context.Context) map[int64]resource.Stat
 						AppFolder:          old.AppFolder,
 						Environment:        old.Environment,
 						Networkgroups:      resources.NullNetworkgroupConfig,
+						Tags:               resources.NullTags,
 						ExposedEnvironment: application.NullExposedEnv,
 					},
 					Features: old.Features,

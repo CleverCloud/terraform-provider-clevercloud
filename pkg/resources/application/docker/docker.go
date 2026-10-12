@@ -62,6 +62,7 @@ func (r *ResourceDocker) UpgradeState(ctx context.Context) map[int64]resource.St
 						AppFolder:          old.AppFolder,
 						Environment:        old.Environment,
 						Networkgroups:      resources.NullNetworkgroupConfig,
+						Tags:               resources.NullTags,
 						ExposedEnvironment: application.NullExposedEnv,
 					},
 					Dockerfile:        old.Dockerfile,
