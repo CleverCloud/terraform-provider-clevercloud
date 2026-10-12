@@ -11,11 +11,10 @@ import (
 
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
-	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/cache"
+	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
-	"github.com/go-git/go-git/v5/storage"
 	"github.com/go-git/go-git/v5/storage/filesystem"
 	"github.com/go-git/go-git/v5/storage/memory"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -79,39 +78,24 @@ func gitDeploy(ctx context.Context, d Deployment, cleverRemote, deployedCommit s
 		return targetCommit, false, diags
 	}
 
-	// anonymous remote: nothing is written to the repository configuration
-	remote := git.NewRemote(noDeltaStorer{repo.Storer}, &config.RemoteConfig{
-		Name: "tf-clever",
-		URLs: []string{cleverRemote},
-	})
-
-	refSpec := config.RefSpec(fmt.Sprintf("%s:%s", targetCommit, plumbing.Master))
-	if err := refSpec.Validate(); err != nil {
-		diags.AddError("failed to build ref spec to push", err.Error())
-		return "", false, diags
-	}
-
-	pushOptions := &git.PushOptions{
-		RemoteName: "tf-clever",
-		Force:      true,
-		Progress:   os.Stdout,
-		Auth:       d.CleverGitAuth,
-		RefSpecs:   []config.RefSpec{refSpec},
+	var auth transport.AuthMethod
+	if d.CleverGitAuth != nil {
+		auth = d.CleverGitAuth
 	}
 
 	tflog.Debug(ctx, "pushing...", map[string]any{
-		"options": fmt.Sprintf("%+v", pushOptions),
+		"remote": cleverRemote,
+		"commit": targetCommit,
 	})
 
-	err := remote.PushContext(ctx, pushOptions)
+	pushed, err := streamPush(ctx, repo.Storer, cleverRemote, auth, plumbing.NewHash(targetCommit), os.Stdout)
 	if err != nil {
-		if err == git.NoErrAlreadyUpToDate {
-			diags.AddWarning("Git push rejected", "repository is already up-to-date")
-			return targetCommit, false, diags
-		}
-
 		diags.AddError("failed to push to clever remote", err.Error())
 		return "", false, diags
+	}
+	if !pushed {
+		diags.AddWarning("Git push rejected", "repository is already up-to-date")
+		return targetCommit, false, diags
 	}
 
 	return targetCommit, true, diags
@@ -185,8 +169,15 @@ func OpenOrClone(ctx context.Context, repoUrl string, opts ...CloneOpts) (*git.R
 }
 
 // largeObjectThreshold is the size above which objects of a local repository
-// are streamed from disk instead of being loaded in memory
-const largeObjectThreshold = 1 << 20
+// are streamed from disk instead of being loaded in memory. The push reads one
+// object at a time, so below it the memory only depends on the largest object.
+// It is not lower because go-git rebuilds a delta-stored object very slowly
+// when streaming it (about a minute for a 36 MiB binary).
+const largeObjectThreshold = 64 << 20
+
+// objectCacheSize bounds the decoded objects kept in memory while pushing
+// (go-git default: 96 MiB)
+const objectCacheSize = 16 * cache.MiByte
 
 func open(repoUrl string) (*git.Repository, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
@@ -206,7 +197,7 @@ func open(repoUrl string) (*git.Repository, diag.Diagnostics) {
 	}
 	st := filesystem.NewStorageWithOptions(
 		fsStorage.Filesystem(),
-		cache.NewObjectLRUDefault(),
+		cache.NewObjectLRU(objectCacheSize),
 		filesystem.Options{LargeObjectThreshold: largeObjectThreshold},
 	)
 	repo, err = git.Open(st, nil)
@@ -216,22 +207,6 @@ func open(repoUrl string) (*git.Repository, diag.Diagnostics) {
 	}
 
 	return repo, diags
-}
-
-// noDeltaStorer disables the delta search when building the pack to push:
-// go-git keeps every object of the pack in memory to compute deltas, which
-// scales with the repository size (#469)
-type noDeltaStorer struct {
-	storage.Storer
-}
-
-func (s noDeltaStorer) Config() (*config.Config, error) {
-	cfg, err := s.Storer.Config()
-	if err != nil {
-		return nil, err
-	}
-	cfg.Pack.Window = 0
-	return cfg, nil
 }
 
 type CloneOpts func(context.Context, *git.CloneOptions)
