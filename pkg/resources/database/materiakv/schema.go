@@ -8,10 +8,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
 type MateriaKV struct {
 	ID           types.String `tfsdk:"id"`
+	Tags         types.Set    `tfsdk:"tags"`
 	Name         types.String `tfsdk:"name"`
 	CreationDate types.Int64  `tfsdk:"creation_date"`
 	Host         types.String `tfsdk:"host"`
@@ -28,6 +30,7 @@ func (r ResourceMateriaKV) Schema(_ context.Context, req resource.SchemaRequest,
 		Version:             0,
 		MarkdownDescription: resourceMateriaKVDoc,
 		Attributes: map[string]schema.Attribute{
+			"tags": resources.TagsAttribute,
 			// customer provided
 			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
 			"region": schema.StringAttribute{

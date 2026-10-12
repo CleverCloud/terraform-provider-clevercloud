@@ -94,6 +94,8 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 		&res.Diagnostics,
 	)
 
+	resources.SyncAddonTags(ctx, r, createdAddon.ID, plan.Tags, &res.Diagnostics)
+
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
 
@@ -127,6 +129,8 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	state.Networkgroups = resources.ReadNetworkGroups(ctx, r, state.ID.ValueString(), &res.Diagnostics)
+
+	state.Tags = resources.ReadAddonTags(ctx, r, addonId, state.Tags, &res.Diagnostics)
 
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }
@@ -245,6 +249,11 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 		&state.Networkgroups,
 		&res.Diagnostics,
 	)
+
+	if !plan.Tags.Equal(state.Tags) {
+		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &res.Diagnostics)
+		state.Tags = plan.Tags
+	}
 
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }

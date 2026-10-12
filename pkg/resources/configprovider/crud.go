@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -79,6 +80,8 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 		return
 	}
 
+	resources.SyncAddonTags(ctx, r, createdAddon.ID, addonConfigProvider.Tags, &res.Diagnostics)
+
 	res.Diagnostics.Append(res.State.Set(ctx, addonConfigProvider)...)
 }
 
@@ -131,6 +134,8 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 	}
 
 	// Update the state
+	addonConfigProvider.Tags = resources.ReadAddonTags(ctx, r, addonConfigProvider.ID.ValueString(), addonConfigProvider.Tags, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, addonConfigProvider)...)
 }
 
@@ -189,6 +194,11 @@ func (r *ResourceConfigProvider) Update(ctx context.Context, req resource.Update
 		return
 	}
 	state.Environment = m
+
+	if !plan.Tags.Equal(state.Tags) {
+		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
+		state.Tags = plan.Tags
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

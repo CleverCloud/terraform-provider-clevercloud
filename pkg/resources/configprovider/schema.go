@@ -12,10 +12,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
 type ConfigProvider struct {
 	ID          types.String `tfsdk:"id"`
+	Tags        types.Set    `tfsdk:"tags"`
 	Name        types.String `tfsdk:"name"`
 	Environment types.Map    `tfsdk:"environment"`
 }
@@ -28,6 +30,7 @@ func (r ResourceConfigProvider) Schema(_ context.Context, req resource.SchemaReq
 		Version:             0,
 		MarkdownDescription: resourceConfigProviderDoc,
 		Attributes: map[string]schema.Attribute{
+			"tags": resources.TagsAttribute,
 			"environment": schema.MapAttribute{
 				Required:    true,
 				Sensitive:   !pkg.BypassSensitiveImports(),

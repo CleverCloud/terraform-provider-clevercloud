@@ -13,10 +13,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
 type Keycloak struct {
 	ID            types.String `tfsdk:"id"`
+	Tags          types.Set    `tfsdk:"tags"`
 	Name          types.String `tfsdk:"name"`
 	Region        types.String `tfsdk:"region"`
 	Version       types.String `tfsdk:"version"`
@@ -35,6 +37,7 @@ func (r ResourceKeycloak) Schema(_ context.Context, req resource.SchemaRequest, 
 		Version:             0,
 		MarkdownDescription: resourceKeycloakDoc,
 		Attributes: map[string]schema.Attribute{
+			"tags": resources.TagsAttribute,
 			"id":   schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"name": schema.StringAttribute{Required: true, MarkdownDescription: "Name of the service"},
 			"region": schema.StringAttribute{

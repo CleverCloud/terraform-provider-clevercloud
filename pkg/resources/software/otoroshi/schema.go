@@ -15,7 +15,8 @@ import (
 )
 
 type Otoroshi struct {
-	ID types.String `tfsdk:"id"`
+	ID   types.String `tfsdk:"id"`
+	Tags types.Set    `tfsdk:"tags"`
 
 	Name   types.String `tfsdk:"name"`
 	Region types.String `tfsdk:"region"`
@@ -41,6 +42,7 @@ func (r ResourceOtoroshi) Schema(_ context.Context, req resource.SchemaRequest, 
 		Version:             0,
 		MarkdownDescription: resourceOtoroshiDoc,
 		Attributes: map[string]schema.Attribute{
+			"tags": resources.TagsAttribute,
 			// customer provided
 			"name": schema.StringAttribute{
 				Required:            true,

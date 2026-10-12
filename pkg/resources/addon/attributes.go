@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
 type CommonAttributes struct {
@@ -17,6 +18,7 @@ type CommonAttributes struct {
 	Region        types.String `tfsdk:"region"`
 	CreationDate  types.Int64  `tfsdk:"creation_date"`
 	Networkgroups types.Set    `tfsdk:"networkgroups"`
+	Tags          types.Set    `tfsdk:"tags"`
 }
 
 var addonCommon = map[string]schema.Attribute{
@@ -33,6 +35,7 @@ var addonCommon = map[string]schema.Attribute{
 		MarkdownDescription: "Geographical region where the data will be stored",
 	},
 	"creation_date": schema.Int64Attribute{Computed: true, MarkdownDescription: "Date of database creation", PlanModifiers: []planmodifier.Int64{int64planmodifier.UseStateForUnknown()}},
+	"tags":          resources.TagsAttribute,
 	"networkgroups": schema.SetNestedAttribute{
 		Optional:            true,
 		MarkdownDescription: "List of networkgroups the addon must be part of",

@@ -67,8 +67,7 @@ func TestAccTags_application(t *testing.T) {
 		PreCheck:                 tests.ExpectOrganisation(t),
 		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
-			ResourceName: rName,
-			Config:       providerBlock.Append(appBlock).String(),
+			Config: providerBlock.Append(appBlock).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
 					knownvalue.StringExact("terraform"),
@@ -77,8 +76,7 @@ func TestAccTags_application(t *testing.T) {
 				expectRemoteTags("terraform", "env:test"),
 			},
 		}, {
-			ResourceName: rName,
-			Config:       providerBlock.Append(appBlock.SetOneValue("tags", []string{"terraform"})).String(),
+			Config: providerBlock.Append(appBlock.SetOneValue("tags", []string{"terraform"})).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{
 					knownvalue.StringExact("terraform"),
@@ -87,16 +85,14 @@ func TestAccTags_application(t *testing.T) {
 			},
 		}, {
 			// Removing the attribute stops managing tags, the remote ones stay
-			ResourceName: rName,
-			Config:       providerBlock.Append(appBlock.UnsetOneValue("tags")).String(),
+			Config: providerBlock.Append(appBlock.UnsetOneValue("tags")).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.Null()),
 				expectRemoteTags("terraform"),
 			},
 		}, {
 			// An empty set clears the remote tags
-			ResourceName: rName,
-			Config:       providerBlock.Append(appBlock.SetOneValue("tags", []string{})).String(),
+			Config: providerBlock.Append(appBlock.SetOneValue("tags", []string{})).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{})),
 				expectRemoteTags(),

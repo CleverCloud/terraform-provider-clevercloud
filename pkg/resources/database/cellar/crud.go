@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/s3"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
@@ -66,6 +67,8 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 	cellar.KeyID = pkg.FromStr(creds.KeyID)
 	cellar.KeySecret = pkg.FromStr(creds.KeySecret)
 
+	resources.SyncAddonTags(ctx, r, addonRes.ID, cellar.Tags, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
 }
 
@@ -108,6 +111,8 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 	cellar.KeyID = pkg.FromStr(creds.KeyID)
 	cellar.KeySecret = pkg.FromStr(creds.KeySecret)
 
+	cellar.Tags = resources.ReadAddonTags(ctx, r, cellar.ID.ValueString(), cellar.Tags, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
 }
 
@@ -137,6 +142,11 @@ func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 	state.Name = pkg.FromStr(addonRes.Payload().Name)
+
+	if !plan.Tags.Equal(state.Tags) {
+		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
+		state.Tags = plan.Tags
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

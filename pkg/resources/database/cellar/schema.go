@@ -10,10 +10,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
 type Cellar struct {
-	ID types.String `tfsdk:"id"`
+	ID   types.String `tfsdk:"id"`
+	Tags types.Set    `tfsdk:"tags"`
 
 	Name   types.String `tfsdk:"name"`
 	Region types.String `tfsdk:"region"`
@@ -31,6 +33,7 @@ func (r ResourceCellar) Schema(_ context.Context, req resource.SchemaRequest, re
 		Version:             0,
 		MarkdownDescription: resourceCellarDoc,
 		Attributes: map[string]schema.Attribute{
+			"tags": resources.TagsAttribute,
 			// customer provided
 			"name": schema.StringAttribute{
 				Required:            true,

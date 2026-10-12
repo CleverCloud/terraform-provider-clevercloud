@@ -76,6 +76,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		&mg.Networkgroups,
 		&resp.Diagnostics,
 	)
+	addon.SyncTags(ctx, r, createdMg.ID, mg.Tags, &mg.Tags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 }
@@ -127,6 +128,7 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 	r.readFromAPI(&mg, *addonMG)
 
 	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
+	mg.Tags = resources.ReadAddonTags(ctx, r, addonId, mg.Tags, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 }
 
@@ -195,6 +197,9 @@ func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest
 		&state.Networkgroups,
 		&resp.Diagnostics,
 	)
+	if !plan.Tags.Equal(state.Tags) {
+		addon.SyncTags(ctx, r, plan.ID.ValueString(), plan.Tags, &state.Tags, &resp.Diagnostics)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

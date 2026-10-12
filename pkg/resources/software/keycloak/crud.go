@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/models"
 )
@@ -77,6 +78,8 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		plan.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
 	}
 
+	resources.SyncAddonTags(ctx, r, addon.ID, plan.Tags, &res.Diagnostics)
+
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 }
 
@@ -125,6 +128,8 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 		state.AccessDomain = pkg.FromStr(keycloak.EnvVars["CC_KEYCLOAK_HOSTNAME"])
 		state.FSBucketID = types.StringPointerValue(keycloak.Resources.FsbucketID)
 	}
+
+	state.Tags = resources.ReadAddonTags(ctx, r, state.ID.ValueString(), state.Tags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
@@ -178,6 +183,11 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 			state.AccessDomain = pkg.FromStr(kc.EnvVars["CC_KEYCLOAK_HOSTNAME"])
 			state.FSBucketID = types.StringPointerValue(kc.Resources.FsbucketID)
 		}
+	}
+
+	if !plan.Tags.Equal(state.Tags) {
+		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
+		state.Tags = plan.Tags
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
