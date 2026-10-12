@@ -182,7 +182,11 @@ const objectCacheSize = 16 * cache.MiByte
 func open(repoUrl string) (*git.Repository, diag.Diagnostics) {
 	diags := diag.Diagnostics{}
 
-	repo, err := git.PlainOpen(strings.TrimPrefix(repoUrl, "file://"))
+	// EnableDotGitCommonDir: in a linked worktree (.git file), objects and
+	// references live in the main repository
+	repo, err := git.PlainOpenWithOptions(strings.TrimPrefix(repoUrl, "file://"), &git.PlainOpenOptions{
+		EnableDotGitCommonDir: true,
+	})
 	if err != nil {
 		diags.AddError("failed to open repository", fmt.Sprintf("cannot open '%s': %s", repoUrl, err.Error()))
 		return nil, diags

@@ -55,3 +55,32 @@ func TestGitDeploy_StreamPush(t *testing.T) {
 	push(first, true)
 	push(first, false)
 }
+
+// a linked worktree (.git file) keeps its objects in the main repository
+func TestGitDeploy_StreamPushFromWorktree(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git binary required to build the fixture repository")
+	}
+
+	dir := t.TempDir()
+	src := filepath.Join(dir, "src")
+	wt := filepath.Join(dir, "wt")
+	dst := filepath.Join(dir, "dst.git")
+	commit := buildLargeRepository(t, src, 1, 4<<10)
+	runGit(t, src, "worktree", "add", "--quiet", "--detach", wt, commit)
+	runGit(t, "", "init", "--quiet", "--bare", dst)
+
+	_, deployed, diags := gitDeploy(context.Background(), Deployment{
+		Repository: "file://" + wt,
+		Commit:     &commit,
+	}, "file://"+dst, "")
+	if diags.HasError() {
+		t.Fatalf("push failed: %v", diags)
+	}
+	if !deployed {
+		t.Fatal("expected the push to trigger a deployment")
+	}
+	if got := strings.TrimSpace(runGit(t, dst, "rev-parse", "refs/heads/master")); got != commit {
+		t.Fatalf("remote master = %s, want %s", got, commit)
+	}
+}
