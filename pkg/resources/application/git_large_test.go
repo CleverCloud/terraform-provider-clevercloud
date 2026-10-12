@@ -24,9 +24,9 @@ const mib = 1 << 20
 //
 // The source repository holds one commit of random (incompressible, so no
 // delta can be found) files and is pushed through gitDeploy to a local bare
-// repository. Two layouts are pushed: a few large files (streamed from disk
-// above the large object threshold) and thousands of small files, like a
-// vendored dependency tree. The receiving git-receive-pack runs out of process, so the heap
+// repository. Two layouts are pushed: large files (streamed from disk above
+// the large object threshold) and thousands of small files, like a vendored
+// dependency tree. The receiving git-receive-pack runs out of process, so the heap
 // measured here is only the provider side of the push.
 //
 // Heavy test, opt-in:
@@ -53,7 +53,7 @@ func TestGitDeploy_LargeRepositoryBoundedMemory(t *testing.T) {
 		name     string
 		fileSize int64
 	}{
-		{"large files", 4 * mib},
+		{"large files", 96 * mib},
 		{"thousands of small files", 8 << 10},
 	} {
 		t.Run(layout.name, func(t *testing.T) {
