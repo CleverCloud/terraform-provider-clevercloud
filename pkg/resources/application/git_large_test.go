@@ -24,14 +24,16 @@ const mib = 1 << 20
 //
 // The source repository holds one commit of random (incompressible, so no
 // delta can be found) files and is pushed through gitDeploy to a local bare
-// repository. The receiving git-receive-pack runs out of process, so the heap
+// repository. Two layouts are pushed: a few large files (streamed from disk
+// above the large object threshold) and thousands of small files, like a
+// vendored dependency tree. The receiving git-receive-pack runs out of process, so the heap
 // measured here is only the provider side of the push.
 //
 // Heavy test, opt-in:
 //
 //		LARGE_REPO_MB=128 go test -run TestGitDeploy_LargeRepositoryBoundedMemory ./pkg/resources/application/
 //
-//	  - LARGE_REPO_MB: repository size (MiB)
+//	  - LARGE_REPO_MB: repository size (MiB), for each layout
 //	  - LARGE_REPO_MAX_HEAP_MB: accepted heap growth during the push (MiB, default 64)
 //	  - LARGE_REPO_ABORT_HEAP_MB: hard ceiling over the starting heap, the test process panics above it (MiB, default 4*size)
 //	  - LARGE_REPO_DIR: where to build the repositories (default: user cache dir,
@@ -47,6 +49,20 @@ func TestGitDeploy_LargeRepositoryBoundedMemory(t *testing.T) {
 	maxHeapMB := envInt(t, "LARGE_REPO_MAX_HEAP_MB", 64)
 	abortHeapMB := envInt(t, "LARGE_REPO_ABORT_HEAP_MB", 4*sizeMB)
 
+	for _, layout := range []struct {
+		name     string
+		fileSize int64
+	}{
+		{"large files", 4 * mib},
+		{"thousands of small files", 8 << 10},
+	} {
+		t.Run(layout.name, func(t *testing.T) {
+			testPushBoundedMemory(t, sizeMB, layout.fileSize, maxHeapMB, abortHeapMB)
+		})
+	}
+}
+
+func testPushBoundedMemory(t *testing.T, sizeMB int, fileSize int64, maxHeapMB, abortHeapMB int) {
 	base := os.Getenv("LARGE_REPO_DIR")
 	if base == "" {
 		cache, err := os.UserCacheDir()
@@ -63,7 +79,7 @@ func TestGitDeploy_LargeRepositoryBoundedMemory(t *testing.T) {
 
 	src := filepath.Join(dir, "src")
 	dst := filepath.Join(dir, "dst.git")
-	commit := buildLargeRepository(t, src, sizeMB)
+	commit := buildLargeRepository(t, src, sizeMB, fileSize)
 	runGit(t, "", "init", "--quiet", "--bare", dst)
 
 	// Make the GC follow the live heap closely, so the peak reflects what the
@@ -93,8 +109,8 @@ func TestGitDeploy_LargeRepositoryBoundedMemory(t *testing.T) {
 	}
 
 	growthMB := (int64(peak.Load()) - int64(before.HeapAlloc)) / mib
-	t.Logf("repository: %d MiB, heap before push: %d MiB, peak heap growth during push: %d MiB",
-		sizeMB, before.HeapAlloc/mib, growthMB)
+	t.Logf("repository: %d MiB in %d files, heap before push: %d MiB, peak heap growth during push: %d MiB",
+		sizeMB, int64(sizeMB)*mib/fileSize, before.HeapAlloc/mib, growthMB)
 	if growthMB > int64(maxHeapMB) {
 		t.Errorf("push retained %d MiB of heap for a %d MiB repository (limit %d MiB): memory scales with the repository size",
 			growthMB, sizeMB, maxHeapMB)
@@ -102,19 +118,24 @@ func TestGitDeploy_LargeRepositoryBoundedMemory(t *testing.T) {
 }
 
 // buildLargeRepository creates a repository with a single commit made of
-// 4 MiB random files totalling sizeMB, and returns the commit hash.
-func buildLargeRepository(t *testing.T, path string, sizeMB int) string {
+// random files of fileSize bytes totalling sizeMB, spread over directories of
+// 1000 files, and returns the commit hash.
+func buildLargeRepository(t *testing.T, path string, sizeMB int, fileSize int64) string {
 	t.Helper()
 
 	runGit(t, "", "init", "--quiet", "--initial-branch=master", path)
 
-	const fileMB = 4
-	for i := 0; i*fileMB < sizeMB; i++ {
-		f, err := os.Create(filepath.Join(path, fmt.Sprintf("blob-%04d.bin", i)))
+	total := int64(sizeMB) * mib
+	for i := 0; int64(i)*fileSize < total; i++ {
+		sub := filepath.Join(path, fmt.Sprintf("dir-%03d", i/1000))
+		if err := os.MkdirAll(sub, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		f, err := os.Create(filepath.Join(sub, fmt.Sprintf("blob-%04d.bin", i)))
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := io.CopyN(f, rand.Reader, int64(min(fileMB, sizeMB-i*fileMB))*mib); err != nil {
+		if _, err := io.CopyN(f, rand.Reader, min(fileSize, total-int64(i)*fileSize)); err != nil {
 			t.Fatal(err)
 		}
 		if err := f.Close(); err != nil {
