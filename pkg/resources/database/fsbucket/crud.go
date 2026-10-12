@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -69,6 +70,8 @@ func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateReques
 	fsbucket.FTPUsername = envMap["BUCKET_FTP_USERNAME"]
 	fsbucket.FTPPassword = envMap["BUCKET_FTP_PASSWORD"]
 
+	resources.SyncAddonTags(ctx, r, addonRes.ID, fsbucket.Tags, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, fsbucket)...)
 }
 
@@ -114,6 +117,8 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 	fsbucket.FTPUsername = addonMap["BUCKET_FTP_USERNAME"]
 	fsbucket.FTPPassword = addonMap["BUCKET_FTP_PASSWORD"]
 
+	fsbucket.Tags = resources.ReadAddonTags(ctx, r, fsbucket.ID.ValueString(), fsbucket.Tags, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, fsbucket)...)
 }
 
@@ -143,6 +148,11 @@ func (r *ResourceFSBucket) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 	state.Name = pkg.FromStr(addonRes.Payload().Name)
+
+	if !plan.Tags.Equal(state.Tags) {
+		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
+		state.Tags = plan.Tags
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

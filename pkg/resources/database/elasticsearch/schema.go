@@ -21,11 +21,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/miton18/helper/set"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type Elasticsearch struct {
 	ID            types.String `tfsdk:"id"`
+	Tags          types.Set    `tfsdk:"tags"`
 	Name          types.String `tfsdk:"name"`
 	Plan          types.String `tfsdk:"plan"`
 	Region        types.String `tfsdk:"region"`
@@ -57,6 +59,7 @@ func (r *ResourceElasticsearch) Schema(_ context.Context, req resource.SchemaReq
 		Version:             0,
 		MarkdownDescription: resourceElasticsearchDoc,
 		Attributes: map[string]schema.Attribute{
+			"tags": resources.TagsAttribute,
 			"id": schema.StringAttribute{
 				Computed:            true,
 				MarkdownDescription: "Unique identifier of the Elasticsearch addon",

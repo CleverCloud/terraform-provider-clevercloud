@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -59,6 +60,8 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 		appMatomo.Version = pkg.FromStr(matomo.Version)
 	}
 
+	resources.SyncAddonTags(ctx, r, addon.ID, appMatomo.Tags, &res.Diagnostics)
+
 	res.Diagnostics.Append(res.State.Set(ctx, appMatomo)...)
 }
 
@@ -98,6 +101,8 @@ func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, res
 		state.Region = pkg.FromStr(addon.Region)
 	}
 
+	state.Tags = resources.ReadAddonTags(ctx, r, addonId, state.Tags, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
@@ -126,6 +131,11 @@ func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest,
 		resp.Diagnostics.AddError("failed to update Matomo", addonRes.Error().Error())
 	} else {
 		state.Name = pkg.FromStr(addonRes.Payload().Name)
+	}
+
+	if !plan.Tags.Equal(state.Tags) {
+		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
+		state.Tags = plan.Tags
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

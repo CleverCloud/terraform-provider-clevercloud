@@ -12,10 +12,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 )
 
 type Pulsar struct {
-	ID types.String `tfsdk:"id"`
+	ID   types.String `tfsdk:"id"`
+	Tags types.Set    `tfsdk:"tags"`
 
 	Name   types.String `tfsdk:"name"`
 	Region types.String `tfsdk:"region"`
@@ -47,6 +49,7 @@ func (r ResourcePulsar) Schema(_ context.Context, req resource.SchemaRequest, re
 		Version:             0,
 		MarkdownDescription: resourcePulsarDoc,
 		Attributes: map[string]schema.Attribute{
+			"tags":             resources.TagsAttribute,
 			"id":               schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"name":             schema.StringAttribute{Required: true, MarkdownDescription: "Name of the Pulsar"},
 			"region":           schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Geographical region where the data will be stored", Default: stringdefault.StaticString("par")},

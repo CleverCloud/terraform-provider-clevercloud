@@ -123,6 +123,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		&pg.Networkgroups,
 		&resp.Diagnostics,
 	)
+	addon.SyncTags(ctx, r, createdPg.ID, pg.Tags, &pg.Tags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 }
@@ -178,6 +179,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	pg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonID, &resp.Diagnostics)
+	pg.Tags = resources.ReadAddonTags(ctx, r, addonID, pg.Tags, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 }
 
@@ -263,6 +265,9 @@ func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequ
 		&state.Networkgroups,
 		&resp.Diagnostics,
 	)
+	if !plan.Tags.Equal(state.Tags) {
+		addon.SyncTags(ctx, r, plan.ID.ValueString(), plan.Tags, &state.Tags, &resp.Diagnostics)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 	// Handle plan, region, or version changes via migration

@@ -22,6 +22,10 @@ See [ConfigProvider product specification](https://www.clever.cloud/developers/d
 - `environment` (Map of String, Sensitive) Environment variables injected into the application
 - `name` (String) Name of the service
 
+### Optional
+
+- `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags managed outside Terraform are left untouched and never show up in the state, imports included
+
 ### Read-Only
 
 - `id` (String) Generated unique identifier

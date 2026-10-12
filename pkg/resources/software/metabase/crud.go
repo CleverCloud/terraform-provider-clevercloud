@@ -7,6 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -57,6 +58,8 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 		mb.Host = pkg.FromStr(metabase.AccessURL)
 	}
 
+	resources.SyncAddonTags(ctx, r, addon.ID, mb.Tags, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
 }
 
@@ -98,6 +101,8 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 		state.Region = pkg.FromStr(addon.Region)
 	}
 
+	state.Tags = resources.ReadAddonTags(ctx, r, addonId, state.Tags, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
@@ -126,6 +131,11 @@ func (r *ResourceMetabase) Update(ctx context.Context, req resource.UpdateReques
 		resp.Diagnostics.AddError("failed to update Metabase", addonRes.Error().Error())
 	} else {
 		state.Name = pkg.FromStr(addonRes.Payload().Name)
+	}
+
+	if !plan.Tags.Equal(state.Tags) {
+		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
+		state.Tags = plan.Tags
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

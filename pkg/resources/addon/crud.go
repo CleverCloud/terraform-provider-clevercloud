@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
@@ -67,6 +68,8 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 		return acc
 	})
 	ad.Configurations = types.MapValueMust(types.StringType, envAsMap)
+
+	resources.SyncAddonTags(ctx, r, ad.ID.ValueString(), ad.Tags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, ad)...)
 }
@@ -125,6 +128,8 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 	ad.CreationDate = pkg.FromI(a.CreationDate)
 	ad.Configurations = types.MapValueMust(types.StringType, envAsMap)
 
+	ad.Tags = resources.ReadAddonTags(ctx, r, ad.ID.ValueString(), ad.Tags, &resp.Diagnostics)
+
 	diags = resp.State.Set(ctx, ad)
 	resp.Diagnostics.Append(diags...)
 }
@@ -151,6 +156,11 @@ func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, 
 		return
 	}
 	state.Name = pkg.FromStr(addonRes.Payload().Name)
+
+	if !plan.Tags.Equal(state.Tags) {
+		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
+		state.Tags = plan.Tags
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }

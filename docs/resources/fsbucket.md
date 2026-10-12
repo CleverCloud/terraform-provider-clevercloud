@@ -62,6 +62,7 @@ resource "clevercloud_fsbucket" "my_fsbucket" {
 ### Optional
 
 - `region` (String) Geographical region where the data will be stored
+- `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags managed outside Terraform are left untouched and never show up in the state, imports included
 
 ### Read-Only
 

@@ -30,6 +30,7 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/elast
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `plugins` (Set of String) List of plugins to install
 - `region` (String) Geographical region where the data will be stored
+- `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags managed outside Terraform are left untouched and never show up in the state, imports included
 - `version` (String) Elasticsearch major version (e.g., '7', '8'). Only the major version number is used by the API. Changing this requires replacing the resource.
 
 ### Read-Only

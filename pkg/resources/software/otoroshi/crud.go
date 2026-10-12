@@ -80,6 +80,8 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 		application.SyncNetworkGroups(ctx, r, otoroshi.Resources.Entrypoint, state.Networkgroups, &resp.Diagnostics)
 	}
 
+	resources.SyncAddonTags(ctx, r, addonRes.ID, state.Tags, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
@@ -125,6 +127,8 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 		state.Networkgroups = resources.ReadNetworkGroups(ctx, r, otoroshi.Resources.Entrypoint, &resp.Diagnostics)
 	}
 
+	state.Tags = resources.ReadAddonTags(ctx, r, state.ID.ValueString(), state.Tags, &resp.Diagnostics)
+
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
@@ -160,6 +164,11 @@ func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateReques
 	} else {
 		application.SyncNetworkGroups(ctx, r, otoroshiRes.Payload().Resources.Entrypoint, plan.Networkgroups, &resp.Diagnostics)
 		state.Networkgroups = plan.Networkgroups
+	}
+
+	if !plan.Tags.Equal(state.Tags) {
+		resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, &resp.Diagnostics)
+		state.Tags = plan.Tags
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)

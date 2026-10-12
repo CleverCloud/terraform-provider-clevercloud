@@ -31,6 +31,7 @@ See [product specification](https://www.clever.cloud/developers/doc/addons/mysql
 - `read_only_users` (Attributes List) MySQL users with read-only access (see [below for nested schema](#nestedatt--read_only_users))
 - `region` (String) Geographical region where the data will be stored
 - `skip_log_bin` (Boolean) Disable binary logging. Saves disk space but prevents point-in-time recovery and replication.
+- `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags managed outside Terraform are left untouched and never show up in the state, imports included
 - `version` (String) MySQL version
 
 ### Read-Only

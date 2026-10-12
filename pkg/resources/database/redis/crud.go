@@ -86,6 +86,7 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 		&rd.Networkgroups,
 		&resp.Diagnostics,
 	)
+	addon.SyncTags(ctx, r, res.Payload().ID, rd.Tags, &rd.Tags, &resp.Diagnostics)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, rd)...)
 }
@@ -152,6 +153,7 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 	rd.Token = envAsMap["REDIS_PASSWORD"]
 
 	rd.Networkgroups = resources.ReadNetworkGroups(ctx, r, rd.ID.ValueString(), &resp.Diagnostics)
+	rd.Tags = resources.ReadAddonTags(ctx, r, rd.ID.ValueString(), rd.Tags, &resp.Diagnostics)
 
 	diags = resp.State.Set(ctx, rd)
 	resp.Diagnostics.Append(diags...)
@@ -192,6 +194,9 @@ func (r *ResourceRedis) Update(ctx context.Context, req resource.UpdateRequest, 
 		&state.Networkgroups,
 		&resp.Diagnostics,
 	)
+	if !plan.Tags.Equal(state.Tags) {
+		addon.SyncTags(ctx, r, plan.ID.ValueString(), plan.Tags, &state.Tags, &resp.Diagnostics)
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
