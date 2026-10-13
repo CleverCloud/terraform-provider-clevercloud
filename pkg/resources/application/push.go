@@ -155,7 +155,11 @@ func httpReceivePack(ctx context.Context, ep *transport.Endpoint, auth transport
 
 	if res.StatusCode < 200 || res.StatusCode >= 300 {
 		msg, _ := io.ReadAll(io.LimitReader(res.Body, 4<<10))
-		return nil, fmt.Errorf("receive-pack: %s: %s", res.Status, strings.TrimSpace(string(msg)))
+		return nil, &receivePackError{
+			StatusCode: res.StatusCode,
+			Status:     res.Status,
+			Body:       strings.TrimSpace(string(msg)),
+		}
 	}
 
 	var r io.Reader = res.Body
@@ -177,6 +181,22 @@ func httpReceivePack(ctx context.Context, ep *transport.Endpoint, auth transport
 		return nil, fmt.Errorf("receive-pack: %w", err)
 	}
 	return report, nil
+}
+
+// receivePackError is an HTTP error answered by the remote to the push
+type receivePackError struct {
+	StatusCode int
+	Status     string
+	Body       string
+}
+
+func (e *receivePackError) Error() string {
+	return fmt.Sprintf("receive-pack: %s: %s", e.Status, e.Body)
+}
+
+// tooLarge tells whether the remote rejected the push because of its size
+func (e *receivePackError) tooLarge() bool {
+	return e.StatusCode == http.StatusRequestEntityTooLarge
 }
 
 // writePack writes a packfile (version 2, no deltas) holding the given
