@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -46,7 +47,7 @@ func GitDeploy(ctx context.Context, d *Deployment, cleverRemote, deployedCommit 
 
 	for range 5 {
 		commit, deployed, errs = gitDeploy(ctx, *d, cleverRemote, deployedCommit)
-		if !errs.HasError() {
+		if !errs.HasError() || !retryable(errs) {
 			break
 		}
 
@@ -89,6 +90,15 @@ func gitDeploy(ctx context.Context, d Deployment, cleverRemote, deployedCommit s
 	})
 
 	pushed, err := streamPush(ctx, repo.Storer, cleverRemote, auth, plumbing.NewHash(targetCommit), os.Stdout)
+	var rejected *receivePackError
+	if errors.As(err, &rejected) && rejected.tooLarge() {
+		// pushing the same pack again gets the same answer
+		diags.Append(nonRetryable{diag.NewErrorDiagnostic(
+			"repository too large for the clever remote",
+			fmt.Sprintf("the push of commit %s was rejected by the Clever Cloud git server: %s", targetCommit, err.Error()),
+		)})
+		return "", false, diags
+	}
 	if err != nil {
 		diags.AddError("failed to push to clever remote", err.Error())
 		return "", false, diags
@@ -99,6 +109,21 @@ func gitDeploy(ctx context.Context, d Deployment, cleverRemote, deployedCommit s
 	}
 
 	return targetCommit, true, diags
+}
+
+// nonRetryable marks an error that another push attempt would get again
+type nonRetryable struct {
+	diag.Diagnostic
+}
+
+// retryable tells whether a failed deployment is worth another attempt
+func retryable(diags diag.Diagnostics) bool {
+	for _, d := range diags {
+		if _, ok := d.(nonRetryable); ok {
+			return false
+		}
+	}
+	return true
 }
 
 // resolveTargetCommit resolves the commit hash to deploy: the explicit

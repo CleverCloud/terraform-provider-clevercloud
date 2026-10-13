@@ -9,7 +9,10 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func TestGitDeploy_StreamPush(t *testing.T) {
@@ -107,6 +110,15 @@ func TestGitDeploy_StreamPushFromWorktree(t *testing.T) {
 func serveGitHTTP(t *testing.T, root string) string {
 	t.Helper()
 
+	srv := httptest.NewServer(gitHTTPBackend(t, root))
+	t.Cleanup(srv.Close)
+
+	return srv.URL
+}
+
+func gitHTTPBackend(t *testing.T, root string) http.Handler {
+	t.Helper()
+
 	execPath := strings.TrimSpace(runGit(t, "", "--exec-path"))
 	backend := &cgi.Handler{
 		Path: filepath.Join(execPath, "git-http-backend"),
@@ -116,14 +128,52 @@ func serveGitHTTP(t *testing.T, root string) string {
 			"REMOTE_USER=test", // receive-pack is only enabled for authenticated users
 		},
 	}
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// net/http/cgi rejects chunked bodies, which the streamed push (and
 		// git itself above http.postBuffer) sends: like Apache or nginx, pass
 		// the body without CONTENT_LENGTH, git http-backend reads it to EOF
 		r.TransferEncoding = nil
 		backend.ServeHTTP(w, r)
+	})
+}
+
+// a push rejected because of its size gets the same answer when retried
+func TestGitDeploy_TooLargeNotRetried(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git binary required to build the fixture repository")
+	}
+
+	dir := t.TempDir()
+	src := filepath.Join(dir, "src")
+	commit := buildLargeRepository(t, src, 1, 4<<10)
+	runGit(t, "", "init", "--quiet", "--bare", filepath.Join(dir, "dst.git"))
+
+	backend := gitHTTPBackend(t, dir)
+	var pushes atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost && strings.HasSuffix(r.URL.Path, "/git-receive-pack") {
+			pushes.Add(1)
+			http.Error(w, "too large", http.StatusRequestEntityTooLarge)
+			return
+		}
+		backend.ServeHTTP(w, r)
 	}))
 	t.Cleanup(srv.Close)
 
-	return srv.URL
+	diags := diag.Diagnostics{}
+	GitDeploy(context.Background(), &Deployment{
+		Repository: "file://" + src,
+		Commit:     &commit,
+	}, srv.URL+"/dst.git", "", &diags)
+
+	if !diags.HasError() {
+		t.Fatal("expected the push to fail")
+	}
+	if got := diags.Errors()[0].Summary(); got != "repository too large for the clever remote" {
+		t.Errorf("error summary = %q", got)
+	}
+	if got := pushes.Load(); got != 1 {
+		t.Errorf("push attempts = %d, want 1", got)
+	}
 }
