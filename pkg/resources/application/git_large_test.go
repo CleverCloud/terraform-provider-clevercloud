@@ -26,8 +26,9 @@ const mib = 1 << 20
 // delta can be found) files and is pushed through gitDeploy to a local bare
 // repository. Two layouts are pushed: large files (streamed from disk above
 // the large object threshold) and thousands of small files, like a vendored
-// dependency tree. The receiving git-receive-pack runs out of process, so the heap
-// measured here is only the provider side of the push.
+// dependency tree. The bare repository is served over HTTP, like the Clever
+// Cloud remote; git http-backend runs out of process, so the heap measured
+// here is only the provider side of the push.
 //
 // Heavy test, opt-in:
 //
@@ -95,7 +96,7 @@ func testPushBoundedMemory(t *testing.T, sizeMB int, fileSize int64, maxHeapMB, 
 	_, deployed, diags := gitDeploy(context.Background(), Deployment{
 		Repository: "file://" + src,
 		Commit:     &commit,
-	}, "file://"+dst, "")
+	}, serveGitHTTP(t, dir)+"/dst.git", "")
 	stop()
 
 	if diags.HasError() {
@@ -110,7 +111,7 @@ func testPushBoundedMemory(t *testing.T, sizeMB int, fileSize int64, maxHeapMB, 
 
 	growthMB := (int64(peak.Load()) - int64(before.HeapAlloc)) / mib
 	t.Logf("repository: %d MiB in %d files, heap before push: %d MiB, peak heap growth during push: %d MiB",
-		sizeMB, int64(sizeMB)*mib/fileSize, before.HeapAlloc/mib, growthMB)
+		sizeMB, (int64(sizeMB)*mib+fileSize-1)/fileSize, before.HeapAlloc/mib, growthMB)
 	if growthMB > int64(maxHeapMB) {
 		t.Errorf("push retained %d MiB of heap for a %d MiB repository (limit %d MiB): memory scales with the repository size",
 			growthMB, sizeMB, maxHeapMB)

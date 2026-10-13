@@ -8,10 +8,13 @@ import (
 	"encoding/binary"
 	"fmt"
 	"io"
+	"net/http"
+	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp"
 	"github.com/go-git/go-git/v5/plumbing/protocol/packp/capability"
+	"github.com/go-git/go-git/v5/plumbing/protocol/packp/sideband"
 	"github.com/go-git/go-git/v5/plumbing/revlist"
 	"github.com/go-git/go-git/v5/plumbing/storer"
 	"github.com/go-git/go-git/v5/plumbing/transport"
@@ -98,7 +101,12 @@ func streamPush(
 		done <- wr.CloseWithError(writePack(wr, s, hashes))
 	}()
 
-	rs, err := sess.ReceivePack(ctx, req)
+	var rs *packp.ReportStatus
+	if ep.Protocol == "http" || ep.Protocol == "https" {
+		rs, err = httpReceivePack(ctx, ep, auth, req)
+	} else {
+		rs, err = sess.ReceivePack(ctx, req)
+	}
 	if err != nil {
 		// unblock the pack writer
 		_ = rd.Close()
@@ -115,6 +123,60 @@ func streamPush(
 	}
 
 	return true, nil
+}
+
+// httpReceivePack sends the receive-pack request with a streamed body: go-git's
+// HTTP transport encodes the whole request, packfile included, in a memory
+// buffer before sending it.
+func httpReceivePack(ctx context.Context, ep *transport.Endpoint, auth transport.AuthMethod, req *packp.ReferenceUpdateRequest) (*packp.ReportStatus, error) {
+	body, bodyWriter := io.Pipe()
+	go func() {
+		bodyWriter.CloseWithError(req.Encode(bodyWriter))
+	}()
+	defer body.Close()
+
+	url := fmt.Sprintf("%s/%s", ep.String(), transport.ReceivePackServiceName)
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, url, body)
+	if err != nil {
+		return nil, err
+	}
+	httpReq.Header.Set("User-Agent", capability.DefaultAgent())
+	httpReq.Header.Set("Accept", "application/x-git-receive-pack-result")
+	httpReq.Header.Set("Content-Type", "application/x-git-receive-pack-request")
+	if a, ok := auth.(interface{ SetAuth(*http.Request) }); ok {
+		a.SetAuth(httpReq)
+	}
+
+	res, err := http.DefaultClient.Do(httpReq)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode < 200 || res.StatusCode >= 300 {
+		msg, _ := io.ReadAll(io.LimitReader(res.Body, 4<<10))
+		return nil, fmt.Errorf("receive-pack: %s: %s", res.Status, strings.TrimSpace(string(msg)))
+	}
+
+	var r io.Reader = res.Body
+	if req.Capabilities.Supports(capability.Sideband64k) {
+		d := sideband.NewDemuxer(sideband.Sideband64k, r)
+		d.Progress = req.Progress
+		r = d
+	} else if req.Capabilities.Supports(capability.Sideband) {
+		d := sideband.NewDemuxer(sideband.Sideband, r)
+		d.Progress = req.Progress
+		r = d
+	}
+
+	if !req.Capabilities.Supports(capability.ReportStatus) {
+		return nil, nil
+	}
+	report := packp.NewReportStatus()
+	if err := report.Decode(r); err != nil {
+		return nil, fmt.Errorf("receive-pack: %w", err)
+	}
+	return report, nil
 }
 
 // writePack writes a packfile (version 2, no deltas) holding the given
