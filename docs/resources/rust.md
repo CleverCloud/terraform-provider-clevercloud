@@ -109,7 +109,7 @@ environment = { for k, v in {
 } : k => v if v != null }
 ```
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
-- `features` (Set of String) List of Rust features to enable during build
+- `features` (Set of String) List of Rust features to enable during build. Changing it rebuilds the application without the build cache
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))

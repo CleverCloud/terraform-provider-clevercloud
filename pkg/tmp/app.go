@@ -334,8 +334,13 @@ type RestartAppRes struct {
 	DeploymentID string `json:"deploymentId"`
 }
 
-func RestartApp(ctx context.Context, cc *client.Client, organisationID, applicationID string) client.Response[RestartAppRes] {
+// RestartApp redeploys the application. Without withoutCache, the platform restores
+// the build cache and skips the build phase.
+func RestartApp(ctx context.Context, cc *client.Client, organisationID, applicationID string, withoutCache bool) client.Response[RestartAppRes] {
 	path := fmt.Sprintf("/v2/organisations/%s/applications/%s/instances", organisationID, applicationID)
+	if withoutCache {
+		path += "?useCache=no"
+	}
 	return client.Post[RestartAppRes](ctx, cc, path, nil)
 }
 
