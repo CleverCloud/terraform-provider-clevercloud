@@ -81,6 +81,11 @@ func (r *ResourceRust) UpgradeState(ctx context.Context) map[int64]resource.Stat
 
 const CC_RUST_FEATURES = "CC_RUST_FEATURES"
 
+// RebuildEnvKeys lists the env vars read by cargo at build time
+func (r Rust) RebuildEnvKeys() []string {
+	return []string{CC_RUST_FEATURES}
+}
+
 func (r *ResourceRust) GetVariantSlug() string {
 	return "rust"
 }

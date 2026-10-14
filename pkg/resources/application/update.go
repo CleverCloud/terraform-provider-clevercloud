@@ -21,6 +21,7 @@ type UpdateReq struct {
 	VHosts         []string
 	Deployment     *Deployment
 	TriggerRestart bool // when env vars change for example
+	TriggerRebuild bool // restart without the build cache, when a build time env var changes
 }
 
 // UpdateApp handles the low-level API calls for updating an application
@@ -74,7 +75,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	// BUT only if we didn't already trigger a Git deployment (which deploys the new code + env)
 	// error id 4014 = cannot redeploy an application which has never been deployed yet (did you git push?)
 	if req.TriggerRestart && !gitDeployed {
-		restartRes := tmp.RestartApp(ctx, req.Client, req.Organization, res.Application.ID)
+		restartRes := tmp.RestartApp(ctx, req.Client, req.Organization, res.Application.ID, req.TriggerRebuild)
 		if restartRes.HasError() {
 			if apiErr, ok := restartRes.Error().(*client.APIError); !ok || apiErr.Code != "4014" {
 				diags.AddError("failed to restart app", restartRes.Error().Error())
@@ -128,6 +129,16 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 		tflog.Debug(ctx, "no env vars diff, no application restart")
 	}
 
+	// A restart reuses the build cache and skips the build phase, env vars
+	// consumed at build time need a rebuild to be taken into account
+	triggerRebuild := false
+	if rt, ok := any(plan).(RebuildTrigger); ok {
+		triggerRebuild = envKeysDiffer(planEnvironment, stateEnvironment, rt.RebuildEnvKeys())
+	}
+	if triggerRebuild {
+		tflog.Debug(ctx, "build time env vars diff, restart without build cache")
+	}
+
 	// Build UpdateReq
 	updateReq := UpdateReq{
 		ID:           stateRuntime.ID.ValueString(),
@@ -154,6 +165,7 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 		VHosts:         vhosts,
 		Deployment:     config.ToDeployment(resource.GitAuth()),
 		TriggerRestart: triggerRestart,
+		TriggerRebuild: triggerRebuild,
 	}
 
 	// Call common Update function
@@ -176,4 +188,16 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 	}
 
 	return diags
+}
+
+// envKeysDiffer reports whether any of keys is added, removed or changed between both environments
+func envKeysDiffer(planEnv, stateEnv map[string]string, keys []string) bool {
+	for _, key := range keys {
+		planValue, inPlan := planEnv[key]
+		stateValue, inState := stateEnv[key]
+		if inPlan != inState || planValue != stateValue {
+			return true
+		}
+	}
+	return false
 }

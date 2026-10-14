@@ -63,7 +63,7 @@ func (r ResourceRust) Schema(ctx context.Context, req resource.SchemaRequest, re
 			"features": schema.SetAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
-				MarkdownDescription: "List of Rust features to enable during build",
+				MarkdownDescription: "List of Rust features to enable during build. Changing it rebuilds the application without the build cache",
 			},
 		}),
 		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),

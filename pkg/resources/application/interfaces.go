@@ -44,3 +44,10 @@ type VariantGuard interface {
 	// actualSlug is the slug returned by the CC API for the mis-managed app.
 	MigrationHint(actualSlug string) string
 }
+
+// RebuildTrigger is an optional interface implemented by plans owning env vars
+// consumed at build time: when one of them changes, the application is restarted
+// without the build cache, otherwise the previous build would keep running.
+type RebuildTrigger interface {
+	RebuildEnvKeys() []string
+}
