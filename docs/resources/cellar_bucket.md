@@ -13,6 +13,7 @@ description: |-
     id = "cellar_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/my-bucket"
   }
   
+  
   terraform import clevercloud_cellar_bucket.my_bucket cellar_xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx/my-bucket
 ---
 
