@@ -52,7 +52,31 @@ func (r *ResourceCellarBucket) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	// nothing to update yet
+	cellarEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), cellar.CellarID.ValueString())
+	if cellarEnvRes.IsNotFoundError() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+	if cellarEnvRes.HasError() {
+		resp.Diagnostics.AddError(fmt.Sprintf("read: failed to get cellar env %s", cellar.CellarID.String()), cellarEnvRes.Error().Error())
+		return
+	}
+
+	minioClient, err := s3.MinioClientFromEnvsFor(*cellarEnvRes.Payload())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to setup S3 client", err.Error())
+		return
+	}
+
+	exists, err := minioClient.BucketExists(ctx, cellar.Name.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to check bucket existence", err.Error())
+		return
+	}
+	if !exists {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
 }
@@ -109,29 +133,52 @@ func (r *ResourceCellarBucket) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 
+	exists, err := minioClient.BucketExists(ctx, bucket.Name.ValueString())
+	if err != nil {
+		resp.Diagnostics.AddError("failed to check bucket existence", err.Error())
+		return
+	}
+	if !exists {
+		resp.State.RemoveResource(ctx)
+		return
+	}
+
+	// The listing goroutine keeps its errors to itself: diagnostics are only
+	// written from this goroutine, once the listing is over.
 	toRemove := make(chan minio.ObjectInfo, 500)
+	listDone := make(chan struct{})
+	var listErrs []error
 	objects := minioClient.ListObjectsIter(ctx, bucket.Name.ValueString(), minio.ListObjectsOptions{})
 	go func() {
+		defer close(listDone)
+		defer close(toRemove)
 		for object := range objects {
 			if err := object.Err; err != nil {
-				resp.Diagnostics.AddError("failed to list bucket objects for deletion", err.Error())
+				listErrs = append(listErrs, err)
 				continue
 			}
 
-			toRemove <- object
+			select {
+			case toRemove <- object:
+			case <-ctx.Done():
+				return
+			}
 			tflog.Debug(ctx, "sending object for deletion", map[string]any{
 				"key":            object.Key,
 				"isDeleteMarker": object.IsDeleteMarker,
 				"metas":          object.Metadata,
 			})
 		}
-		close(toRemove)
 		tflog.Debug(ctx, "All objects has been send for deletion")
 	}()
 
 	errs := minioClient.RemoveObjects(ctx, bucket.Name.ValueString(), toRemove, minio.RemoveObjectsOptions{})
 	for err := range errs {
 		resp.Diagnostics.AddError("failed to remove object", err.Error())
+	}
+	<-listDone
+	for _, err := range listErrs {
+		resp.Diagnostics.AddError("failed to list bucket objects for deletion", err.Error())
 	}
 	tflog.Debug(ctx, "all object has been deleted")
 

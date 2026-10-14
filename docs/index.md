@@ -122,6 +122,7 @@ description: |-
   anything touches state. The draft is yours to review, split across files and commit.
   Add-ons are imported by their real ID (postgresql_…, redis_…, cellar_…), except
   clevercloud_addon, which takes the add-on ID (addon_…).
+  A clevercloud_cellar_bucket takes its Cellar ID and its name: cellar_…/my-bucket.
   To import a whole organisation at once,
   clever-tools https://github.com/CleverCloud/clever-tools generates the blocks for you:
   
@@ -346,6 +347,7 @@ anything touches state. The draft is yours to review, split across files and com
 
 Add-ons are imported by their real ID (`postgresql_…`, `redis_…`, `cellar_…`), except
 `clevercloud_addon`, which takes the add-on ID (`addon_…`).
+A `clevercloud_cellar_bucket` takes its Cellar ID and its name: `cellar_…/my-bucket`.
 
 To import a whole organisation at once,
 [clever-tools](https://github.com/CleverCloud/clever-tools) generates the blocks for you:
