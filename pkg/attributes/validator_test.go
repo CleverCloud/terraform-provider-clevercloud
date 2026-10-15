@@ -102,3 +102,44 @@ func TestUserPasswordInput(t *testing.T) {
 		})
 	}
 }
+
+func TestRepositoryURL(t *testing.T) {
+	tests := []struct {
+		name        string
+		value       types.String
+		expectError bool
+	}{
+		{name: "https", value: types.StringValue("https://github.com/CleverCloud/nodejs-example.git")},
+		{name: "http", value: types.StringValue("http://git.example.com/repo.git")},
+		{name: "https with credentials", value: types.StringValue("https://user:token@github.com/owner/repo.git")},
+		{name: "absolute local path", value: types.StringValue("file:///home/user/repo")},
+		{name: "relative local path", value: types.StringValue("file://./repo")},
+		{name: "null", value: types.StringNull()},
+		{name: "unknown", value: types.StringUnknown()},
+		{name: "bare absolute path", value: types.StringValue("/home/user/repo"), expectError: true},
+		{name: "bare relative path", value: types.StringValue("../repo"), expectError: true},
+		{name: "host without scheme", value: types.StringValue("github.com/owner/repo.git"), expectError: true},
+		{name: "scp-like ssh", value: types.StringValue("git@github.com:owner/repo.git"), expectError: true},
+		{name: "ssh", value: types.StringValue("ssh://git@github.com/owner/repo.git"), expectError: true},
+		{name: "empty", value: types.StringValue(""), expectError: true},
+		{name: "file without path", value: types.StringValue("file://"), expectError: true},
+		{name: "https without host", value: types.StringValue("https://"), expectError: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := validator.StringRequest{
+				Path:           path.Root("test"),
+				PathExpression: path.MatchRoot("test"),
+				ConfigValue:    tt.value,
+			}
+			res := &validator.StringResponse{}
+
+			RepositoryURL.ValidateString(t.Context(), req, res)
+
+			if res.Diagnostics.HasError() != tt.expectError {
+				t.Errorf("expected error: %v, got diagnostics: %v", tt.expectError, res.Diagnostics)
+			}
+		})
+	}
+}
