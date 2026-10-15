@@ -124,6 +124,8 @@ func TestRepositoryURL(t *testing.T) {
 		{name: "empty", value: types.StringValue(""), expectError: true},
 		{name: "file without path", value: types.StringValue("file://"), expectError: true},
 		{name: "https without host", value: types.StringValue("https://"), expectError: true},
+		{name: "uppercase scheme", value: types.StringValue("FILE:///home/user/repo"), expectError: true},
+		{name: "scheme without slashes", value: types.StringValue("file:/home/user/repo"), expectError: true},
 	}
 
 	for _, tt := range tests {
