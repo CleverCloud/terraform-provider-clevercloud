@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"net/url"
+	"slices"
 	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing"
@@ -345,21 +346,22 @@ var UserPasswordInput = pkg.NewStringValidator("format must be 'user:password'",
 // RepositoryURL rejects a repository without an explicit scheme: go-git
 // accepts a bare local path and clones it in memory instead of opening it,
 // which silently loads the whole repository in RAM.
-var RepositoryURL = pkg.NewStringValidator("must start with 'https://', 'http://' or 'file://'", func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
+var RepositoryURL = pkg.NewStringValidator("must be an 'https://', 'http://' or 'file://' URL", func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
 	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
 		return
 	}
 
 	v := req.ConfigValue.ValueString()
 
-	if p, ok := strings.CutPrefix(v, "file://"); ok {
-		if p == "" {
-			res.Diagnostics.AddAttributeError(req.Path, "invalid repository", "'file://' must be followed by the path of a local repository")
-		}
+	u, err := url.Parse(v)
+	if err != nil {
+		res.Diagnostics.AddAttributeError(req.Path, "invalid repository", fmt.Sprintf("'%s' is not a valid URL: %s", v, err))
 		return
 	}
 
-	if !strings.HasPrefix(v, "https://") && !strings.HasPrefix(v, "http://") {
+	// url.Parse lowercases the scheme while OpenOrClone matches 'file://'
+	// verbatim: the raw value must start with it too
+	if !slices.Contains(repositorySchemes, u.Scheme) || !strings.HasPrefix(v, u.Scheme+"://") {
 		res.Diagnostics.AddAttributeError(
 			req.Path,
 			"invalid repository",
@@ -368,11 +370,12 @@ var RepositoryURL = pkg.NewStringValidator("must start with 'https://', 'http://
 		return
 	}
 
-	u, err := url.Parse(v)
-	if err != nil || u.Host == "" {
-		res.Diagnostics.AddAttributeError(req.Path, "invalid repository", fmt.Sprintf("'%s' is not a valid URL", v))
+	if u.Host == "" && u.Path == "" {
+		res.Diagnostics.AddAttributeError(req.Path, "invalid repository", fmt.Sprintf("'%s' has nothing after the scheme", v))
 	}
 })
+
+var repositorySchemes = []string{"https", "http", "file"}
 
 func WithBlockRuntimeCommons(runtimeSpecifics map[string]schema.Block) map[string]schema.Block {
 	m := map[string]schema.Block{}
