@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"net/url"
 	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing"
@@ -249,6 +250,7 @@ var blocks = map[string]schema.Block{
 				Optional:            true, // If "deployment" attribute is defined, then repository is required
 				Description:         "The repository URL to deploy, can be 'https://...', 'file://...'",
 				MarkdownDescription: "The repository URL to deploy, can be 'https://...', 'file://...'",
+				Validators:          []validator.String{RepositoryURL},
 			},
 			"commit": schema.StringAttribute{
 				Optional:            true,
@@ -337,6 +339,38 @@ var UserPasswordInput = pkg.NewStringValidator("format must be 'user:password'",
 	}
 	if splits[0] == "" && splits[1] == "" {
 		res.Diagnostics.AddError("invalid authenication value", "user and password cannot be both empty")
+	}
+})
+
+// RepositoryURL rejects a repository without an explicit scheme: go-git
+// accepts a bare local path and clones it in memory instead of opening it,
+// which silently loads the whole repository in RAM.
+var RepositoryURL = pkg.NewStringValidator("must start with 'https://', 'http://' or 'file://'", func(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	v := req.ConfigValue.ValueString()
+
+	if p, ok := strings.CutPrefix(v, "file://"); ok {
+		if p == "" {
+			res.Diagnostics.AddAttributeError(req.Path, "invalid repository", "'file://' must be followed by the path of a local repository")
+		}
+		return
+	}
+
+	if !strings.HasPrefix(v, "https://") && !strings.HasPrefix(v, "http://") {
+		res.Diagnostics.AddAttributeError(
+			req.Path,
+			"invalid repository",
+			fmt.Sprintf("'%s' must start with 'https://' or 'http://' for a remote repository, or 'file://' for a local one", v),
+		)
+		return
+	}
+
+	u, err := url.Parse(v)
+	if err != nil || u.Host == "" {
+		res.Diagnostics.AddAttributeError(req.Path, "invalid repository", fmt.Sprintf("'%s' is not a valid URL", v))
 	}
 })
 
