@@ -1,5 +1,33 @@
 # Changelog
 
+## [3.0.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.3.0...v3.0.0) (2026-10-15)
+
+
+### ⚠ BREAKING CHANGES
+
+* **application:** without `deployment.commit`, every `terraform plan` now reads the repository HEAD (lists the refs of a remote repository) and a new commit on the repository shows up as a diff and gets deployed on the next apply, instead of waiting for an unrelated change.
+
+### Features
+
+* **addons:** tags attribute on every add-on backed resource ([55abd27](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/55abd27f04d8b9a65644ffd1f484453dda06dd9a))
+* **apps:** java maven profile ([529ef70](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/529ef7038ea381958c3b13f4593a164c9b407ca3))
+* **apps:** tags attribute on every application runtime ([0de88b0](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/0de88b0d63c411fdb7c197101ec2994ee0b4d477))
+* **provider:** support api token bearer authentication ([bfd23d0](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/bfd23d08c43f0f983355b04590620b172dc8d085))
+
+
+### Bug Fixes
+
+* **application:** bound memory when pushing a local repository ([b92f83e](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/b92f83e2cd14ca68c4084957de7225cfe1f305bf)), closes [#469](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/469)
+* **application:** do not retry a push rejected as too large ([52ac3e0](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/52ac3e095ec49bfb96d1a023ffe570e38159ab8c)), closes [#469](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/469)
+* **application:** push from a linked git worktree ([e9a0eab](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/e9a0eab581a387ea81c84df3d0026ab4465e0df3)), closes [#469](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/469)
+* **application:** require a scheme on deployment.repository ([01bc228](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/01bc2281320f29bf165942243ba71e3010780b33))
+* **application:** resolve the repository HEAD at plan time to redeploy on new commits ([696d864](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/696d864f2f09ee5218ee9c29b55e07c3e9d04fec))
+* **application:** stream the HTTP receive-pack request body ([ad6e8db](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/ad6e8dbd001c92c047f77e37094cbcec6177c8f6)), closes [#469](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/469)
+* **application:** stream the pushed pack one object at a time ([4a4c831](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/4a4c831542e8922bed1717d76baca2fc59a73ddd)), closes [#469](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/469)
+* **cellar:** make clevercloud_cellar_bucket importable ([4d53d56](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/4d53d5692b46eacec6cf03ac557d220c48814183)), closes [#473](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/473)
+* **rust:** rebuild without build cache when features change ([5286544](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5286544b079990708525369bf9f676c4d2cc8fac))
+* **tags:** keep the state consistent when the tags API fails ([7d0a7d8](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/7d0a7d85b05c4f269fd9e0697f9258d24e67d0d5))
+
 ## [2.3.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.2.1...v2.3.0) (2026-09-28)
 
 
