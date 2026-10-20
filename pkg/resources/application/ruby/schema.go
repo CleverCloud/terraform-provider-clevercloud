@@ -34,7 +34,6 @@ type Ruby struct {
 	RailsEnv              types.String `tfsdk:"rails_env"`
 	StaticFilesPath       types.String `tfsdk:"static_files_path"`
 	StaticURLPrefix       types.String `tfsdk:"static_url_prefix"`
-	StaticWebroot         types.String `tfsdk:"static_webroot"`
 }
 
 type RubyV0 struct {
@@ -143,12 +142,6 @@ var schemaRuby = schema.Schema{
 		"static_url_prefix": schema.StringAttribute{
 			Optional:            true,
 			MarkdownDescription: "The URL path under which you want to serve static files, usually /public",
-		},
-		// STATIC_WEBROOT
-		"static_webroot": schema.StringAttribute{
-			Optional:            true,
-			DeprecationMessage:  "has no effect, the platform does not read STATIC_WEBROOT: use `static_files_path` and `static_url_prefix`. It will be removed in a future release",
-			MarkdownDescription: "**Deprecated**, has no effect: the platform does not read `STATIC_WEBROOT`. Use `static_files_path` and `static_url_prefix` instead, it will be removed in a future release.",
 		},
 	}),
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
@@ -279,7 +272,6 @@ func (ruby Ruby) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	pkg.IfIsSetStr(ruby.RailsEnv, func(s string) { env["RAILS_ENV"] = s })
 	pkg.IfIsSetStr(ruby.StaticFilesPath, func(s string) { env[app.STATIC_FILES_PATH] = s })
 	pkg.IfIsSetStr(ruby.StaticURLPrefix, func(s string) { env[app.STATIC_URL_PREFIX] = s })
-	pkg.IfIsSetStr(ruby.StaticWebroot, func(s string) { env["STATIC_WEBROOT"] = s })
 	env = pkg.Merge(env, ruby.Hooks.ToEnv())
 	env = pkg.Merge(env, ruby.Integrations.ToEnv(ctx, diags))
 
@@ -307,7 +299,6 @@ func (ruby *Ruby) FromEnv(ctx context.Context, env *maps.Map[string, string], di
 	ruby.RailsEnv = pkg.FromStrPtr(env.PopPtr("RAILS_ENV"))
 	ruby.StaticFilesPath = pkg.FromStrPtr(env.PopPtr(app.STATIC_FILES_PATH))
 	ruby.StaticURLPrefix = pkg.FromStrPtr(env.PopPtr(app.STATIC_URL_PREFIX))
-	ruby.StaticWebroot = pkg.FromStrPtr(env.PopPtr("STATIC_WEBROOT"))
 
 	ruby.Integrations = attributes.FromEnvIntegrations(ctx, env, ruby.Integrations, diags)
 }
