@@ -400,7 +400,7 @@ func (hooks *Hooks) ToEnv() map[string]string {
 
 // FromEnvHooks extracts hook variables from environment and removes them from the map
 func FromEnvHooks(env *helperMaps.Map[string, string], oldValue *Hooks) *Hooks {
-	hasAnyHook := slices.ContainsFunc(pkg.EnvNames(&Hooks{}, HooksEnv...), env.Has)
+	hasAnyHook := slices.ContainsFunc(pkg.EnvNames(HooksEnv...), env.Has)
 	if !hasAnyHook && oldValue == nil {
 		// No hooks in API and the user never specified hooks; when the user
 		// had some, an empty hooks block reports they are gone.

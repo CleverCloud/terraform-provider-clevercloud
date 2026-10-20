@@ -16,7 +16,7 @@ var _ resource.ResourceWithConfigValidators = (*ResourceNodeJS)(nil)
 // a custom install command without the custom package manager.
 func (r *ResourceNodeJS) ConfigValidators(ctx context.Context) []resource.ConfigValidator {
 	return []resource.ConfigValidator{
-		application.ReservedEnvironment(pkg.EnvNames(&NodeJS{}, envVars...)...),
+		application.ReservedEnvironment(pkg.EnvNames(envVars...)...),
 		customInstallCommand{},
 	}
 }

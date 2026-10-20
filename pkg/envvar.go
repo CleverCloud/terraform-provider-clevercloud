@@ -9,6 +9,8 @@ import (
 // backs. A resource lists its mappings once; writing, reading back and
 // rejecting the variables in environment all iterate over that list.
 type EnvVarMapping[S any] interface {
+	// Name returns the variable name.
+	Name() string
 	// FromEnv sets the attribute from the variable value, "" when the
 	// variable is absent.
 	FromEnv(state S, value string)
@@ -31,8 +33,7 @@ func WriteEnv[S any](env map[string]string, state S, mappings ...EnvVarMapping[S
 // state; an absent variable reaches its mapping as "".
 func ReadEnv[S any](env *maps.Map[string, string], state S, mappings ...EnvVarMapping[S]) {
 	for _, m := range mappings {
-		name, _ := m.ToEnv(state)
-		value := env.PopPtr(name)
+		value := env.PopPtr(m.Name())
 		if value == nil {
 			m.FromEnv(state, "")
 			continue
@@ -41,13 +42,11 @@ func ReadEnv[S any](env *maps.Map[string, string], state S, mappings ...EnvVarMa
 	}
 }
 
-// EnvNames returns the names of the mapped variables. ToEnv must return the
-// name whatever the state, empty states included.
-func EnvNames[S any](state S, mappings ...EnvVarMapping[S]) []string {
+// EnvNames returns the names of the mapped variables.
+func EnvNames[S any](mappings ...EnvVarMapping[S]) []string {
 	names := make([]string, 0, len(mappings))
 	for _, m := range mappings {
-		name, _ := m.ToEnv(state)
-		names = append(names, name)
+		names = append(names, m.Name())
 	}
 	return names
 }
@@ -64,6 +63,8 @@ type StringEnv[S any] struct {
 func NewStringEnv[S any](name string, get func(*S) types.String, set func(*S, types.String)) StringEnv[S] {
 	return StringEnv[S]{name: name, get: get, set: set}
 }
+
+func (e StringEnv[S]) Name() string { return e.name }
 
 // FromEnv sets the attribute to the value, null when it is empty.
 func (e StringEnv[S]) FromEnv(s *S, value string) { e.set(s, FromStr(value)) }
@@ -84,6 +85,8 @@ type BoolEnv[S any] struct {
 func NewBoolEnv[S any](name, trueValue string, get func(*S) types.Bool, set func(*S, types.Bool)) BoolEnv[S] {
 	return BoolEnv[S]{name: name, trueValue: trueValue, get: get, set: set}
 }
+
+func (e BoolEnv[S]) Name() string { return e.name }
 
 // FromEnv sets the attribute to true when the variable holds trueValue. Any
 // other value, or an absent variable, leaves the attribute as it is.
