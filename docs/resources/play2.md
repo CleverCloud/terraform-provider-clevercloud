@@ -93,12 +93,15 @@ resource "clevercloud_play2" "myapp" {
 
 ### Optional
 
+- `apm_agent_continuous` (Boolean) Keep attaching the Elastic APM Java agent to the JVMs started later, instead of once at startup (`CC_JAVA_APM_AGENT_CONTINUOUS`)
+- `apm_agent_enabled` (Boolean) Attach the Elastic APM Java agent to the application (`CC_JAVA_APM_AGENT_ENABLE`)
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
+- `disable_max_metaspace` (Boolean) Do not cap the JVM metaspace, which the platform limits to 15% of the memory otherwise (`CC_DISABLE_MAX_METASPACE`)
 - `environment` (Map of String, Sensitive) Environment variables injected into the application.
 
 **Note:** Null values are not allowed. To conditionally include variables, use a for expression:
@@ -111,10 +114,15 @@ environment = { for k, v in {
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
+- `java_version` (String) Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0) (`CC_JAVA_VERSION`).
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
+- `sbt_build_goal` (String) SBT task(s) building the application, `stage` by default (`CC_SBT_BUILD_GOAL`)
+- `sbt_deploy_args` (String) Arguments passed to the executable produced by the SBT build (`CC_SBT_DEPLOY_ARGS`)
+- `sbt_target_bin` (String) Name of the executable to run from `target/universal/stage/bin`, when the build produces several (`CC_SBT_TARGET_BIN`)
+- `sbt_target_dir` (String) Project subdirectory whose `target/universal/stage/bin` holds the executable to run, for multi-project builds (`CC_SBT_TARGET_DIR`)
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
