@@ -368,41 +368,26 @@ func WithBlockRuntimeCommons(runtimeSpecifics map[string]schema.Block) map[strin
 	return m
 }
 
-// HookEnvVar is a hook environment variable; its value is the variable name.
-type HookEnvVar string
-
-const (
-	PreBuildHook     HookEnvVar = app.CC_PRE_BUILD_HOOK
-	PostBuildHook    HookEnvVar = app.CC_POST_BUILD_HOOK
-	PreRunHook       HookEnvVar = app.CC_PRE_RUN_HOOK
-	RunSucceededHook HookEnvVar = app.CC_RUN_SUCCEEDED_HOOK
-	RunFailedHook    HookEnvVar = app.CC_RUN_FAILED_HOOK
+var (
+	PreBuildHookEnv = pkg.NewStringEnv[Hooks](app.CC_PRE_BUILD_HOOK,
+		func(h *Hooks) types.String { return h.PreBuild },
+		func(h *Hooks, v types.String) { h.PreBuild = v })
+	PostBuildHookEnv = pkg.NewStringEnv[Hooks](app.CC_POST_BUILD_HOOK,
+		func(h *Hooks) types.String { return h.PostBuild },
+		func(h *Hooks, v types.String) { h.PostBuild = v })
+	PreRunHookEnv = pkg.NewStringEnv[Hooks](app.CC_PRE_RUN_HOOK,
+		func(h *Hooks) types.String { return h.PreRun },
+		func(h *Hooks, v types.String) { h.PreRun = v })
+	RunSucceededHookEnv = pkg.NewStringEnv[Hooks](app.CC_RUN_SUCCEEDED_HOOK,
+		func(h *Hooks) types.String { return h.RunSucceed },
+		func(h *Hooks, v types.String) { h.RunSucceed = v })
+	RunFailedHookEnv = pkg.NewStringEnv[Hooks](app.CC_RUN_FAILED_HOOK,
+		func(h *Hooks) types.String { return h.RunFailed },
+		func(h *Hooks, v types.String) { h.RunFailed = v })
 )
 
 // HooksEnv lists the hook variables.
-var HooksEnv = []pkg.EnvVarMapping[*Hooks]{PreBuildHook, PostBuildHook, PreRunHook, RunSucceededHook, RunFailedHook}
-
-func (v HookEnvVar) FromEnv(h *Hooks, value string) { *v.attribute(h) = pkg.FromStr(value) }
-func (v HookEnvVar) ToEnv(h *Hooks) (string, string) {
-	return string(v), v.attribute(h).ValueString()
-}
-
-// attribute returns the hooks attribute v backs.
-func (v HookEnvVar) attribute(h *Hooks) *types.String {
-	switch v {
-	case PreBuildHook:
-		return &h.PreBuild
-	case PostBuildHook:
-		return &h.PostBuild
-	case PreRunHook:
-		return &h.PreRun
-	case RunSucceededHook:
-		return &h.RunSucceed
-	case RunFailedHook:
-		return &h.RunFailed
-	}
-	panic("no hooks attribute for " + string(v))
-}
+var HooksEnv = []pkg.EnvVarMapping[*Hooks]{PreBuildHookEnv, PostBuildHookEnv, PreRunHookEnv, RunSucceededHookEnv, RunFailedHookEnv}
 
 func (hooks *Hooks) ToEnv() map[string]string {
 	m := map[string]string{}
