@@ -90,13 +90,13 @@ resource "clevercloud_v" "myapp" {
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
-- `binary` (String) The name of the output binary file. Default: `${APP_HOME}/v_bin_${APP_ID}`
+- `binary` (String) The name of the output binary file. Default: `${APP_HOME}/v_bin_${APP_ID}` (`CC_V_BINARY`)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
-- `development_build` (Boolean) Set to true to compile without the `-prod` flag.
+- `development_build` (Boolean) Set to true to compile without the `-prod` flag (`ENVIRONMENT`).
 - `environment` (Map of String, Sensitive) Environment variables injected into the application.
 
 **Note:** Null values are not allowed. To conditionally include variables, use a for expression:
@@ -109,6 +109,7 @@ environment = { for k, v in {
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
+- `modules_path` (String) Directory V looks up modules in, `/home/bas/.vmodules/` by default (`VMODULES`)
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
