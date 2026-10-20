@@ -1,6 +1,8 @@
 package pkg
 
 import (
+	"strconv"
+
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/miton18/helper/maps"
 )
@@ -73,6 +75,39 @@ func (e StringEnv[S]) Name() string { return e.name }
 func (e StringEnv[S]) FromEnv(s *S, value string) { e.set(s, FromStr(value)) }
 
 func (e StringEnv[S]) ToEnv(s *S) (string, string) { return e.name, e.get(s).ValueString() }
+
+// Int64Env maps an integer attribute of S to its environment variable.
+type Int64Env[S any] struct {
+	name string
+	get  func(*S) types.Int64
+	set  func(*S, types.Int64)
+}
+
+// NewInt64Env maps the integer attribute read by get and written by set to
+// the variable name.
+func NewInt64Env[S any](name string, get func(*S) types.Int64, set func(*S, types.Int64)) Int64Env[S] {
+	return Int64Env[S]{name: name, get: get, set: set}
+}
+
+func (e Int64Env[S]) Name() string { return e.name }
+
+// FromEnv sets the attribute to the value, null when it is empty or not an
+// integer.
+func (e Int64Env[S]) FromEnv(s *S, value string) {
+	if value == "" {
+		e.set(s, types.Int64Null())
+		return
+	}
+	e.set(s, FromIntPtr(&value))
+}
+
+func (e Int64Env[S]) ToEnv(s *S) (string, string) {
+	v := e.get(s)
+	if v.IsNull() || v.IsUnknown() {
+		return e.name, ""
+	}
+	return e.name, strconv.FormatInt(v.ValueInt64(), 10)
+}
 
 // BoolEnv maps a boolean attribute of S to its variable, through functions
 // converting the attribute to the variable value and back.
