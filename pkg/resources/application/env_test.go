@@ -30,7 +30,7 @@ func validateEnvironment(t *testing.T, env tftypes.Value) []string {
 	}
 
 	res := &resource.ValidateConfigResponse{}
-	ReservedEnvironment(app.CC_NODE_VERSION).ValidateResource(ctx, resource.ValidateConfigRequest{Config: config}, res)
+	ReservedEnvironment(AppFolderEnv).ValidateResource(ctx, resource.ValidateConfigRequest{Config: config}, res)
 
 	var details []string
 	for _, d := range res.Diagnostics.Errors() {
@@ -41,13 +41,14 @@ func validateEnvironment(t *testing.T, env tftypes.Value) []string {
 
 func TestReservedEnvironment(t *testing.T) {
 	errs := validateEnvironment(t, tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, map[string]tftypes.Value{
-		app.CC_NODE_VERSION:   tftypes.NewValue(tftypes.String, "22"),
+		app.APP_FOLDER:        tftypes.NewValue(tftypes.String, "web"),
 		app.CC_CLAMAV:         tftypes.NewValue(tftypes.String, "true"),
 		app.CC_PRE_BUILD_HOOK: tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 		"MY_VARIABLE":         tftypes.NewValue(tftypes.String, "free"),
 	}))
 
-	want := []string{app.CC_CLAMAV, app.CC_NODE_VERSION, app.CC_PRE_BUILD_HOOK}
+	// in list order: the resource mappings, then the hooks, then the integrations
+	want := []string{app.APP_FOLDER, app.CC_PRE_BUILD_HOOK, app.CC_CLAMAV}
 	if len(errs) != len(want) {
 		t.Fatalf("got %d errors %v, want %d", len(errs), errs, len(want))
 	}
