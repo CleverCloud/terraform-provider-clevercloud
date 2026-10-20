@@ -94,7 +94,9 @@ resource "clevercloud_go" "myapp" {
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `binary` (String) Path of the binary to run after a `makefile` build (`CC_GO_BINARY`)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `build_tool` (String) How to build the application: `gomod`, `gobuild`, `goget` or `makefile` (`CC_GO_BUILD_TOOL`)
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
@@ -112,9 +114,11 @@ environment = { for k, v in {
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
+- `package` (String) Import path of the Go package to build, detected from `go.mod` by default (`CC_GO_PKG`)
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
+- `run_dir` (String) Directory, within `GOPATH/src`, to place and run the application from (`CC_GO_RUNDIR`)
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
