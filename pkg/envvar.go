@@ -74,35 +74,21 @@ func (e StringEnv[S]) FromEnv(s *S, value string) { e.set(s, FromStr(value)) }
 
 func (e StringEnv[S]) ToEnv(s *S) (string, string) { return e.name, e.get(s).ValueString() }
 
-// BoolEnv maps a boolean attribute of S to a variable that turns it on when
-// it holds trueValue.
+// BoolEnv maps a boolean attribute of S to its variable, through functions
+// converting the attribute to the variable value and back.
 type BoolEnv[S any] struct {
-	name      string
-	trueValue string
-	get       func(*S) types.Bool
-	set       func(*S, types.Bool)
+	name    string
+	toEnv   func(*S) string
+	fromEnv func(*S, string)
 }
 
-// NewBoolEnv maps the boolean attribute read by get and written by set to the
-// variable name, written as trueValue when the attribute is true.
-func NewBoolEnv[S any](name, trueValue string, get func(*S) types.Bool, set func(*S, types.Bool)) BoolEnv[S] {
-	return BoolEnv[S]{name: name, trueValue: trueValue, get: get, set: set}
+// NewBoolEnv maps a boolean attribute to the variable name: toEnv returns the
+// value to write ("" to write nothing) and fromEnv sets the attribute from
+// the variable value ("" when it is absent).
+func NewBoolEnv[S any](name string, toEnv func(*S) string, fromEnv func(*S, string)) BoolEnv[S] {
+	return BoolEnv[S]{name: name, toEnv: toEnv, fromEnv: fromEnv}
 }
 
-func (e BoolEnv[S]) Name() string { return e.name }
-
-// FromEnv sets the attribute to true when the variable holds trueValue. Any
-// other value, or an absent variable, leaves the attribute as it is.
-func (e BoolEnv[S]) FromEnv(s *S, value string) {
-	if value == e.trueValue {
-		e.set(s, types.BoolValue(true))
-	}
-}
-
-// ToEnv writes trueValue when the attribute is true, nothing otherwise.
-func (e BoolEnv[S]) ToEnv(s *S) (string, string) {
-	if e.get(s).ValueBool() {
-		return e.name, e.trueValue
-	}
-	return e.name, ""
-}
+func (e BoolEnv[S]) Name() string                { return e.name }
+func (e BoolEnv[S]) FromEnv(s *S, value string)  { e.fromEnv(s, value) }
+func (e BoolEnv[S]) ToEnv(s *S) (string, string) { return e.name, e.toEnv(s) }

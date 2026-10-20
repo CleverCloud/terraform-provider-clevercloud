@@ -8,9 +8,19 @@ import (
 )
 
 var (
-	DevDependenciesEnv = pkg.NewBoolEnv[NodeJS](app.CC_NODE_DEV_DEPENDENCIES, "install",
-		func(n *NodeJS) types.Bool { return n.DevDependencies },
-		func(n *NodeJS, v types.Bool) { n.DevDependencies = v })
+	DevDependenciesEnv = pkg.NewBoolEnv[NodeJS](app.CC_NODE_DEV_DEPENDENCIES,
+		func(n *NodeJS) string {
+			if n.DevDependencies.ValueBool() {
+				return "install"
+			}
+			return ""
+		},
+		func(n *NodeJS, value string) {
+			// an absent variable leaves the attribute as it is
+			if value == "install" {
+				n.DevDependencies = types.BoolValue(true)
+			}
+		})
 	StartScriptEnv = pkg.NewStringEnv[NodeJS](app.CC_RUN_COMMAND,
 		func(n *NodeJS) types.String { return n.StartScript },
 		func(n *NodeJS, v types.String) { n.StartScript = v })
