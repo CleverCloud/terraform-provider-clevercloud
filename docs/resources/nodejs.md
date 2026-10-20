@@ -93,7 +93,7 @@ resource "clevercloud_nodejs" "myapp" {
 
 ### Optional
 
-- `app_folder` (String) Folder in which the application is located (inside the git repository) (`APP_FOLDER`)
+- `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `bun_install_cache_dir` (String) Bun install cache directory, saved and restored with the dependencies cache (`CC_BUN_INSTALL_CACHE_DIR`)
 - `custom_install_command` (String) Command installing the dependencies, used when `package_manager` is `custom` (`CC_CUSTOM_BUILD_TOOL`)
