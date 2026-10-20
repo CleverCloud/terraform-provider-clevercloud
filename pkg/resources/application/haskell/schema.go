@@ -6,7 +6,6 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
-	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,19 +33,19 @@ func (r ResourceHaskell) Schema(ctx context.Context, req resource.SchemaRequest,
 		Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 			"stack_target": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Specify Stack package target.",
+				MarkdownDescription: "Specify Stack package target (`CC_HASKELL_STACK_TARGET`).",
 			},
 			"stack_setup_command": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Only use this variable to override the default `setup` Stack step command.",
+				MarkdownDescription: "Only use this variable to override the default `setup` Stack step command (`CC_HASKELL_STACK_SETUP_COMMAND`).",
 			},
 			"stack_install_command": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Only use this variable to override the default `install` Stack step command.",
+				MarkdownDescription: "Only use this variable to override the default `install` Stack step command (`CC_HASKELL_STACK_INSTALL_COMMAND`).",
 			},
 			"stack_install_dependencies_command": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Only use this variable to override the default `install --only-dependencies` Stack step command.",
+				MarkdownDescription: "Only use this variable to override the default `install --only-dependencies` Stack step command (`CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND`).",
 			},
 		}),
 		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
@@ -65,10 +64,7 @@ func (haskellapp Haskell) ToEnv(ctx context.Context, diags *diag.Diagnostics) ma
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(haskellapp.StackTarget, func(s string) { env[app.CC_HASKELL_STACK_TARGET] = s })
-	pkg.IfIsSetStr(haskellapp.StackSetupCommand, func(s string) { env[app.CC_HASKELL_STACK_SETUP_COMMAND] = s })
-	pkg.IfIsSetStr(haskellapp.StackInstallCommand, func(s string) { env[app.CC_HASKELL_STACK_INSTALL_COMMAND] = s })
-	pkg.IfIsSetStr(haskellapp.StackInstallDependenciesCommand, func(s string) { env[app.CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND] = s })
+	pkg.WriteEnv(env, &haskellapp, envVars...)
 
 	env = pkg.Merge(env, haskellapp.Hooks.ToEnv())
 	env = pkg.Merge(env, haskellapp.Integrations.ToEnv(ctx, diags))
@@ -81,10 +77,7 @@ func (haskellapp *Haskell) FromEnv(ctx context.Context, env *maps.Map[string, st
 		return
 	}
 
-	haskellapp.StackTarget = pkg.FromStrPtr(env.PopPtr(app.CC_HASKELL_STACK_TARGET))
-	haskellapp.StackSetupCommand = pkg.FromStrPtr(env.PopPtr(app.CC_HASKELL_STACK_SETUP_COMMAND))
-	haskellapp.StackInstallCommand = pkg.FromStrPtr(env.PopPtr(app.CC_HASKELL_STACK_INSTALL_COMMAND))
-	haskellapp.StackInstallDependenciesCommand = pkg.FromStrPtr(env.PopPtr(app.CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND))
+	pkg.ReadEnv(env, haskellapp, envVars...)
 
 	haskellapp.Integrations = attributes.FromEnvIntegrations(ctx, env, haskellapp.Integrations, diags)
 }

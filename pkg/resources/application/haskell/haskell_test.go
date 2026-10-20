@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"maps"
 	"regexp"
 	"testing"
 	"time"
@@ -196,6 +197,94 @@ func TestAccHaskell_basic(t *testing.T) {
 					}
 
 					return nil
+				}),
+			},
+		}},
+	})
+}
+
+func TestAccHaskell_envAttributes(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
+	rName := acctest.RandomWithPrefix("tf-test-haskell-env")
+	fullName := fmt.Sprintf("clevercloud_haskell.%s", rName)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+
+	// config builds each step's configuration from scratch: SetOneValue
+	// mutates the block, and steps must not leak values into each other.
+	config := func(overrides map[string]any) string {
+		values := map[string]any{
+			"name":                               rName,
+			"region":                             "par",
+			"min_instance_count":                 1,
+			"max_instance_count":                 1,
+			"smallest_flavor":                    "XS",
+			"biggest_flavor":                     "XS",
+			"app_folder":                         "server",
+			"stack_target":                       "my-app:exe:server",
+			"stack_install_dependencies_command": "stack install --only-dependencies --fast",
+		}
+		maps.Copy(values, overrides)
+		return providerBlock.Append(helper.NewRessource("clevercloud_haskell", rName, helper.SetKeyValues(values))).String()
+	}
+
+	remoteEnv := func(want map[string]string) statecheck.StateCheck {
+		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
+			appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+			if appRes.HasError() {
+				return nil, appRes.Error()
+			}
+			return appRes.Payload(), nil
+		}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
+			appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
+			if appEnvRes.HasError() {
+				return fmt.Errorf("failed to get application env: %w", appEnvRes.Error())
+			}
+			env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
+				acc[e.Name] = e.Value
+				return acc
+			})
+			for name, value := range want {
+				if env[name] != value {
+					return tests.AssertError("bad env var value "+name, value, env[name])
+				}
+			}
+			return nil
+		})
+	}
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			// First, so the post-test destroy runs with a valid configuration.
+			ResourceName: rName,
+			Config:       config(map[string]any{"environment": map[string]any{app.CC_HASKELL_STACK_TARGET: "other"}}),
+			PlanOnly:     true,
+			ExpectError:  regexp.MustCompile(`CC_HASKELL_STACK_TARGET is managed by an attribute`),
+		}, {
+			ResourceName: rName,
+			Config:       config(nil),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("app_folder"), knownvalue.StringExact("server")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("stack_target"), knownvalue.StringExact("my-app:exe:server")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("environment"), knownvalue.Null()),
+				remoteEnv(map[string]string{
+					app.APP_FOLDER:              "server",
+					app.CC_HASKELL_STACK_TARGET: "my-app:exe:server",
+					app.CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND: "stack install --only-dependencies --fast",
+				}),
+			},
+		}, {
+			ResourceName: rName,
+			Config:       config(map[string]any{"app_folder": "api", "stack_target": "my-app:exe:api"}),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("stack_target"), knownvalue.StringExact("my-app:exe:api")),
+				remoteEnv(map[string]string{
+					app.APP_FOLDER:              "api",
+					app.CC_HASKELL_STACK_TARGET: "my-app:exe:api",
 				}),
 			},
 		}},

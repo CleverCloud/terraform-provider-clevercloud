@@ -111,10 +111,10 @@ environment = { for k, v in {
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
-- `stack_install_command` (String) Only use this variable to override the default `install` Stack step command.
-- `stack_install_dependencies_command` (String) Only use this variable to override the default `install --only-dependencies` Stack step command.
-- `stack_setup_command` (String) Only use this variable to override the default `setup` Stack step command.
-- `stack_target` (String) Specify Stack package target.
+- `stack_install_command` (String) Only use this variable to override the default `install` Stack step command (`CC_HASKELL_STACK_INSTALL_COMMAND`).
+- `stack_install_dependencies_command` (String) Only use this variable to override the default `install --only-dependencies` Stack step command (`CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND`).
+- `stack_setup_command` (String) Only use this variable to override the default `setup` Stack step command (`CC_HASKELL_STACK_SETUP_COMMAND`).
+- `stack_target` (String) Specify Stack package target (`CC_HASKELL_STACK_TARGET`).
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
