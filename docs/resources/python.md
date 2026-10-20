@@ -94,7 +94,11 @@ resource "clevercloud_python" "myapp" {
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `backend` (String) WSGI/ASGI server running the application behind Nginx: `uwsgi` (default), `gunicorn`, `daphne` or `uvicorn` (`CC_PYTHON_BACKEND`)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `celery_logfile` (String) Log file path for Celery (`CC_PYTHON_CELERY_LOGFILE`)
+- `celery_module` (String) Celery module to run alongside the application (`CC_PYTHON_CELERY_MODULE`)
+- `celery_use_beat` (Boolean) Run Celery Beat with the Celery workers (`CC_PYTHON_CELERY_USE_BEAT`)
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
@@ -108,17 +112,25 @@ environment = { for k, v in {
   VAR2 = var.optional_var
 } : k => v if v != null }
 ```
+- `environment_mode` (String) Application environment mode used by uv builds, `production` by default (`ENVIRONMENT`)
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
+- `gunicorn_worker_class` (String) Gunicorn worker class: `sync` (default), `eventlet`, `gevent`, `tornado`, `gthread` or `gaiohttp` (`CC_GUNICORN_WORKER_CLASS`)
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
+- `manage_tasks` (String) Comma-separated list of Django `manage.py` tasks to run during the build (`CC_PYTHON_MANAGE_TASKS`)
+- `module` (String) Python module to run, for example `app.server:app` (`CC_PYTHON_MODULE`)
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
-- `pip_requirements` (String) Define a custom requirements.txt file (default: requirements.txt)
-- `python_version` (String) Python version >= 2.7
+- `pip_requirements` (String) Define a custom requirements.txt file (default: requirements.txt) (`CC_PIP_REQUIREMENTS_FILE`)
+- `python_version` (String) Python version >= 2.7 (`CC_PYTHON_VERSION`)
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
+- `use_gevent` (Boolean) Run the application with gevent (`CC_PYTHON_USE_GEVENT`)
+- `uv_run_command` (String) Command starting the application with uv (`CC_PYTHON_UV_RUN_COMMAND`)
+- `uwsgi_extra_config` (String) Additional uWSGI configuration (`CC_UWSGI_EXTRA_CONFIG`)
+- `uwsgi_intercept_errors` (Boolean) Let Nginx intercept uWSGI error responses (`UWSGI_INTERCEPT_ERRORS`)
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
 
 ### Read-Only
