@@ -43,7 +43,6 @@ func TestEnvVarsRoundTrip(t *testing.T) {
 		RailsEnv:              types.StringValue("production"),
 		StaticFilesPath:       types.StringValue("public"),
 		StaticURLPrefix:       types.StringValue("/assets"),
-		StaticWebroot:         types.StringValue("public"),
 	}
 	env := plan.ToEnv(ctx, &diags)
 	for _, name := range pkg.EnvNames(envVars...) {

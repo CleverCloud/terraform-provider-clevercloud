@@ -32,7 +32,6 @@ type Ruby struct {
 	RailsEnv              types.String `tfsdk:"rails_env"`
 	StaticFilesPath       types.String `tfsdk:"static_files_path"`
 	StaticURLPrefix       types.String `tfsdk:"static_url_prefix"`
-	StaticWebroot         types.String `tfsdk:"static_webroot"`
 }
 
 type RubyV0 struct {
@@ -142,12 +141,6 @@ var schemaRuby = schema.Schema{
 			Optional:            true,
 			MarkdownDescription: "The URL path under which you want to serve static files, usually /public (`STATIC_URL_PREFIX`)",
 		},
-		// STATIC_WEBROOT
-		"static_webroot": schema.StringAttribute{
-			Optional:            true,
-			DeprecationMessage:  "has no effect, the platform does not read STATIC_WEBROOT: use `static_files_path` and `static_url_prefix`. It will be removed in a future release",
-			MarkdownDescription: "**Deprecated**, has no effect: the platform does not read `STATIC_WEBROOT`. Use `static_files_path` and `static_url_prefix` instead, it will be removed in a future release.",
-		},
 	}),
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
 }
@@ -254,8 +247,6 @@ func (ruby Ruby) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	env = pkg.Merge(env, customEnv)
 
 	pkg.WriteEnv(env, &ruby, envVars...)
-	// deprecated, the platform ignores it: kept out of envVars
-	pkg.IfIsSetStr(ruby.StaticWebroot, func(s string) { env["STATIC_WEBROOT"] = s })
 	env = pkg.Merge(env, ruby.Hooks.ToEnv())
 	env = pkg.Merge(env, ruby.Integrations.ToEnv(ctx, diags))
 
@@ -268,7 +259,6 @@ func (ruby *Ruby) FromEnv(ctx context.Context, env *maps.Map[string, string], di
 	}
 
 	pkg.ReadEnv(env, ruby, envVars...)
-	ruby.StaticWebroot = pkg.FromStrPtr(env.PopPtr("STATIC_WEBROOT"))
 
 	ruby.Integrations = attributes.FromEnvIntegrations(ctx, env, ruby.Integrations, diags)
 }
