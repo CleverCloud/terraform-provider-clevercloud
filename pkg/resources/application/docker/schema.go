@@ -3,13 +3,10 @@ package docker
 import (
 	"context"
 	_ "embed"
-	"fmt"
 	"net"
-	"strconv"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
-	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -31,6 +28,7 @@ type Docker struct {
 	RegistryUser      types.String `tfsdk:"registry_user"`
 	RegistryPassword  types.String `tfsdk:"registry_password"`
 	DaemonSocketMount types.Bool   `tfsdk:"daemon_socket_mount"`
+	Buildx            types.Bool   `tfsdk:"buildx"`
 }
 
 type DockerV0 struct {
@@ -59,15 +57,15 @@ var schemaDocker = schema.Schema{
 	Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 		"dockerfile": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "The name of the Dockerfile to build",
+			MarkdownDescription: "The name of the Dockerfile to build (`CC_DOCKERFILE`)",
 		},
 		"container_port": schema.Int64Attribute{
 			Optional:            true,
-			MarkdownDescription: "Set to custom HTTP port if your Docker container runs on custom port",
+			MarkdownDescription: "Set to custom HTTP port if your Docker container runs on custom port (`CC_DOCKER_EXPOSED_HTTP_PORT`)",
 		},
 		"container_port_tcp": schema.Int64Attribute{
 			Optional:            true,
-			MarkdownDescription: "Set to custom TCP port if your Docker container runs on custom port.",
+			MarkdownDescription: "Set to custom TCP port if your Docker container runs on custom port (`CC_DOCKER_EXPOSED_TCP_PORT`).",
 		},
 		"enable_ipv6": schema.BoolAttribute{
 			Optional:           true,
@@ -75,7 +73,7 @@ var schemaDocker = schema.Schema{
 		},
 		"ipv6_cidr": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Activate the support of IPv6 with an IPv6 subnet int the docker daemon",
+			MarkdownDescription: "Activate the support of IPv6 with an IPv6 subnet int the docker daemon (`CC_DOCKER_FIXED_CIDR_V6`)",
 			Validators: []validator.String{
 				pkg.NewValidator("IPv6 CIDR 🍾", func(_ context.Context, req validator.StringRequest, res *validator.StringResponse) {
 					if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
@@ -96,20 +94,24 @@ var schemaDocker = schema.Schema{
 		},
 		"registry_url": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "The server of your private registry (optional).	Docker’s public registry",
+			MarkdownDescription: "The server of your private registry (optional).	Docker’s public registry (`CC_DOCKER_LOGIN_SERVER`)",
 		},
 		"registry_user": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "The username to login to a private registry",
+			MarkdownDescription: "The username to login to a private registry (`CC_DOCKER_LOGIN_USERNAME`)",
 		},
 		"registry_password": schema.StringAttribute{
 			Optional:            true,
 			Sensitive:           !pkg.BypassSensitiveImports(),
-			MarkdownDescription: "The password of your username",
+			MarkdownDescription: "The password of your username (`CC_DOCKER_LOGIN_PASSWORD`)",
 		},
 		"daemon_socket_mount": schema.BoolAttribute{
 			Optional:            true,
-			MarkdownDescription: "Set to true to access the host Docker socket from inside your container",
+			MarkdownDescription: "Set to true to access the host Docker socket from inside your container (`CC_MOUNT_DOCKER_SOCKET`)",
+		},
+		"buildx": schema.BoolAttribute{
+			Optional:            true,
+			MarkdownDescription: "Build the image with Docker Buildx, which the platform does by default; set to false to use the classic builder (`CC_DOCKER_BUILDX`)",
 		},
 	}),
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
@@ -189,18 +191,7 @@ func (p *Docker) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(p.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
-
-	// Docker specific
-	pkg.IfIsSetStr(p.Dockerfile, func(s string) { env[app.CC_DOCKERFILE] = s })
-	pkg.IfIsSetI(p.ContainerPort, func(i int64) { env[app.CC_DOCKER_EXPOSED_HTTP_PORT] = fmt.Sprintf("%d", i) })
-	pkg.IfIsSetI(p.ContainerPortTCP, func(i int64) { env[app.CC_DOCKER_EXPOSED_TCP_PORT] = fmt.Sprintf("%d", i) })
-	pkg.IfIsSetStr(p.IPv6Cidr, func(s string) { env[app.CC_DOCKER_FIXED_CIDR_V6] = s })
-	pkg.IfIsSetStr(p.RegistryURL, func(s string) { env["CC_DOCKER_LOGIN_SERVER"] = s })
-	pkg.IfIsSetStr(p.RegistryUser, func(s string) { env["CC_DOCKER_LOGIN_USERNAME"] = s })
-	pkg.IfIsSetStr(p.RegistryPassword, func(s string) { env["CC_DOCKER_LOGIN_PASSWORD"] = s })
-	pkg.IfIsSetB(p.DaemonSocketMount, func(e bool) { env[app.CC_MOUNT_DOCKER_SOCKET] = strconv.FormatBool(e) })
-
+	pkg.WriteEnv(env, p, envVars...)
 	env = pkg.Merge(env, p.Hooks.ToEnv())
 	env = pkg.Merge(env, p.Integrations.ToEnv(ctx, diags))
 
@@ -212,15 +203,7 @@ func (p *Docker) FromEnv(ctx context.Context, env *maps.Map[string, string], dia
 		return
 	}
 
-	p.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
-	p.Dockerfile = pkg.FromStrPtr(env.PopPtr(app.CC_DOCKERFILE))
-	p.ContainerPort = pkg.FromIntPtr(env.PopPtr(app.CC_DOCKER_EXPOSED_HTTP_PORT))
-	p.ContainerPortTCP = pkg.FromIntPtr(env.PopPtr(app.CC_DOCKER_EXPOSED_TCP_PORT))
-	p.IPv6Cidr = pkg.FromStrPtr(env.PopPtr(app.CC_DOCKER_FIXED_CIDR_V6))
-	p.RegistryURL = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_LOGIN_SERVER"))
-	p.RegistryUser = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_LOGIN_USERNAME"))
-	p.RegistryPassword = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_LOGIN_PASSWORD"))
-	p.DaemonSocketMount = pkg.FromBoolPtr(env.PopPtr(app.CC_MOUNT_DOCKER_SOCKET))
+	pkg.ReadEnv(env, p, envVars...)
 
 	p.Integrations = attributes.FromEnvIntegrations(ctx, env, p.Integrations, diags)
 }

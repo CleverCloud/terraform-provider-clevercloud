@@ -47,14 +47,15 @@ resource "clevercloud_docker" "docker_instance" {
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
-- `container_port` (Number) Set to custom HTTP port if your Docker container runs on custom port
-- `container_port_tcp` (Number) Set to custom TCP port if your Docker container runs on custom port.
-- `daemon_socket_mount` (Boolean) Set to true to access the host Docker socket from inside your container
+- `buildx` (Boolean) Build the image with Docker Buildx, which the platform does by default; set to false to use the classic builder (`CC_DOCKER_BUILDX`)
+- `container_port` (Number) Set to custom HTTP port if your Docker container runs on custom port (`CC_DOCKER_EXPOSED_HTTP_PORT`)
+- `container_port_tcp` (Number) Set to custom TCP port if your Docker container runs on custom port (`CC_DOCKER_EXPOSED_TCP_PORT`).
+- `daemon_socket_mount` (Boolean) Set to true to access the host Docker socket from inside your container (`CC_MOUNT_DOCKER_SOCKET`)
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
-- `dockerfile` (String) The name of the Dockerfile to build
+- `dockerfile` (String) The name of the Dockerfile to build (`CC_DOCKERFILE`)
 - `enable_ipv6` (Boolean, Deprecated)
 - `environment` (Map of String, Sensitive) Environment variables injected into the application.
 
@@ -68,14 +69,14 @@ environment = { for k, v in {
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
-- `ipv6_cidr` (String) Activate the support of IPv6 with an IPv6 subnet int the docker daemon
+- `ipv6_cidr` (String) Activate the support of IPv6 with an IPv6 subnet int the docker daemon (`CC_DOCKER_FIXED_CIDR_V6`)
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
-- `registry_password` (String, Sensitive) The password of your username
-- `registry_url` (String) The server of your private registry (optional).	Docker’s public registry
-- `registry_user` (String) The username to login to a private registry
+- `registry_password` (String, Sensitive) The password of your username (`CC_DOCKER_LOGIN_PASSWORD`)
+- `registry_url` (String) The server of your private registry (optional).	Docker’s public registry (`CC_DOCKER_LOGIN_SERVER`)
+- `registry_user` (String) The username to login to a private registry (`CC_DOCKER_LOGIN_USERNAME`)
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
