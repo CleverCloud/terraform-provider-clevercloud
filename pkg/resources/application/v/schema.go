@@ -6,7 +6,6 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
-	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -21,6 +20,7 @@ type V struct {
 	application.Runtime
 	Binary           types.String `tfsdk:"binary"`
 	DevelopmentBuild types.Bool   `tfsdk:"development_build"`
+	ModulesPath      types.String `tfsdk:"modules_path"`
 }
 
 //go:embed doc.md
@@ -32,13 +32,17 @@ var schemaV = schema.Schema{
 	Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 		"binary": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "The name of the output binary file. Default: `${APP_HOME}/v_bin_${APP_ID}`",
+			MarkdownDescription: "The name of the output binary file. Default: `${APP_HOME}/v_bin_${APP_ID}` (`CC_V_BINARY`)",
 		},
 		"development_build": schema.BoolAttribute{
 			Optional:            true,
 			Computed:            true,
 			Default:             booldefault.StaticBool(false),
-			MarkdownDescription: "Set to true to compile without the `-prod` flag.",
+			MarkdownDescription: "Set to true to compile without the `-prod` flag (`ENVIRONMENT`).",
+		},
+		"modules_path": schema.StringAttribute{
+			Optional:            true,
+			MarkdownDescription: "Directory V looks up modules in, `/home/bas/.vmodules/` by default (`VMODULES`)",
 		},
 	}),
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
@@ -60,12 +64,7 @@ func (vapp V) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(vapp.Binary, func(s string) { env[app.CC_V_BINARY] = s })
-	pkg.IfIsSetB(vapp.DevelopmentBuild, func(devBuild bool) {
-		if devBuild {
-			env[app.ENVIRONMENT] = "development"
-		}
-	})
+	pkg.WriteEnv(env, &vapp, envVars...)
 
 	env = pkg.Merge(env, vapp.Hooks.ToEnv())
 	env = pkg.Merge(env, vapp.Integrations.ToEnv(ctx, diags))
@@ -78,8 +77,7 @@ func (vapp *V) FromEnv(ctx context.Context, env *maps.Map[string, string], diags
 		return
 	}
 
-	vapp.Binary = pkg.FromStrPtr(env.PopPtr(app.CC_V_BINARY))
-	pkg.SetBool(&vapp.DevelopmentBuild, env.PopPtr(app.ENVIRONMENT), "development")
+	pkg.ReadEnv(env, vapp, envVars...)
 
 	vapp.Integrations = attributes.FromEnvIntegrations(ctx, env, vapp.Integrations, diags)
 }
