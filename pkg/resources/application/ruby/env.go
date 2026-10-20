@@ -80,8 +80,6 @@ var (
 )
 
 // envVars lists every ruby attribute backed by an environment variable.
-// The deprecated static_webroot is left out: the platform ignores its
-// variable, so environment may still hold it.
 var envVars = []pkg.EnvVarMapping[*Ruby]{
 	application.OnRuntime[*Ruby](application.AppFolderEnv),
 	RubyVersionEnv,
