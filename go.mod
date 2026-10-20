@@ -1,6 +1,6 @@
 module go.clever-cloud.com/terraform-provider
 
-go 1.25.0
+go 1.27.3
 
 require (
 	github.com/apache/pulsar-client-go v0.17.0
