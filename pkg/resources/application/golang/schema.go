@@ -6,6 +6,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -55,7 +56,7 @@ func (g Go) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]strin
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(g.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetStr(g.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
 	env = pkg.Merge(env, g.Hooks.ToEnv())
 	env = pkg.Merge(env, g.Integrations.ToEnv(ctx, diags))
 
@@ -67,7 +68,7 @@ func (g *Go) FromEnv(ctx context.Context, env *maps.Map[string, string], diags *
 		return
 	}
 
-	g.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
+	g.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
 
 	g.Integrations = attributes.FromEnvIntegrations(ctx, env, g.Integrations, diags)
 }

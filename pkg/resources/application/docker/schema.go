@@ -9,6 +9,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -188,17 +189,17 @@ func (p *Docker) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(p.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetStr(p.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
 
 	// Docker specific
-	pkg.IfIsSetStr(p.Dockerfile, func(s string) { env["CC_DOCKERFILE"] = s })
-	pkg.IfIsSetI(p.ContainerPort, func(i int64) { env["CC_DOCKER_EXPOSED_HTTP_PORT"] = fmt.Sprintf("%d", i) })
-	pkg.IfIsSetI(p.ContainerPortTCP, func(i int64) { env["CC_DOCKER_EXPOSED_TCP_PORT"] = fmt.Sprintf("%d", i) })
-	pkg.IfIsSetStr(p.IPv6Cidr, func(s string) { env["CC_DOCKER_FIXED_CIDR_V6"] = s })
+	pkg.IfIsSetStr(p.Dockerfile, func(s string) { env[app.CC_DOCKERFILE] = s })
+	pkg.IfIsSetI(p.ContainerPort, func(i int64) { env[app.CC_DOCKER_EXPOSED_HTTP_PORT] = fmt.Sprintf("%d", i) })
+	pkg.IfIsSetI(p.ContainerPortTCP, func(i int64) { env[app.CC_DOCKER_EXPOSED_TCP_PORT] = fmt.Sprintf("%d", i) })
+	pkg.IfIsSetStr(p.IPv6Cidr, func(s string) { env[app.CC_DOCKER_FIXED_CIDR_V6] = s })
 	pkg.IfIsSetStr(p.RegistryURL, func(s string) { env["CC_DOCKER_LOGIN_SERVER"] = s })
 	pkg.IfIsSetStr(p.RegistryUser, func(s string) { env["CC_DOCKER_LOGIN_USERNAME"] = s })
 	pkg.IfIsSetStr(p.RegistryPassword, func(s string) { env["CC_DOCKER_LOGIN_PASSWORD"] = s })
-	pkg.IfIsSetB(p.DaemonSocketMount, func(e bool) { env["CC_MOUNT_DOCKER_SOCKET"] = strconv.FormatBool(e) })
+	pkg.IfIsSetB(p.DaemonSocketMount, func(e bool) { env[app.CC_MOUNT_DOCKER_SOCKET] = strconv.FormatBool(e) })
 
 	env = pkg.Merge(env, p.Hooks.ToEnv())
 	env = pkg.Merge(env, p.Integrations.ToEnv(ctx, diags))
@@ -211,15 +212,15 @@ func (p *Docker) FromEnv(ctx context.Context, env *maps.Map[string, string], dia
 		return
 	}
 
-	p.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
-	p.Dockerfile = pkg.FromStrPtr(env.PopPtr("CC_DOCKERFILE"))
-	p.ContainerPort = pkg.FromIntPtr(env.PopPtr("CC_DOCKER_EXPOSED_HTTP_PORT"))
-	p.ContainerPortTCP = pkg.FromIntPtr(env.PopPtr("CC_DOCKER_EXPOSED_TCP_PORT"))
-	p.IPv6Cidr = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_FIXED_CIDR_V6"))
+	p.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
+	p.Dockerfile = pkg.FromStrPtr(env.PopPtr(app.CC_DOCKERFILE))
+	p.ContainerPort = pkg.FromIntPtr(env.PopPtr(app.CC_DOCKER_EXPOSED_HTTP_PORT))
+	p.ContainerPortTCP = pkg.FromIntPtr(env.PopPtr(app.CC_DOCKER_EXPOSED_TCP_PORT))
+	p.IPv6Cidr = pkg.FromStrPtr(env.PopPtr(app.CC_DOCKER_FIXED_CIDR_V6))
 	p.RegistryURL = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_LOGIN_SERVER"))
 	p.RegistryUser = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_LOGIN_USERNAME"))
 	p.RegistryPassword = pkg.FromStrPtr(env.PopPtr("CC_DOCKER_LOGIN_PASSWORD"))
-	p.DaemonSocketMount = pkg.FromBoolPtr(env.PopPtr("CC_MOUNT_DOCKER_SOCKET"))
+	p.DaemonSocketMount = pkg.FromBoolPtr(env.PopPtr(app.CC_MOUNT_DOCKER_SOCKET))
 
 	p.Integrations = attributes.FromEnvIntegrations(ctx, env, p.Integrations, diags)
 }

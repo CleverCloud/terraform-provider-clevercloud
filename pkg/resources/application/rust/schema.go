@@ -7,6 +7,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -82,14 +83,14 @@ func (r Rust) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(r.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetStr(r.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
 	env = pkg.Merge(env, r.Hooks.ToEnv())
 	env = pkg.Merge(env, r.Integrations.ToEnv(ctx, diags))
 
 	// Handle Rust features
 	features := r.FeaturesAsStrings(ctx, diags)
 	if len(features) > 0 {
-		env[CC_RUST_FEATURES] = strings.Join(features, ",")
+		env[app.CC_RUST_FEATURES] = strings.Join(features, ",")
 	}
 
 	return env
@@ -100,8 +101,8 @@ func (r *Rust) FromEnv(ctx context.Context, env *maps.Map[string, string], diags
 		return
 	}
 
-	r.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
-	r.Features = pkg.FromSetSplit(env.PopPtr(CC_RUST_FEATURES), ",", diags)
+	r.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
+	r.Features = pkg.FromSetSplit(env.PopPtr(app.CC_RUST_FEATURES), ",", diags)
 
 	r.Integrations = attributes.FromEnvIntegrations(ctx, env, r.Integrations, diags)
 }

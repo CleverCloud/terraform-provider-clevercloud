@@ -6,6 +6,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application/rust"
+	"go.clever-cloud.dev/sdk/app"
 )
 
 func TestRustRebuildsOnFeaturesChange(t *testing.T) {
@@ -14,7 +15,7 @@ func TestRustRebuildsOnFeaturesChange(t *testing.T) {
 	if !ok {
 		t.Fatal("rust plan must implement application.RebuildTrigger")
 	}
-	if got := rt.RebuildEnvKeys(); !slices.Equal(got, []string{rust.CC_RUST_FEATURES}) {
-		t.Errorf("RebuildEnvKeys() = %v, want [%s]", got, rust.CC_RUST_FEATURES)
+	if got := rt.RebuildEnvKeys(); !slices.Equal(got, []string{app.CC_RUST_FEATURES}) {
+		t.Errorf("RebuildEnvKeys() = %v, want [%s]", got, app.CC_RUST_FEATURES)
 	}
 }

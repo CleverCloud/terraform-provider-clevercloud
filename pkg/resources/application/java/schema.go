@@ -6,6 +6,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"maps"
 
@@ -70,8 +71,8 @@ func (plan *Java) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string
 	}
 	maps.Copy(env, customEnv)
 
-	pkg.IfIsSetStr(plan.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-	pkg.IfIsSetStr(plan.JavaVersion, func(s string) { env["CC_JAVA_VERSION"] = s })
+	pkg.IfIsSetStr(plan.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
+	pkg.IfIsSetStr(plan.JavaVersion, func(s string) { env[app.CC_JAVA_VERSION] = s })
 	env = pkg.Merge(env, plan.Hooks.ToEnv())
 	env = pkg.Merge(env, plan.Integrations.ToEnv(ctx, diags))
 	return env
@@ -82,8 +83,8 @@ func (plan *Java) FromEnv(ctx context.Context, env *helperMaps.Map[string, strin
 		return
 	}
 
-	plan.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
-	plan.JavaVersion = pkg.FromStrPtr(env.PopPtr("CC_JAVA_VERSION"))
+	plan.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
+	plan.JavaVersion = pkg.FromStrPtr(env.PopPtr(app.CC_JAVA_VERSION))
 
 	plan.Integrations = attributes.FromEnvIntegrations(ctx, env, plan.Integrations, diags)
 }

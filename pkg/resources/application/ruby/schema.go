@@ -7,6 +7,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -254,30 +255,30 @@ func (ruby Ruby) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(ruby.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-	pkg.IfIsSetStr(ruby.RubyVersion, func(s string) { env["CC_RUBY_VERSION"] = s })
+	pkg.IfIsSetStr(ruby.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
+	pkg.IfIsSetStr(ruby.RubyVersion, func(s string) { env[app.CC_RUBY_VERSION] = s })
 	pkg.IfIsSetB(ruby.EnableSidekiq, func(b bool) {
 		if b {
-			env["CC_ENABLE_SIDEKIQ"] = "true"
+			env[app.CC_ENABLE_SIDEKIQ] = "true"
 		}
 	})
-	pkg.IfIsSetStr(ruby.RackupServer, func(s string) { env["CC_RACKUP_SERVER"] = s })
-	pkg.IfIsSetStr(ruby.RakeGoals, func(s string) { env["CC_RAKEGOALS"] = s })
-	pkg.IfIsSetStr(ruby.SidekiqFiles, func(s string) { env["CC_SIDEKIQ_FILES"] = s })
-	pkg.IfIsSetStr(ruby.HTTPBasicAuth, func(s string) { env["CC_HTTP_BASIC_AUTH"] = s })
-	pkg.IfIsSetStr(ruby.NginxProxyBuffers, func(s string) { env["CC_NGINX_PROXY_BUFFERS"] = s })
-	pkg.IfIsSetStr(ruby.NginxProxyBufferSize, func(s string) { env["CC_NGINX_PROXY_BUFFER_SIZE"] = s })
+	pkg.IfIsSetStr(ruby.RackupServer, func(s string) { env[app.CC_RACKUP_SERVER] = s })
+	pkg.IfIsSetStr(ruby.RakeGoals, func(s string) { env[app.CC_RAKEGOALS] = s })
+	pkg.IfIsSetStr(ruby.SidekiqFiles, func(s string) { env[app.CC_SIDEKIQ_FILES] = s })
+	pkg.IfIsSetStr(ruby.HTTPBasicAuth, func(s string) { env[app.CC_HTTP_BASIC_AUTH] = s })
+	pkg.IfIsSetStr(ruby.NginxProxyBuffers, func(s string) { env[app.CC_NGINX_PROXY_BUFFERS] = s })
+	pkg.IfIsSetStr(ruby.NginxProxyBufferSize, func(s string) { env[app.CC_NGINX_PROXY_BUFFER_SIZE] = s })
 	pkg.IfIsSetB(ruby.EnableGzipCompression, func(b bool) {
 		if b {
-			env["ENABLE_GZIP_COMPRESSION"] = "true"
+			env[app.ENABLE_GZIP_COMPRESSION] = "true"
 		}
 	})
-	pkg.IfIsSetStr(ruby.GzipTypes, func(s string) { env["GZIP_TYPES"] = s })
-	pkg.IfIsSetI(ruby.NginxReadTimeout, func(i int64) { env["NGINX_READ_TIMEOUT"] = strconv.FormatInt(i, 10) })
+	pkg.IfIsSetStr(ruby.GzipTypes, func(s string) { env[app.GZIP_TYPES] = s })
+	pkg.IfIsSetI(ruby.NginxReadTimeout, func(i int64) { env[app.NGINX_READ_TIMEOUT] = strconv.FormatInt(i, 10) })
 	pkg.IfIsSetStr(ruby.RackEnv, func(s string) { env["RACK_ENV"] = s })
 	pkg.IfIsSetStr(ruby.RailsEnv, func(s string) { env["RAILS_ENV"] = s })
-	pkg.IfIsSetStr(ruby.StaticFilesPath, func(s string) { env["STATIC_FILES_PATH"] = s })
-	pkg.IfIsSetStr(ruby.StaticURLPrefix, func(s string) { env["STATIC_URL_PREFIX"] = s })
+	pkg.IfIsSetStr(ruby.StaticFilesPath, func(s string) { env[app.STATIC_FILES_PATH] = s })
+	pkg.IfIsSetStr(ruby.StaticURLPrefix, func(s string) { env[app.STATIC_URL_PREFIX] = s })
 	pkg.IfIsSetStr(ruby.StaticWebroot, func(s string) { env["STATIC_WEBROOT"] = s })
 	env = pkg.Merge(env, ruby.Hooks.ToEnv())
 	env = pkg.Merge(env, ruby.Integrations.ToEnv(ctx, diags))
@@ -290,22 +291,22 @@ func (ruby *Ruby) FromEnv(ctx context.Context, env *maps.Map[string, string], di
 		return
 	}
 
-	ruby.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
-	ruby.RubyVersion = pkg.FromStrPtr(env.PopPtr("CC_RUBY_VERSION"))
-	pkg.SetBoolIf(&ruby.EnableSidekiq, env.PopPtr("CC_ENABLE_SIDEKIQ"), "true")
-	ruby.RackupServer = pkg.FromStrPtr(env.PopPtr("CC_RACKUP_SERVER"))
-	ruby.RakeGoals = pkg.FromStrPtr(env.PopPtr("CC_RAKEGOALS"))
-	ruby.SidekiqFiles = pkg.FromStrPtr(env.PopPtr("CC_SIDEKIQ_FILES"))
-	ruby.HTTPBasicAuth = pkg.FromStrPtr(env.PopPtr("CC_HTTP_BASIC_AUTH"))
-	ruby.NginxProxyBuffers = pkg.FromStrPtr(env.PopPtr("CC_NGINX_PROXY_BUFFERS"))
-	ruby.NginxProxyBufferSize = pkg.FromStrPtr(env.PopPtr("CC_NGINX_PROXY_BUFFER_SIZE"))
-	pkg.SetBoolIf(&ruby.EnableGzipCompression, env.PopPtr("ENABLE_GZIP_COMPRESSION"), "true")
-	ruby.GzipTypes = pkg.FromStrPtr(env.PopPtr("GZIP_TYPES"))
-	ruby.NginxReadTimeout = pkg.FromIntPtr(env.PopPtr("NGINX_READ_TIMEOUT"))
+	ruby.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
+	ruby.RubyVersion = pkg.FromStrPtr(env.PopPtr(app.CC_RUBY_VERSION))
+	pkg.SetBoolIf(&ruby.EnableSidekiq, env.PopPtr(app.CC_ENABLE_SIDEKIQ), "true")
+	ruby.RackupServer = pkg.FromStrPtr(env.PopPtr(app.CC_RACKUP_SERVER))
+	ruby.RakeGoals = pkg.FromStrPtr(env.PopPtr(app.CC_RAKEGOALS))
+	ruby.SidekiqFiles = pkg.FromStrPtr(env.PopPtr(app.CC_SIDEKIQ_FILES))
+	ruby.HTTPBasicAuth = pkg.FromStrPtr(env.PopPtr(app.CC_HTTP_BASIC_AUTH))
+	ruby.NginxProxyBuffers = pkg.FromStrPtr(env.PopPtr(app.CC_NGINX_PROXY_BUFFERS))
+	ruby.NginxProxyBufferSize = pkg.FromStrPtr(env.PopPtr(app.CC_NGINX_PROXY_BUFFER_SIZE))
+	pkg.SetBoolIf(&ruby.EnableGzipCompression, env.PopPtr(app.ENABLE_GZIP_COMPRESSION), "true")
+	ruby.GzipTypes = pkg.FromStrPtr(env.PopPtr(app.GZIP_TYPES))
+	ruby.NginxReadTimeout = pkg.FromIntPtr(env.PopPtr(app.NGINX_READ_TIMEOUT))
 	ruby.RackEnv = pkg.FromStrPtr(env.PopPtr("RACK_ENV"))
 	ruby.RailsEnv = pkg.FromStrPtr(env.PopPtr("RAILS_ENV"))
-	ruby.StaticFilesPath = pkg.FromStrPtr(env.PopPtr("STATIC_FILES_PATH"))
-	ruby.StaticURLPrefix = pkg.FromStrPtr(env.PopPtr("STATIC_URL_PREFIX"))
+	ruby.StaticFilesPath = pkg.FromStrPtr(env.PopPtr(app.STATIC_FILES_PATH))
+	ruby.StaticURLPrefix = pkg.FromStrPtr(env.PopPtr(app.STATIC_URL_PREFIX))
 	ruby.StaticWebroot = pkg.FromStrPtr(env.PopPtr("STATIC_WEBROOT"))
 
 	ruby.Integrations = attributes.FromEnvIntegrations(ctx, env, ruby.Integrations, diags)

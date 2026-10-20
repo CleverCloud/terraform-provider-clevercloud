@@ -6,6 +6,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -120,12 +121,12 @@ func (node NodeJS) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(node.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-	pkg.IfIsSetB(node.DevDependencies, func(s bool) { env["CC_NODE_DEV_DEPENDENCIES"] = "install" })
-	pkg.IfIsSetStr(node.StartScript, func(s string) { env["CC_RUN_COMMAND"] = s })
-	pkg.IfIsSetStr(node.PackageManager, func(s string) { env["CC_NODE_BUILD_TOOL"] = s })
-	pkg.IfIsSetStr(node.Registry, func(s string) { env["CC_NPM_REGISTRY"] = s })
-	pkg.IfIsSetStr(node.RegistryToken, func(s string) { env["NPM_TOKEN"] = s })
+	pkg.IfIsSetStr(node.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
+	pkg.IfIsSetB(node.DevDependencies, func(s bool) { env[app.CC_NODE_DEV_DEPENDENCIES] = "install" })
+	pkg.IfIsSetStr(node.StartScript, func(s string) { env[app.CC_RUN_COMMAND] = s })
+	pkg.IfIsSetStr(node.PackageManager, func(s string) { env[app.CC_NODE_BUILD_TOOL] = s })
+	pkg.IfIsSetStr(node.Registry, func(s string) { env[app.CC_NPM_REGISTRY] = s })
+	pkg.IfIsSetStr(node.RegistryToken, func(s string) { env[app.NPM_TOKEN] = s })
 	env = pkg.Merge(env, node.Hooks.ToEnv())
 	env = pkg.Merge(env, node.Integrations.ToEnv(ctx, diags))
 
@@ -137,12 +138,12 @@ func (node *NodeJS) FromEnv(ctx context.Context, env *maps.Map[string, string], 
 		return
 	}
 
-	node.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
-	pkg.SetBoolIf(&node.DevDependencies, env.PopPtr("CC_NODE_DEV_DEPENDENCIES"), "install")
-	node.StartScript = pkg.FromStrPtr(env.PopPtr("CC_RUN_COMMAND"))
-	node.PackageManager = pkg.FromStrPtr(env.PopPtr("CC_NODE_BUILD_TOOL"))
-	node.Registry = pkg.FromStrPtr(env.PopPtr("CC_NPM_REGISTRY"))
-	node.RegistryToken = pkg.FromStrPtr(env.PopPtr("NPM_TOKEN"))
+	node.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
+	pkg.SetBoolIf(&node.DevDependencies, env.PopPtr(app.CC_NODE_DEV_DEPENDENCIES), "install")
+	node.StartScript = pkg.FromStrPtr(env.PopPtr(app.CC_RUN_COMMAND))
+	node.PackageManager = pkg.FromStrPtr(env.PopPtr(app.CC_NODE_BUILD_TOOL))
+	node.Registry = pkg.FromStrPtr(env.PopPtr(app.CC_NPM_REGISTRY))
+	node.RegistryToken = pkg.FromStrPtr(env.PopPtr(app.NPM_TOKEN))
 
 	node.Integrations = attributes.FromEnvIntegrations(ctx, env, node.Integrations, diags)
 }

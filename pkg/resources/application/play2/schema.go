@@ -6,6 +6,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"maps"
 
@@ -57,7 +58,7 @@ func (plan *Play2) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[strin
 	}
 	maps.Copy(env, customEnv)
 
-	pkg.IfIsSetStr(plan.AppFolder, func(s string) { env["APP_FOLDER"] = s })
+	pkg.IfIsSetStr(plan.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
 	env = pkg.Merge(env, plan.Hooks.ToEnv())
 	env = pkg.Merge(env, plan.Integrations.ToEnv(ctx, diags))
 	return env
@@ -68,6 +69,6 @@ func (play2 *Play2) FromEnv(ctx context.Context, env *helperMaps.Map[string, str
 		return
 	}
 
-	play2.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
+	play2.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
 	play2.Integrations = attributes.FromEnvIntegrations(ctx, env, play2.Integrations, diags)
 }

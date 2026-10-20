@@ -6,6 +6,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -59,10 +60,10 @@ func (vapp V) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(vapp.Binary, func(s string) { env["CC_V_BINARY"] = s })
+	pkg.IfIsSetStr(vapp.Binary, func(s string) { env[app.CC_V_BINARY] = s })
 	pkg.IfIsSetB(vapp.DevelopmentBuild, func(devBuild bool) {
 		if devBuild {
-			env["ENVIRONMENT"] = "development"
+			env[app.ENVIRONMENT] = "development"
 		}
 	})
 
@@ -77,8 +78,8 @@ func (vapp *V) FromEnv(ctx context.Context, env *maps.Map[string, string], diags
 		return
 	}
 
-	vapp.Binary = pkg.FromStrPtr(env.PopPtr("CC_V_BINARY"))
-	pkg.SetBool(&vapp.DevelopmentBuild, env.PopPtr("ENVIRONMENT"), "development")
+	vapp.Binary = pkg.FromStrPtr(env.PopPtr(app.CC_V_BINARY))
+	pkg.SetBool(&vapp.DevelopmentBuild, env.PopPtr(app.ENVIRONMENT), "development")
 
 	vapp.Integrations = attributes.FromEnvIntegrations(ctx, env, vapp.Integrations, diags)
 }
