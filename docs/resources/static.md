@@ -97,7 +97,10 @@ resource "clevercloud_static" "myapp" {
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `autobuild_outdir` (String) Folder the autobuild generates the site into (`CC_STATIC_AUTOBUILD_OUTDIR`)
+- `build_command` (String) Command building the site during the deployment, instead of the platform's autobuild (`CC_BUILD_COMMAND`)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `caddyfile` (String) Path of the Caddyfile used by the `caddy` server, `./Caddyfile` by default (`CC_STATIC_CADDYFILE`)
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
@@ -113,14 +116,18 @@ environment = { for k, v in {
 ```
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
+- `hugo_version` (String) Hugo version used to build a Hugo site (`CC_HUGO_VERSION`)
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
+- `static_server` (String) Server serving the files, `static-web-server` or `caddy` (`CC_STATIC_SERVER`)
+- `static_server_flags` (String) Extra flags passed to the static file server (`CC_STATIC_FLAGS`)
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
+- `webroot` (String) Folder to serve, relative to the application root (`CC_WEBROOT`)
 
 ### Read-Only
 
