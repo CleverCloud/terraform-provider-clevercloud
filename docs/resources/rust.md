@@ -94,6 +94,7 @@ resource "clevercloud_rust" "myapp" {
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `bin` (String) Name of the binary target to run, for a Cargo package or workspace building several binaries (`CC_RUST_BIN`)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
@@ -109,13 +110,14 @@ environment = { for k, v in {
 } : k => v if v != null }
 ```
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
-- `features` (Set of String) List of Rust features to enable during build. Changing it rebuilds the application without the build cache
+- `features` (Set of String) List of Rust features to enable during build. Changing it rebuilds the application without the build cache (`CC_RUST_FEATURES`)
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
+- `rustup_channel` (String) Rust toolchain channel or version to build with, for example `nightly` or `1.85`, `stable` by default (`CC_RUSTUP_CHANNEL`)
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
