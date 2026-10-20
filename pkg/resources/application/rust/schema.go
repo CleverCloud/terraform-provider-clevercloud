@@ -3,11 +3,9 @@ package rust
 import (
 	"context"
 	_ "embed"
-	"strings"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
-	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -19,19 +17,15 @@ import (
 
 type Rust struct {
 	application.Runtime
-	Features types.Set `tfsdk:"features"`
+	Features      types.Set    `tfsdk:"features"`
+	RustupChannel types.String `tfsdk:"rustup_channel"`
+	Bin           types.String `tfsdk:"bin"`
 }
 
 // RustV0 is the schema version 0 shape of Rust, kept for state upgrades
 type RustV0 struct {
 	application.RuntimeV0
 	Features types.Set `tfsdk:"features"`
-}
-
-func (r Rust) FeaturesAsStrings(ctx context.Context, diags *diag.Diagnostics) []string {
-	features := []string{}
-	diags.Append(r.Features.ElementsAs(ctx, &features, true)...)
-	return features
 }
 
 //go:embed doc.md
@@ -64,7 +58,15 @@ func (r ResourceRust) Schema(ctx context.Context, req resource.SchemaRequest, re
 			"features": schema.SetAttribute{
 				ElementType:         types.StringType,
 				Optional:            true,
-				MarkdownDescription: "List of Rust features to enable during build. Changing it rebuilds the application without the build cache",
+				MarkdownDescription: "List of Rust features to enable during build. Changing it rebuilds the application without the build cache (`CC_RUST_FEATURES`)",
+			},
+			"rustup_channel": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Rust toolchain channel or version to build with, for example `nightly` or `1.85`, `stable` by default (`CC_RUSTUP_CHANNEL`)",
+			},
+			"bin": schema.StringAttribute{
+				Optional:            true,
+				MarkdownDescription: "Name of the binary target to run, for a Cargo package or workspace building several binaries (`CC_RUST_BIN`)",
 			},
 		}),
 		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
@@ -83,15 +85,9 @@ func (r Rust) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(r.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
+	pkg.WriteEnv(env, &r, envVars...)
 	env = pkg.Merge(env, r.Hooks.ToEnv())
 	env = pkg.Merge(env, r.Integrations.ToEnv(ctx, diags))
-
-	// Handle Rust features
-	features := r.FeaturesAsStrings(ctx, diags)
-	if len(features) > 0 {
-		env[app.CC_RUST_FEATURES] = strings.Join(features, ",")
-	}
 
 	return env
 }
@@ -101,8 +97,7 @@ func (r *Rust) FromEnv(ctx context.Context, env *maps.Map[string, string], diags
 		return
 	}
 
-	r.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
-	r.Features = pkg.FromSetSplit(env.PopPtr(app.CC_RUST_FEATURES), ",", diags)
+	pkg.ReadEnv(env, r, envVars...)
 
 	r.Integrations = attributes.FromEnvIntegrations(ctx, env, r.Integrations, diags)
 }
