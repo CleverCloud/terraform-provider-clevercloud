@@ -48,7 +48,7 @@ func TestReadEnv(t *testing.T) {
 }
 
 func TestEnvNames(t *testing.T) {
-	if got := EnvNames(&testState{}, testMappings...); !slices.Equal(got, []string{"VAR_A", "VAR_B"}) {
+	if got := EnvNames(testMappings...); !slices.Equal(got, []string{"VAR_A", "VAR_B"}) {
 		t.Errorf("got %v", got)
 	}
 }

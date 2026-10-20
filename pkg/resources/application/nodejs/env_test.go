@@ -22,7 +22,7 @@ import (
 func TestEnvVarsRoundTrip(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
-	names := pkg.EnvNames(&NodeJS{}, envVars...)
+	names := pkg.EnvNames(envVars...)
 
 	node := NodeJS{
 		Runtime: application.Runtime{

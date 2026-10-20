@@ -29,13 +29,14 @@ type onRuntime[S RuntimePlan] struct {
 	mapping pkg.EnvVarMapping[*Runtime]
 }
 
+func (o onRuntime[S]) Name() string               { return o.mapping.Name() }
 func (o onRuntime[S]) FromEnv(s S, v string)      { o.mapping.FromEnv(s.GetRuntimePtr(), v) }
 func (o onRuntime[S]) ToEnv(s S) (string, string) { return o.mapping.ToEnv(s.GetRuntimePtr()) }
 
 // CommonEnvNames lists the environment variables managed by the hooks and
 // integrations blocks every runtime shares.
 func CommonEnvNames() []string {
-	return slices.Concat(pkg.EnvNames(&attributes.Hooks{}, attributes.HooksEnv...), attributes.IntegrationsEnvNames)
+	return slices.Concat(pkg.EnvNames(attributes.HooksEnv...), attributes.IntegrationsEnvNames)
 }
 
 // ReservedEnvironment rejects, in the environment attribute, the variables
