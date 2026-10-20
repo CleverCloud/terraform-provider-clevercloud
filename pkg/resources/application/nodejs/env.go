@@ -7,92 +7,46 @@ import (
 	"go.clever-cloud.dev/sdk/app"
 )
 
-// EnvVar is a nodejs environment variable backing an attribute; its value is
-// the variable name.
-type EnvVar string
-
-const (
-	DevDependencies      EnvVar = app.CC_NODE_DEV_DEPENDENCIES
-	StartScript          EnvVar = app.CC_RUN_COMMAND
-	PackageManager       EnvVar = app.CC_NODE_BUILD_TOOL
-	Registry             EnvVar = app.CC_NPM_REGISTRY
-	RegistryToken        EnvVar = app.NPM_TOKEN
-	NodeVersion          EnvVar = app.CC_NODE_VERSION
-	CustomInstallCommand EnvVar = app.CC_CUSTOM_BUILD_TOOL
-	RegistryBasicAuth    EnvVar = app.CC_NPM_BASIC_AUTH
-	BunInstallCacheDir   EnvVar = app.CC_BUN_INSTALL_CACHE_DIR
+var (
+	DevDependenciesEnv = pkg.NewBoolEnv[NodeJS](app.CC_NODE_DEV_DEPENDENCIES, "install",
+		func(n *NodeJS) types.Bool { return n.DevDependencies },
+		func(n *NodeJS, v types.Bool) { n.DevDependencies = v })
+	StartScriptEnv = pkg.NewStringEnv[NodeJS](app.CC_RUN_COMMAND,
+		func(n *NodeJS) types.String { return n.StartScript },
+		func(n *NodeJS, v types.String) { n.StartScript = v })
+	PackageManagerEnv = pkg.NewStringEnv[NodeJS](app.CC_NODE_BUILD_TOOL,
+		func(n *NodeJS) types.String { return n.PackageManager },
+		func(n *NodeJS, v types.String) { n.PackageManager = v })
+	RegistryEnv = pkg.NewStringEnv[NodeJS](app.CC_NPM_REGISTRY,
+		func(n *NodeJS) types.String { return n.Registry },
+		func(n *NodeJS, v types.String) { n.Registry = v })
+	RegistryTokenEnv = pkg.NewStringEnv[NodeJS](app.NPM_TOKEN,
+		func(n *NodeJS) types.String { return n.RegistryToken },
+		func(n *NodeJS, v types.String) { n.RegistryToken = v })
+	NodeVersionEnv = pkg.NewStringEnv[NodeJS](app.CC_NODE_VERSION,
+		func(n *NodeJS) types.String { return n.NodeVersion },
+		func(n *NodeJS, v types.String) { n.NodeVersion = v })
+	CustomInstallCommandEnv = pkg.NewStringEnv[NodeJS](app.CC_CUSTOM_BUILD_TOOL,
+		func(n *NodeJS) types.String { return n.CustomInstallCommand },
+		func(n *NodeJS, v types.String) { n.CustomInstallCommand = v })
+	RegistryBasicAuthEnv = pkg.NewStringEnv[NodeJS](app.CC_NPM_BASIC_AUTH,
+		func(n *NodeJS) types.String { return n.RegistryBasicAuth },
+		func(n *NodeJS, v types.String) { n.RegistryBasicAuth = v })
+	BunInstallCacheDirEnv = pkg.NewStringEnv[NodeJS](app.CC_BUN_INSTALL_CACHE_DIR,
+		func(n *NodeJS) types.String { return n.BunInstallCacheDir },
+		func(n *NodeJS, v types.String) { n.BunInstallCacheDir = v })
 )
 
 // envVars lists every nodejs attribute backed by an environment variable.
 var envVars = []pkg.EnvVarMapping[*NodeJS]{
-	application.OnRuntime[*NodeJS](application.AppFolder),
-	DevDependencies,
-	StartScript,
-	PackageManager,
-	Registry,
-	RegistryToken,
-	NodeVersion,
-	CustomInstallCommand,
-	RegistryBasicAuth,
-	BunInstallCacheDir,
-}
-
-func (v EnvVar) FromEnv(n *NodeJS, value string) {
-	switch v {
-	case DevDependencies:
-		devDependenciesFromEnv(n, value)
-	default:
-		*v.attribute(n) = pkg.FromStr(value)
-	}
-}
-
-func (v EnvVar) ToEnv(n *NodeJS) (string, string) {
-	switch v {
-	case DevDependencies:
-		return string(v), devDependenciesToEnv(n)
-	default:
-		return string(v), v.attribute(n).ValueString()
-	}
-}
-
-// devDependenciesFromEnv sets dev_dependencies to true when
-// CC_NODE_DEV_DEPENDENCIES is "install". Any other value, or an absent
-// variable, leaves the attribute as it is.
-func devDependenciesFromEnv(n *NodeJS, value string) {
-	if value == "install" {
-		n.DevDependencies = types.BoolValue(true)
-	}
-}
-
-// devDependenciesToEnv returns "install" when dev_dependencies is true, and
-// nothing otherwise so the variable is not written.
-func devDependenciesToEnv(n *NodeJS) string {
-	if n.DevDependencies.ValueBool() {
-		return "install"
-	}
-	return ""
-}
-
-// attribute returns the string attribute v backs; DevDependencies, a
-// boolean, has its own functions.
-func (v EnvVar) attribute(n *NodeJS) *types.String {
-	switch v {
-	case StartScript:
-		return &n.StartScript
-	case PackageManager:
-		return &n.PackageManager
-	case Registry:
-		return &n.Registry
-	case RegistryToken:
-		return &n.RegistryToken
-	case NodeVersion:
-		return &n.NodeVersion
-	case CustomInstallCommand:
-		return &n.CustomInstallCommand
-	case RegistryBasicAuth:
-		return &n.RegistryBasicAuth
-	case BunInstallCacheDir:
-		return &n.BunInstallCacheDir
-	}
-	panic("no nodejs attribute for " + string(v))
+	application.OnRuntime[*NodeJS](application.AppFolderEnv),
+	DevDependenciesEnv,
+	StartScriptEnv,
+	PackageManagerEnv,
+	RegistryEnv,
+	RegistryTokenEnv,
+	NodeVersionEnv,
+	CustomInstallCommandEnv,
+	RegistryBasicAuthEnv,
+	BunInstallCacheDirEnv,
 }
