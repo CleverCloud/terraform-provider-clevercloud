@@ -3,7 +3,6 @@ package application
 import (
 	"context"
 	"fmt"
-	"maps"
 	"slices"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -40,19 +39,15 @@ func CommonEnvNames() []string {
 }
 
 // ReservedEnvironment rejects, in the environment attribute, the variables
-// managed by an attribute of the resource: set through environment, they are
-// moved to the attribute on the next read and the plan never converges.
-// names are the resource's own mapped variables, on top of CommonEnvNames.
-func ReservedEnvironment(names ...string) resource.ConfigValidator {
-	reserved := map[string]bool{}
-	for _, name := range slices.Concat(names, CommonEnvNames()) {
-		reserved[name] = true
-	}
-	return reservedEnvironment{reserved: reserved}
+// of mappings and the shared ones (CommonEnvNames): set through environment,
+// they are moved to their attribute on the next read and the plan never
+// converges.
+func ReservedEnvironment[S any](mappings ...pkg.EnvVarMapping[S]) resource.ConfigValidator {
+	return reservedEnvironment{names: slices.Concat(pkg.EnvNames(mappings...), CommonEnvNames())}
 }
 
 type reservedEnvironment struct {
-	reserved map[string]bool
+	names []string
 }
 
 func (v reservedEnvironment) Description(ctx context.Context) string {
@@ -70,14 +65,14 @@ func (v reservedEnvironment) ValidateResource(ctx context.Context, req resource.
 		return
 	}
 
-	for _, key := range slices.Sorted(maps.Keys(env.Elements())) {
-		if !v.reserved[key] {
+	for _, name := range v.names {
+		if _, ok := env.Elements()[name]; !ok {
 			continue
 		}
 		res.Diagnostics.AddAttributeError(
-			path.Root("environment").AtMapKey(key),
+			path.Root("environment").AtMapKey(name),
 			"Environment variable managed by an attribute",
-			fmt.Sprintf("%s is managed by an attribute of this resource: remove it from environment and set the attribute documented with %s instead.", key, key),
+			fmt.Sprintf("%s is managed by an attribute of this resource: remove it from environment and set the attribute documented with %s instead.", name, name),
 		)
 	}
 }

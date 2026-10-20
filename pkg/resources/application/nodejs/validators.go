@@ -6,7 +6,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 )
 
@@ -16,7 +15,7 @@ var _ resource.ResourceWithConfigValidators = (*ResourceNodeJS)(nil)
 // a custom install command without the custom package manager.
 func (r *ResourceNodeJS) ConfigValidators(ctx context.Context) []resource.ConfigValidator {
 	return []resource.ConfigValidator{
-		application.ReservedEnvironment(pkg.EnvNames(envVars...)...),
+		application.ReservedEnvironment(envVars...),
 		customInstallCommand{},
 	}
 }
