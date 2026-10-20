@@ -80,7 +80,6 @@ func (r *ResourceRuby) UpgradeState(ctx context.Context) map[int64]resource.Stat
 					RailsEnv:              old.RailsEnv,
 					StaticFilesPath:       old.StaticFilesPath,
 					StaticURLPrefix:       old.StaticURLPrefix,
-					StaticWebroot:         old.StaticWebroot,
 				}
 
 				res.Diagnostics.Append(res.State.Set(ctx, newState)...)

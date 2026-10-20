@@ -26,10 +26,6 @@ import (
 // In this case, we must not deploy with Terraform
 const GITHUB_COMMIT_PREFIX = "github_hook"
 
-const (
-	CC_REDIRECTIONIO_BACKEND_PORT = "CC_REDIRECTIONIO_BACKEND_PORT"
-)
-
 // Deployment block
 type Deployment struct {
 	Repository          types.String `tfsdk:"repository"`
@@ -49,13 +45,11 @@ type Hooks struct {
 type Redirectionio struct {
 	ProjectKey   types.String `tfsdk:"project_key"`
 	InstanceName types.String `tfsdk:"instance_name"`
-	BackendPort  types.Int64  `tfsdk:"backend_port"`
 }
 
 var RedirectionIOSchema = map[string]attr.Type{
 	"project_key":   types.StringType,
 	"instance_name": types.StringType,
-	"backend_port":  types.Int64Type,
 }
 
 // NewRelic integration configuration
@@ -140,11 +134,6 @@ var IntegrationsAttribute = schema.SingleNestedAttribute{
 				"instance_name": schema.StringAttribute{
 					Optional:            true,
 					MarkdownDescription: "Custom instance name for the Redirection.io agent ([CC_REDIRECTIONIO_INSTANCE_NAME](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#redirectionio))",
-				},
-				"backend_port": schema.Int64Attribute{
-					Optional:            true,
-					DeprecationMessage:  "has no effect, the platform does not read CC_REDIRECTIONIO_BACKEND_PORT: Request Flow sets the ports, the application listens on 9000. It will be removed in a future release",
-					MarkdownDescription: "**Deprecated**, has no effect: the platform does not read `CC_REDIRECTIONIO_BACKEND_PORT`, Request Flow sets the ports and the application listens on 9000. Remove it from your configuration, it will be removed in a future release.",
 				},
 			},
 		},
@@ -427,9 +416,6 @@ func (integrations *Integrations) ToEnv(ctx context.Context, diags *diag.Diagnos
 		pkg.IfIsSetStr(redirio.InstanceName, func(s string) {
 			m[app.CC_REDIRECTIONIO_INSTANCE_NAME] = s
 		})
-		pkg.IfIsSetI(redirio.BackendPort, func(i int64) {
-			m[CC_REDIRECTIONIO_BACKEND_PORT] = fmt.Sprintf("%d", i)
-		})
 	})
 
 	pkg.IfSetObject(ctx, diags, integrations.NewRelic, func(newrelic NewRelic) {
@@ -495,8 +481,7 @@ func (integrations *Integrations) ToEnv(ctx context.Context, diags *diag.Diagnos
 //   - If integrations block doesn't exist: do nothing (stays nil)
 func FromEnvIntegrations(ctx context.Context, env *helperMaps.Map[string, string], oldValue *Integrations, diags *diag.Diagnostics) *Integrations {
 	hasRedirectionio := env.Has(app.CC_REDIRECTIONIO_PROJECT_KEY) ||
-		env.Has(app.CC_REDIRECTIONIO_INSTANCE_NAME) ||
-		env.Has(CC_REDIRECTIONIO_BACKEND_PORT)
+		env.Has(app.CC_REDIRECTIONIO_INSTANCE_NAME)
 
 	hasNewRelic := env.Has(app.NEW_RELIC_LICENSE_KEY) ||
 		env.Has(app.NEW_RELIC_APP_NAME)
@@ -539,7 +524,6 @@ func FromEnvIntegrations(ctx context.Context, env *helperMaps.Map[string, string
 		redir := Redirectionio{
 			ProjectKey:   pkg.FromStrPtr(env.PopPtr(app.CC_REDIRECTIONIO_PROJECT_KEY)),
 			InstanceName: pkg.FromStrPtr(env.PopPtr(app.CC_REDIRECTIONIO_INSTANCE_NAME)),
-			BackendPort:  pkg.FromIntPtr(env.PopPtr(CC_REDIRECTIONIO_BACKEND_PORT)),
 		}
 		obj, d = types.ObjectValueFrom(ctx, RedirectionIOSchema, redir)
 		integration.Redirectionio = obj

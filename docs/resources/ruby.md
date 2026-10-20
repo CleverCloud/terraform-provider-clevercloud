@@ -201,7 +201,6 @@ environment = { for k, v in {
 - `sidekiq_files` (String) Specify a list of Sidekiq configuration files (e.g., './config/sidekiq_1.yml,./config/sidekiq_2.yml')
 - `static_files_path` (String) Relative path to where your static files are stored
 - `static_url_prefix` (String) The URL path under which you want to serve static files, usually /public
-- `static_webroot` (String, Deprecated) **Deprecated**, has no effect: the platform does not read `STATIC_WEBROOT`. Use `static_files_path` and `static_url_prefix` instead, it will be removed in a future release.
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
@@ -294,7 +293,6 @@ Required:
 
 Optional:
 
-- `backend_port` (Number, Deprecated) **Deprecated**, has no effect: the platform does not read `CC_REDIRECTIONIO_BACKEND_PORT`, Request Flow sets the ports and the application listens on 9000. Remove it from your configuration, it will be removed in a future release.
 - `instance_name` (String) Custom instance name for the Redirection.io agent ([CC_REDIRECTIONIO_INSTANCE_NAME](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#redirectionio))
 
 
