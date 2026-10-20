@@ -95,6 +95,8 @@ resource "clevercloud_nodejs" "myapp" {
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `bun_install_cache_dir` (String) Bun install cache directory, saved and restored with the dependencies cache
+- `custom_install_command` (String) Command installing the dependencies, used when `package_manager` is `custom`
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
@@ -113,11 +115,13 @@ environment = { for k, v in {
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
+- `node_version` (String) Node.js version to use, for example `22`
 - `package_manager` (String) Either npm, npm-ci, bun, pnpm, yarn-berry or custom
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
 - `registry` (String) The host of your private repository, available values: github or the registry host
+- `registry_basic_auth` (String, Sensitive) Private repository credentials, as `user:password`. Cannot be used with `registry_token`
 - `registry_token` (String, Sensitive) Private repository token
 - `start_script` (String) Set custom start script, instead of `npm start`
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
