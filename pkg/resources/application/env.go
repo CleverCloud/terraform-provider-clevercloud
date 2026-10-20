@@ -14,12 +14,25 @@ import (
 	"go.clever-cloud.dev/sdk/app"
 )
 
-// AppFolder maps app_folder, shared by every runtime, to APP_FOLDER.
-type AppFolder struct{}
+// RuntimeEnvVar is an environment variable backing an attribute every
+// runtime shares; its value is the variable name.
+type RuntimeEnvVar string
 
-func (AppFolder) FromEnv(r *Runtime, v string) { r.AppFolder = pkg.FromStr(v) }
-func (AppFolder) ToEnv(r *Runtime) (string, string) {
-	return app.APP_FOLDER, r.AppFolder.ValueString()
+// AppFolder backs app_folder.
+const AppFolder RuntimeEnvVar = app.APP_FOLDER
+
+func (v RuntimeEnvVar) FromEnv(r *Runtime, value string) { *v.attribute(r) = pkg.FromStr(value) }
+func (v RuntimeEnvVar) ToEnv(r *Runtime) (string, string) {
+	return string(v), v.attribute(r).ValueString()
+}
+
+// attribute returns the runtime attribute v backs.
+func (v RuntimeEnvVar) attribute(r *Runtime) *types.String {
+	switch v {
+	case AppFolder:
+		return &r.AppFolder
+	}
+	panic("no runtime attribute for " + string(v))
 }
 
 // OnRuntime lets a runtime plan list a mapping of the Runtime it embeds

@@ -7,89 +7,77 @@ import (
 	"go.clever-cloud.dev/sdk/app"
 )
 
-// envVars maps every nodejs attribute backed by an environment variable.
+// EnvVar is a nodejs environment variable backing an attribute; its value is
+// the variable name.
+type EnvVar string
+
+const (
+	DevDependencies      EnvVar = app.CC_NODE_DEV_DEPENDENCIES
+	StartScript          EnvVar = app.CC_RUN_COMMAND
+	PackageManager       EnvVar = app.CC_NODE_BUILD_TOOL
+	Registry             EnvVar = app.CC_NPM_REGISTRY
+	RegistryToken        EnvVar = app.NPM_TOKEN
+	NodeVersion          EnvVar = app.CC_NODE_VERSION
+	CustomInstallCommand EnvVar = app.CC_CUSTOM_BUILD_TOOL
+	RegistryBasicAuth    EnvVar = app.CC_NPM_BASIC_AUTH
+	BunInstallCacheDir   EnvVar = app.CC_BUN_INSTALL_CACHE_DIR
+)
+
+// envVars lists every nodejs attribute backed by an environment variable.
 var envVars = []pkg.EnvVarMapping[*NodeJS]{
-	application.OnRuntime[*NodeJS](application.AppFolder{}),
-	DevDependencies{},
-	StartScript{},
-	PackageManager{},
-	Registry{},
-	RegistryToken{},
-	NodeVersion{},
-	CustomInstallCommand{},
-	RegistryBasicAuth{},
-	BunInstallCacheDir{},
+	application.OnRuntime[*NodeJS](application.AppFolder),
+	DevDependencies,
+	StartScript,
+	PackageManager,
+	Registry,
+	RegistryToken,
+	NodeVersion,
+	CustomInstallCommand,
+	RegistryBasicAuth,
+	BunInstallCacheDir,
 }
 
-// DevDependencies maps dev_dependencies to CC_NODE_DEV_DEPENDENCIES, written
-// as "install" when true. An absent variable leaves the attribute as is.
-type DevDependencies struct{}
-
-func (DevDependencies) FromEnv(n *NodeJS, v string) {
-	if v == "install" {
-		n.DevDependencies = types.BoolValue(true)
+func (v EnvVar) FromEnv(n *NodeJS, value string) {
+	if v == DevDependencies {
+		// written as "install" when true; an absent variable leaves the
+		// attribute as is
+		if value == "install" {
+			n.DevDependencies = types.BoolValue(true)
+		}
+		return
 	}
+	*v.attribute(n) = pkg.FromStr(value)
 }
 
-func (DevDependencies) ToEnv(n *NodeJS) (string, string) {
-	if n.DevDependencies.ValueBool() {
-		return app.CC_NODE_DEV_DEPENDENCIES, "install"
+func (v EnvVar) ToEnv(n *NodeJS) (string, string) {
+	if v == DevDependencies {
+		if n.DevDependencies.ValueBool() {
+			return string(v), "install"
+		}
+		return string(v), ""
 	}
-	return app.CC_NODE_DEV_DEPENDENCIES, ""
+	return string(v), v.attribute(n).ValueString()
 }
 
-type StartScript struct{}
-
-func (StartScript) FromEnv(n *NodeJS, v string) { n.StartScript = pkg.FromStr(v) }
-func (StartScript) ToEnv(n *NodeJS) (string, string) {
-	return app.CC_RUN_COMMAND, n.StartScript.ValueString()
-}
-
-type PackageManager struct{}
-
-func (PackageManager) FromEnv(n *NodeJS, v string) { n.PackageManager = pkg.FromStr(v) }
-func (PackageManager) ToEnv(n *NodeJS) (string, string) {
-	return app.CC_NODE_BUILD_TOOL, n.PackageManager.ValueString()
-}
-
-type Registry struct{}
-
-func (Registry) FromEnv(n *NodeJS, v string) { n.Registry = pkg.FromStr(v) }
-func (Registry) ToEnv(n *NodeJS) (string, string) {
-	return app.CC_NPM_REGISTRY, n.Registry.ValueString()
-}
-
-type RegistryToken struct{}
-
-func (RegistryToken) FromEnv(n *NodeJS, v string) { n.RegistryToken = pkg.FromStr(v) }
-func (RegistryToken) ToEnv(n *NodeJS) (string, string) {
-	return app.NPM_TOKEN, n.RegistryToken.ValueString()
-}
-
-type NodeVersion struct{}
-
-func (NodeVersion) FromEnv(n *NodeJS, v string) { n.NodeVersion = pkg.FromStr(v) }
-func (NodeVersion) ToEnv(n *NodeJS) (string, string) {
-	return app.CC_NODE_VERSION, n.NodeVersion.ValueString()
-}
-
-type CustomInstallCommand struct{}
-
-func (CustomInstallCommand) FromEnv(n *NodeJS, v string) { n.CustomInstallCommand = pkg.FromStr(v) }
-func (CustomInstallCommand) ToEnv(n *NodeJS) (string, string) {
-	return app.CC_CUSTOM_BUILD_TOOL, n.CustomInstallCommand.ValueString()
-}
-
-type RegistryBasicAuth struct{}
-
-func (RegistryBasicAuth) FromEnv(n *NodeJS, v string) { n.RegistryBasicAuth = pkg.FromStr(v) }
-func (RegistryBasicAuth) ToEnv(n *NodeJS) (string, string) {
-	return app.CC_NPM_BASIC_AUTH, n.RegistryBasicAuth.ValueString()
-}
-
-type BunInstallCacheDir struct{}
-
-func (BunInstallCacheDir) FromEnv(n *NodeJS, v string) { n.BunInstallCacheDir = pkg.FromStr(v) }
-func (BunInstallCacheDir) ToEnv(n *NodeJS) (string, string) {
-	return app.CC_BUN_INSTALL_CACHE_DIR, n.BunInstallCacheDir.ValueString()
+// attribute returns the string attribute v backs.
+func (v EnvVar) attribute(n *NodeJS) *types.String {
+	switch v {
+	case StartScript:
+		return &n.StartScript
+	case PackageManager:
+		return &n.PackageManager
+	case Registry:
+		return &n.Registry
+	case RegistryToken:
+		return &n.RegistryToken
+	case NodeVersion:
+		return &n.NodeVersion
+	case CustomInstallCommand:
+		return &n.CustomInstallCommand
+	case RegistryBasicAuth:
+		return &n.RegistryBasicAuth
+	case BunInstallCacheDir:
+		return &n.BunInstallCacheDir
+	}
+	panic("no nodejs attribute for " + string(v))
 }
