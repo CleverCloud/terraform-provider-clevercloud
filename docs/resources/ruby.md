@@ -170,8 +170,8 @@ resource "clevercloud_ruby" "custom_ruby_app" {
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
-- `enable_gzip_compression` (Boolean) Set to true to gzip-compress through Nginx
-- `enable_sidekiq` (Boolean) Enable Sidekiq background process
+- `enable_gzip_compression` (Boolean) Set to true to gzip-compress through Nginx (`ENABLE_GZIP_COMPRESSION`)
+- `enable_sidekiq` (Boolean) Enable Sidekiq background process (`CC_ENABLE_SIDEKIQ`)
 - `environment` (Map of String, Sensitive) Environment variables injected into the application.
 
 **Note:** Null values are not allowed. To conditionally include variables, use a for expression:
@@ -182,25 +182,25 @@ environment = { for k, v in {
 } : k => v if v != null }
 ```
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
-- `gzip_types` (String) Set the mime types to compress (default: 'text/* application/json application/xml application/javascript image/svg+xml')
+- `gzip_types` (String) Set the mime types to compress (default: 'text/* application/json application/xml application/javascript image/svg+xml') (`GZIP_TYPES`)
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
-- `http_basic_auth` (String, Sensitive) Restrict HTTP access to your application (format: 'login:password')
+- `http_basic_auth` (String, Sensitive) Restrict HTTP access to your application (format: 'login:password') (`CC_HTTP_BASIC_AUTH`)
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
-- `nginx_proxy_buffer_size` (String) Sets the size of the buffer used for reading the first part of the response received from the proxied server
-- `nginx_proxy_buffers` (String) Sets the number and size of the buffers used for reading a response from the proxied server
-- `nginx_read_timeout` (Number) Read timeout in seconds (default: 300)
-- `rack_env` (String) Rack environment variable
-- `rackup_server` (String) Server to use for serving the Ruby application (default: puma)
-- `rails_env` (String) Rails environment variable
-- `rake_goals` (String) Comma-separated list of rake goals to execute (e.g., 'db:migrate,assets:precompile')
+- `nginx_proxy_buffer_size` (String) Sets the size of the buffer used for reading the first part of the response received from the proxied server (`CC_NGINX_PROXY_BUFFER_SIZE`)
+- `nginx_proxy_buffers` (String) Sets the number and size of the buffers used for reading a response from the proxied server (`CC_NGINX_PROXY_BUFFERS`)
+- `nginx_read_timeout` (Number) Read timeout in seconds (default: 300) (`NGINX_READ_TIMEOUT`)
+- `rack_env` (String) Rack environment variable (`RACK_ENV`)
+- `rackup_server` (String) Server to use for serving the Ruby application (default: puma) (`CC_RACKUP_SERVER`)
+- `rails_env` (String) Rails environment variable (`RAILS_ENV`)
+- `rake_goals` (String) Comma-separated list of rake goals to execute (e.g., 'db:migrate,assets:precompile') (`CC_RAKEGOALS`)
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
-- `ruby_version` (String) Ruby version to use (e.g., '3.3', '3.3.1')
-- `sidekiq_files` (String) Specify a list of Sidekiq configuration files (e.g., './config/sidekiq_1.yml,./config/sidekiq_2.yml')
-- `static_files_path` (String) Relative path to where your static files are stored
-- `static_url_prefix` (String) The URL path under which you want to serve static files, usually /public
+- `ruby_version` (String) Ruby version to use (e.g., '3.3', '3.3.1') (`CC_RUBY_VERSION`)
+- `sidekiq_files` (String) Specify a list of Sidekiq configuration files (e.g., './config/sidekiq_1.yml,./config/sidekiq_2.yml') (`CC_SIDEKIQ_FILES`)
+- `static_files_path` (String) Relative path to where your static files are stored (`STATIC_FILES_PATH`)
+- `static_url_prefix` (String) The URL path under which you want to serve static files, usually /public (`STATIC_URL_PREFIX`)
 - `static_webroot` (String, Deprecated) **Deprecated**, has no effect: the platform does not read `STATIC_WEBROOT`. Use `static_files_path` and `static_url_prefix` instead, it will be removed in a future release.
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all

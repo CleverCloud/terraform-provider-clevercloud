@@ -3,11 +3,9 @@ package ruby
 import (
 	"context"
 	_ "embed"
-	"strconv"
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
-	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -71,78 +69,78 @@ var schemaRuby = schema.Schema{
 		// CC_RUBY_VERSION
 		"ruby_version": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Ruby version to use (e.g., '3.3', '3.3.1')",
+			MarkdownDescription: "Ruby version to use (e.g., '3.3', '3.3.1') (`CC_RUBY_VERSION`)",
 		},
 		// CC_ENABLE_SIDEKIQ
 		"enable_sidekiq": schema.BoolAttribute{
 			Optional:            true,
-			MarkdownDescription: "Enable Sidekiq background process",
+			MarkdownDescription: "Enable Sidekiq background process (`CC_ENABLE_SIDEKIQ`)",
 		},
 		// CC_RACKUP_SERVER
 		"rackup_server": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Server to use for serving the Ruby application (default: puma)",
+			MarkdownDescription: "Server to use for serving the Ruby application (default: puma) (`CC_RACKUP_SERVER`)",
 		},
 		// CC_RAKEGOALS
 		"rake_goals": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Comma-separated list of rake goals to execute (e.g., 'db:migrate,assets:precompile')",
+			MarkdownDescription: "Comma-separated list of rake goals to execute (e.g., 'db:migrate,assets:precompile') (`CC_RAKEGOALS`)",
 		},
 		// CC_SIDEKIQ_FILES
 		"sidekiq_files": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Specify a list of Sidekiq configuration files (e.g., './config/sidekiq_1.yml,./config/sidekiq_2.yml')",
+			MarkdownDescription: "Specify a list of Sidekiq configuration files (e.g., './config/sidekiq_1.yml,./config/sidekiq_2.yml') (`CC_SIDEKIQ_FILES`)",
 		},
 		// CC_HTTP_BASIC_AUTH
 		"http_basic_auth": schema.StringAttribute{
 			Optional:            true,
 			Sensitive:           !pkg.BypassSensitiveImports(),
-			MarkdownDescription: "Restrict HTTP access to your application (format: 'login:password')",
+			MarkdownDescription: "Restrict HTTP access to your application (format: 'login:password') (`CC_HTTP_BASIC_AUTH`)",
 		},
 		// CC_NGINX_PROXY_BUFFERS
 		"nginx_proxy_buffers": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Sets the number and size of the buffers used for reading a response from the proxied server",
+			MarkdownDescription: "Sets the number and size of the buffers used for reading a response from the proxied server (`CC_NGINX_PROXY_BUFFERS`)",
 		},
 		// CC_NGINX_PROXY_BUFFER_SIZE
 		"nginx_proxy_buffer_size": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Sets the size of the buffer used for reading the first part of the response received from the proxied server",
+			MarkdownDescription: "Sets the size of the buffer used for reading the first part of the response received from the proxied server (`CC_NGINX_PROXY_BUFFER_SIZE`)",
 		},
 		// ENABLE_GZIP_COMPRESSION
 		"enable_gzip_compression": schema.BoolAttribute{
 			Optional:            true,
-			MarkdownDescription: "Set to true to gzip-compress through Nginx",
+			MarkdownDescription: "Set to true to gzip-compress through Nginx (`ENABLE_GZIP_COMPRESSION`)",
 		},
 		// GZIP_TYPES
 		"gzip_types": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Set the mime types to compress (default: 'text/* application/json application/xml application/javascript image/svg+xml')",
+			MarkdownDescription: "Set the mime types to compress (default: 'text/* application/json application/xml application/javascript image/svg+xml') (`GZIP_TYPES`)",
 		},
 		// NGINX_READ_TIMEOUT
 		"nginx_read_timeout": schema.Int64Attribute{
 			Optional:            true,
-			MarkdownDescription: "Read timeout in seconds (default: 300)",
+			MarkdownDescription: "Read timeout in seconds (default: 300) (`NGINX_READ_TIMEOUT`)",
 		},
 		// RACK_ENV
 		"rack_env": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Rack environment variable",
+			MarkdownDescription: "Rack environment variable (`RACK_ENV`)",
 		},
 		// RAILS_ENV
 		"rails_env": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Rails environment variable",
+			MarkdownDescription: "Rails environment variable (`RAILS_ENV`)",
 		},
 		// STATIC_FILES_PATH
 		"static_files_path": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Relative path to where your static files are stored",
+			MarkdownDescription: "Relative path to where your static files are stored (`STATIC_FILES_PATH`)",
 		},
 		// STATIC_URL_PREFIX
 		"static_url_prefix": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "The URL path under which you want to serve static files, usually /public",
+			MarkdownDescription: "The URL path under which you want to serve static files, usually /public (`STATIC_URL_PREFIX`)",
 		},
 		// STATIC_WEBROOT
 		"static_webroot": schema.StringAttribute{
@@ -255,30 +253,8 @@ func (ruby Ruby) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(ruby.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
-	pkg.IfIsSetStr(ruby.RubyVersion, func(s string) { env[app.CC_RUBY_VERSION] = s })
-	pkg.IfIsSetB(ruby.EnableSidekiq, func(b bool) {
-		if b {
-			env[app.CC_ENABLE_SIDEKIQ] = "true"
-		}
-	})
-	pkg.IfIsSetStr(ruby.RackupServer, func(s string) { env[app.CC_RACKUP_SERVER] = s })
-	pkg.IfIsSetStr(ruby.RakeGoals, func(s string) { env[app.CC_RAKEGOALS] = s })
-	pkg.IfIsSetStr(ruby.SidekiqFiles, func(s string) { env[app.CC_SIDEKIQ_FILES] = s })
-	pkg.IfIsSetStr(ruby.HTTPBasicAuth, func(s string) { env[app.CC_HTTP_BASIC_AUTH] = s })
-	pkg.IfIsSetStr(ruby.NginxProxyBuffers, func(s string) { env[app.CC_NGINX_PROXY_BUFFERS] = s })
-	pkg.IfIsSetStr(ruby.NginxProxyBufferSize, func(s string) { env[app.CC_NGINX_PROXY_BUFFER_SIZE] = s })
-	pkg.IfIsSetB(ruby.EnableGzipCompression, func(b bool) {
-		if b {
-			env[app.ENABLE_GZIP_COMPRESSION] = "true"
-		}
-	})
-	pkg.IfIsSetStr(ruby.GzipTypes, func(s string) { env[app.GZIP_TYPES] = s })
-	pkg.IfIsSetI(ruby.NginxReadTimeout, func(i int64) { env[app.NGINX_READ_TIMEOUT] = strconv.FormatInt(i, 10) })
-	pkg.IfIsSetStr(ruby.RackEnv, func(s string) { env["RACK_ENV"] = s })
-	pkg.IfIsSetStr(ruby.RailsEnv, func(s string) { env["RAILS_ENV"] = s })
-	pkg.IfIsSetStr(ruby.StaticFilesPath, func(s string) { env[app.STATIC_FILES_PATH] = s })
-	pkg.IfIsSetStr(ruby.StaticURLPrefix, func(s string) { env[app.STATIC_URL_PREFIX] = s })
+	pkg.WriteEnv(env, &ruby, envVars...)
+	// deprecated, the platform ignores it: kept out of envVars
 	pkg.IfIsSetStr(ruby.StaticWebroot, func(s string) { env["STATIC_WEBROOT"] = s })
 	env = pkg.Merge(env, ruby.Hooks.ToEnv())
 	env = pkg.Merge(env, ruby.Integrations.ToEnv(ctx, diags))
@@ -291,22 +267,7 @@ func (ruby *Ruby) FromEnv(ctx context.Context, env *maps.Map[string, string], di
 		return
 	}
 
-	ruby.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
-	ruby.RubyVersion = pkg.FromStrPtr(env.PopPtr(app.CC_RUBY_VERSION))
-	pkg.SetBoolIf(&ruby.EnableSidekiq, env.PopPtr(app.CC_ENABLE_SIDEKIQ), "true")
-	ruby.RackupServer = pkg.FromStrPtr(env.PopPtr(app.CC_RACKUP_SERVER))
-	ruby.RakeGoals = pkg.FromStrPtr(env.PopPtr(app.CC_RAKEGOALS))
-	ruby.SidekiqFiles = pkg.FromStrPtr(env.PopPtr(app.CC_SIDEKIQ_FILES))
-	ruby.HTTPBasicAuth = pkg.FromStrPtr(env.PopPtr(app.CC_HTTP_BASIC_AUTH))
-	ruby.NginxProxyBuffers = pkg.FromStrPtr(env.PopPtr(app.CC_NGINX_PROXY_BUFFERS))
-	ruby.NginxProxyBufferSize = pkg.FromStrPtr(env.PopPtr(app.CC_NGINX_PROXY_BUFFER_SIZE))
-	pkg.SetBoolIf(&ruby.EnableGzipCompression, env.PopPtr(app.ENABLE_GZIP_COMPRESSION), "true")
-	ruby.GzipTypes = pkg.FromStrPtr(env.PopPtr(app.GZIP_TYPES))
-	ruby.NginxReadTimeout = pkg.FromIntPtr(env.PopPtr(app.NGINX_READ_TIMEOUT))
-	ruby.RackEnv = pkg.FromStrPtr(env.PopPtr("RACK_ENV"))
-	ruby.RailsEnv = pkg.FromStrPtr(env.PopPtr("RAILS_ENV"))
-	ruby.StaticFilesPath = pkg.FromStrPtr(env.PopPtr(app.STATIC_FILES_PATH))
-	ruby.StaticURLPrefix = pkg.FromStrPtr(env.PopPtr(app.STATIC_URL_PREFIX))
+	pkg.ReadEnv(env, ruby, envVars...)
 	ruby.StaticWebroot = pkg.FromStrPtr(env.PopPtr("STATIC_WEBROOT"))
 
 	ruby.Integrations = attributes.FromEnvIntegrations(ctx, env, ruby.Integrations, diags)
