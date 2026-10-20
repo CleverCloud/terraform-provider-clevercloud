@@ -93,12 +93,15 @@ resource "clevercloud_java_war" "myapp" {
 
 ### Optional
 
+- `apm_agent_continuous` (Boolean) Keep attaching the Elastic APM Java agent to the JVMs started later, instead of once at startup (`CC_JAVA_APM_AGENT_CONTINUOUS`)
+- `apm_agent_enabled` (Boolean) Attach the Elastic APM Java agent to the application (`CC_JAVA_APM_AGENT_ENABLE`)
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
+- `disable_max_metaspace` (Boolean) Do not cap the JVM metaspace, which the platform limits to 15% of the memory otherwise (`CC_DISABLE_MAX_METASPACE`)
 - `environment` (Map of String, Sensitive) Environment variables injected into the application.
 
 **Note:** Null values are not allowed. To conditionally include variables, use a for expression:
@@ -109,10 +112,19 @@ environment = { for k, v in {
 } : k => v if v != null }
 ```
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
+- `extra_java_args` (String) Extra arguments passed to the `java` command running a JAR application (`CC_EXTRA_JAVA_ARGS`)
+- `gradle_build_goal` (String) Gradle task building the application, `assemble` by default; setting it builds the application with Gradle (`CC_GRADLE_BUILD_GOAL`)
+- `gradle_deploy_goal` (String) Gradle task(s) running the application (`CC_GRADLE_DEPLOY_GOAL`)
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
-- `java_version` (String) Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0).
+- `jar_args` (String) Arguments passed to the JAR application (`CC_JAR_ARGS`)
+- `jar_path` (String) Path of the JAR to run, relative to the application root: the application runs as a JAR whatever its profile (`CC_JAR_PATH`)
+- `java_version` (String) Choose the JVM version between 7 to 24 for OpenJDK or graalvm-ce for GraalVM 21.0.0.2 (based on OpenJDK 11.0) (`CC_JAVA_VERSION`).
+- `maven_build_goal` (String) Maven goal building the application, `package` by default (`CC_MAVEN_BUILD_GOAL`)
+- `maven_deploy_goal` (String) Maven goal(s) running the application; setting it builds the application with Maven (`CC_MAVEN_DEPLOY_GOAL`)
+- `maven_profiles` (String) Maven profile(s) to activate, as passed to `-P` (`CC_MAVEN_PROFILES`)
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
+- `play1_version` (String) Play 1 version, for example `1.7`; setting it builds the application with Play 1 (`CC_PLAY1_VERSION`)
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
