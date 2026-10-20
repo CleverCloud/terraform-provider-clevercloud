@@ -110,7 +110,7 @@ func streamPush(
 	if err != nil {
 		// unblock the pack writer
 		_ = rd.Close()
-		<-done
+		<-done //nolint:errcheck // the writer only fails because the read side was closed
 		return false, err
 	}
 	if err := <-done; err != nil {
