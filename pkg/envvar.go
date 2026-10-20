@@ -35,6 +35,9 @@ func ReadEnv[S any](env *maps.Map[string, string], state S, mappings ...EnvVarMa
 	for _, m := range mappings {
 		value := env.PopPtr(m.Name())
 		if value == nil {
+			// state holds the previous state: FromEnv must still run so an
+			// attribute whose variable was removed outside Terraform goes
+			// back to null and the drift shows up in the plan.
 			m.FromEnv(state, "")
 			continue
 		}
