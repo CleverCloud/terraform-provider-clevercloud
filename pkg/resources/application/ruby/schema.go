@@ -146,7 +146,8 @@ var schemaRuby = schema.Schema{
 		// STATIC_WEBROOT
 		"static_webroot": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Path to the web content to serve, relative to the root of your application",
+			DeprecationMessage:  "has no effect, the platform does not read STATIC_WEBROOT: use `static_files_path` and `static_url_prefix`. It will be removed in a future release",
+			MarkdownDescription: "**Deprecated**, has no effect: the platform does not read `STATIC_WEBROOT`. Use `static_files_path` and `static_url_prefix` instead, it will be removed in a future release.",
 		},
 	}),
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),

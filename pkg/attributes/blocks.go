@@ -160,7 +160,8 @@ var IntegrationsAttribute = schema.SingleNestedAttribute{
 				},
 				"backend_port": schema.Int64Attribute{
 					Optional:            true,
-					MarkdownDescription: "Backend application port ([CC_REDIRECTIONIO_BACKEND_PORT](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#redirectionio))",
+					DeprecationMessage:  "has no effect, the platform does not read CC_REDIRECTIONIO_BACKEND_PORT: Request Flow sets the ports, the application listens on 9000. It will be removed in a future release",
+					MarkdownDescription: "**Deprecated**, has no effect: the platform does not read `CC_REDIRECTIONIO_BACKEND_PORT`, Request Flow sets the ports and the application listens on 9000. Remove it from your configuration, it will be removed in a future release.",
 				},
 			},
 		},
