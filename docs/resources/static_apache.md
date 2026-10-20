@@ -243,7 +243,7 @@ Required:
 
 Optional:
 
-- `backend_port` (Number) Backend application port ([CC_REDIRECTIONIO_BACKEND_PORT](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#redirectionio))
+- `backend_port` (Number, Deprecated) **Deprecated**, has no effect: the platform does not read `CC_REDIRECTIONIO_BACKEND_PORT`, Request Flow sets the ports and the application listens on 9000. Remove it from your configuration, it will be removed in a future release.
 - `instance_name` (String) Custom instance name for the Redirection.io agent ([CC_REDIRECTIONIO_INSTANCE_NAME](https://www.clever.cloud/developers/doc/reference/reference-environment-variables#redirectionio))
 
 
