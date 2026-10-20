@@ -102,13 +102,13 @@ resource "clevercloud_linux" "myapp" {
 ### Optional
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
-- `build_command` (String) The command to run during the build phase.
+- `build_command` (String) The command to run during the build phase (`CC_BUILD_COMMAND`).
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
-- `disable_mise` (Boolean) Disable Mise tool installation (Default: false).
+- `disable_mise` (Boolean) Disable Mise tool installation (Default: false) (`CC_DISABLE_MISE`).
 - `environment` (Map of String, Sensitive) Environment variables injected into the application.
 
 **Note:** Null values are not allowed. To conditionally include variables, use a for expression:
@@ -121,13 +121,13 @@ environment = { for k, v in {
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
-- `makefile` (String) Custom Makefile name or path.
-- `mise_file_path` (String) Custom path for the mise.toml configuration file (relative path).
+- `makefile` (String) Custom Makefile name or path (`CC_MAKEFILE`).
+- `mise_file_path` (String) Custom path for the mise.toml configuration file (relative path) (`CC_MISE_FILE_PATH`).
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
-- `run_command` (String) The command to start your application.
+- `run_command` (String) The command to start your application (`CC_RUN_COMMAND`).
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
