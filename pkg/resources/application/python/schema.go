@@ -6,6 +6,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -82,8 +83,8 @@ func (py Python) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(py.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-	pkg.IfIsSetStr(py.PythonVersion, func(version string) { env["CC_PYTHON_VERSION"] = version })
+	pkg.IfIsSetStr(py.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
+	pkg.IfIsSetStr(py.PythonVersion, func(version string) { env[app.CC_PYTHON_VERSION] = version })
 	pkg.IfIsSetStr(py.PipRequirements, func(pipReqFile string) { env["CC_PIP_REQUIREMENTS_FILE"] = pipReqFile })
 
 	env = pkg.Merge(env, py.Hooks.ToEnv())
@@ -96,8 +97,8 @@ func (py *Python) FromEnv(ctx context.Context, env *maps.Map[string, string], di
 		return
 	}
 
-	py.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
-	py.PythonVersion = pkg.FromStrPtr(env.PopPtr("CC_PYTHON_VERSION"))
+	py.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
+	py.PythonVersion = pkg.FromStrPtr(env.PopPtr(app.CC_PYTHON_VERSION))
 	py.PipRequirements = pkg.FromStrPtr(env.PopPtr("CC_PIP_REQUIREMENTS_FILE"))
 
 	py.Integrations = attributes.FromEnvIntegrations(ctx, env, py.Integrations, diags)

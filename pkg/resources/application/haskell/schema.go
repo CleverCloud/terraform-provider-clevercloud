@@ -6,6 +6,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -64,10 +65,10 @@ func (haskellapp Haskell) ToEnv(ctx context.Context, diags *diag.Diagnostics) ma
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(haskellapp.StackTarget, func(s string) { env["CC_HASKELL_STACK_TARGET"] = s })
-	pkg.IfIsSetStr(haskellapp.StackSetupCommand, func(s string) { env["CC_HASKELL_STACK_SETUP_COMMAND"] = s })
-	pkg.IfIsSetStr(haskellapp.StackInstallCommand, func(s string) { env["CC_HASKELL_STACK_INSTALL_COMMAND"] = s })
-	pkg.IfIsSetStr(haskellapp.StackInstallDependenciesCommand, func(s string) { env["CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND"] = s })
+	pkg.IfIsSetStr(haskellapp.StackTarget, func(s string) { env[app.CC_HASKELL_STACK_TARGET] = s })
+	pkg.IfIsSetStr(haskellapp.StackSetupCommand, func(s string) { env[app.CC_HASKELL_STACK_SETUP_COMMAND] = s })
+	pkg.IfIsSetStr(haskellapp.StackInstallCommand, func(s string) { env[app.CC_HASKELL_STACK_INSTALL_COMMAND] = s })
+	pkg.IfIsSetStr(haskellapp.StackInstallDependenciesCommand, func(s string) { env[app.CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND] = s })
 
 	env = pkg.Merge(env, haskellapp.Hooks.ToEnv())
 	env = pkg.Merge(env, haskellapp.Integrations.ToEnv(ctx, diags))
@@ -80,10 +81,10 @@ func (haskellapp *Haskell) FromEnv(ctx context.Context, env *maps.Map[string, st
 		return
 	}
 
-	haskellapp.StackTarget = pkg.FromStrPtr(env.PopPtr("CC_HASKELL_STACK_TARGET"))
-	haskellapp.StackSetupCommand = pkg.FromStrPtr(env.PopPtr("CC_HASKELL_STACK_SETUP_COMMAND"))
-	haskellapp.StackInstallCommand = pkg.FromStrPtr(env.PopPtr("CC_HASKELL_STACK_INSTALL_COMMAND"))
-	haskellapp.StackInstallDependenciesCommand = pkg.FromStrPtr(env.PopPtr("CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND"))
+	haskellapp.StackTarget = pkg.FromStrPtr(env.PopPtr(app.CC_HASKELL_STACK_TARGET))
+	haskellapp.StackSetupCommand = pkg.FromStrPtr(env.PopPtr(app.CC_HASKELL_STACK_SETUP_COMMAND))
+	haskellapp.StackInstallCommand = pkg.FromStrPtr(env.PopPtr(app.CC_HASKELL_STACK_INSTALL_COMMAND))
+	haskellapp.StackInstallDependenciesCommand = pkg.FromStrPtr(env.PopPtr(app.CC_HASKELL_STACK_INSTALL_DEPENDENCIES_COMMAND))
 
 	haskellapp.Integrations = attributes.FromEnvIntegrations(ctx, env, haskellapp.Integrations, diags)
 }

@@ -6,6 +6,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -72,14 +73,14 @@ func (l *Linux) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]s
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(l.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-	pkg.IfIsSetStr(l.RunCommand, func(s string) { env["CC_RUN_COMMAND"] = s })
-	pkg.IfIsSetStr(l.BuildCommand, func(s string) { env["CC_BUILD_COMMAND"] = s })
+	pkg.IfIsSetStr(l.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
+	pkg.IfIsSetStr(l.RunCommand, func(s string) { env[app.CC_RUN_COMMAND] = s })
+	pkg.IfIsSetStr(l.BuildCommand, func(s string) { env[app.CC_BUILD_COMMAND] = s })
 	pkg.IfIsSetStr(l.Makefile, func(s string) { env["CC_MAKEFILE"] = s })
-	pkg.IfIsSetStr(l.MiseFilePath, func(s string) { env["CC_MISE_FILE_PATH"] = s })
+	pkg.IfIsSetStr(l.MiseFilePath, func(s string) { env[app.CC_MISE_FILE_PATH] = s })
 	pkg.IfIsSetB(l.DisableMise, func(disable bool) {
 		if disable {
-			env["CC_DISABLE_MISE"] = "true"
+			env[app.CC_DISABLE_MISE] = "true"
 		}
 	})
 
@@ -94,12 +95,12 @@ func (l *Linux) FromEnv(ctx context.Context, env *maps.Map[string, string], diag
 		return
 	}
 
-	l.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
-	l.RunCommand = pkg.FromStrPtr(env.PopPtr("CC_RUN_COMMAND"))
-	l.BuildCommand = pkg.FromStrPtr(env.PopPtr("CC_BUILD_COMMAND"))
+	l.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
+	l.RunCommand = pkg.FromStrPtr(env.PopPtr(app.CC_RUN_COMMAND))
+	l.BuildCommand = pkg.FromStrPtr(env.PopPtr(app.CC_BUILD_COMMAND))
 	l.Makefile = pkg.FromStrPtr(env.PopPtr("CC_MAKEFILE"))
-	l.MiseFilePath = pkg.FromStrPtr(env.PopPtr("CC_MISE_FILE_PATH"))
-	pkg.SetBool(&l.DisableMise, env.PopPtr("CC_DISABLE_MISE"), "true")
+	l.MiseFilePath = pkg.FromStrPtr(env.PopPtr(app.CC_MISE_FILE_PATH))
+	pkg.SetBool(&l.DisableMise, env.PopPtr(app.CC_DISABLE_MISE), "true")
 
 	l.Integrations = attributes.FromEnvIntegrations(ctx, env, l.Integrations, diags)
 }

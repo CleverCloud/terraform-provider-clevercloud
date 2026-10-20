@@ -25,6 +25,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/app"
 )
 
 func TestAccGo_basic(t *testing.T) {
@@ -84,52 +85,52 @@ func TestAccGo_basic(t *testing.T) {
 						}
 						return appRes.Payload(), nil
 					},
-					func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
-						if app.Name != rName {
-							return tests.AssertError("invalid name", app.Name, rName)
+					func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
+						if appRes.Name != rName {
+							return tests.AssertError("invalid name", appRes.Name, rName)
 						}
 
-						if app.Instance.MinInstances != 1 {
-							return tests.AssertError("invalid min instance count", app.Instance.MinInstances, "1")
+						if appRes.Instance.MinInstances != 1 {
+							return tests.AssertError("invalid min instance count", appRes.Instance.MinInstances, "1")
 						}
 
-						if app.Instance.MaxInstances != 2 {
-							return tests.AssertError("invalid name", app.Name, rName)
+						if appRes.Instance.MaxInstances != 2 {
+							return tests.AssertError("invalid name", appRes.Name, rName)
 						}
 
-						if app.Instance.MinFlavor.Name != "XS" {
-							return tests.AssertError("invalid name", app.Name, rName)
+						if appRes.Instance.MinFlavor.Name != "XS" {
+							return tests.AssertError("invalid name", appRes.Name, rName)
 						}
 
-						if app.Instance.MaxFlavor.Name != "M" {
-							return tests.AssertError("invalid name", app.Name, rName)
+						if appRes.Instance.MaxFlavor.Name != "M" {
+							return tests.AssertError("invalid name", appRes.Name, rName)
 						}
 
-						if app.ForceHTTPS != "ENABLED" {
-							return tests.AssertError("expect option to be set", "redirect_https", app.ForceHTTPS)
+						if appRes.ForceHTTPS != "ENABLED" {
+							return tests.AssertError("expect option to be set", "redirect_https", appRes.ForceHTTPS)
 						}
 
-						if !app.StickySessions {
-							return tests.AssertError("expect option to be set", "sticky_sessions", app.StickySessions)
+						if !appRes.StickySessions {
+							return tests.AssertError("expect option to be set", "sticky_sessions", appRes.StickySessions)
 						}
-						if app.Zone != "par" {
-							return tests.AssertError("expect region to be 'par'", "region", app.Zone)
-						}
-
-						if len(app.Vhosts) != 1 {
-							return tests.AssertError("expect one vhost", app.Vhosts, "<cleverapps>")
+						if appRes.Zone != "par" {
+							return tests.AssertError("expect region to be 'par'", "region", appRes.Zone)
 						}
 
-						if !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io/") {
-							return tests.AssertError("expect a cleverapps fqdn", app.Vhosts[0].Fqdn, "<cleverapps>")
+						if len(appRes.Vhosts) != 1 {
+							return tests.AssertError("expect one vhost", appRes.Vhosts, "<cleverapps>")
 						}
 
-						if len(app.Vhosts) != 1 {
-							return tests.AssertError("expect one vhost", app.Vhosts, "<cleverapps>")
+						if !strings.HasSuffix(appRes.Vhosts[0].Fqdn, ".cleverapps.io/") {
+							return tests.AssertError("expect a cleverapps fqdn", appRes.Vhosts[0].Fqdn, "<cleverapps>")
 						}
 
-						if !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io/") {
-							return tests.AssertError("expect a cleverapps fqdn", app.Vhosts[0].Fqdn, "<cleverapps>")
+						if len(appRes.Vhosts) != 1 {
+							return tests.AssertError("expect one vhost", appRes.Vhosts, "<cleverapps>")
+						}
+
+						if !strings.HasSuffix(appRes.Vhosts[0].Fqdn, ".cleverapps.io/") {
+							return tests.AssertError("expect a cleverapps fqdn", appRes.Vhosts[0].Fqdn, "<cleverapps>")
 						}
 
 						appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
@@ -147,12 +148,12 @@ func TestAccGo_basic(t *testing.T) {
 							return tests.AssertError("bad env var value MY_KEY", "myval3", v)
 						}
 
-						v2 := env["APP_FOLDER"]
+						v2 := env[app.APP_FOLDER]
 						if v2 != "./app" {
 							return tests.AssertError("bad env var value APP_FOLER", "./app", v2)
 						}
 
-						v3 := env["CC_POST_BUILD_HOOK"]
+						v3 := env[app.CC_POST_BUILD_HOOK]
 						if v3 != "echo \"build is OK!\"" {
 							return tests.AssertError("bad env var value CC_POST_BUILD_HOOK", "echo \"build is OK!\"", v3)
 						}

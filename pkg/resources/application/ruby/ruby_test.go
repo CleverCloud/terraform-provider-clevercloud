@@ -18,6 +18,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/app"
 )
 
 func TestAccRuby_basic(t *testing.T) {
@@ -79,40 +80,40 @@ func TestAccRuby_basic(t *testing.T) {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
-					if app.Name != rName {
-						return tests.AssertError("invalid name", app.Name, rName)
+				}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
+					if appRes.Name != rName {
+						return tests.AssertError("invalid name", appRes.Name, rName)
 					}
 
-					if app.Instance.MinInstances != 1 {
-						return tests.AssertError("invalid min instance count", app.Instance.MinInstances, "1")
+					if appRes.Instance.MinInstances != 1 {
+						return tests.AssertError("invalid min instance count", appRes.Instance.MinInstances, "1")
 					}
 
-					if app.Instance.MaxInstances != 2 {
-						return tests.AssertError("invalid max instance count", app.Instance.MaxInstances, 2)
+					if appRes.Instance.MaxInstances != 2 {
+						return tests.AssertError("invalid max instance count", appRes.Instance.MaxInstances, 2)
 					}
 
-					if app.Instance.MinFlavor.Name != "XS" {
-						return tests.AssertError("invalid smallest flavor", app.Instance.MinFlavor.Name, "XS")
+					if appRes.Instance.MinFlavor.Name != "XS" {
+						return tests.AssertError("invalid smallest flavor", appRes.Instance.MinFlavor.Name, "XS")
 					}
 
-					if app.Instance.MaxFlavor.Name != "M" {
-						return tests.AssertError("invalid biggest flavor", app.Instance.MaxFlavor.Name, "M")
+					if appRes.Instance.MaxFlavor.Name != "M" {
+						return tests.AssertError("invalid biggest flavor", appRes.Instance.MaxFlavor.Name, "M")
 					}
 
-					if app.BuildFlavor.Name != "XL" {
-						return tests.AssertError("invalid build flavor", app.BuildFlavor.Name, "XL")
+					if appRes.BuildFlavor.Name != "XL" {
+						return tests.AssertError("invalid build flavor", appRes.BuildFlavor.Name, "XL")
 					}
 
-					if app.ForceHTTPS != "ENABLED" {
-						return tests.AssertError("expect redirect_https to be set", "redirect_https", app.ForceHTTPS)
+					if appRes.ForceHTTPS != "ENABLED" {
+						return tests.AssertError("expect redirect_https to be set", "redirect_https", appRes.ForceHTTPS)
 					}
 
-					if !app.StickySessions {
-						return tests.AssertError("expect sticky_sessions to be set", "sticky_sessions", app.StickySessions)
+					if !appRes.StickySessions {
+						return tests.AssertError("expect sticky_sessions to be set", "sticky_sessions", appRes.StickySessions)
 					}
-					if app.Zone != "par" {
-						return tests.AssertError("expect region to be 'par'", "region", app.Zone)
+					if appRes.Zone != "par" {
+						return tests.AssertError("expect region to be 'par'", "region", appRes.Zone)
 					}
 					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
 					if appEnvRes.HasError() {
@@ -134,27 +135,27 @@ func TestAccRuby_basic(t *testing.T) {
 					}
 
 					// Check Ruby-specific environment variables
-					if v := env["APP_FOLDER"]; v != "./app" {
+					if v := env[app.APP_FOLDER]; v != "./app" {
 						return tests.AssertError("bad env var value APP_FOLDER", "./app", v)
 					}
 
-					if v := env["CC_RUBY_VERSION"]; v != "3.3" {
+					if v := env[app.CC_RUBY_VERSION]; v != "3.3" {
 						return tests.AssertError("bad env var value CC_RUBY_VERSION", "3.3", v)
 					}
 
-					if v := env["CC_ENABLE_SIDEKIQ"]; v != "true" {
+					if v := env[app.CC_ENABLE_SIDEKIQ]; v != "true" {
 						return tests.AssertError("bad env var value CC_ENABLE_SIDEKIQ", "true", v)
 					}
 
-					if v := env["CC_RACKUP_SERVER"]; v != "puma" {
+					if v := env[app.CC_RACKUP_SERVER]; v != "puma" {
 						return tests.AssertError("bad env var value CC_RACKUP_SERVER", "puma", v)
 					}
 
-					if v := env["CC_RAKEGOALS"]; v != "db:migrate,assets:precompile" {
+					if v := env[app.CC_RAKEGOALS]; v != "db:migrate,assets:precompile" {
 						return tests.AssertError("bad env var value CC_RAKEGOALS", "db:migrate,assets:precompile", v)
 					}
 
-					if v := env["CC_SIDEKIQ_FILES"]; v != "./config/sidekiq.yml" {
+					if v := env[app.CC_SIDEKIQ_FILES]; v != "./config/sidekiq.yml" {
 						return tests.AssertError("bad env var value CC_SIDEKIQ_FILES", "./config/sidekiq.yml", v)
 					}
 
@@ -166,23 +167,23 @@ func TestAccRuby_basic(t *testing.T) {
 						return tests.AssertError("bad env var value RACK_ENV", "production", v)
 					}
 
-					if v := env["ENABLE_GZIP_COMPRESSION"]; v != "true" {
+					if v := env[app.ENABLE_GZIP_COMPRESSION]; v != "true" {
 						return tests.AssertError("bad env var value ENABLE_GZIP_COMPRESSION", "true", v)
 					}
 
-					if v := env["NGINX_READ_TIMEOUT"]; v != "600" {
+					if v := env[app.NGINX_READ_TIMEOUT]; v != "600" {
 						return tests.AssertError("bad env var value NGINX_READ_TIMEOUT", "600", v)
 					}
 
-					if v := env["STATIC_FILES_PATH"]; v != "public" {
+					if v := env[app.STATIC_FILES_PATH]; v != "public" {
 						return tests.AssertError("bad env var value STATIC_FILES_PATH", "public", v)
 					}
 
-					if v := env["STATIC_URL_PREFIX"]; v != "/assets" {
+					if v := env[app.STATIC_URL_PREFIX]; v != "/assets" {
 						return tests.AssertError("bad env var value STATIC_URL_PREFIX", "/assets", v)
 					}
 
-					if v := env["CC_POST_BUILD_HOOK"]; v != "bundle exec rake assets:precompile" {
+					if v := env[app.CC_POST_BUILD_HOOK]; v != "bundle exec rake assets:precompile" {
 						return tests.AssertError("bad env var value CC_POST_BUILD_HOOK", "bundle exec rake assets:precompile", v)
 					}
 
@@ -215,13 +216,13 @@ func TestAccRuby_basic(t *testing.T) {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
 					// Verify instance counts were updated
-					if app.Instance.MinInstances != 2 {
-						return tests.AssertError("invalid updated min instance count", app.Instance.MinInstances, 2)
+					if appRes.Instance.MinInstances != 2 {
+						return tests.AssertError("invalid updated min instance count", appRes.Instance.MinInstances, 2)
 					}
-					if app.Instance.MaxInstances != 6 {
-						return tests.AssertError("invalid updated max instance count", app.Instance.MaxInstances, 6)
+					if appRes.Instance.MaxInstances != 6 {
+						return tests.AssertError("invalid updated max instance count", appRes.Instance.MaxInstances, 6)
 					}
 
 					// Verify environment variables were updated
@@ -243,20 +244,20 @@ func TestAccRuby_basic(t *testing.T) {
 						return tests.AssertError("bad env var value NEW_VAR", "new_value", v)
 					}
 
-					if v := env["CC_RUBY_VERSION"]; v != "3.2" {
+					if v := env[app.CC_RUBY_VERSION]; v != "3.2" {
 						return tests.AssertError("bad updated env var value CC_RUBY_VERSION", "3.2", v)
 					}
 
-					if v := env["CC_RACKUP_SERVER"]; v != "unicorn" {
+					if v := env[app.CC_RACKUP_SERVER]; v != "unicorn" {
 						return tests.AssertError("bad updated env var value CC_RACKUP_SERVER", "unicorn", v)
 					}
 
-					if v := env["NGINX_READ_TIMEOUT"]; v != "900" {
+					if v := env[app.NGINX_READ_TIMEOUT]; v != "900" {
 						return tests.AssertError("bad updated env var value NGINX_READ_TIMEOUT", "900", v)
 					}
 
 					// Verify sidekiq is disabled (should not be present or be "false")
-					if v := env["CC_ENABLE_SIDEKIQ"]; v != "" && v != "false" {
+					if v := env[app.CC_ENABLE_SIDEKIQ]; v != "" && v != "false" {
 						return tests.AssertError("expected CC_ENABLE_SIDEKIQ to be disabled", "", v)
 					}
 

@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	helperMaps "github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.dev/sdk/app"
 )
 
 // used to identify when the repo deployment is handled by a Github hook
@@ -26,25 +27,7 @@ import (
 const GITHUB_COMMIT_PREFIX = "github_hook"
 
 const (
-	CC_REDIRECTIONIO_PROJECT_KEY   = "CC_REDIRECTIONIO_PROJECT_KEY"
-	CC_REDIRECTIONIO_INSTANCE_NAME = "CC_REDIRECTIONIO_INSTANCE_NAME"
-	CC_REDIRECTIONIO_BACKEND_PORT  = "CC_REDIRECTIONIO_BACKEND_PORT"
-
-	NEW_RELIC_LICENSE_KEY = "NEW_RELIC_LICENSE_KEY"
-	NEW_RELIC_APP_NAME    = "NEW_RELIC_APP_NAME"
-
-	CC_CLAMAV = "CC_CLAMAV"
-
-	CC_VARNISH_FILE         = "CC_VARNISH_FILE"
-	CC_VARNISH_STORAGE_SIZE = "CC_VARNISH_STORAGE_SIZE"
-
-	CC_METRICS_PROMETHEUS_USER             = "CC_METRICS_PROMETHEUS_USER"
-	CC_METRICS_PROMETHEUS_PASSWORD         = "CC_METRICS_PROMETHEUS_PASSWORD"
-	CC_METRICS_PROMETHEUS_PATH             = "CC_METRICS_PROMETHEUS_PATH"
-	CC_METRICS_PROMETHEUS_PORT             = "CC_METRICS_PROMETHEUS_PORT"
-	CC_METRICS_PROMETHEUS_RESPONSE_TIMEOUT = "CC_METRICS_PROMETHEUS_RESPONSE_TIMEOUT"
-
-	CC_ENABLE_PGPOOL = "CC_ENABLE_PGPOOL"
+	CC_REDIRECTIONIO_BACKEND_PORT = "CC_REDIRECTIONIO_BACKEND_PORT"
 )
 
 // Deployment block
@@ -392,22 +375,22 @@ func (hooks *Hooks) ToEnv() map[string]string {
 		return m
 	}
 
-	pkg.IfIsSetStr(hooks.PreBuild, func(script string) { m["CC_PRE_BUILD_HOOK"] = script })
-	pkg.IfIsSetStr(hooks.PostBuild, func(script string) { m["CC_POST_BUILD_HOOK"] = script })
-	pkg.IfIsSetStr(hooks.PreRun, func(script string) { m["CC_PRE_RUN_HOOK"] = script })
-	pkg.IfIsSetStr(hooks.RunFailed, func(script string) { m["CC_RUN_FAILED_HOOK"] = script })
-	pkg.IfIsSetStr(hooks.RunSucceed, func(script string) { m["CC_RUN_SUCCEEDED_HOOK"] = script })
+	pkg.IfIsSetStr(hooks.PreBuild, func(script string) { m[app.CC_PRE_BUILD_HOOK] = script })
+	pkg.IfIsSetStr(hooks.PostBuild, func(script string) { m[app.CC_POST_BUILD_HOOK] = script })
+	pkg.IfIsSetStr(hooks.PreRun, func(script string) { m[app.CC_PRE_RUN_HOOK] = script })
+	pkg.IfIsSetStr(hooks.RunFailed, func(script string) { m[app.CC_RUN_FAILED_HOOK] = script })
+	pkg.IfIsSetStr(hooks.RunSucceed, func(script string) { m[app.CC_RUN_SUCCEEDED_HOOK] = script })
 
 	return m
 }
 
 // FromEnvHooks extracts hook variables from environment and removes them from the map
 func FromEnvHooks(env *helperMaps.Map[string, string], oldValue *Hooks) *Hooks {
-	hasPreBuild := env.Has("CC_PRE_BUILD_HOOK")
-	hasPostBuild := env.Has("CC_POST_BUILD_HOOK")
-	hasPreRun := env.Has("CC_PRE_RUN_HOOK")
-	hasRunFailed := env.Has("CC_RUN_FAILED_HOOK")
-	hasRunSucceed := env.Has("CC_RUN_SUCCEEDED_HOOK")
+	hasPreBuild := env.Has(app.CC_PRE_BUILD_HOOK)
+	hasPostBuild := env.Has(app.CC_POST_BUILD_HOOK)
+	hasPreRun := env.Has(app.CC_PRE_RUN_HOOK)
+	hasRunFailed := env.Has(app.CC_RUN_FAILED_HOOK)
+	hasRunSucceed := env.Has(app.CC_RUN_SUCCEEDED_HOOK)
 
 	hasAnyHook := hasPreBuild || hasPostBuild || hasPreRun || hasRunFailed || hasRunSucceed
 
@@ -421,11 +404,11 @@ func FromEnvHooks(env *helperMaps.Map[string, string], oldValue *Hooks) *Hooks {
 	}
 
 	hooks := &Hooks{
-		PreBuild:   pkg.FromStrPtr(env.PopPtr("CC_PRE_BUILD_HOOK")),
-		PostBuild:  pkg.FromStrPtr(env.PopPtr("CC_POST_BUILD_HOOK")),
-		PreRun:     pkg.FromStrPtr(env.PopPtr("CC_PRE_RUN_HOOK")),
-		RunFailed:  pkg.FromStrPtr(env.PopPtr("CC_RUN_FAILED_HOOK")),
-		RunSucceed: pkg.FromStrPtr(env.PopPtr("CC_RUN_SUCCEEDED_HOOK")),
+		PreBuild:   pkg.FromStrPtr(env.PopPtr(app.CC_PRE_BUILD_HOOK)),
+		PostBuild:  pkg.FromStrPtr(env.PopPtr(app.CC_POST_BUILD_HOOK)),
+		PreRun:     pkg.FromStrPtr(env.PopPtr(app.CC_PRE_RUN_HOOK)),
+		RunFailed:  pkg.FromStrPtr(env.PopPtr(app.CC_RUN_FAILED_HOOK)),
+		RunSucceed: pkg.FromStrPtr(env.PopPtr(app.CC_RUN_SUCCEEDED_HOOK)),
 	}
 
 	return hooks
@@ -439,10 +422,10 @@ func (integrations *Integrations) ToEnv(ctx context.Context, diags *diag.Diagnos
 
 	pkg.IfSetObject(ctx, diags, integrations.Redirectionio, func(redirio Redirectionio) {
 		pkg.IfIsSetStr(redirio.ProjectKey, func(s string) {
-			m[CC_REDIRECTIONIO_PROJECT_KEY] = s
+			m[app.CC_REDIRECTIONIO_PROJECT_KEY] = s
 		})
 		pkg.IfIsSetStr(redirio.InstanceName, func(s string) {
-			m[CC_REDIRECTIONIO_INSTANCE_NAME] = s
+			m[app.CC_REDIRECTIONIO_INSTANCE_NAME] = s
 		})
 		pkg.IfIsSetI(redirio.BackendPort, func(i int64) {
 			m[CC_REDIRECTIONIO_BACKEND_PORT] = fmt.Sprintf("%d", i)
@@ -451,52 +434,52 @@ func (integrations *Integrations) ToEnv(ctx context.Context, diags *diag.Diagnos
 
 	pkg.IfSetObject(ctx, diags, integrations.NewRelic, func(newrelic NewRelic) {
 		pkg.IfIsSetStr(newrelic.LicenseKey, func(s string) {
-			m[NEW_RELIC_LICENSE_KEY] = s
+			m[app.NEW_RELIC_LICENSE_KEY] = s
 		})
 		pkg.IfIsSetStr(newrelic.AppName, func(s string) {
-			m[NEW_RELIC_APP_NAME] = s
+			m[app.NEW_RELIC_APP_NAME] = s
 		})
 	})
 
 	pkg.IfSetObject(ctx, diags, integrations.ClamAV, func(clamav ClamAV) {
 		pkg.IfIsSetB(clamav.Enabled, func(enabled bool) {
 			if enabled {
-				m[CC_CLAMAV] = "true"
+				m[app.CC_CLAMAV] = "true"
 			}
 		})
 	})
 
 	pkg.IfSetObject(ctx, diags, integrations.Varnish, func(varnish Varnish) {
 		pkg.IfIsSetStr(varnish.ConfigFile, func(s string) {
-			m[CC_VARNISH_FILE] = s
+			m[app.CC_VARNISH_FILE] = s
 		})
 		pkg.IfIsSetStr(varnish.StorageSize, func(s string) {
-			m[CC_VARNISH_STORAGE_SIZE] = s
+			m[app.CC_VARNISH_STORAGE_SIZE] = s
 		})
 	})
 
 	pkg.IfSetObject(ctx, diags, integrations.Prometheus, func(prom Prometheus) {
 		pkg.IfIsSetStr(prom.User, func(s string) {
-			m[CC_METRICS_PROMETHEUS_USER] = s
+			m[app.CC_METRICS_PROMETHEUS_USER] = s
 		})
 		pkg.IfIsSetStr(prom.Password, func(s string) {
-			m[CC_METRICS_PROMETHEUS_PASSWORD] = s
+			m[app.CC_METRICS_PROMETHEUS_PASSWORD] = s
 		})
 		pkg.IfIsSetStr(prom.Path, func(s string) {
-			m[CC_METRICS_PROMETHEUS_PATH] = s
+			m[app.CC_METRICS_PROMETHEUS_PATH] = s
 		})
 		pkg.IfIsSetI(prom.Port, func(i int64) {
-			m[CC_METRICS_PROMETHEUS_PORT] = fmt.Sprintf("%d", i)
+			m[app.CC_METRICS_PROMETHEUS_PORT] = fmt.Sprintf("%d", i)
 		})
 		pkg.IfIsSetI(prom.ResponseTimeout, func(i int64) {
-			m[CC_METRICS_PROMETHEUS_RESPONSE_TIMEOUT] = fmt.Sprintf("%d", i)
+			m[app.CC_METRICS_PROMETHEUS_RESPONSE_TIMEOUT] = fmt.Sprintf("%d", i)
 		})
 	})
 
 	pkg.IfSetObject(ctx, diags, integrations.PgPoolII, func(pgpool PgPoolII) {
 		pkg.IfIsSetB(pgpool.Enabled, func(enabled bool) {
 			if enabled {
-				m[CC_ENABLE_PGPOOL] = "true"
+				m[app.CC_ENABLE_PGPOOL] = "true"
 			}
 		})
 	})
@@ -511,25 +494,25 @@ func (integrations *Integrations) ToEnv(ctx context.Context, diags *diag.Diagnos
 //   - If integrations block exists in state: clear all fields (drift detection)
 //   - If integrations block doesn't exist: do nothing (stays nil)
 func FromEnvIntegrations(ctx context.Context, env *helperMaps.Map[string, string], oldValue *Integrations, diags *diag.Diagnostics) *Integrations {
-	hasRedirectionio := env.Has(CC_REDIRECTIONIO_PROJECT_KEY) ||
-		env.Has(CC_REDIRECTIONIO_INSTANCE_NAME) ||
+	hasRedirectionio := env.Has(app.CC_REDIRECTIONIO_PROJECT_KEY) ||
+		env.Has(app.CC_REDIRECTIONIO_INSTANCE_NAME) ||
 		env.Has(CC_REDIRECTIONIO_BACKEND_PORT)
 
-	hasNewRelic := env.Has(NEW_RELIC_LICENSE_KEY) ||
-		env.Has(NEW_RELIC_APP_NAME)
+	hasNewRelic := env.Has(app.NEW_RELIC_LICENSE_KEY) ||
+		env.Has(app.NEW_RELIC_APP_NAME)
 
-	hasClamAV := env.Has(CC_CLAMAV)
+	hasClamAV := env.Has(app.CC_CLAMAV)
 
-	hasVarnish := env.Has(CC_VARNISH_FILE) ||
-		env.Has(CC_VARNISH_STORAGE_SIZE)
+	hasVarnish := env.Has(app.CC_VARNISH_FILE) ||
+		env.Has(app.CC_VARNISH_STORAGE_SIZE)
 
-	hasPrometheus := env.Has(CC_METRICS_PROMETHEUS_USER) ||
-		env.Has(CC_METRICS_PROMETHEUS_PASSWORD) ||
-		env.Has(CC_METRICS_PROMETHEUS_PATH) ||
-		env.Has(CC_METRICS_PROMETHEUS_PORT) ||
-		env.Has(CC_METRICS_PROMETHEUS_RESPONSE_TIMEOUT)
+	hasPrometheus := env.Has(app.CC_METRICS_PROMETHEUS_USER) ||
+		env.Has(app.CC_METRICS_PROMETHEUS_PASSWORD) ||
+		env.Has(app.CC_METRICS_PROMETHEUS_PATH) ||
+		env.Has(app.CC_METRICS_PROMETHEUS_PORT) ||
+		env.Has(app.CC_METRICS_PROMETHEUS_RESPONSE_TIMEOUT)
 
-	hasPgPoolII := env.Has(CC_ENABLE_PGPOOL)
+	hasPgPoolII := env.Has(app.CC_ENABLE_PGPOOL)
 
 	hasAnyIntegration := hasRedirectionio || hasNewRelic || hasClamAV || hasVarnish || hasPrometheus || hasPgPoolII
 
@@ -554,8 +537,8 @@ func FromEnvIntegrations(ctx context.Context, env *helperMaps.Map[string, string
 	// Populate each integration based on its env vars
 	if hasRedirectionio {
 		redir := Redirectionio{
-			ProjectKey:   pkg.FromStrPtr(env.PopPtr(CC_REDIRECTIONIO_PROJECT_KEY)),
-			InstanceName: pkg.FromStrPtr(env.PopPtr(CC_REDIRECTIONIO_INSTANCE_NAME)),
+			ProjectKey:   pkg.FromStrPtr(env.PopPtr(app.CC_REDIRECTIONIO_PROJECT_KEY)),
+			InstanceName: pkg.FromStrPtr(env.PopPtr(app.CC_REDIRECTIONIO_INSTANCE_NAME)),
 			BackendPort:  pkg.FromIntPtr(env.PopPtr(CC_REDIRECTIONIO_BACKEND_PORT)),
 		}
 		obj, d = types.ObjectValueFrom(ctx, RedirectionIOSchema, redir)
@@ -564,8 +547,8 @@ func FromEnvIntegrations(ctx context.Context, env *helperMaps.Map[string, string
 
 	if hasNewRelic {
 		nr := NewRelic{
-			LicenseKey: pkg.FromStrPtr(env.PopPtr(NEW_RELIC_LICENSE_KEY)),
-			AppName:    pkg.FromStrPtr(env.PopPtr(NEW_RELIC_APP_NAME)),
+			LicenseKey: pkg.FromStrPtr(env.PopPtr(app.NEW_RELIC_LICENSE_KEY)),
+			AppName:    pkg.FromStrPtr(env.PopPtr(app.NEW_RELIC_APP_NAME)),
 		}
 		obj, d = types.ObjectValueFrom(ctx, NewRelicSchema, nr)
 		integration.NewRelic = obj
@@ -573,7 +556,7 @@ func FromEnvIntegrations(ctx context.Context, env *helperMaps.Map[string, string
 
 	if hasClamAV {
 		clamav := ClamAV{
-			Enabled: pkg.FromBoolPtr(env.PopPtr(CC_CLAMAV)),
+			Enabled: pkg.FromBoolPtr(env.PopPtr(app.CC_CLAMAV)),
 		}
 		obj, d = types.ObjectValueFrom(ctx, ClamavSchema, clamav)
 		integration.ClamAV = obj
@@ -581,8 +564,8 @@ func FromEnvIntegrations(ctx context.Context, env *helperMaps.Map[string, string
 
 	if hasVarnish {
 		varnish := Varnish{
-			ConfigFile:  pkg.FromStrPtr(env.PopPtr(CC_VARNISH_FILE)),
-			StorageSize: pkg.FromStrPtr(env.PopPtr(CC_VARNISH_STORAGE_SIZE)),
+			ConfigFile:  pkg.FromStrPtr(env.PopPtr(app.CC_VARNISH_FILE)),
+			StorageSize: pkg.FromStrPtr(env.PopPtr(app.CC_VARNISH_STORAGE_SIZE)),
 		}
 		obj, d = types.ObjectValueFrom(ctx, VarnishSchema, varnish)
 		integration.Varnish = obj
@@ -590,11 +573,11 @@ func FromEnvIntegrations(ctx context.Context, env *helperMaps.Map[string, string
 
 	if hasPrometheus {
 		prom := Prometheus{
-			User:            pkg.FromStrPtr(env.PopPtr(CC_METRICS_PROMETHEUS_USER)),
-			Password:        pkg.FromStrPtr(env.PopPtr(CC_METRICS_PROMETHEUS_PASSWORD)),
-			Path:            pkg.FromStrPtr(env.PopPtr(CC_METRICS_PROMETHEUS_PATH)),
-			Port:            pkg.FromIntPtr(env.PopPtr(CC_METRICS_PROMETHEUS_PORT)),
-			ResponseTimeout: pkg.FromIntPtr(env.PopPtr(CC_METRICS_PROMETHEUS_RESPONSE_TIMEOUT)),
+			User:            pkg.FromStrPtr(env.PopPtr(app.CC_METRICS_PROMETHEUS_USER)),
+			Password:        pkg.FromStrPtr(env.PopPtr(app.CC_METRICS_PROMETHEUS_PASSWORD)),
+			Path:            pkg.FromStrPtr(env.PopPtr(app.CC_METRICS_PROMETHEUS_PATH)),
+			Port:            pkg.FromIntPtr(env.PopPtr(app.CC_METRICS_PROMETHEUS_PORT)),
+			ResponseTimeout: pkg.FromIntPtr(env.PopPtr(app.CC_METRICS_PROMETHEUS_RESPONSE_TIMEOUT)),
 		}
 		obj, d = types.ObjectValueFrom(ctx, PrometheusSchema, prom)
 		integration.Prometheus = obj
@@ -602,7 +585,7 @@ func FromEnvIntegrations(ctx context.Context, env *helperMaps.Map[string, string
 
 	if hasPgPoolII {
 		pgpool := PgPoolII{
-			Enabled: pkg.FromBoolPtr(env.PopPtr(CC_ENABLE_PGPOOL)),
+			Enabled: pkg.FromBoolPtr(env.PopPtr(app.CC_ENABLE_PGPOOL)),
 		}
 		obj, d = types.ObjectValueFrom(ctx, PGPoolIISchema, pgpool)
 		integration.PgPoolII = obj

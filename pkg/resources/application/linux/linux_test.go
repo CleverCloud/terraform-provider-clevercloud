@@ -18,6 +18,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/app"
 )
 
 func TestAccLinux_basic(t *testing.T) {
@@ -70,40 +71,40 @@ func TestAccLinux_basic(t *testing.T) {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
-					if app.Name != rName {
-						return tests.AssertError("invalid name", app.Name, rName)
+				}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
+					if appRes.Name != rName {
+						return tests.AssertError("invalid name", appRes.Name, rName)
 					}
 
-					if app.Instance.MinInstances != 1 {
-						return tests.AssertError("invalid min instance count", app.Instance.MinInstances, "1")
+					if appRes.Instance.MinInstances != 1 {
+						return tests.AssertError("invalid min instance count", appRes.Instance.MinInstances, "1")
 					}
 
-					if app.Instance.MaxInstances != 2 {
-						return tests.AssertError("invalid name", app.Instance.MaxInstances, 2)
+					if appRes.Instance.MaxInstances != 2 {
+						return tests.AssertError("invalid name", appRes.Instance.MaxInstances, 2)
 					}
 
-					if app.Instance.MinFlavor.Name != "XS" {
-						return tests.AssertError("invalid name", app.Instance.MinFlavor.Name, "XS")
+					if appRes.Instance.MinFlavor.Name != "XS" {
+						return tests.AssertError("invalid name", appRes.Instance.MinFlavor.Name, "XS")
 					}
 
-					if app.Instance.MaxFlavor.Name != "M" {
-						return tests.AssertError("invalid max instance name", app.Instance.MaxFlavor.Name, "M")
+					if appRes.Instance.MaxFlavor.Name != "M" {
+						return tests.AssertError("invalid max instance name", appRes.Instance.MaxFlavor.Name, "M")
 					}
 
-					if app.BuildFlavor.Name != "XL" {
-						return tests.AssertError("invalid build flavor", app.BuildFlavor.Name, "XL")
+					if appRes.BuildFlavor.Name != "XL" {
+						return tests.AssertError("invalid build flavor", appRes.BuildFlavor.Name, "XL")
 					}
 
-					if app.ForceHTTPS != "ENABLED" {
-						return tests.AssertError("expect option to be set", "redirect_https", app.ForceHTTPS)
+					if appRes.ForceHTTPS != "ENABLED" {
+						return tests.AssertError("expect option to be set", "redirect_https", appRes.ForceHTTPS)
 					}
 
-					if !app.StickySessions {
-						return tests.AssertError("expect option to be set", "sticky_sessions", app.StickySessions)
+					if !appRes.StickySessions {
+						return tests.AssertError("expect option to be set", "sticky_sessions", appRes.StickySessions)
 					}
-					if app.Zone != "par" {
-						return tests.AssertError("expect region to be 'par'", "region", app.Zone)
+					if appRes.Zone != "par" {
+						return tests.AssertError("expect region to be 'par'", "region", appRes.Zone)
 					}
 					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
 					if appEnvRes.HasError() {
@@ -120,12 +121,12 @@ func TestAccLinux_basic(t *testing.T) {
 						return tests.AssertError("bad env var value MY_KEY", v, "myval")
 					}
 
-					v1 := env["CC_RUN_COMMAND"]
+					v1 := env[app.CC_RUN_COMMAND]
 					if v1 != "./start.sh" {
 						return tests.AssertError("When providing 'run_command': './start.sh'", v1, "./start.sh")
 					}
 
-					v2 := env["CC_BUILD_COMMAND"]
+					v2 := env[app.CC_BUILD_COMMAND]
 					if v2 != "make build" {
 						return tests.AssertError("When providing 'build_command': 'make build'", v2, "make build")
 					}
@@ -135,12 +136,12 @@ func TestAccLinux_basic(t *testing.T) {
 						return tests.AssertError("When providing 'makefile': 'Makefile.custom'", v3, "Makefile.custom")
 					}
 
-					v4 := env["CC_MISE_FILE_PATH"]
+					v4 := env[app.CC_MISE_FILE_PATH]
 					if v4 != "./tools/mise.toml" {
 						return tests.AssertError("When providing 'mise_file_path': './tools/mise.toml'", v4, "./tools/mise.toml")
 					}
 
-					v5 := env["CC_DISABLE_MISE"]
+					v5 := env[app.CC_DISABLE_MISE]
 					if v5 != "true" {
 						return tests.AssertError("When providing 'disable_mise': true", v5, "true")
 					}

@@ -6,6 +6,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -76,7 +77,7 @@ func (fp *FrankenPHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[st
 
 	pkg.IfIsSetB(fp.DevDependencies, func(devDeps bool) {
 		if devDeps {
-			env["CC_PHP_DEV_DEPENDENCIES"] = "install"
+			env[app.CC_PHP_DEV_DEPENDENCIES] = "install"
 		}
 	})
 	env = pkg.Merge(env, fp.Hooks.ToEnv())
@@ -90,7 +91,7 @@ func (fp *FrankenPHP) FromEnv(ctx context.Context, env *maps.Map[string, string]
 		return
 	}
 
-	pkg.SetBool(&fp.DevDependencies, env.PopPtr("CC_PHP_DEV_DEPENDENCIES"), "install")
+	pkg.SetBool(&fp.DevDependencies, env.PopPtr(app.CC_PHP_DEV_DEPENDENCIES), "install")
 
 	fp.Integrations = attributes.FromEnvIntegrations(ctx, env, fp.Integrations, diags)
 }

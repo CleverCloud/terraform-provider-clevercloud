@@ -15,6 +15,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/app"
 )
 
 // Create a new resource
@@ -70,13 +71,13 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 	tflog.Debug(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", envAsMap),
 	})
-	port, err := strconv.ParseInt(envAsMap["REDIS_PORT"].ValueString(), 10, 64)
+	port, err := strconv.ParseInt(envAsMap[app.REDIS_PORT].ValueString(), 10, 64)
 	if err != nil {
 		resp.Diagnostics.AddError("invalid port received", "expect REDIS_PORT to be an Integer")
 	}
-	rd.Host = envAsMap["REDIS_HOST"]
+	rd.Host = envAsMap[app.REDIS_HOST]
 	rd.Port = pkg.FromI(port)
-	rd.Token = envAsMap["REDIS_PASSWORD"]
+	rd.Token = envAsMap[app.REDIS_PASSWORD]
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -140,17 +141,17 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 	tflog.Debug(ctx, "API response", map[string]any{
 		"payload": fmt.Sprintf("%+v", envAsMap),
 	})
-	port, err := strconv.ParseInt(envAsMap["REDIS_PORT"].ValueString(), 10, 64)
+	port, err := strconv.ParseInt(envAsMap[app.REDIS_PORT].ValueString(), 10, 64)
 	if err != nil {
 		resp.Diagnostics.AddError("invalid port received", "expect REDIS_PORT to be an Integer")
 	}
 
 	rd.Name = pkg.FromStr(addonRD.Name)
-	rd.Host = envAsMap["REDIS_HOST"]
+	rd.Host = envAsMap[app.REDIS_HOST]
 	rd.Plan = pkg.FromStr(addonRD.Plan.Slug)
 	rd.Port = pkg.FromI(port)
 	rd.Region = pkg.FromStr(addonRD.Region)
-	rd.Token = envAsMap["REDIS_PASSWORD"]
+	rd.Token = envAsMap[app.REDIS_PASSWORD]
 
 	rd.Networkgroups = resources.ReadNetworkGroups(ctx, r, rd.ID.ValueString(), &resp.Diagnostics)
 	rd.Tags = resources.ReadAddonTags(ctx, r, rd.ID.ValueString(), rd.Tags, &resp.Diagnostics)

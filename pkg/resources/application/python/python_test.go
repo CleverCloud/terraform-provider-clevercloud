@@ -21,6 +21,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/app"
 )
 
 func TestAccPython_basic(t *testing.T) {
@@ -72,37 +73,37 @@ func TestAccPython_basic(t *testing.T) {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
-					if app.Name != rName {
-						return tests.AssertError("invalid name", app.Name, rName)
+				}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
+					if appRes.Name != rName {
+						return tests.AssertError("invalid name", appRes.Name, rName)
 					}
 
-					if app.Instance.MinInstances != 1 {
-						return tests.AssertError("invalid min instance count", app.Instance.MinInstances, 1)
+					if appRes.Instance.MinInstances != 1 {
+						return tests.AssertError("invalid min instance count", appRes.Instance.MinInstances, 1)
 					}
 
-					if app.Instance.MaxInstances != 2 {
-						return tests.AssertError("invalid max instance count", app.Instance.MaxInstances, 2)
+					if appRes.Instance.MaxInstances != 2 {
+						return tests.AssertError("invalid max instance count", appRes.Instance.MaxInstances, 2)
 					}
 
-					if app.Instance.MinFlavor.Name != "XS" {
-						return tests.AssertError("invalid min flavor", app.Instance.MinFlavor.Name, "XS")
+					if appRes.Instance.MinFlavor.Name != "XS" {
+						return tests.AssertError("invalid min flavor", appRes.Instance.MinFlavor.Name, "XS")
 					}
 
-					if app.Instance.MaxFlavor.Name != "M" {
-						return tests.AssertError("invalid max flavor", app.Instance.MaxFlavor.Name, "M")
+					if appRes.Instance.MaxFlavor.Name != "M" {
+						return tests.AssertError("invalid max flavor", appRes.Instance.MaxFlavor.Name, "M")
 					}
 
-					if app.ForceHTTPS != "ENABLED" {
-						return tests.AssertError("expect force_https option to be set", app.ForceHTTPS, "ENABLED")
+					if appRes.ForceHTTPS != "ENABLED" {
+						return tests.AssertError("expect force_https option to be set", appRes.ForceHTTPS, "ENABLED")
 					}
 
-					if !app.StickySessions {
-						return tests.AssertError("expect option sticky_sessions to be set", app.StickySessions, true)
+					if !appRes.StickySessions {
+						return tests.AssertError("expect option sticky_sessions to be set", appRes.StickySessions, true)
 					}
 
-					if len(app.Vhosts) != 1 || !strings.HasSuffix(app.Vhosts[0].Fqdn, ".cleverapps.io/") {
-						return tests.AssertError("invalid vhost list", app.Vhosts.AsString(), "1 cleverapps.io domain")
+					if len(appRes.Vhosts) != 1 || !strings.HasSuffix(appRes.Vhosts[0].Fqdn, ".cleverapps.io/") {
+						return tests.AssertError("invalid vhost list", appRes.Vhosts.AsString(), "1 cleverapps.io domain")
 					}
 
 					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
@@ -120,12 +121,12 @@ func TestAccPython_basic(t *testing.T) {
 						return tests.AssertError("bad env var value for MY_KEY", v, "myval")
 					}
 
-					v2 := env["APP_FOLDER"]
+					v2 := env[app.APP_FOLDER]
 					if v2 != "./app" {
 						return tests.AssertError("bad env var value for APP_FOLDER", v2, "./app")
 					}
 
-					v3 := env["CC_POST_BUILD_HOOK"]
+					v3 := env[app.CC_POST_BUILD_HOOK]
 					if v3 != "echo \"build is OK!\"" {
 						return tests.AssertError("bad env var value for CC_POST_BUILD_HOOK", v3, "echo \"build is OK!\"")
 					}
@@ -135,7 +136,7 @@ func TestAccPython_basic(t *testing.T) {
 						return tests.AssertError("bad env var value for CC_PIP_REQUIREMENTS_FILE", v4, "requirements.txt")
 					}
 
-					v5 := env["CC_PYTHON_VERSION"]
+					v5 := env[app.CC_PYTHON_VERSION]
 					if v5 != "2.7" {
 						return tests.AssertError("bad env var value for CC_PYTHON_VERSION", v5, "2.7")
 					}
@@ -158,9 +159,9 @@ func TestAccPython_basic(t *testing.T) {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
-					if len(app.Vhosts) != 1 || app.Vhosts[0].Fqdn != (vhost+"/") {
-						return tests.AssertError("invalid vhost list", app.Vhosts.AsString(), vhost)
+				}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
+					if len(appRes.Vhosts) != 1 || appRes.Vhosts[0].Fqdn != (vhost+"/") {
+						return tests.AssertError("invalid vhost list", appRes.Vhosts.AsString(), vhost)
 					}
 					return nil
 				}),
@@ -179,8 +180,8 @@ func TestAccPython_basic(t *testing.T) {
 						"smallest_flavor":    "XS",
 						"biggest_flavor":     "M",
 						"environment": map[string]any{
-							"CC_PYTHON_MODULE":  "app:app",
-							"CC_PYTHON_BACKEND": "gunicorn",
+							app.CC_PYTHON_MODULE:  "app:app",
+							app.CC_PYTHON_BACKEND: "gunicorn",
 						},
 					}),
 					helper.SetBlockValues(

@@ -8,6 +8,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 )
 
 type ResourceRust struct {
@@ -79,11 +80,9 @@ func (r *ResourceRust) UpgradeState(ctx context.Context) map[int64]resource.Stat
 	}
 }
 
-const CC_RUST_FEATURES = "CC_RUST_FEATURES"
-
 // RebuildEnvKeys lists the env vars read by cargo at build time
 func (r Rust) RebuildEnvKeys() []string {
-	return []string{CC_RUST_FEATURES}
+	return []string{app.CC_RUST_FEATURES}
 }
 
 func (r *ResourceRust) GetVariantSlug() string {

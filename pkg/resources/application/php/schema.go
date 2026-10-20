@@ -6,6 +6,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -102,17 +103,17 @@ func (p *PHP) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]str
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(p.AppFolder, func(s string) { env["APP_FOLDER"] = s })
-	pkg.IfIsSetStr(p.WebRoot, func(webroot string) { env["CC_WEBROOT"] = webroot })
-	pkg.IfIsSetStr(p.PHPVersion, func(version string) { env["CC_PHP_VERSION"] = version })
+	pkg.IfIsSetStr(p.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
+	pkg.IfIsSetStr(p.WebRoot, func(webroot string) { env[app.CC_WEBROOT] = webroot })
+	pkg.IfIsSetStr(p.PHPVersion, func(version string) { env[app.CC_PHP_VERSION] = version })
 	pkg.IfIsSetB(p.DevDependencies, func(devDeps bool) {
 		if devDeps {
-			env["CC_PHP_DEV_DEPENDENCIES"] = "install"
+			env[app.CC_PHP_DEV_DEPENDENCIES] = "install"
 		}
 	})
 	pkg.IfIsSetB(p.RedisSessions, func(redis bool) {
 		if redis {
-			env["SESSION_TYPE"] = "redis"
+			env[app.SESSION_TYPE] = "redis"
 		}
 	})
 	env = pkg.Merge(env, p.Hooks.ToEnv())
@@ -126,11 +127,11 @@ func (p *PHP) FromEnv(ctx context.Context, env *maps.Map[string, string], diags 
 		return
 	}
 
-	p.AppFolder = pkg.FromStrPtr(env.PopPtr("APP_FOLDER"))
-	p.WebRoot = pkg.FromStrPtr(env.PopPtr("CC_WEBROOT"))
-	p.PHPVersion = pkg.FromStrPtr(env.PopPtr("CC_PHP_VERSION"))
-	pkg.SetBoolIf(&p.DevDependencies, env.PopPtr("CC_PHP_DEV_DEPENDENCIES"), "install")
-	pkg.SetBoolIf(&p.RedisSessions, env.PopPtr("SESSION_TYPE"), "redis")
+	p.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
+	p.WebRoot = pkg.FromStrPtr(env.PopPtr(app.CC_WEBROOT))
+	p.PHPVersion = pkg.FromStrPtr(env.PopPtr(app.CC_PHP_VERSION))
+	pkg.SetBoolIf(&p.DevDependencies, env.PopPtr(app.CC_PHP_DEV_DEPENDENCIES), "install")
+	pkg.SetBoolIf(&p.RedisSessions, env.PopPtr(app.SESSION_TYPE), "redis")
 
 	p.Integrations = attributes.FromEnvIntegrations(ctx, env, p.Integrations, diags)
 }

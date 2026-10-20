@@ -6,6 +6,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
+	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -64,10 +65,10 @@ func (dotnetapp Dotnet) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[
 
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(dotnetapp.DotnetProfile, func(s string) { env["CC_DOTNET_PROFILE"] = s })
-	pkg.IfIsSetStr(dotnetapp.DotnetProj, func(s string) { env["CC_DOTNET_PROJ"] = s })
-	pkg.IfIsSetStr(dotnetapp.DotnetTFM, func(s string) { env["CC_DOTNET_TFM"] = s })
-	pkg.IfIsSetStr(dotnetapp.DotnetVersion, func(s string) { env["CC_DOTNET_VERSION"] = s })
+	pkg.IfIsSetStr(dotnetapp.DotnetProfile, func(s string) { env[app.CC_DOTNET_PROFILE] = s })
+	pkg.IfIsSetStr(dotnetapp.DotnetProj, func(s string) { env[app.CC_DOTNET_PROJ] = s })
+	pkg.IfIsSetStr(dotnetapp.DotnetTFM, func(s string) { env[app.CC_DOTNET_TFM] = s })
+	pkg.IfIsSetStr(dotnetapp.DotnetVersion, func(s string) { env[app.CC_DOTNET_VERSION] = s })
 
 	env = pkg.Merge(env, dotnetapp.Hooks.ToEnv())
 	env = pkg.Merge(env, dotnetapp.Integrations.ToEnv(ctx, diags))
@@ -80,10 +81,10 @@ func (dotnetapp *Dotnet) FromEnv(ctx context.Context, env *maps.Map[string, stri
 		return
 	}
 
-	dotnetapp.DotnetProfile = pkg.FromStrPtr(env.PopPtr("CC_DOTNET_PROFILE"))
-	dotnetapp.DotnetProj = pkg.FromStrPtr(env.PopPtr("CC_DOTNET_PROJ"))
-	dotnetapp.DotnetTFM = pkg.FromStrPtr(env.PopPtr("CC_DOTNET_TFM"))
-	dotnetapp.DotnetVersion = pkg.FromStrPtr(env.PopPtr("CC_DOTNET_VERSION"))
+	dotnetapp.DotnetProfile = pkg.FromStrPtr(env.PopPtr(app.CC_DOTNET_PROFILE))
+	dotnetapp.DotnetProj = pkg.FromStrPtr(env.PopPtr(app.CC_DOTNET_PROJ))
+	dotnetapp.DotnetTFM = pkg.FromStrPtr(env.PopPtr(app.CC_DOTNET_TFM))
+	dotnetapp.DotnetVersion = pkg.FromStrPtr(env.PopPtr(app.CC_DOTNET_VERSION))
 
 	dotnetapp.Integrations = attributes.FromEnvIntegrations(ctx, env, dotnetapp.Integrations, diags)
 }

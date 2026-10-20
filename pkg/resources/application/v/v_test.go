@@ -19,6 +19,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/app"
 )
 
 func TestAccV_basic(t *testing.T) {
@@ -83,40 +84,40 @@ func TestAccV_basic(t *testing.T) {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
-					if app.Name != rName {
-						return tests.AssertError("invalid name", app.Name, rName)
+				}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
+					if appRes.Name != rName {
+						return tests.AssertError("invalid name", appRes.Name, rName)
 					}
 
-					if app.Instance.MinInstances != 1 {
-						return tests.AssertError("invalid min instance count", app.Instance.MinInstances, "1")
+					if appRes.Instance.MinInstances != 1 {
+						return tests.AssertError("invalid min instance count", appRes.Instance.MinInstances, "1")
 					}
 
-					if app.Instance.MaxInstances != 2 {
-						return tests.AssertError("invalid name", app.Instance.MaxInstances, 2)
+					if appRes.Instance.MaxInstances != 2 {
+						return tests.AssertError("invalid name", appRes.Instance.MaxInstances, 2)
 					}
 
-					if app.Instance.MinFlavor.Name != "XS" {
-						return tests.AssertError("invalid name", app.Instance.MinFlavor.Name, "XS")
+					if appRes.Instance.MinFlavor.Name != "XS" {
+						return tests.AssertError("invalid name", appRes.Instance.MinFlavor.Name, "XS")
 					}
 
-					if app.Instance.MaxFlavor.Name != "M" {
-						return tests.AssertError("invalid max instance name", app.Instance.MaxFlavor.Name, "M")
+					if appRes.Instance.MaxFlavor.Name != "M" {
+						return tests.AssertError("invalid max instance name", appRes.Instance.MaxFlavor.Name, "M")
 					}
 
-					if app.BuildFlavor.Name != "XL" {
-						return tests.AssertError("invalid build flavor", app.BuildFlavor.Name, "XL")
+					if appRes.BuildFlavor.Name != "XL" {
+						return tests.AssertError("invalid build flavor", appRes.BuildFlavor.Name, "XL")
 					}
 
-					if app.ForceHTTPS != "ENABLED" {
-						return tests.AssertError("expect option to be set", "redirect_https", app.ForceHTTPS)
+					if appRes.ForceHTTPS != "ENABLED" {
+						return tests.AssertError("expect option to be set", "redirect_https", appRes.ForceHTTPS)
 					}
 
-					if !app.StickySessions {
-						return tests.AssertError("expect option to be set", "sticky_sessions", app.StickySessions)
+					if !appRes.StickySessions {
+						return tests.AssertError("expect option to be set", "sticky_sessions", appRes.StickySessions)
 					}
-					if app.Zone != "par" {
-						return tests.AssertError("expect region to be 'par'", "region", app.Zone)
+					if appRes.Zone != "par" {
+						return tests.AssertError("expect region to be 'par'", "region", appRes.Zone)
 					}
 					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
 					if appEnvRes.HasError() {
@@ -133,12 +134,12 @@ func TestAccV_basic(t *testing.T) {
 						return tests.AssertError("bad env var value MY_KEY", v, "myval")
 					}
 
-					v1 := env["CC_V_BINARY"]
+					v1 := env[app.CC_V_BINARY]
 					if v1 != "a.out" {
 						return tests.AssertError("When providing 'v_binary': 'a.out'", v1, "a.out")
 					}
 
-					v2 := env["ENVIRONMENT"]
+					v2 := env[app.ENVIRONMENT]
 					if v2 != "development" {
 						return tests.AssertError("When providing 'v_environment': 'development'", v2, "development")
 					}
@@ -165,7 +166,7 @@ func TestAccV_basic(t *testing.T) {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
 					vhostsRes := tmp.GetAppVhosts(ctx, cc, tests.ORGANISATION, id)
 					if vhostsRes.HasError() {
 						return fmt.Errorf("failed to get application vhosts: %w", vhostsRes.Error())
@@ -236,7 +237,7 @@ func TestAccV_EnvironmentDriftDetection(t *testing.T) {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
 					// Verify environment variables are set correctly in the API
 					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
 					if appEnvRes.HasError() {
