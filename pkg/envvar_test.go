@@ -55,9 +55,18 @@ func TestEnvNames(t *testing.T) {
 
 func TestBoolEnv(t *testing.T) {
 	type flag struct{ on types.Bool }
-	m := NewBoolEnv[flag]("VAR", "install",
-		func(f *flag) types.Bool { return f.on },
-		func(f *flag, v types.Bool) { f.on = v })
+	m := NewBoolEnv[flag]("VAR",
+		func(f *flag) string {
+			if f.on.ValueBool() {
+				return "install"
+			}
+			return ""
+		},
+		func(f *flag, value string) {
+			if value == "install" {
+				f.on = types.BoolValue(true)
+			}
+		})
 
 	for value, want := range map[types.Bool]string{types.BoolValue(true): "install", types.BoolValue(false): "", types.BoolNull(): ""} {
 		if name, got := m.ToEnv(&flag{on: value}); name != "VAR" || got != want {
