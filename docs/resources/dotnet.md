@@ -108,15 +108,15 @@ environment = { for k, v in {
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
-- `profile` (String) Override the build configuration settings in your project. Default: Release
-- `proj` (String) The name of your project file to use for the build, without the .csproj / .fsproj / .vbproj extension.
+- `profile` (String) Override the build configuration settings in your project. Default: Release (`CC_DOTNET_PROFILE`)
+- `proj` (String) The name of your project file to use for the build, without the .csproj / .fsproj / .vbproj extension (`CC_DOTNET_PROJ`).
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
-- `tfm` (String) Compiles for a specific framework. The framework must be defined in the project file. Example : net5.0
-- `version` (String) Choose the .NET Core version between 6.0, 8.0, 9.0. Default: '8.0'
+- `tfm` (String) Compiles for a specific framework. The framework must be defined in the project file. Example : net5.0 (`CC_DOTNET_TFM`)
+- `version` (String) Choose the .NET Core version between 6.0, 8.0, 9.0. Default: '8.0' (`CC_DOTNET_VERSION`)
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
 
 ### Read-Only

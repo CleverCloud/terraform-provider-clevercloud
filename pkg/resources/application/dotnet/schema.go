@@ -6,7 +6,6 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
-	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -33,19 +32,19 @@ var schemaDotnet = schema.Schema{
 	Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 		"profile": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Override the build configuration settings in your project. Default: Release",
+			MarkdownDescription: "Override the build configuration settings in your project. Default: Release (`CC_DOTNET_PROFILE`)",
 		},
 		"proj": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "The name of your project file to use for the build, without the .csproj / .fsproj / .vbproj extension.",
+			MarkdownDescription: "The name of your project file to use for the build, without the .csproj / .fsproj / .vbproj extension (`CC_DOTNET_PROJ`).",
 		},
 		"tfm": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Compiles for a specific framework. The framework must be defined in the project file. Example : net5.0",
+			MarkdownDescription: "Compiles for a specific framework. The framework must be defined in the project file. Example : net5.0 (`CC_DOTNET_TFM`)",
 		},
 		"version": schema.StringAttribute{
 			Optional:            true,
-			MarkdownDescription: "Choose the .NET Core version between 6.0, 8.0, 9.0. Default: '8.0'",
+			MarkdownDescription: "Choose the .NET Core version between 6.0, 8.0, 9.0. Default: '8.0' (`CC_DOTNET_VERSION`)",
 		},
 	}),
 	Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
@@ -65,10 +64,7 @@ func (dotnetapp Dotnet) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[
 
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(dotnetapp.DotnetProfile, func(s string) { env[app.CC_DOTNET_PROFILE] = s })
-	pkg.IfIsSetStr(dotnetapp.DotnetProj, func(s string) { env[app.CC_DOTNET_PROJ] = s })
-	pkg.IfIsSetStr(dotnetapp.DotnetTFM, func(s string) { env[app.CC_DOTNET_TFM] = s })
-	pkg.IfIsSetStr(dotnetapp.DotnetVersion, func(s string) { env[app.CC_DOTNET_VERSION] = s })
+	pkg.WriteEnv(env, &dotnetapp, envVars...)
 
 	env = pkg.Merge(env, dotnetapp.Hooks.ToEnv())
 	env = pkg.Merge(env, dotnetapp.Integrations.ToEnv(ctx, diags))
@@ -81,10 +77,7 @@ func (dotnetapp *Dotnet) FromEnv(ctx context.Context, env *maps.Map[string, stri
 		return
 	}
 
-	dotnetapp.DotnetProfile = pkg.FromStrPtr(env.PopPtr(app.CC_DOTNET_PROFILE))
-	dotnetapp.DotnetProj = pkg.FromStrPtr(env.PopPtr(app.CC_DOTNET_PROJ))
-	dotnetapp.DotnetTFM = pkg.FromStrPtr(env.PopPtr(app.CC_DOTNET_TFM))
-	dotnetapp.DotnetVersion = pkg.FromStrPtr(env.PopPtr(app.CC_DOTNET_VERSION))
+	pkg.ReadEnv(env, dotnetapp, envVars...)
 
 	dotnetapp.Integrations = attributes.FromEnvIntegrations(ctx, env, dotnetapp.Integrations, diags)
 }
