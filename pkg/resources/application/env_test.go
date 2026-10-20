@@ -77,7 +77,7 @@ func (p *testPlan) FromEnv(context.Context, *maps.Map[string, string], *diag.Dia
 }
 
 func TestOnRuntime(t *testing.T) {
-	m := OnRuntime[*testPlan](AppFolder{})
+	m := OnRuntime[*testPlan](AppFolder)
 
 	p := &testPlan{}
 	p.AppFolder = types.StringValue("web")
