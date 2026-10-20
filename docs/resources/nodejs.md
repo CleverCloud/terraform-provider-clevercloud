@@ -93,15 +93,15 @@ resource "clevercloud_nodejs" "myapp" {
 
 ### Optional
 
-- `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `app_folder` (String) Folder in which the application is located (inside the git repository) (`APP_FOLDER`)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
-- `bun_install_cache_dir` (String) Bun install cache directory, saved and restored with the dependencies cache
-- `custom_install_command` (String) Command installing the dependencies, used when `package_manager` is `custom`
+- `bun_install_cache_dir` (String) Bun install cache directory, saved and restored with the dependencies cache (`CC_BUN_INSTALL_CACHE_DIR`)
+- `custom_install_command` (String) Command installing the dependencies, used when `package_manager` is `custom` (`CC_CUSTOM_BUILD_TOOL`)
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
-- `dev_dependencies` (Boolean) Install development dependencies specified in package.json
+- `dev_dependencies` (Boolean) Install development dependencies specified in package.json (`CC_NODE_DEV_DEPENDENCIES`)
 - `environment` (Map of String, Sensitive) Environment variables injected into the application.
 
 **Note:** Null values are not allowed. To conditionally include variables, use a for expression:
@@ -115,15 +115,15 @@ environment = { for k, v in {
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
-- `node_version` (String) Node.js version to use, for example `22`
-- `package_manager` (String) Either npm, npm-ci, bun, pnpm, yarn-berry or custom
+- `node_version` (String) Node.js version to use, for example `22` (`CC_NODE_VERSION`)
+- `package_manager` (String) Either npm, npm-ci, bun, pnpm, yarn-berry or custom (`CC_NODE_BUILD_TOOL`)
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
 - `region` (String) Geographical region where the database will be deployed
-- `registry` (String) The host of your private repository, available values: github or the registry host
-- `registry_basic_auth` (String, Sensitive) Private repository credentials, as `user:password`. Cannot be used with `registry_token`
-- `registry_token` (String, Sensitive) Private repository token
-- `start_script` (String) Set custom start script, instead of `npm start`
+- `registry` (String) The host of your private repository, available values: github or the registry host (`CC_NPM_REGISTRY`)
+- `registry_basic_auth` (String, Sensitive) Private repository credentials, as `user:password`. Cannot be used with `registry_token` (`CC_NPM_BASIC_AUTH`)
+- `registry_token` (String, Sensitive) Private repository token (`NPM_TOKEN`)
+- `start_script` (String) Set custom start script, instead of `npm start` (`CC_RUN_COMMAND`)
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))

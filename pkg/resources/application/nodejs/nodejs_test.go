@@ -259,7 +259,7 @@ func TestAccNodejs_envAttributes(t *testing.T) {
 			ResourceName: rName,
 			Config:       config(map[string]any{"environment": map[string]any{app.CC_NODE_VERSION: "24"}}),
 			PlanOnly:     true,
-			ExpectError:  regexp.MustCompile(`CC_NODE_VERSION is managed by the "node_version" attribute`),
+			ExpectError:  regexp.MustCompile(`CC_NODE_VERSION is managed by an attribute`),
 		}, {
 			ResourceName: rName,
 			Config:       config(nil),

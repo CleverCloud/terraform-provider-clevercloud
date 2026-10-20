@@ -117,7 +117,7 @@ var runtimeCommon = map[string]schema.Attribute{
 	// APP_FOLDER
 	"app_folder": schema.StringAttribute{
 		Optional:            true,
-		MarkdownDescription: "Folder in which the application is located (inside the git repository)",
+		MarkdownDescription: "Folder in which the application is located (inside the git repository) (`APP_FOLDER`)",
 	},
 
 	// Provider provided

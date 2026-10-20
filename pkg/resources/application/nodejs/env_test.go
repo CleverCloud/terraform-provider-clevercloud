@@ -2,6 +2,7 @@ package nodejs
 
 import (
 	"context"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -11,25 +12,23 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/miton18/helper/maps"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 	"go.clever-cloud.dev/sdk/app"
 )
 
-// Every variable listed in envAttributes is written by ToEnv and read back by
-// FromEnv into the attribute it names, so the reserved list cannot drift
-// from the code.
-func TestEnvAttributesRoundTrip(t *testing.T) {
+// Every variable listed in envVars is written by ToEnv and read back by
+// FromEnv, so the mappings are the whole story of the nodejs variables.
+func TestEnvVarsRoundTrip(t *testing.T) {
 	ctx := context.Background()
 	var diags diag.Diagnostics
-
-	for _, attribute := range envAttributes {
-		if _, ok := schemaNodeJS.Attributes[attribute]; !ok {
-			t.Errorf("envAttributes names %q, which is not a nodejs attribute", attribute)
-		}
-	}
+	names := pkg.EnvNames(&NodeJS{}, envVars...)
 
 	node := NodeJS{
-		Runtime:              application.Runtime{Environment: types.MapNull(types.StringType)},
+		Runtime: application.Runtime{
+			Environment: types.MapNull(types.StringType),
+			AppFolder:   types.StringValue("web"),
+		},
 		DevDependencies:      types.BoolValue(true),
 		StartScript:          types.StringValue("node server.js"),
 		PackageManager:       types.StringValue("custom"),
@@ -41,7 +40,7 @@ func TestEnvAttributesRoundTrip(t *testing.T) {
 		BunInstallCacheDir:   types.StringValue("/tmp/bun"),
 	}
 	env := node.ToEnv(ctx, &diags)
-	for variable := range envAttributes {
+	for _, variable := range names {
 		if _, ok := env[variable]; !ok {
 			t.Errorf("ToEnv does not write %s", variable)
 		}
@@ -50,7 +49,7 @@ func TestEnvAttributesRoundTrip(t *testing.T) {
 	read := NodeJS{}
 	envMap := maps.NewMap(env)
 	read.FromEnv(ctx, envMap, &diags)
-	for variable := range envAttributes {
+	for _, variable := range names {
 		if envMap.Has(variable) {
 			t.Errorf("FromEnv does not read %s back", variable)
 		}
@@ -58,10 +57,10 @@ func TestEnvAttributesRoundTrip(t *testing.T) {
 	if diags.HasError() {
 		t.Fatal(diags)
 	}
-	read.Integrations = node.Integrations
-	if read.NodeVersion != node.NodeVersion || read.CustomInstallCommand != node.CustomInstallCommand ||
-		read.RegistryBasicAuth != node.RegistryBasicAuth || read.BunInstallCacheDir != node.BunInstallCacheDir {
-		t.Errorf("round trip lost a value: got %+v", read)
+	// The whole plan comes back: a field without its mapping stays null.
+	read.Environment = node.Environment
+	if !reflect.DeepEqual(read, node) {
+		t.Errorf("round trip lost a value:\ngot  %+v\nwant %+v", read, node)
 	}
 }
 
@@ -102,11 +101,11 @@ func TestConfigValidators(t *testing.T) {
 		},
 		"node variable in environment": {
 			values: map[string]tftypes.Value{"environment": tftypes.NewValue(envType, map[string]tftypes.Value{app.CC_NODE_VERSION: str("22")})},
-			want:   []string{`CC_NODE_VERSION is managed by the "node_version" attribute`},
+			want:   []string{"CC_NODE_VERSION is managed by an attribute"},
 		},
 		"common variable in environment": {
 			values: map[string]tftypes.Value{"environment": tftypes.NewValue(envType, map[string]tftypes.Value{app.CC_CLAMAV: str("true")})},
-			want:   []string{`CC_CLAMAV is managed by the "integrations.clamav.enabled" attribute`},
+			want:   []string{"CC_CLAMAV is managed by an attribute"},
 		},
 		"custom command with the custom manager": {
 			values: map[string]tftypes.Value{"custom_install_command": str("make deps"), "package_manager": str("custom")},
