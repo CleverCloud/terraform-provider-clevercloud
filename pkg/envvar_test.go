@@ -85,3 +85,24 @@ func TestBoolEnv(t *testing.T) {
 		t.Errorf("an absent variable must leave the attribute as is, got %s", f.on)
 	}
 }
+
+func TestInt64Env(t *testing.T) {
+	type port struct{ p types.Int64 }
+	m := NewInt64Env[port]("PORT",
+		func(s *port) types.Int64 { return s.p },
+		func(s *port, v types.Int64) { s.p = v })
+
+	for value, want := range map[types.Int64]string{types.Int64Value(8080): "8080", types.Int64Value(0): "0", types.Int64Null(): "", types.Int64Unknown(): ""} {
+		if name, got := m.ToEnv(&port{p: value}); name != "PORT" || got != want {
+			t.Errorf("ToEnv(%s) = %s, %q, want PORT, %q", value, name, got, want)
+		}
+	}
+
+	for value, want := range map[string]types.Int64{"8080": types.Int64Value(8080), "": types.Int64Null(), "abc": types.Int64Null()} {
+		s := &port{p: types.Int64Value(1)}
+		m.FromEnv(s, value)
+		if s.p != want {
+			t.Errorf("FromEnv(%q) = %s, want %s", value, s.p, want)
+		}
+	}
+}
