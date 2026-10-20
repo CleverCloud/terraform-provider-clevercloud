@@ -101,7 +101,7 @@ resource "clevercloud_linux" "myapp" {
 
 ### Optional
 
-- `app_folder` (String) Folder in which the application is located (inside the git repository) (`APP_FOLDER`)
+- `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_command` (String) The command to run during the build phase.
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
