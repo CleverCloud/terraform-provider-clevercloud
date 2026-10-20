@@ -368,49 +368,64 @@ func WithBlockRuntimeCommons(runtimeSpecifics map[string]schema.Block) map[strin
 	return m
 }
 
+// HooksEnv maps each hook to its environment variable.
+var HooksEnv = []pkg.EnvVarMapping[*Hooks]{PreBuildHook{}, PostBuildHook{}, PreRunHook{}, RunSucceededHook{}, RunFailedHook{}}
+
+type PreBuildHook struct{}
+
+func (PreBuildHook) FromEnv(h *Hooks, v string) { h.PreBuild = pkg.FromStr(v) }
+func (PreBuildHook) ToEnv(h *Hooks) (string, string) {
+	return app.CC_PRE_BUILD_HOOK, h.PreBuild.ValueString()
+}
+
+type PostBuildHook struct{}
+
+func (PostBuildHook) FromEnv(h *Hooks, v string) { h.PostBuild = pkg.FromStr(v) }
+func (PostBuildHook) ToEnv(h *Hooks) (string, string) {
+	return app.CC_POST_BUILD_HOOK, h.PostBuild.ValueString()
+}
+
+type PreRunHook struct{}
+
+func (PreRunHook) FromEnv(h *Hooks, v string) { h.PreRun = pkg.FromStr(v) }
+func (PreRunHook) ToEnv(h *Hooks) (string, string) {
+	return app.CC_PRE_RUN_HOOK, h.PreRun.ValueString()
+}
+
+type RunSucceededHook struct{}
+
+func (RunSucceededHook) FromEnv(h *Hooks, v string) { h.RunSucceed = pkg.FromStr(v) }
+func (RunSucceededHook) ToEnv(h *Hooks) (string, string) {
+	return app.CC_RUN_SUCCEEDED_HOOK, h.RunSucceed.ValueString()
+}
+
+type RunFailedHook struct{}
+
+func (RunFailedHook) FromEnv(h *Hooks, v string) { h.RunFailed = pkg.FromStr(v) }
+func (RunFailedHook) ToEnv(h *Hooks) (string, string) {
+	return app.CC_RUN_FAILED_HOOK, h.RunFailed.ValueString()
+}
+
 func (hooks *Hooks) ToEnv() map[string]string {
 	m := map[string]string{}
-
 	if hooks == nil {
 		return m
 	}
-
-	pkg.IfIsSetStr(hooks.PreBuild, func(script string) { m[app.CC_PRE_BUILD_HOOK] = script })
-	pkg.IfIsSetStr(hooks.PostBuild, func(script string) { m[app.CC_POST_BUILD_HOOK] = script })
-	pkg.IfIsSetStr(hooks.PreRun, func(script string) { m[app.CC_PRE_RUN_HOOK] = script })
-	pkg.IfIsSetStr(hooks.RunFailed, func(script string) { m[app.CC_RUN_FAILED_HOOK] = script })
-	pkg.IfIsSetStr(hooks.RunSucceed, func(script string) { m[app.CC_RUN_SUCCEEDED_HOOK] = script })
-
+	pkg.WriteEnv(m, hooks, HooksEnv...)
 	return m
 }
 
 // FromEnvHooks extracts hook variables from environment and removes them from the map
 func FromEnvHooks(env *helperMaps.Map[string, string], oldValue *Hooks) *Hooks {
-	hasPreBuild := env.Has(app.CC_PRE_BUILD_HOOK)
-	hasPostBuild := env.Has(app.CC_POST_BUILD_HOOK)
-	hasPreRun := env.Has(app.CC_PRE_RUN_HOOK)
-	hasRunFailed := env.Has(app.CC_RUN_FAILED_HOOK)
-	hasRunSucceed := env.Has(app.CC_RUN_SUCCEEDED_HOOK)
-
-	hasAnyHook := hasPreBuild || hasPostBuild || hasPreRun || hasRunFailed || hasRunSucceed
-
-	if !hasAnyHook {
-		// No hooks in API
-		if oldValue == nil {
-			// User never specified hooks
-			return nil
-		}
-		// User had hooks, but they're gone from API - return empty hooks block
+	hasAnyHook := slices.ContainsFunc(pkg.EnvNames(&Hooks{}, HooksEnv...), env.Has)
+	if !hasAnyHook && oldValue == nil {
+		// No hooks in API and the user never specified hooks; when the user
+		// had some, an empty hooks block reports they are gone.
+		return nil
 	}
 
-	hooks := &Hooks{
-		PreBuild:   pkg.FromStrPtr(env.PopPtr(app.CC_PRE_BUILD_HOOK)),
-		PostBuild:  pkg.FromStrPtr(env.PopPtr(app.CC_POST_BUILD_HOOK)),
-		PreRun:     pkg.FromStrPtr(env.PopPtr(app.CC_PRE_RUN_HOOK)),
-		RunFailed:  pkg.FromStrPtr(env.PopPtr(app.CC_RUN_FAILED_HOOK)),
-		RunSucceed: pkg.FromStrPtr(env.PopPtr(app.CC_RUN_SUCCEEDED_HOOK)),
-	}
-
+	hooks := &Hooks{}
+	pkg.ReadEnv(env, hooks, HooksEnv...)
 	return hooks
 }
 
@@ -485,6 +500,18 @@ func (integrations *Integrations) ToEnv(ctx context.Context, diags *diag.Diagnos
 	})
 
 	return m
+}
+
+// IntegrationsEnvNames lists the environment variables the integrations
+// block manages.
+var IntegrationsEnvNames = []string{
+	app.CC_REDIRECTIONIO_PROJECT_KEY, app.CC_REDIRECTIONIO_INSTANCE_NAME, CC_REDIRECTIONIO_BACKEND_PORT,
+	app.NEW_RELIC_LICENSE_KEY, app.NEW_RELIC_APP_NAME,
+	app.CC_CLAMAV,
+	app.CC_VARNISH_FILE, app.CC_VARNISH_STORAGE_SIZE,
+	app.CC_METRICS_PROMETHEUS_USER, app.CC_METRICS_PROMETHEUS_PASSWORD, app.CC_METRICS_PROMETHEUS_PATH,
+	app.CC_METRICS_PROMETHEUS_PORT, app.CC_METRICS_PROMETHEUS_RESPONSE_TIMEOUT,
+	app.CC_ENABLE_PGPOOL,
 }
 
 // FromEnvIntegrations syncs Integrations block with environment variables from API

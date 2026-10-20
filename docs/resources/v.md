@@ -89,7 +89,7 @@ resource "clevercloud_v" "myapp" {
 
 ### Optional
 
-- `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `app_folder` (String) Folder in which the application is located (inside the git repository) (`APP_FOLDER`)
 - `binary` (String) The name of the output binary file. Default: `${APP_HOME}/v_bin_${APP_ID}`
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.

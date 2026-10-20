@@ -45,7 +45,7 @@ resource "clevercloud_docker" "docker_instance" {
 
 ### Optional
 
-- `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `app_folder` (String) Folder in which the application is located (inside the git repository) (`APP_FOLDER`)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `container_port` (Number) Set to custom HTTP port if your Docker container runs on custom port
 - `container_port_tcp` (Number) Set to custom TCP port if your Docker container runs on custom port.

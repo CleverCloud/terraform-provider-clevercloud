@@ -5,11 +5,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
+	"github.com/miton18/helper/maps"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.dev/sdk/app"
 )
 
@@ -27,8 +30,7 @@ func validateEnvironment(t *testing.T, env tftypes.Value) []string {
 	}
 
 	res := &resource.ValidateConfigResponse{}
-	ReservedEnvironment(map[string]string{app.CC_NODE_VERSION: "node_version"}).
-		ValidateResource(ctx, resource.ValidateConfigRequest{Config: config}, res)
+	ReservedEnvironment(app.CC_NODE_VERSION).ValidateResource(ctx, resource.ValidateConfigRequest{Config: config}, res)
 
 	var details []string
 	for _, d := range res.Diagnostics.Errors() {
@@ -37,25 +39,21 @@ func validateEnvironment(t *testing.T, env tftypes.Value) []string {
 	return details
 }
 
-func envValue(values map[string]tftypes.Value) tftypes.Value {
-	return tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, values)
-}
-
 func TestReservedEnvironment(t *testing.T) {
-	errs := validateEnvironment(t, envValue(map[string]tftypes.Value{
+	errs := validateEnvironment(t, tftypes.NewValue(tftypes.Map{ElementType: tftypes.String}, map[string]tftypes.Value{
 		app.CC_NODE_VERSION:   tftypes.NewValue(tftypes.String, "22"),
-		app.APP_FOLDER:        tftypes.NewValue(tftypes.String, "web"),
+		app.CC_CLAMAV:         tftypes.NewValue(tftypes.String, "true"),
 		app.CC_PRE_BUILD_HOOK: tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
 		"MY_VARIABLE":         tftypes.NewValue(tftypes.String, "free"),
 	}))
 
-	want := []string{`APP_FOLDER is managed by the "app_folder"`, `CC_NODE_VERSION is managed by the "node_version"`, `CC_PRE_BUILD_HOOK is managed by the "hooks.pre_build"`}
+	want := []string{app.CC_CLAMAV, app.CC_NODE_VERSION, app.CC_PRE_BUILD_HOOK}
 	if len(errs) != len(want) {
 		t.Fatalf("got %d errors %v, want %d", len(errs), errs, len(want))
 	}
-	for i, prefix := range want {
-		if !strings.HasPrefix(errs[i], prefix) {
-			t.Errorf("error %d = %q, want it to start with %q", i, errs[i], prefix)
+	for i, name := range want {
+		if !strings.HasPrefix(errs[i], name+" is managed by an attribute") {
+			t.Errorf("error %d = %q, want it about %s", i, errs[i], name)
 		}
 	}
 }
@@ -68,5 +66,28 @@ func TestReservedEnvironment_nullOrUnknown(t *testing.T) {
 		if errs := validateEnvironment(t, env); len(errs) != 0 {
 			t.Errorf("%s environment: got errors %v", name, errs)
 		}
+	}
+}
+
+// testPlan is the smallest RuntimePlan: a Runtime and no variable of its own.
+type testPlan struct{ Runtime }
+
+func (p *testPlan) ToEnv(context.Context, *diag.Diagnostics) map[string]string { return nil }
+func (p *testPlan) FromEnv(context.Context, *maps.Map[string, string], *diag.Diagnostics) {
+}
+
+func TestOnRuntime(t *testing.T) {
+	m := OnRuntime[*testPlan](AppFolder{})
+
+	p := &testPlan{}
+	p.AppFolder = types.StringValue("web")
+	if name, value := m.ToEnv(p); name != app.APP_FOLDER || value != "web" {
+		t.Errorf("ToEnv = %s, %s", name, value)
+	}
+
+	env := maps.NewMap(map[string]string{app.APP_FOLDER: "api"})
+	pkg.ReadEnv(env, p, m)
+	if p.AppFolder.ValueString() != "api" || env.Has(app.APP_FOLDER) {
+		t.Errorf("ReadEnv: app_folder = %s, env = %v", p.AppFolder, env)
 	}
 }
