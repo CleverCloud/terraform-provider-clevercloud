@@ -30,13 +30,19 @@ See [PHP with Apache product specification](https://www.clever.cloud/developers/
 
 ### Optional
 
+- `apache_headers_size` (Number) Maximum size of the HTTP request headers Apache accepts, in kilobytes, between 8 (default) and 256 (`CC_APACHE_HEADERS_SIZE`)
+- `apm_agent_enabled` (Boolean) Enable the Elastic APM PHP extension; the platform enables it on its own when an Elastic APM server is configured, set `false` to prevent it (`ENABLE_ELASTIC_APM_AGENT`)
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
+- `async_app_bucket` (Boolean) Mount the default application FS bucket asynchronously (`CC_PHP_ASYNC_APP_BUCKET`)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `cgi_implementation` (String) Apache FastCGI module running PHP, `proxy_fcgi` (default) or `fastcgi` (`CC_CGI_IMPLEMENTATION`)
+- `composer_version` (String) Composer version installing the dependencies, `2` or `lts` (`CC_COMPOSER_VERSION`)
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))
 - `description` (String) Application description
-- `dev_dependencies` (Boolean) Install development dependencies
+- `dev_dependencies` (Boolean) Install development dependencies (`CC_PHP_DEV_DEPENDENCIES`)
+- `disable_app_bucket` (Boolean) Do not mount the default application FS bucket at all (`CC_PHP_DISABLE_APP_BUCKET`)
 - `environment` (Map of String, Sensitive) Environment variables injected into the application.
 
 **Note:** Null values are not allowed. To conditionally include variables, use a for expression:
@@ -48,17 +54,25 @@ environment = { for k, v in {
 ```
 - `exposed_environment` (Map of String, Sensitive) Environment variables other linked applications will be able to use
 - `hooks` (Block, Optional) (see [below for nested schema](#nestedblock--hooks))
+- `http_timeout` (Number) Timeout of the HTTP requests between the reverse proxy and PHP, in seconds, 180 by default (`HTTP_TIMEOUT`)
 - `integrations` (Attributes) Third-party integrations configuration (see [below for nested schema](#nestedatt--integrations))
+- `max_input_vars` (Number) Maximum number of input variables PHP accepts per request (`MAX_INPUT_VARS`)
+- `memory_limit` (Number) Maximum memory a PHP script can allocate, in MiB; computed from the flavor by default (`MEMORY_LIMIT`)
 - `networkgroups` (Attributes Set) List of networkgroups the application must be part of (see [below for nested schema](#nestedatt--networkgroups))
-- `php_version` (String) PHP version (Default: 8)
+- `opcache_interned_strings_buffer` (Number) Memory used to store the OPcache interned strings, in MB (`CC_OPCACHE_INTERNED_STRINGS_BUFFER`)
+- `opcache_max_accelerated_files` (Number) Maximum number of PHP files stored in the OPcache; computed from the flavor by default (`CC_OPCACHE_MAX_ACCELERATED_FILES`)
+- `opcache_memory` (Number) Memory allocated to the OPcache, in MB; computed from the instance memory by default (`CC_OPCACHE_MEMORY`)
+- `opcache_preload` (String) Path of a PHP script preloaded into the OPcache at server startup (`CC_OPCACHE_PRELOAD`)
+- `php_version` (String) PHP version (Default: 8) (`CC_PHP_VERSION`)
+- `realpath_cache_ttl` (Number) Time-to-live of the PHP realpath cache entries, in seconds, 120 by default (`CC_REALPATH_CACHE_TTL`)
 - `redirect_https` (Boolean) Redirect client from plain to TLS port
 - `redirection` (Attributes) Expose the application local port 4040 on an external TCP port ([TCP redirections](https://www.clever.cloud/developers/doc/administrate/tcp-redirections/)) (see [below for nested schema](#nestedatt--redirection))
-- `redis_sessions` (Boolean) Use a linked Redis instance to store sessions (Default: false)
+- `redis_sessions` (Boolean) Use a linked Redis instance to store sessions (Default: false) (`SESSION_TYPE`)
 - `region` (String) Geographical region where the database will be deployed
 - `sticky_sessions` (Boolean) Enable sticky sessions, use it when your client sessions are instances scoped
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
 - `vhosts` (Attributes Set) List of virtual hosts (see [below for nested schema](#nestedatt--vhosts))
-- `webroot` (String) Define the DocumentRoot of your project (default: ".")
+- `webroot` (String) Define the DocumentRoot of your project (default: ".") (`CC_WEBROOT`)
 
 ### Read-Only
 
