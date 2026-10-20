@@ -38,28 +38,43 @@ var envVars = []pkg.EnvVarMapping[*NodeJS]{
 }
 
 func (v EnvVar) FromEnv(n *NodeJS, value string) {
-	if v == DevDependencies {
-		// written as "install" when true; an absent variable leaves the
-		// attribute as is
-		if value == "install" {
-			n.DevDependencies = types.BoolValue(true)
-		}
-		return
+	switch v {
+	case DevDependencies:
+		devDependenciesFromEnv(n, value)
+	default:
+		*v.attribute(n) = pkg.FromStr(value)
 	}
-	*v.attribute(n) = pkg.FromStr(value)
 }
 
 func (v EnvVar) ToEnv(n *NodeJS) (string, string) {
-	if v == DevDependencies {
-		if n.DevDependencies.ValueBool() {
-			return string(v), "install"
-		}
-		return string(v), ""
+	switch v {
+	case DevDependencies:
+		return string(v), devDependenciesToEnv(n)
+	default:
+		return string(v), v.attribute(n).ValueString()
 	}
-	return string(v), v.attribute(n).ValueString()
 }
 
-// attribute returns the string attribute v backs.
+// devDependenciesFromEnv sets dev_dependencies to true when
+// CC_NODE_DEV_DEPENDENCIES is "install". Any other value, or an absent
+// variable, leaves the attribute as it is.
+func devDependenciesFromEnv(n *NodeJS, value string) {
+	if value == "install" {
+		n.DevDependencies = types.BoolValue(true)
+	}
+}
+
+// devDependenciesToEnv returns "install" when dev_dependencies is true, and
+// nothing otherwise so the variable is not written.
+func devDependenciesToEnv(n *NodeJS) string {
+	if n.DevDependencies.ValueBool() {
+		return "install"
+	}
+	return ""
+}
+
+// attribute returns the string attribute v backs; DevDependencies, a
+// boolean, has its own functions.
 func (v EnvVar) attribute(n *NodeJS) *types.String {
 	switch v {
 	case StartScript:
