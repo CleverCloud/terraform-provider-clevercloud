@@ -6,7 +6,6 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
-	"go.clever-cloud.dev/sdk/app"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -36,25 +35,25 @@ func (r ResourceLinux) Schema(ctx context.Context, req resource.SchemaRequest, r
 		Attributes: application.WithRuntimeCommons(map[string]schema.Attribute{
 			"run_command": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "The command to start your application.",
+				MarkdownDescription: "The command to start your application (`CC_RUN_COMMAND`).",
 			},
 			"build_command": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "The command to run during the build phase.",
+				MarkdownDescription: "The command to run during the build phase (`CC_BUILD_COMMAND`).",
 			},
 			"makefile": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Custom Makefile name or path.",
+				MarkdownDescription: "Custom Makefile name or path (`CC_MAKEFILE`).",
 			},
 			"mise_file_path": schema.StringAttribute{
 				Optional:            true,
-				MarkdownDescription: "Custom path for the mise.toml configuration file (relative path).",
+				MarkdownDescription: "Custom path for the mise.toml configuration file (relative path) (`CC_MISE_FILE_PATH`).",
 			},
 			"disable_mise": schema.BoolAttribute{
 				Optional:            true,
 				Computed:            true,
 				Default:             booldefault.StaticBool(false),
-				MarkdownDescription: "Disable Mise tool installation (Default: false).",
+				MarkdownDescription: "Disable Mise tool installation (Default: false) (`CC_DISABLE_MISE`).",
 			},
 		}),
 		Blocks: attributes.WithBlockRuntimeCommons(map[string]schema.Block{}),
@@ -73,16 +72,7 @@ func (l *Linux) ToEnv(ctx context.Context, diags *diag.Diagnostics) map[string]s
 	}
 	env = pkg.Merge(env, customEnv)
 
-	pkg.IfIsSetStr(l.AppFolder, func(s string) { env[app.APP_FOLDER] = s })
-	pkg.IfIsSetStr(l.RunCommand, func(s string) { env[app.CC_RUN_COMMAND] = s })
-	pkg.IfIsSetStr(l.BuildCommand, func(s string) { env[app.CC_BUILD_COMMAND] = s })
-	pkg.IfIsSetStr(l.Makefile, func(s string) { env["CC_MAKEFILE"] = s })
-	pkg.IfIsSetStr(l.MiseFilePath, func(s string) { env[app.CC_MISE_FILE_PATH] = s })
-	pkg.IfIsSetB(l.DisableMise, func(disable bool) {
-		if disable {
-			env[app.CC_DISABLE_MISE] = "true"
-		}
-	})
+	pkg.WriteEnv(env, l, envVars...)
 
 	env = pkg.Merge(env, l.Hooks.ToEnv())
 	env = pkg.Merge(env, l.Integrations.ToEnv(ctx, diags))
@@ -95,12 +85,7 @@ func (l *Linux) FromEnv(ctx context.Context, env *maps.Map[string, string], diag
 		return
 	}
 
-	l.AppFolder = pkg.FromStrPtr(env.PopPtr(app.APP_FOLDER))
-	l.RunCommand = pkg.FromStrPtr(env.PopPtr(app.CC_RUN_COMMAND))
-	l.BuildCommand = pkg.FromStrPtr(env.PopPtr(app.CC_BUILD_COMMAND))
-	l.Makefile = pkg.FromStrPtr(env.PopPtr("CC_MAKEFILE"))
-	l.MiseFilePath = pkg.FromStrPtr(env.PopPtr(app.CC_MISE_FILE_PATH))
-	pkg.SetBool(&l.DisableMise, env.PopPtr(app.CC_DISABLE_MISE), "true")
+	pkg.ReadEnv(env, l, envVars...)
 
 	l.Integrations = attributes.FromEnvIntegrations(ctx, env, l.Integrations, diags)
 }
