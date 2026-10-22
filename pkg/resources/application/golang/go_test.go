@@ -212,6 +212,26 @@ func waitForDeploymentComplete(t *testing.T, cc *client.Client, orgID, appID str
 	}
 }
 
+// goServer returns a main.go serving version on port 8080.
+func goServer(version string) string {
+	return `package main
+
+import (
+	"fmt"
+	"net/http"
+)
+
+func main() {
+	http.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+		fmt.Fprintln(w, "` + version + `")
+	})
+	if err := http.ListenAndServe(":8080", nil); err != nil {
+		panic(err)
+	}
+}
+`
+}
+
 // TestAccGo_singleDeploymentOnEnvAndGitChange tests that when both env vars and git commit change,
 // only a single deployment is triggered (not two separate deployments)
 // This is a regression test for https://github.com/CleverCloud/terraform-provider-clevercloud/issues/179
@@ -241,9 +261,17 @@ func TestAccGo_singleDeploymentOnEnvAndGitChange(t *testing.T) {
 		t.Fatalf("failed to get worktree: %v", err)
 	}
 
-	// Create initial file and commit
+	// Create initial files and commit: a module listening on 8080, so both
+	// deployments succeed instead of waiting for the health check to give up
+	if err := os.WriteFile(filepath.Join(repoPath, "go.mod"), []byte("module example.com/app\n\ngo 1.22\n"), 0644); err != nil {
+		t.Fatalf("failed to write go.mod: %v", err)
+	}
+	if _, err := worktree.Add("go.mod"); err != nil {
+		t.Fatalf("failed to add go.mod: %v", err)
+	}
+
 	mainFile := filepath.Join(repoPath, "main.go")
-	if err := os.WriteFile(mainFile, []byte("package main\n\nfunc main() {\n\tprintln(\"v1\")\n}\n"), 0644); err != nil {
+	if err := os.WriteFile(mainFile, []byte(goServer("v1")), 0644); err != nil {
 		t.Fatalf("failed to write main.go: %v", err)
 	}
 
@@ -264,7 +292,7 @@ func TestAccGo_singleDeploymentOnEnvAndGitChange(t *testing.T) {
 	t.Logf("Initial commit: %s", commit1)
 
 	// Create second commit upfront (before test runs)
-	if err := os.WriteFile(mainFile, []byte("package main\n\nfunc main() {\n\tprintln(\"v2\")\n}\n"), 0644); err != nil {
+	if err := os.WriteFile(mainFile, []byte(goServer("v2")), 0644); err != nil {
 		t.Fatalf("failed to update main.go: %v", err)
 	}
 
@@ -394,6 +422,12 @@ func TestAccGo_singleDeploymentOnEnvAndGitChange(t *testing.T) {
 						return fmt.Errorf(
 							"expected exactly %d Git deployment(s), but got %d new. This suggests env change and git change triggered separate deployments (bug #179)",
 							2, newDeploymentCount)
+					}
+
+					for _, deployment := range deployments {
+						if deployment.State != "OK" {
+							return fmt.Errorf("deployment %s ended in %s, want OK", deployment.UUID, deployment.State)
+						}
 					}
 
 					return nil
