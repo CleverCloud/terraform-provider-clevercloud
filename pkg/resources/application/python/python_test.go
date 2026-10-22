@@ -33,7 +33,9 @@ func TestAccPython_basic(t *testing.T) {
 	rName2 := acctest.RandomWithPrefix("tf-test-python-2")
 	fullName := fmt.Sprintf("clevercloud_python.%s", rName)
 	fullName2 := fmt.Sprintf("clevercloud_python.%s", rName2)
-	vhost := "bubhbfbnriubielrbeuvieuv.com"
+	// Unique per run: a fixed domain collides with concurrent runs and with
+	// apps leaked by a failed run ("already taken").
+	vhost := fmt.Sprintf("%s.com", rName)
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 	pythonBlock := helper.NewRessource(
 		"clevercloud_python",
@@ -180,10 +182,8 @@ func TestAccPython_basic(t *testing.T) {
 						"max_instance_count": 2,
 						"smallest_flavor":    "XS",
 						"biggest_flavor":     "M",
-						"environment": map[string]any{
-							app.CC_PYTHON_MODULE:  "app:app",
-							app.CC_PYTHON_BACKEND: "gunicorn",
-						},
+						"module":             "app:app",
+						"backend":            "gunicorn",
 					}),
 					helper.SetBlockValues(
 						"deployment",
