@@ -29,7 +29,7 @@ func TestReadFromAPI_Locale(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			state := PostgreSQL{Locale: tc.state}
-			r.readFromAPI(t.Context(), &state, tmp.PostgreSQL{Locale: tc.api})
+			r.readFromAPI(t.Context(), &state, tmp.PostgresqlAddonView{Locale: pkg.Ptr(tc.api)})
 			if got := state.Locale.ValueString(); got != tc.expected {
 				t.Errorf("locale = %q, expected %q", got, tc.expected)
 			}

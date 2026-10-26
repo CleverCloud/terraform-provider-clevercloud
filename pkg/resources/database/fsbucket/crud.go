@@ -10,6 +10,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 // Create a new resource
@@ -33,35 +35,35 @@ func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateReques
 	}
 	plan := prov.Plans[0]
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       fsbucket.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: "fs-bucket",
 		Region:     fsbucket.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
 	}
 	addonRes := res.Payload()
 
-	fsbucket.ID = pkg.FromStr(addonRes.RealID)
-	fsbucket.Name = pkg.FromStr(addonRes.Name)
+	fsbucket.ID = pkg.FromStr(pkg.Deref(addonRes.RealID))
+	fsbucket.Name = pkg.FromStr(pkg.Deref(addonRes.Name))
 	fsbucket.Region = pkg.FromStr(addonRes.Region)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, fsbucket)...)
 
 	tflog.Debug(ctx, "get addon env vars", map[string]any{"fsbucket": addonRes.RealID})
-	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), addonRes.RealID)
+	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(pkg.Deref(addonRes.RealID)).Env().Getaddonenvbyorgaandaddonid(ctx)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon env vars", envRes.Error().Error())
 		return
 	}
 
 	envVars := envRes.Payload()
-	envMap := pkg.Reduce(*envVars, map[string]types.String{}, func(m map[string]types.String, v tmp.EnvVar) map[string]types.String {
+	envMap := pkg.Reduce(*envVars, map[string]types.String{}, func(m map[string]types.String, v models.AddonEnvironmentView) map[string]types.String {
 		m[v.Name] = pkg.FromStr(v.Value)
 		return m
 	})
@@ -89,7 +91,7 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), fsbucket.ID.ValueString())
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(fsbucket.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -100,18 +102,18 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 	addon := addonRes.Payload()
 
-	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), fsbucket.ID.ValueString())
+	addonEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(fsbucket.ID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon env", addonEnvRes.Error().Error())
 		return
 	}
 	addonEnv := addonEnvRes.Payload()
-	addonMap := pkg.Reduce(*addonEnv, map[string]types.String{}, func(m map[string]types.String, v tmp.EnvVar) map[string]types.String {
+	addonMap := pkg.Reduce(*addonEnv, map[string]types.String{}, func(m map[string]types.String, v models.AddonEnvironmentView) map[string]types.String {
 		m[v.Name] = pkg.FromStr(v.Value)
 		return m
 	})
 
-	fsbucket.Name = pkg.FromStr(addon.Name)
+	fsbucket.Name = pkg.FromStr(pkg.Deref(addon.Name))
 	fsbucket.Region = pkg.FromStr(addon.Region)
 	fsbucket.Host = addonMap["BUCKET_HOST"]
 	fsbucket.FTPUsername = addonMap["BUCKET_FTP_USERNAME"]
@@ -140,14 +142,14 @@ func (r *ResourceFSBucket) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update FSBucket", addonRes.Error().Error())
 		return
 	}
-	state.Name = pkg.FromStr(addonRes.Payload().Name)
+	state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 
 	if !plan.Tags.Equal(state.Tags) {
 		state.Tags = resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
@@ -164,7 +166,7 @@ func (r *ResourceFSBucket) Delete(ctx context.Context, req resource.DeleteReques
 	}
 	tflog.Debug(ctx, "FSBUCKET DELETE", map[string]any{"fsbucket": fsbucket})
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), fsbucket.ID.ValueString())
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(fsbucket.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 	}
@@ -173,7 +175,7 @@ func (r *ResourceFSBucket) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), fsbucket.ID.ValueString())
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(fsbucket.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

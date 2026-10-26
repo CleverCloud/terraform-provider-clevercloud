@@ -12,15 +12,18 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
+	"go.clever-cloud.com/terraform-provider/pkg/retry"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/applications"
 )
 
 // CreateReq represents the request structure for creating an application
 type CreateReq struct {
 	Client       *client.Client
 	Organization string
-	Application  tmp.CreateAppRequest
+	Application  models.WannabeApplication
 	Environment  map[string]string
 	VHosts       []string
 	Deployment   *Deployment
@@ -28,7 +31,7 @@ type CreateReq struct {
 
 // CreateRes represents the response from creating an application
 type CreateRes struct {
-	Application tmp.AppResponse
+	Application models.ApplicationView
 	// TargetCommit is the commit resolved by the git deployment on Update
 	// (pushed or already running), empty when no deployment is configured
 	TargetCommit string
@@ -42,16 +45,20 @@ type Deployment struct {
 	Username, Password *string
 }
 
-func (r *CreateRes) GetApp() *tmp.AppResponse {
+func (r *CreateRes) GetApp() *models.ApplicationView {
 	return &r.Application
 }
 
 func (r *CreateRes) GetBuildFlavor() types.String {
-	if !r.Application.SeparateBuild {
+	return buildFlavor(&r.Application)
+}
+
+// buildFlavor is the build flavor of an application, null without a separate build.
+func buildFlavor(app *models.ApplicationView) types.String {
+	if !app.SeparateBuild {
 		return types.StringNull()
 	}
-
-	return types.StringValue(r.Application.BuildFlavor.Name)
+	return types.StringValue(pkg.FlavorName(app.BuildFlavor))
 }
 
 var githubOAuthService = "github"
@@ -61,7 +68,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	diags := diag.Diagnostics{}
 	res := &CreateRes{}
 
-	req.Application.SeparateBuild = req.Application.BuildFlavor != ""
+	req.Application.SeparateBuild = pkg.Ptr(pkg.Deref(req.Application.BuildFlavor) != "")
 
 	if req.Deployment != nil &&
 		req.Deployment.Commit != nil &&
@@ -75,20 +82,22 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 		}
 		apps := *appsRes.Payload()
 
-		app := pkg.First(apps, func(app tmp.GithubApplication) bool {
-			return app.GitURL == req.Deployment.Repository
+		app := pkg.First(apps, func(app tmp.OAuthApplicationView) bool {
+			return pkg.Deref(app.GitURL) == req.Deployment.Repository
 		})
 		if app == nil {
 			diags.AddError("failed to get repository information", "requested repository does not exists or is not visible")
 			return res, diags
 		}
 
-		req.Application.GithubApp = app
-		req.Application.OAuthService = &githubOAuthService
-		req.Application.OAuthAppID = &app.ID
+		// The platform identifies the repository by oauthService and oauthAppId.
+		req.Application.OauthService = &githubOAuthService
+		req.Application.OauthAppID = &app.ID
 	}
 
-	appRes := tmp.CreateAppWithRetry(ctx, req.Client, req.Organization, req.Application)
+	appRes := retry.WithRetry(ctx, func() client.Response[models.ApplicationView] {
+		return pkg.SDK(req.Client).V2().Organisations().ID(req.Organization).Applications().Createorganisationapplication(ctx, &req.Application)
+	}, fmt.Sprintf("CreateApp(%s)", pkg.Deref(req.Application.Name)))
 	if appRes.HasError() {
 		diags.AddError("failed to create application", appRes.Error().Error())
 		tflog.Error(ctx, "failed to create app", map[string]any{"error": appRes.Error().Error(), "payload": fmt.Sprintf("%+v", req.Application)})
@@ -106,7 +115,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	SyncVHostsOnCreate(ctx, req.Client, req.Organization, req.VHosts, &diags, res.Application.ID)
 
 	// This is dirty, but we need a refresh
-	vhostsRes := tmp.GetAppVhosts(ctx, req.Client, req.Organization, res.Application.ID)
+	vhostsRes := pkg.SDK(req.Client).V2().Organisations().ID(req.Organization).Applications().Appid(res.Application.ID).Vhosts().Listorganisationapplicationvirtualhosts(ctx)
 	if vhostsRes.HasError() {
 		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
 		return res, diags
@@ -137,26 +146,10 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 	createReq := CreateReq{
 		Client:       resource.Client(),
 		Organization: resource.Organization(),
-		Application: tmp.CreateAppRequest{
-			Name:            runtime.Name.ValueString(),
-			Deploy:          "git",
-			Description:     runtime.Description.ValueString(),
-			InstanceType:    instance.Type,
-			InstanceVariant: instance.Variant.ID,
-			InstanceVersion: instance.Version,
-			BuildFlavor:     runtime.BuildFlavor.ValueString(),
-			MinFlavor:       runtime.SmallestFlavor.ValueString(),
-			MaxFlavor:       runtime.BiggestFlavor.ValueString(),
-			MinInstances:    runtime.MinInstanceCount.ValueInt64(),
-			MaxInstances:    runtime.MaxInstanceCount.ValueInt64(),
-			StickySessions:  runtime.StickySessions.ValueBool(),
-			ForceHttps:      FromForceHTTPS(runtime.RedirectHTTPS.ValueBool()),
-			Zone:            runtime.Region.ValueString(),
-			CancelOnPush:    false,
-		},
-		Environment: environment,
-		VHosts:      vhosts,
-		Deployment:  plan.ToDeployment(resource.GitAuth()),
+		Application:  wannabeApplication(runtime, instance),
+		Environment:  environment,
+		VHosts:       vhosts,
+		Deployment:   plan.ToDeployment(resource.GitAuth()),
 	}
 
 	// Call common Create function
@@ -189,8 +182,8 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 //		    "CC_TROUBLESHOOT":"must be one of: [troubleshoot, true, 1, yes, enable, enabled, on] (= true) or [off, disable, no, false, disabled, 0] (= false)"
 //	   }
 //		}
-func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID, applicationID string, envs map[string]string, diags *diag.Diagnostics) client.Response[any] {
-	res := tmp.UpdateAppEnv(ctx, cc, organisationID, applicationID, envs, true)
+func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID, applicationID string, envs map[string]string, diags *diag.Diagnostics) client.Response[models.ApplicationView] {
+	res := pkg.SDK(cc).V2().Organisations().ID(organisationID).Applications().Appid(applicationID).Env().Updateorganisationapplicationenvironmentvariables(ctx, envs, applications.WithCheck(true))
 	if !res.HasError() {
 		return res
 	}
@@ -206,5 +199,29 @@ func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID, applic
 		}
 	}
 
-	return tmp.UpdateAppEnv(ctx, cc, organisationID, applicationID, envs, false)
+	return pkg.SDK(cc).V2().Organisations().ID(organisationID).Applications().Appid(applicationID).Env().Updateorganisationapplicationenvironmentvariables(ctx, envs)
+}
+
+// wannabeApplication is the payload creating or updating an application. Every field
+// is set, as the hand-written payload this replaces always sent them all.
+func wannabeApplication(runtime *Runtime, instance *tmp.AvailableInstanceView) models.WannabeApplication {
+	return models.WannabeApplication{
+		Name:           pkg.Ptr(runtime.Name.ValueString()),
+		Deploy:         pkg.Ptr("git"),
+		Description:    pkg.Ptr(runtime.Description.ValueString()),
+		BuildFlavor:    pkg.Ptr(runtime.BuildFlavor.ValueString()),
+		MinFlavor:      pkg.Ptr(runtime.SmallestFlavor.ValueString()),
+		MaxFlavor:      pkg.Ptr(runtime.BiggestFlavor.ValueString()),
+		MinInstances:   pkg.Ptr(models.InstanceCount(runtime.MinInstanceCount.ValueInt64())),
+		MaxInstances:   pkg.Ptr(models.InstanceCount(runtime.MaxInstanceCount.ValueInt64())),
+		StickySessions: pkg.Ptr(runtime.StickySessions.ValueBool()),
+		ForceHTTPS:     pkg.Ptr(FromForceHTTPS(runtime.RedirectHTTPS.ValueBool())),
+		Zone:           pkg.Ptr(runtime.Region.ValueString()),
+		CancelOnPush:   pkg.Ptr(false),
+		SeparateBuild:  pkg.Ptr(false),
+		// Create and Update stop on the diagnostics of the lookup, so instance is set here.
+		InstanceType:    pkg.Ptr(instance.Type),
+		InstanceVariant: pkg.Ptr(instance.Variant.ID),
+		InstanceVersion: pkg.Ptr(instance.Version),
+	}
 }

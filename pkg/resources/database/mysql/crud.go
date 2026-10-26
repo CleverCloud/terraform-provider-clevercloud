@@ -5,14 +5,19 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 func (r *ResourceMySQL) Configure(ctx context.Context, req resource.ConfigureRequest, resp *resource.ConfigureResponse) {
@@ -38,7 +43,7 @@ func (r *ResourceMySQL) FetchMysqlInfos(ctx context.Context, diags *diag.Diagnos
 	}
 }
 
-func (r *ResourceMySQL) Infos(ctx context.Context, diags *diag.Diagnostics) *tmp.MysqlInfos {
+func (r *ResourceMySQL) Infos(ctx context.Context, diags *diag.Diagnostics) *tmp.ProvidersConsoleView {
 	if r.infos == nil {
 		r.FetchMysqlInfos(ctx, diags)
 	}
@@ -67,7 +72,7 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       my.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: "mysql-addon",
@@ -96,14 +101,14 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 		addonReq.Options["skip-log-bin"] = fmt.Sprintf("%t", my.SkipLogBin.ValueBool())
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
 	}
 	createdMy := res.Payload()
 
-	my.ID = pkg.FromStr(createdMy.RealID)
+	my.ID = pkg.FromStr(pkg.Deref(createdMy.RealID))
 	r.readFromAddon(&my, *createdMy)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, my)...)
@@ -145,14 +150,14 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 
 	// IDs
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), my.ID.ValueString())
+	addonId, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), my.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
 	// Objects
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -175,7 +180,7 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	} else {
 		addonMy := addonMyRes.Payload()
-		if addonMy.Status == "TO_DELETE" {
+		if pkg.Deref(addonMy.Status) == "TO_DELETE" {
 			resp.State.RemoveResource(ctx)
 			return
 		}
@@ -188,22 +193,22 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 	resp.Diagnostics.Append(resp.State.Set(ctx, my)...)
 }
 
-func (r *ResourceMySQL) readFromAddon(state *MySQL, addon tmp.AddonResponse) {
-	state.Name = pkg.FromStr(addon.Name)
-	state.Plan = pkg.FromStr(addon.Plan.Slug)
+func (r *ResourceMySQL) readFromAddon(state *MySQL, addon models.AddonView) {
+	state.Name = pkg.FromStr(pkg.Deref(addon.Name))
+	state.Plan = pkg.FromStr(pkg.Deref(addon.Plan.Slug))
 	state.Region = pkg.FromStr(addon.Region)
-	state.CreationDate = pkg.FromI(addon.CreationDate)
+	state.CreationDate = pkg.FromI(pkg.Deref(addon.CreationDate))
 }
 
-func (r *ResourceMySQL) readFromAPI(state *MySQL, my tmp.MySQL) {
+func (r *ResourceMySQL) readFromAPI(state *MySQL, my tmp.MysqlAddonView) {
 	state.Host = pkg.FromStr(my.Host)
 	state.Port = pkg.FromI(int64(my.Port))
 	state.Database = pkg.FromStr(my.Database)
 	state.User = pkg.FromStr(my.User)
 	state.Password = pkg.FromStr(my.Password)
 	state.Version = pkg.FromStr(my.Version)
-	state.Uri = pkg.FromStr(my.Uri())
-	state.ReadOnlyUsers = tmp.FromMySQLReadOnlyUsers(my.ReadOnlyUsers)
+	state.Uri = pkg.FromStr(uri(my))
+	state.ReadOnlyUsers = fromReadOnlyUsers(my.ReadOnlyUsers)
 
 	// Initialize to defaults so attributes are never null in state after import.
 	// The features loop below overrides with actual API values if present.
@@ -215,13 +220,13 @@ func (r *ResourceMySQL) readFromAPI(state *MySQL, my tmp.MySQL) {
 	for _, feature := range my.Features {
 		switch feature.Name {
 		case "do-backup":
-			state.Backup = pkg.FromBool(feature.Enabled)
+			state.Backup = pkg.FromBool(pkg.Deref(feature.Enabled))
 		case "encryption":
-			state.Encryption = pkg.FromBool(feature.Enabled)
+			state.Encryption = pkg.FromBool(pkg.Deref(feature.Enabled))
 		case "direct-host-only":
-			state.DirectHostOnly = pkg.FromBool(feature.Enabled)
+			state.DirectHostOnly = pkg.FromBool(pkg.Deref(feature.Enabled))
 		case "skip-log-bin":
-			state.SkipLogBin = pkg.FromBool(feature.Enabled)
+			state.SkipLogBin = pkg.FromBool(pkg.Deref(feature.Enabled))
 		}
 	}
 }
@@ -244,14 +249,14 @@ func (r *ResourceMySQL) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Mysql", addonRes.Error().Error())
 		return
 	}
-	state.Name = pkg.FromStr(addonRes.Payload().Name)
+	state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -276,13 +281,13 @@ func (r *ResourceMySQL) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 	tflog.Debug(ctx, "MySQL DELETE", map[string]any{"my": my})
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), my.ID.ValueString())
+	addonId, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), my.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -293,4 +298,33 @@ func (r *ResourceMySQL) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 
 	resp.State.RemoveResource(ctx)
+}
+
+// uri is the connection URI of a MySQL add-on.
+func uri(my tmp.MysqlAddonView) string {
+	return fmt.Sprintf("mysql://%s:%s@%s:%d/%s", my.User, my.Password, my.Host, my.Port, my.Database)
+}
+
+// fromReadOnlyUsers converts the read-only users of a MySQL add-on to a types.List with nested objects
+func fromReadOnlyUsers(users []tmp.ReadOnlyUserView) types.List {
+	objectType := types.ObjectType{
+		AttrTypes: map[string]attr.Type{
+			"user":     types.StringType,
+			"password": types.StringType,
+		},
+	}
+
+	if len(users) == 0 {
+		return types.ListNull(objectType)
+	}
+
+	objects := make([]attr.Value, len(users))
+	for i, user := range users {
+		objects[i] = types.ObjectValueMust(objectType.AttrTypes, map[string]attr.Value{
+			"user":     types.StringValue(user.User),
+			"password": types.StringValue(user.Password),
+		})
+	}
+
+	return types.ListValueMust(objectType, objects)
 }

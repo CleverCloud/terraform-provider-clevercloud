@@ -5,9 +5,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
@@ -15,7 +15,7 @@ import (
 // null/empty semantics
 func ReadTags(ctx context.Context, p provider.Provider, applicationID string, stateValue types.Set, diags *diag.Diagnostics) types.Set {
 	return resources.ReadTags(ctx, stateValue, func() client.Response[[]string] {
-		return tmp.GetAppTags(ctx, p.Client(), p.Organization(), applicationID)
+		return pkg.SDK(p.Client()).V2().Organisations().ID(p.Organization()).Applications().Appid(applicationID).Tags().Listorganisationapplicationtags(ctx)
 	}, diags)
 }
 
@@ -23,6 +23,6 @@ func ReadTags(ctx context.Context, p provider.Provider, applicationID string, st
 // resources.SyncTags for the returned value
 func SyncTags(ctx context.Context, p provider.Provider, applicationID string, planned, current types.Set, diags *diag.Diagnostics) types.Set {
 	return resources.SyncTags(ctx, planned, current, func(tags []string) client.Response[[]string] {
-		return tmp.UpdateAppTags(ctx, p.Client(), p.Organization(), applicationID, tags)
+		return pkg.SDK(p.Client()).V2().Organisations().ID(p.Organization()).Applications().Appid(applicationID).Tags().Updateorganisationapplicationtags(ctx, resources.TagRefs(tags))
 	}, diags)
 }

@@ -7,8 +7,10 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/applications"
 )
 
 // UpdateReq represents the request structure for updating an application
@@ -16,7 +18,7 @@ type UpdateReq struct {
 	ID             string
 	Client         *client.Client
 	Organization   string
-	Application    tmp.UpdateAppReq
+	Application    models.WannabeApplication
 	Environment    map[string]string
 	VHosts         []string
 	Deployment     *Deployment
@@ -31,9 +33,9 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	// Application
 	res := &CreateRes{}
 
-	req.Application.SeparateBuild = req.Application.BuildFlavor != ""
+	req.Application.SeparateBuild = pkg.Ptr(pkg.Deref(req.Application.BuildFlavor) != "")
 
-	appRes := tmp.UpdateApp(ctx, req.Client, req.Organization, req.ID, req.Application)
+	appRes := pkg.SDK(req.Client).V2().Organisations().ID(req.Organization).Applications().Appid(req.ID).Updateorganisationapplication(ctx, &req.Application)
 	if appRes.HasError() {
 		diags.AddError("failed to update application", appRes.Error().Error())
 		tflog.Error(ctx, "failed to update app", map[string]any{"error": appRes.Error().Error(), "payload": fmt.Sprintf("%+v", req.Application)})
@@ -53,7 +55,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	SyncVHostsOnUpdate(ctx, req.Client, req.Organization, req.VHosts, &diags, res.Application.ID)
 
 	// This is dirty, but we need a refresh
-	vhostsRes := tmp.GetAppVhosts(ctx, req.Client, req.Organization, res.Application.ID)
+	vhostsRes := pkg.SDK(req.Client).V2().Organisations().ID(req.Organization).Applications().Appid(res.Application.ID).Vhosts().Listorganisationapplicationvirtualhosts(ctx)
 	if vhostsRes.HasError() {
 		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
 		return res, diags
@@ -65,7 +67,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	// happens when they differ
 	gitDeployed := false
 	if req.Deployment != nil {
-		res.TargetCommit, gitDeployed = GitDeploy(ctx, req.Deployment, res.Application.DeployURL, res.Application.CommitID, &diags)
+		res.TargetCommit, gitDeployed = GitDeploy(ctx, req.Deployment, pkg.Deref(res.Application.DeployURL), pkg.Deref(res.Application.CommitID), &diags)
 		if diags.HasError() {
 			return res, diags
 		}
@@ -75,7 +77,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	// BUT only if we didn't already trigger a Git deployment (which deploys the new code + env)
 	// error id 4014 = cannot redeploy an application which has never been deployed yet (did you git push?)
 	if req.TriggerRestart && !gitDeployed {
-		restartRes := tmp.RestartApp(ctx, req.Client, req.Organization, res.Application.ID, req.TriggerRebuild)
+		restartRes := restartApp(ctx, req.Client, req.Organization, res.Application.ID, req.TriggerRebuild)
 		if restartRes.HasError() {
 			if apiErr, ok := restartRes.Error().(*client.APIError); !ok || apiErr.Code != "4014" {
 				diags.AddError("failed to restart app", restartRes.Error().Error())
@@ -141,26 +143,10 @@ func Update[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan, 
 
 	// Build UpdateReq
 	updateReq := UpdateReq{
-		ID:           stateRuntime.ID.ValueString(),
-		Client:       resource.Client(),
-		Organization: resource.Organization(),
-		Application: tmp.UpdateAppReq{
-			Name:            runtime.Name.ValueString(),
-			Deploy:          "git",
-			Description:     runtime.Description.ValueString(),
-			InstanceType:    instance.Type,
-			InstanceVariant: instance.Variant.ID,
-			InstanceVersion: instance.Version,
-			BuildFlavor:     runtime.BuildFlavor.ValueString(),
-			MinFlavor:       runtime.SmallestFlavor.ValueString(),
-			MaxFlavor:       runtime.BiggestFlavor.ValueString(),
-			MinInstances:    runtime.MinInstanceCount.ValueInt64(),
-			MaxInstances:    runtime.MaxInstanceCount.ValueInt64(),
-			StickySessions:  runtime.StickySessions.ValueBool(),
-			ForceHttps:      FromForceHTTPS(runtime.RedirectHTTPS.ValueBool()),
-			Zone:            runtime.Region.ValueString(),
-			CancelOnPush:    false,
-		},
+		ID:             stateRuntime.ID.ValueString(),
+		Client:         resource.Client(),
+		Organization:   resource.Organization(),
+		Application:    wannabeApplication(runtime, instance),
 		Environment:    planEnvironment,
 		VHosts:         vhosts,
 		Deployment:     config.ToDeployment(resource.GitAuth()),
@@ -200,4 +186,14 @@ func envKeysDiffer(planEnv, stateEnv map[string]string, keys []string) bool {
 		}
 	}
 	return false
+}
+
+// restartApp redeploys the application. Without withoutCache, the platform restores
+// the build cache and skips the build phase.
+func restartApp(ctx context.Context, cc *client.Client, organisationID, applicationID string, withoutCache bool) client.Response[models.DeploySuccessMessage] {
+	var opts []applications.Option
+	if withoutCache {
+		opts = append(opts, applications.WithUsecache("no"))
+	}
+	return pkg.SDK(cc).V2().Organisations().ID(organisationID).Applications().Appid(applicationID).Instances().Redeployorganisationapplication(ctx, opts...)
 }

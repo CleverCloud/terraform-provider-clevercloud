@@ -332,7 +332,7 @@ func TestNodegroupCreateDoesNotRequireClusterFeatureLookup(t *testing.T) {
 			if payload.Name != view.Name || payload.TargetNodeCount != 1 || payload.Flavor != view.Flavor {
 				t.Errorf("unexpected creation payload: %+v", payload)
 			}
-			if payload.Labels != nil && len(payload.Labels) != 0 {
+			if len(payload.Labels) != 0 {
 				t.Errorf("fixed group must not receive Karpenter labels: %v", payload.Labels)
 			}
 		},

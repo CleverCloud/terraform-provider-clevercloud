@@ -16,6 +16,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/app"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 // Create a new resource
@@ -39,32 +41,32 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       rd.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: "redis-addon",
 		Region:     rd.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
 	}
 
-	rd.ID = pkg.FromStr(res.Payload().RealID)
-	rd.CreationDate = pkg.FromI(res.Payload().CreationDate)
+	rd.ID = pkg.FromStr(pkg.Deref(res.Payload().RealID))
+	rd.CreationDate = pkg.FromI(pkg.Deref(res.Payload().CreationDate))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, rd)...)
 
-	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), rd.ID.ValueString())
+	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(rd.ID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Redis connection infos", envRes.Error().Error())
 		return
 	}
 
 	env := *envRes.Payload()
-	envAsMap := pkg.Reduce(env, map[string]types.String{}, func(acc map[string]types.String, v tmp.EnvVar) map[string]types.String {
+	envAsMap := pkg.Reduce(env, map[string]types.String{}, func(acc map[string]types.String, v models.AddonEnvironmentView) map[string]types.String {
 		acc[v.Name] = pkg.FromStr(v.Value)
 		return acc
 	})
@@ -108,7 +110,7 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), rd.ID.ValueString())
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(rd.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.IsNotFoundError() {
 		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
 		resp.Diagnostics.Append(diags...)
@@ -127,14 +129,14 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 	addonRD := addonRes.Payload()
 	tflog.Debug(ctx, "redis", map[string]any{"payload": fmt.Sprintf("%+v", addonRD)})
 
-	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), rd.ID.ValueString())
+	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(rd.ID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Redis connection infos", envRes.Error().Error())
 		return
 	}
 
 	env := *envRes.Payload()
-	envAsMap := pkg.Reduce(env, map[string]types.String{}, func(acc map[string]types.String, v tmp.EnvVar) map[string]types.String {
+	envAsMap := pkg.Reduce(env, map[string]types.String{}, func(acc map[string]types.String, v models.AddonEnvironmentView) map[string]types.String {
 		acc[v.Name] = pkg.FromStr(v.Value)
 		return acc
 	})
@@ -146,9 +148,9 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 		resp.Diagnostics.AddError("invalid port received", "expect REDIS_PORT to be an Integer")
 	}
 
-	rd.Name = pkg.FromStr(addonRD.Name)
+	rd.Name = pkg.FromStr(pkg.Deref(addonRD.Name))
 	rd.Host = envAsMap[app.REDIS_HOST]
-	rd.Plan = pkg.FromStr(addonRD.Plan.Slug)
+	rd.Plan = pkg.FromStr(pkg.Deref(addonRD.Plan.Slug))
 	rd.Port = pkg.FromI(port)
 	rd.Region = pkg.FromStr(addonRD.Region)
 	rd.Token = envAsMap[app.REDIS_PASSWORD]
@@ -178,14 +180,14 @@ func (r *ResourceRedis) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Redis", addonRes.Error().Error())
 		return
 	}
-	state.Name = pkg.FromStr(addonRes.Payload().Name)
+	state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -213,7 +215,7 @@ func (r *ResourceRedis) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 	tflog.Debug(ctx, "Redis DELETE", map[string]any{"rd": rd})
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), rd.ID.ValueString())
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(rd.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

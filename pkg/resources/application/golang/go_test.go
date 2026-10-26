@@ -24,9 +24,9 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/app"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestAccGo_basic(t *testing.T) {
@@ -79,14 +79,14 @@ func TestAccGo_basic(t *testing.T) {
 				)),
 				tests.NewCheckRemoteResource(
 					fullName,
-					func(ctx context.Context, id string) (*tmp.AppResponse, error) {
-						appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+					func(ctx context.Context, id string) (*models.ApplicationView, error) {
+						appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
 						if appRes.HasError() {
 							return nil, appRes.Error()
 						}
 						return appRes.Payload(), nil
 					},
-					func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
+					func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
 						if appRes.Name != rName {
 							return tests.AssertError("invalid name", appRes.Name, rName)
 						}
@@ -99,11 +99,11 @@ func TestAccGo_basic(t *testing.T) {
 							return tests.AssertError("invalid name", appRes.Name, rName)
 						}
 
-						if appRes.Instance.MinFlavor.Name != "XS" {
+						if pkg.FlavorName(appRes.Instance.MinFlavor) != "XS" {
 							return tests.AssertError("invalid name", appRes.Name, rName)
 						}
 
-						if appRes.Instance.MaxFlavor.Name != "M" {
+						if pkg.FlavorName(appRes.Instance.MaxFlavor) != "M" {
 							return tests.AssertError("invalid name", appRes.Name, rName)
 						}
 
@@ -134,12 +134,12 @@ func TestAccGo_basic(t *testing.T) {
 							return tests.AssertError("expect a cleverapps fqdn", appRes.Vhosts[0].Fqdn, "<cleverapps>")
 						}
 
-						appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
+						appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
 						if appEnvRes.HasError() {
 							return fmt.Errorf("failed to get application: %w", appEnvRes.Error())
 						}
 
-						env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
+						env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e models.AddonEnvironmentView) map[string]string {
 							acc[e.Name] = e.Value
 							return acc
 						})
@@ -185,7 +185,7 @@ func waitForDeploymentComplete(t *testing.T, cc *client.Client, orgID, appID str
 		case <-ctx.Done():
 			return fmt.Errorf("timeout waiting for deployment to complete")
 		case <-ticker.C:
-			deploymentsRes := tmp.ListDeployments(ctx, cc, orgID, appID)
+			deploymentsRes := pkg.SDK(cc).V2().Organisations().ID(orgID).Applications().Appid(appID).Deployments().Getapplicationdeploymentsfororga(ctx)
 			if deploymentsRes.IsNotFoundError() {
 				continue
 			}
@@ -358,7 +358,7 @@ func TestAccGo_singleDeploymentOnEnvAndGitChange(t *testing.T) {
 					}
 
 					// Get initial deployment count
-					deploymentsRes := tmp.ListDeployments(ctx, cc, tests.ORGANISATION, appID)
+					deploymentsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(appID).Deployments().Getapplicationdeploymentsfororga(ctx)
 					if deploymentsRes.HasError() {
 						return fmt.Errorf("failed to list deployments: %w", deploymentsRes.Error())
 					}
@@ -410,7 +410,7 @@ func TestAccGo_singleDeploymentOnEnvAndGitChange(t *testing.T) {
 						return fmt.Errorf("failed to wait for deployments to end: %s", err.Error())
 					}
 					// Get new deployment count
-					deploymentsRes := tmp.ListDeployments(ctx, cc, tests.ORGANISATION, appID)
+					deploymentsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(appID).Deployments().Getapplicationdeploymentsfororga(ctx)
 					if deploymentsRes.HasError() {
 						return fmt.Errorf("failed to list deployments: %w", deploymentsRes.Error())
 					}
@@ -466,18 +466,18 @@ func TestAccGo_envAttributes(t *testing.T) {
 	}
 
 	remoteEnv := func(want map[string]string) statecheck.StateCheck {
-		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
-			appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
+			appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
 			if appRes.HasError() {
 				return nil, appRes.Error()
 			}
 			return appRes.Payload(), nil
-		}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
-			appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
+		}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
+			appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
 			if appEnvRes.HasError() {
 				return fmt.Errorf("failed to get application env: %w", appEnvRes.Error())
 			}
-			env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
+			env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e models.AddonEnvironmentView) map[string]string {
 				acc[e.Name] = e.Value
 				return acc
 			})

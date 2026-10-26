@@ -24,7 +24,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 //go:embed fsbucket_upload_doc.md
@@ -180,14 +180,14 @@ func (a *ActionFSBucketUpload) Invoke(ctx context.Context, req action.InvokeRequ
 	}
 
 	Progress(res, "Retrieving fsbucket credentials...")
-	fsbucketEnvRes := tmp.GetAddonEnv(ctx, a.Client(), a.Organization(), cfg.FSBucketID.ValueString())
+	fsbucketEnvRes := pkg.SDK(a.Client()).V2().Organisations().ID(a.Organization()).Addons().Addonid(cfg.FSBucketID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
 	if fsbucketEnvRes.HasError() {
 		res.Diagnostics.AddError("failed to get FSBucket credentials", fsbucketEnvRes.Error().Error())
 		return
 	}
 	fsbucketEnv := fsbucketEnvRes.Payload()
 
-	envMap := pkg.Reduce(*fsbucketEnv, map[string]string{}, func(m map[string]string, v tmp.EnvVar) map[string]string {
+	envMap := pkg.Reduce(*fsbucketEnv, map[string]string{}, func(m map[string]string, v models.AddonEnvironmentView) map[string]string {
 		m[v.Name] = v.Value
 		return m
 	})

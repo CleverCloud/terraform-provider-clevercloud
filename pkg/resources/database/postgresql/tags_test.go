@@ -12,9 +12,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
@@ -42,11 +43,11 @@ func TestAccTags_addon(t *testing.T) {
 	)
 
 	fetchTags := func(ctx context.Context, realID string) (*[]string, error) {
-		addonID, err := tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, realID)
+		addonID, err := addonid.FromRealID(ctx, cc, tests.ORGANISATION, realID)
 		if err != nil {
 			return nil, err
 		}
-		res := tmp.GetAddonTags(ctx, cc, tests.ORGANISATION, addonID)
+		res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Tags().Getaddontagsbyorgaidandaddonid(ctx)
 		if res.HasError() {
 			return nil, res.Error()
 		}

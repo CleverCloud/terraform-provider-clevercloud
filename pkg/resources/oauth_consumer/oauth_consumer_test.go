@@ -11,10 +11,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestAccOAuthConsumer_basic(t *testing.T) {
@@ -40,8 +41,8 @@ func TestAccOAuthConsumer_basic(t *testing.T) {
 			},
 		}))
 
-	retrieveOAuthConsumer := func(ctx context.Context, consumerKey string) (*tmp.OAuthConsumerResponse, error) {
-		res := tmp.GetOAuthConsumer(ctx, cc, tests.ORGANISATION, consumerKey)
+	retrieveOAuthConsumer := func(ctx context.Context, consumerKey string) (*models.OAuth1ConsumerView, error) {
+		res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Consumers().Key(consumerKey).Getorganisationconsumer(ctx)
 		if res.IsNotFoundError() {
 			return nil, fmt.Errorf("Unable to find OAuth consumer by key: %s", consumerKey)
 		}
@@ -66,21 +67,21 @@ func TestAccOAuthConsumer_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("base_url"), knownvalue.StringExact("https://api.example.com")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("logo_url"), knownvalue.StringExact("https://example.com/logo.png")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("website_url"), knownvalue.StringExact("https://example.com")),
-				tests.NewCheckRemoteResource(fullName, retrieveOAuthConsumer, func(ctx context.Context, consumerKey string, state *tfjson.State, consumer *tmp.OAuthConsumerResponse) error {
-					if consumer.Name != rName {
+				tests.NewCheckRemoteResource(fullName, retrieveOAuthConsumer, func(ctx context.Context, consumerKey string, state *tfjson.State, consumer *models.OAuth1ConsumerView) error {
+					if pkg.Deref(consumer.Name) != rName {
 						return tests.AssertError("Bad consumer name", consumer.Name, rName)
 					}
-					if consumer.Description != "Test OAuth consumer" {
+					if pkg.Deref(consumer.Description) != "Test OAuth consumer" {
 						return tests.AssertError("Bad consumer description", consumer.Description, "Test OAuth consumer")
 					}
-					if consumer.BaseURL != "https://api.example.com" {
+					if pkg.Deref(consumer.BaseURL) != "https://api.example.com" {
 						return tests.AssertError("Bad consumer base_url", consumer.BaseURL, "https://api.example.com")
 					}
-					if consumer.LogoURL != "https://example.com/logo.png" {
-						return tests.AssertError("Bad consumer logo_url", consumer.LogoURL, "https://example.com/logo.png")
+					if pkg.Deref(consumer.Picture) != "https://example.com/logo.png" {
+						return tests.AssertError("Bad consumer logo_url", consumer.Picture, "https://example.com/logo.png")
 					}
-					if consumer.WebsiteURL != "https://example.com" {
-						return tests.AssertError("Bad consumer website_url", consumer.WebsiteURL, "https://example.com")
+					if pkg.Deref(consumer.URL) != "https://example.com" {
+						return tests.AssertError("Bad consumer website_url", consumer.URL, "https://example.com")
 					}
 					if !consumer.Rights.AccessOrganisations {
 						return tests.AssertError("Bad consumer rights: access_organisations should be true", consumer.Rights.AccessOrganisations, true)
@@ -132,8 +133,8 @@ func TestAccOAuthConsumer_withAllRights(t *testing.T) {
 			},
 		}))
 
-	retrieveOAuthConsumer := func(ctx context.Context, consumerKey string) (*tmp.OAuthConsumerResponse, error) {
-		res := tmp.GetOAuthConsumer(ctx, cc, tests.ORGANISATION, consumerKey)
+	retrieveOAuthConsumer := func(ctx context.Context, consumerKey string) (*models.OAuth1ConsumerView, error) {
+		res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Consumers().Key(consumerKey).Getorganisationconsumer(ctx)
 		if res.IsNotFoundError() {
 			return nil, fmt.Errorf("Unable to find OAuth consumer by key: %s", consumerKey)
 		}
@@ -154,11 +155,11 @@ func TestAccOAuthConsumer_withAllRights(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.NotNull()),
 				statecheck.ExpectSensitiveValue(fullName, tfjsonpath.New("secret")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
-				tests.NewCheckRemoteResource(fullName, retrieveOAuthConsumer, func(ctx context.Context, consumerKey string, state *tfjson.State, consumer *tmp.OAuthConsumerResponse) error {
-					if consumer.Name != rName {
+				tests.NewCheckRemoteResource(fullName, retrieveOAuthConsumer, func(ctx context.Context, consumerKey string, state *tfjson.State, consumer *models.OAuth1ConsumerView) error {
+					if pkg.Deref(consumer.Name) != rName {
 						return tests.AssertError("Bad consumer name", consumer.Name, rName)
 					}
-					if consumer.Description != "Test OAuth consumer with all rights" {
+					if pkg.Deref(consumer.Description) != "Test OAuth consumer with all rights" {
 						return tests.AssertError("Bad consumer description", consumer.Description, "Test OAuth consumer with all rights")
 					}
 					// Verify all rights are set to true
@@ -192,8 +193,8 @@ func TestAccOAuthConsumer_withAllRights(t *testing.T) {
 					if !consumer.Rights.ManagePersonalInformation {
 						return tests.AssertError("Bad consumer rights: manage_personal_information should be true", consumer.Rights.ManagePersonalInformation, true)
 					}
-					if !consumer.Rights.ManageSSHKeys {
-						return tests.AssertError("Bad consumer rights: manage_ssh_keys should be true", consumer.Rights.ManageSSHKeys, true)
+					if !consumer.Rights.ManageSshKeys {
+						return tests.AssertError("Bad consumer rights: manage_ssh_keys should be true", consumer.Rights.ManageSshKeys, true)
 					}
 					return nil
 				}),

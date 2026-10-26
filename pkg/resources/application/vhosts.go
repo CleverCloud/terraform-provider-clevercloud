@@ -3,13 +3,19 @@ package application
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
+
+// VHostNames returns the FQDN of each vhost, in order.
+func VHostNames(vhosts []models.VhostView) []string {
+	return pkg.Map(vhosts, func(vhost models.VhostView) string { return vhost.Fqdn })
+}
 
 // SyncVHostsOnCreate synchronizes VHosts during resource creation
 func SyncVHostsOnCreate(ctx context.Context, client *client.Client, organization string, reqVhosts []string, diags *diag.Diagnostics, applicationID string) {
@@ -20,25 +26,25 @@ func SyncVHostsOnCreate(ctx context.Context, client *client.Client, organization
 	}
 
 	// Get current vhosts from remote
-	vhostsRes := tmp.GetAppVhosts(ctx, client, organization, applicationID)
+	vhostsRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Listorganisationapplicationvirtualhosts(ctx)
 	if vhostsRes.HasError() {
 		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
 		return
 	}
 	remoteVHosts := *vhostsRes.Payload()
 
-	vhostsToAdd := pkg.Diff(reqVhosts, remoteVHosts.AsString())
-	vhostsToRemove := pkg.Diff(remoteVHosts.AsString(), reqVhosts)
+	vhostsToAdd := pkg.Diff(reqVhosts, VHostNames(remoteVHosts))
+	vhostsToRemove := pkg.Diff(VHostNames(remoteVHosts), reqVhosts)
 
 	tflog.Debug(ctx, "SYNC VHOSTS (CREATE)", map[string]any{
 		"planed":   reqVhosts,
-		"remote":   remoteVHosts.AsString(),
+		"remote":   VHostNames(remoteVHosts),
 		"toRemove": vhostsToRemove,
 		"toAdd":    vhostsToAdd})
 
 	// Delete vhosts that need to be removed
 	for _, vhost := range vhostsToRemove {
-		deleteVhostRes := tmp.DeleteAppVHost(ctx, client, organization, applicationID, vhost)
+		deleteVhostRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Domain(vhost).Removeorganisationapplicationvirtualhost(ctx)
 		if deleteVhostRes.HasError() {
 			diags.AddError(fmt.Sprintf("failed to remove vhost \"%s\"", vhost), deleteVhostRes.Error().Error())
 		}
@@ -46,7 +52,7 @@ func SyncVHostsOnCreate(ctx context.Context, client *client.Client, organization
 
 	// Add new vhosts
 	for _, vhost := range vhostsToAdd {
-		addVhostRes := tmp.AddAppVHost(ctx, client, organization, applicationID, vhost)
+		addVhostRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Domain(vhost).Addorganisationapplicationvirtualhost(ctx)
 		if addVhostRes.HasError() {
 			diags.AddError(fmt.Sprintf("failed to add vhost \"%s\"", vhost), addVhostRes.Error().Error())
 		}
@@ -55,7 +61,7 @@ func SyncVHostsOnCreate(ctx context.Context, client *client.Client, organization
 
 // SyncVHostsOnUpdate synchronizes VHosts during resource update
 func SyncVHostsOnUpdate(ctx context.Context, client *client.Client, organization string, reqVhosts []string, diags *diag.Diagnostics, applicationID string) {
-	vhostsRes := tmp.GetAppVhosts(ctx, client, organization, applicationID)
+	vhostsRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Listorganisationapplicationvirtualhosts(ctx)
 	if vhostsRes.HasError() {
 		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
 		return
@@ -67,18 +73,18 @@ func SyncVHostsOnUpdate(ctx context.Context, client *client.Client, organization
 
 	}*/
 
-	vhostsToAdd := pkg.Diff(reqVhosts, remoteVHosts.AsString())
-	vhostsToRemove := pkg.Diff(remoteVHosts.AsString(), reqVhosts)
+	vhostsToAdd := pkg.Diff(reqVhosts, VHostNames(remoteVHosts))
+	vhostsToRemove := pkg.Diff(VHostNames(remoteVHosts), reqVhosts)
 
 	tflog.Debug(ctx, "SYNC VHOSTS (UPDATE)", map[string]any{
 		"planed":   reqVhosts,
-		"remote":   remoteVHosts.AsString(),
+		"remote":   VHostNames(remoteVHosts),
 		"toRemove": vhostsToRemove,
 		"toAdd":    vhostsToAdd})
 
 	// Delete vhosts that need to be removed
 	for _, vhost := range vhostsToRemove {
-		deleteVhostRes := tmp.DeleteAppVHost(ctx, client, organization, applicationID, vhost)
+		deleteVhostRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Domain(vhost).Removeorganisationapplicationvirtualhost(ctx)
 		if deleteVhostRes.HasError() {
 			diags.AddError(fmt.Sprintf("failed to remove vhost \"%s\"", vhost), deleteVhostRes.Error().Error())
 		}
@@ -86,9 +92,21 @@ func SyncVHostsOnUpdate(ctx context.Context, client *client.Client, organization
 
 	// Add new vhosts
 	for _, vhost := range vhostsToAdd {
-		addVhostRes := tmp.AddAppVHost(ctx, client, organization, applicationID, vhost)
+		addVhostRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Domain(vhost).Addorganisationapplicationvirtualhost(ctx)
 		if addVhostRes.HasError() {
 			diags.AddError(fmt.Sprintf("failed to add vhost \"%s\"", vhost), addVhostRes.Error().Error())
 		}
 	}
+}
+
+// CleverAppsVHost returns the default `<app>.cleverapps.io/` vhost of an
+// application, nil when it has none.
+func CleverAppsVHost(vhosts []models.VhostView, appID string) *models.VhostView {
+	cleverapps := fmt.Sprintf("%s.cleverapps.io/", strings.ReplaceAll(appID, "_", "-"))
+	for _, vhost := range vhosts {
+		if vhost.Fqdn == cleverapps {
+			return &vhost
+		}
+	}
+	return nil
 }

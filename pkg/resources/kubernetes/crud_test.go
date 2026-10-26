@@ -8,7 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestAutoprovisioningFeatureEnabled(t *testing.T) {
@@ -16,7 +16,7 @@ func TestAutoprovisioningFeatureEnabled(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		features *tmp.KubernetesFeatures
+		features *models.ClusterFeatures
 		expected bool
 	}{
 		{
@@ -26,17 +26,17 @@ func TestAutoprovisioningFeatureEnabled(t *testing.T) {
 		},
 		{
 			name:     "features object without the field",
-			features: &tmp.KubernetesFeatures{},
+			features: &models.ClusterFeatures{},
 			expected: false,
 		},
 		{
 			name:     "node autoprovisioning disabled",
-			features: &tmp.KubernetesFeatures{NodeAutoprovisioning: &disabled},
+			features: &models.ClusterFeatures{NodeAutoprovisioning: &disabled},
 			expected: false,
 		},
 		{
 			name:     "node autoprovisioning enabled",
-			features: &tmp.KubernetesFeatures{NodeAutoprovisioning: &enabled},
+			features: &models.ClusterFeatures{NodeAutoprovisioning: &enabled},
 			expected: true,
 		},
 	}
@@ -57,13 +57,13 @@ func TestReadNodeAutoprovisioning(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		features *tmp.KubernetesFeatures
+		features *models.ClusterFeatures
 		expected bool
 	}{
 		{name: "no features object", features: nil, expected: false},
-		{name: "features object without the field", features: &tmp.KubernetesFeatures{}, expected: false},
-		{name: "node autoprovisioning disabled", features: &tmp.KubernetesFeatures{NodeAutoprovisioning: &disabled}, expected: false},
-		{name: "node autoprovisioning enabled", features: &tmp.KubernetesFeatures{NodeAutoprovisioning: &enabled}, expected: true},
+		{name: "features object without the field", features: &models.ClusterFeatures{}, expected: false},
+		{name: "node autoprovisioning disabled", features: &models.ClusterFeatures{NodeAutoprovisioning: &disabled}, expected: false},
+		{name: "node autoprovisioning enabled", features: &models.ClusterFeatures{NodeAutoprovisioning: &enabled}, expected: true},
 	}
 
 	for _, tt := range tests {

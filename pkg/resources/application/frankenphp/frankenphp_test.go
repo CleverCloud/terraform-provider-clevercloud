@@ -17,10 +17,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/app"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestAccFrankenPHP_basic(t *testing.T) {
@@ -59,15 +60,15 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(false)),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
-					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, app *models.ApplicationView) error {
 					if len(app.Vhosts) != 1 || app.Vhosts[0].Fqdn != (domain+"/") {
-						return tests.AssertError("invalid vhost list", app.Vhosts.AsString(), "1 cleverapps.io domain")
+						return tests.AssertError("invalid vhost list", application.VHostNames(app.Vhosts), "1 cleverapps.io domain")
 					}
 					return nil
 				}),
@@ -85,13 +86,13 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("max_instance_count"), knownvalue.Int64Exact(6)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(true)),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
-					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, app *models.ApplicationView) error {
 					expectedVhosts := []string{domainEdit1 + "/", domainEdit2 + "/test"}
 					if len(app.Vhosts) != len(expectedVhosts) {
 						return tests.AssertError("invalid vhost count", len(app.Vhosts), len(expectedVhosts))
@@ -106,13 +107,13 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 							}
 						}
 						if !found {
-							return tests.AssertError("missing expected vhost", app.Vhosts.AsString(), expectedVhost)
+							return tests.AssertError("missing expected vhost", application.VHostNames(app.Vhosts), expectedVhost)
 						}
 					}
 
 					for _, vhost := range app.Vhosts {
 						if strings.HasSuffix(vhost.Fqdn, ".cleverapps.io/") {
-							return tests.AssertError("cleverapps.io should not be present with custom vhosts", app.Vhosts.AsString(), "no cleverapps.io domain")
+							return tests.AssertError("cleverapps.io should not be present with custom vhosts", application.VHostNames(app.Vhosts), "no cleverapps.io domain")
 						}
 					}
 
@@ -132,15 +133,15 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("min_instance_count"), knownvalue.Int64Exact(2)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("max_instance_count"), knownvalue.Int64Exact(6)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(true)),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
-					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, app *tmp.AppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, app *models.ApplicationView) error {
 					if len(app.Vhosts) != 2 {
-						return tests.AssertError("invalid vhost list", app.Vhosts.AsString(), "2 custom domain")
+						return tests.AssertError("invalid vhost list", application.VHostNames(app.Vhosts), "2 custom domain")
 					}
 					return nil
 				}),
@@ -178,18 +179,18 @@ func TestAccFrankenPHP_envAttributes(t *testing.T) {
 	}
 
 	remoteEnv := func(want map[string]string) statecheck.StateCheck {
-		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
-			appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
+			appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
 			if appRes.HasError() {
 				return nil, appRes.Error()
 			}
 			return appRes.Payload(), nil
-		}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
-			appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
+		}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
+			appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
 			if appEnvRes.HasError() {
 				return fmt.Errorf("failed to get application env: %w", appEnvRes.Error())
 			}
-			env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
+			env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e models.AddonEnvironmentView) map[string]string {
 				acc[e.Name] = e.Value
 				return acc
 			})

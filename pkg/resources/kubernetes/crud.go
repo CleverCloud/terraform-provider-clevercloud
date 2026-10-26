@@ -15,6 +15,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 const (
@@ -66,17 +67,16 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 	enabled := nodeAutoprovisioning.ValueBool()
 
 	// Create Kubernetes cluster
-	createReq := tmp.KubernetesCreateRequest{
+	createReq := models.ClusterCreationPayload{
 		Name: plan.Name.ValueString(),
-		//KubeMajorVersion: "1.34",
 	}
 	// only send the features object when something is requested, so clusters
 	// without node autoprovisioning keep the exact same payload
 	if enabled {
-		createReq.Features = &tmp.KubernetesFeatures{NodeAutoprovisioning: &enabled}
+		createReq.Features = &models.ClusterFeatures{NodeAutoprovisioning: &enabled}
 	}
 
-	createRes := tmp.CreateKubernetes(ctx, r.Client(), r.Organization(), createReq)
+	createRes := r.SDK.V4().Kubernetes().Organisations().Ownerid(r.Organization()).Clusters().Createkubernetescluster(ctx, &createReq)
 	if createRes.HasError() {
 		resp.Diagnostics.AddError("failed to create kubernetes cluster", createRes.Error().Error())
 		return
@@ -99,7 +99,7 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 	for k8sCluster := range WaitForKubernetes(ctx, r.Client(), r.Organization(), k8sCluster.ID, 1*time.Second) {
 		tflog.Info(ctx, "cluster state changed", map[string]any{"state": k8sCluster.Status})
 		if k8sCluster.Status == "FAILED" {
-			resp.Diagnostics.AddError("failed to provision kubernetes cluster", k8sCluster.Status)
+			resp.Diagnostics.AddError("failed to provision kubernetes cluster", string(k8sCluster.Status))
 			return // without running k8s cluster, nothing possible
 		}
 	}
@@ -139,7 +139,7 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	kubernetesRes := tmp.GetKubernetes(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	kubernetesRes := r.SDK.V4().Kubernetes().Organisations().Ownerid(r.Organization()).Clusters().Kubernetesid(identity.ID.ValueString()).Getkubernetescluster(ctx)
 	if kubernetesRes.HasError() {
 		resp.Diagnostics.AddError("Failed to get kubernetes instance", kubernetesRes.Error().Error())
 		return
@@ -207,7 +207,7 @@ func (r *ResourceKubernetes) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	res := tmp.DeleteKubernetes(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	res := r.SDK.V4().Kubernetes().Organisations().Ownerid(r.Organization()).Clusters().Kubernetesid(identity.ID.ValueString()).Deletekubernetescluster(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -223,11 +223,11 @@ func (r *ResourceKubernetes) Delete(ctx context.Context, req resource.DeleteRequ
 // WaitForKubernetes monitors a Kubernetes cluster status and returns a channel
 // that emits cluster object on the first call and whenever the Status field changes.
 // The channel is automatically closed when status becomes ACTIVE or FAILED (terminal states).
-func WaitForKubernetes(ctx context.Context, cc *client.Client, organisationID, clusterID string, pollInterval time.Duration) <-chan *tmp.ClusterView {
-	ch := make(chan *tmp.ClusterView)
+func WaitForKubernetes(ctx context.Context, cc *client.Client, organisationID, clusterID string, pollInterval time.Duration) <-chan *models.KubernetesCluster {
+	ch := make(chan *models.KubernetesCluster)
 
 	go func() {
-		var previousStatus string
+		var previousStatus models.ClusterStatusType
 		defer close(ch)
 
 		ticker := time.NewTicker(pollInterval)
@@ -238,7 +238,7 @@ func WaitForKubernetes(ctx context.Context, cc *client.Client, organisationID, c
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				res := tmp.GetKubernetesCluster(ctx, cc, organisationID, clusterID)
+				res := pkg.SDK(cc).V4().Kubernetes().Organisations().Ownerid(organisationID).Clusters().Kubernetesid(clusterID).Getkubernetescluster(ctx)
 				if res.HasError() {
 					continue
 				}
@@ -262,7 +262,7 @@ func WaitForKubernetes(ctx context.Context, cc *client.Client, organisationID, c
 // autoprovisioningFeatureEnabled reports whether the API says node autoprovisioning is installed.
 // The API omits the features object on clusters that never used it, which means
 // the same thing as disabled
-func autoprovisioningFeatureEnabled(features *tmp.KubernetesFeatures) bool {
+func autoprovisioningFeatureEnabled(features *models.ClusterFeatures) bool {
 	return features != nil && features.NodeAutoprovisioning != nil && *features.NodeAutoprovisioning
 }
 
@@ -468,8 +468,8 @@ func patchNodeAutoprovisioning(
 
 	for {
 		reqCtx, cancelRequest := context.WithTimeout(loopCtx, nodeAutoprovisioningRequestTimeout)
-		res := tmp.UpdateKubernetes(reqCtx, cc, organisationID, clusterID, tmp.KubernetesPatchRequest{
-			Features: &tmp.KubernetesFeatures{NodeAutoprovisioning: &enabled},
+		res := pkg.SDK(cc).V4().Kubernetes().Organisations().Ownerid(organisationID).Clusters().Kubernetesid(clusterID).Updatekubernetescluster(reqCtx, &models.ClusterPatchPayload{
+			Features: &models.ClusterFeaturesPatch{NodeAutoprovisioning: &enabled},
 		})
 		cancelRequest()
 
@@ -554,7 +554,7 @@ func waitForNodeAutoprovisioning(
 	for {
 		// probe before waiting, a ticker never fires at t=0
 		reqCtx, cancelRequest := context.WithTimeout(loopCtx, nodeAutoprovisioningRequestTimeout)
-		res := tmp.GetKubernetesCluster(reqCtx, cc, organisationID, clusterID)
+		res := pkg.SDK(cc).V4().Kubernetes().Organisations().Ownerid(organisationID).Clusters().Kubernetesid(clusterID).Getkubernetescluster(reqCtx)
 		cancelRequest()
 
 		switch {
@@ -571,11 +571,11 @@ func waitForNodeAutoprovisioning(
 				return false
 			}
 			tflog.Warn(ctx, "failed to poll cluster features", map[string]any{"error": lastErr})
-		case clusterTerminalStatus(res.Payload().Status):
+		case clusterTerminalStatus(string(res.Payload().Status)):
 			// installing or removing Karpenter can fail the whole cluster, and
 			// the cluster can also be deleted from under us: neither ever
 			// converges, and the two need different advice
-			diags.AddError(summary, terminalStatusDetail(res.Payload().Status))
+			diags.AddError(summary, terminalStatusDetail(string(res.Payload().Status)))
 			return false
 		case autoprovisioningFeatureEnabled(res.Payload().Features) == expected:
 			tflog.Info(ctx, "node autoprovisioning converged", map[string]any{"enabled": expected})

@@ -9,7 +9,6 @@ import (
 	minio "github.com/minio/minio-go/v7"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/s3"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 // Create a new resource
@@ -19,7 +18,7 @@ func (r *ResourceCellarBucket) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	cellarEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), bucket.CellarID.ValueString())
+	cellarEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(bucket.CellarID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
 	if cellarEnvRes.HasError() {
 		resp.Diagnostics.AddError(fmt.Sprintf("create: failed to get cellar env %s", bucket.CellarID.String()), cellarEnvRes.Error().Error())
 		return
@@ -52,7 +51,7 @@ func (r *ResourceCellarBucket) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	cellarEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), cellar.CellarID.ValueString())
+	cellarEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(cellar.CellarID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
 	if cellarEnvRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -121,7 +120,7 @@ func (r *ResourceCellarBucket) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 
-	cellarEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), bucket.CellarID.ValueString())
+	cellarEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(bucket.CellarID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
 	if cellarEnvRes.HasError() {
 		resp.Diagnostics.AddError("delete: failed to get cellar env", cellarEnvRes.Error().Error())
 		return
