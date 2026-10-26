@@ -26,7 +26,7 @@ func (r *ResourceKubernetesNodegroup) Create(ctx context.Context, req resource.C
 		Organisations().
 		Ownerid(r.Organization()).
 		Clusters().
-		Clusterid(plan.KubernetesID.ValueString()).
+		Kubernetesid(plan.KubernetesID.ValueString()).
 		NodeGroups().
 		Createkubernetesnodegroup(ctx, &models.NodeGroupCreationPayload{
 			Name:            plan.Name.ValueString(),
@@ -34,7 +34,7 @@ func (r *ResourceKubernetesNodegroup) Create(ctx context.Context, req resource.C
 			TargetNodeCount: int(plan.Size.ValueInt64()),
 			MinNodeCount:    pkg.AsPointer(plan.Size),
 			MaxNodeCount:    pkg.AsPointer(plan.Size),
-			Labels:          &models.MapLabelkeyLabelvalue{},
+			Labels:          map[string]string{},
 		})
 	if createRes.HasError() {
 		var apiError client.APIError
@@ -81,7 +81,7 @@ func (r *ResourceKubernetesNodegroup) Read(ctx context.Context, req resource.Rea
 
 	ngRes := r.SDK.V4().Kubernetes().
 		Organisations().Ownerid(r.Organization()).
-		Clusters().Clusterid(state.KubernetesID.ValueString()).
+		Clusters().Kubernetesid(state.KubernetesID.ValueString()).
 		NodeGroups().Nodegroupid(identity.ID.ValueString()).
 		Getkubernetesnodegroup(ctx)
 	if ngRes.IsNotFoundError() {
@@ -122,7 +122,7 @@ func (r *ResourceKubernetesNodegroup) Update(ctx context.Context, req resource.U
 	// since the plan. Check the current group before sending any mutation.
 	ngRes := r.SDK.V4().Kubernetes().
 		Organisations().Ownerid(r.Organization()).
-		Clusters().Clusterid(plan.KubernetesID.ValueString()).
+		Clusters().Kubernetesid(plan.KubernetesID.ValueString()).
 		NodeGroups().Nodegroupid(identity.ID.ValueString()).
 		Getkubernetesnodegroup(ctx)
 	if ngRes.HasError() && !ngRes.IsNotFoundError() {
@@ -147,7 +147,7 @@ func (r *ResourceKubernetesNodegroup) Update(ctx context.Context, req resource.U
 		Organisations().
 		Ownerid(r.Organization()).
 		Clusters().
-		Clusterid(plan.KubernetesID.ValueString()).NodeGroups().
+		Kubernetesid(plan.KubernetesID.ValueString()).NodeGroups().
 		Nodegroupid(identity.ID.ValueString()).
 		Updatekubernetesnodegroup(ctx, &models.NodeGroupPatchPayload{
 			Name:            plan.Name.ValueString(),
@@ -181,7 +181,7 @@ func (r *ResourceKubernetesNodegroup) Delete(ctx context.Context, req resource.D
 
 	ngRes := r.SDK.V4().Kubernetes().
 		Organisations().Ownerid(r.Organization()).
-		Clusters().Clusterid(state.KubernetesID.ValueString()).
+		Clusters().Kubernetesid(state.KubernetesID.ValueString()).
 		NodeGroups().Nodegroupid(identity.ID.ValueString()).
 		Getkubernetesnodegroup(ctx)
 	if ngRes.IsNotFoundError() {
@@ -204,7 +204,7 @@ func (r *ResourceKubernetesNodegroup) Delete(ctx context.Context, req resource.D
 
 	deleteRes := r.SDK.V4().Kubernetes().
 		Organisations().Ownerid(r.Organization()).
-		Clusters().Clusterid(state.KubernetesID.ValueString()).
+		Clusters().Kubernetesid(state.KubernetesID.ValueString()).
 		NodeGroups().Nodegroupid(identity.ID.ValueString()).
 		Deletekubernetesnodegroup(ctx)
 	if deleteRes.IsNotFoundError() {

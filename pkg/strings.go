@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
-	"go.clever-cloud.dev/sdk/models"
 	"golang.org/x/exp/constraints"
 )
 
@@ -21,10 +20,6 @@ func FromStr(str string) types.String {
 	}
 
 	return types.StringValue(str)
-}
-
-func FromStrMaxLen(str models.StringMaxLength128) types.String {
-	return FromStr(string(str))
 }
 
 // Convert a native int64 into a tfsdk one
