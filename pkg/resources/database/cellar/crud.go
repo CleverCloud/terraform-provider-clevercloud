@@ -10,6 +10,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/s3"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 // Create a new resource
@@ -32,20 +34,20 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 		return
 	}
 
-	plan := prov.FirstPlan()
+	plan := pkg.FirstPlan(prov)
 	if plan == nil {
 		resp.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       cellar.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: "cellar-addon",
 		Region:     cellar.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create add-on", res.Error().Error())
 		return
@@ -53,9 +55,9 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 	addonRes := res.Payload()
 	tflog.Debug(ctx, "get add-on env vars", map[string]any{"cellar": addonRes.RealID})
 
-	cellar.ID = pkg.FromStr(addonRes.RealID)
+	cellar.ID = pkg.FromStr(pkg.Deref(addonRes.RealID))
 
-	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), addonRes.RealID)
+	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(pkg.Deref(addonRes.RealID)).Env().Getaddonenvbyorgaandaddonid(ctx)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env vars", envRes.Error().Error())
 		return
@@ -86,7 +88,7 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(cellar.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -97,7 +99,7 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 	addon := addonRes.Payload()
 
-	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
+	addonEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(cellar.ID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
@@ -105,7 +107,7 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 	addonEnv := addonEnvRes.Payload()
 
 	creds := s3.FromEnvVars(*addonEnv)
-	cellar.Name = pkg.FromStr(addon.Name)
+	cellar.Name = pkg.FromStr(pkg.Deref(addon.Name))
 	cellar.Region = pkg.FromStr(addon.Region)
 	cellar.Host = pkg.FromStr(creds.Host)
 	cellar.KeyID = pkg.FromStr(creds.KeyID)
@@ -134,14 +136,14 @@ func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Cellar", addonRes.Error().Error())
 		return
 	}
-	state.Name = pkg.FromStr(addonRes.Payload().Name)
+	state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 
 	if !plan.Tags.Equal(state.Tags) {
 		state.Tags = resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
@@ -158,7 +160,7 @@ func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 	tflog.Debug(ctx, "CELLAR DELETE", map[string]any{"cellar": state})
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 	}
@@ -168,8 +170,8 @@ func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 
 	// TODO: Use real ID when API supports it
-	// res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), cellar.ID.ValueString())
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonRes.Payload().ID)
+	// res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(cellar.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonRes.Payload().ID).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

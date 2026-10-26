@@ -11,6 +11,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -32,13 +34,13 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 		resp.Diagnostics.AddError("Otoroshi provider doesn't exist", fmt.Sprintf("available providers are: %s", strings.Join(pkg.AddonProvidersAsList(*addonsProviders), ", ")))
 		return
 	}
-	plan := provider.FirstPlan()
+	plan := pkg.FirstPlan(provider)
 	if plan == nil {
 		resp.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       state.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: provider.ID,
@@ -51,29 +53,29 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 		}
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create Otoroshi add-on", res.Error().Error())
 		return
 	}
 	addonRes := res.Payload()
 
-	state.ID = pkg.FromStr(addonRes.RealID)
-	state.CreationDate = pkg.FromI(addonRes.CreationDate)
+	state.ID = pkg.FromStr(pkg.Deref(addonRes.RealID))
+	state.CreationDate = pkg.FromI(pkg.Deref(addonRes.CreationDate))
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 
-	otoroshiRes := tmp.GetOtoroshi(ctx, r.Client(), addonRes.RealID)
+	otoroshiRes := r.SDK.V4().AddonProviders().AddonOtoroshi().Addons().Otoroshiid(pkg.Deref(addonRes.RealID)).Getotoroshi(ctx)
 	if otoroshiRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Otorshi", otoroshiRes.Error().Error())
 	} else {
 		otoroshi := otoroshiRes.Payload()
-		if otoroshi.API != nil {
+		if otoroshi.API.URL != "" {
 			state.APIURL = pkg.FromStr(otoroshi.API.URL)
 			state.APIClientID = pkg.FromStr(otoroshi.API.User)
 			state.APIClientSecret = pkg.FromStr(otoroshi.API.Secret)
 		}
-		state.InitialAdminLogin = pkg.FromStr(otoroshi.Initialredentials.User)
-		state.InitialAdminPassword = pkg.FromStr(otoroshi.Initialredentials.Passsword)
+		state.InitialAdminLogin = pkg.FromStr(otoroshi.InitialCredentials.User)
+		state.InitialAdminPassword = pkg.FromStr(otoroshi.InitialCredentials.Password)
 		state.URL = pkg.FromStr(otoroshi.AccessURL)
 
 		// Networkgroups are piloted on the Java application backing the add-on
@@ -96,7 +98,7 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -104,23 +106,23 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddError("failed to get Otoroshi", addonRes.Error().Error())
 	} else {
 		addon := addonRes.Payload()
-		state.Name = pkg.FromStr(addon.Name)
+		state.Name = pkg.FromStr(pkg.Deref(addon.Name))
 		state.Region = pkg.FromStr(addon.Region)
-		state.CreationDate = pkg.FromI(addon.CreationDate)
+		state.CreationDate = pkg.FromI(pkg.Deref(addon.CreationDate))
 	}
 
-	otoroshiRes := tmp.GetOtoroshi(ctx, r.Client(), state.ID.ValueString())
+	otoroshiRes := r.SDK.V4().AddonProviders().AddonOtoroshi().Addons().Otoroshiid(state.ID.ValueString()).Getotoroshi(ctx)
 	if otoroshiRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Otorshi", otoroshiRes.Error().Error())
 	} else {
 		otoroshi := otoroshiRes.Payload()
-		if otoroshi.API != nil {
+		if otoroshi.API.URL != "" {
 			state.APIURL = pkg.FromStr(otoroshi.API.URL)
 			state.APIClientID = pkg.FromStr(otoroshi.API.User)
 			state.APIClientSecret = pkg.FromStr(otoroshi.API.Secret)
 		}
-		state.InitialAdminLogin = pkg.FromStr(otoroshi.Initialredentials.User)
-		state.InitialAdminPassword = pkg.FromStr(otoroshi.Initialredentials.Passsword)
+		state.InitialAdminLogin = pkg.FromStr(otoroshi.InitialCredentials.User)
+		state.InitialAdminPassword = pkg.FromStr(otoroshi.InitialCredentials.Password)
 		state.URL = pkg.FromStr(otoroshi.AccessURL)
 
 		// Networkgroups are piloted on the Java application backing the add-on
@@ -148,17 +150,17 @@ func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Otoroshi", addonRes.Error().Error())
 		return
 	}
-	state.Name = pkg.FromStr(addonRes.Payload().Name)
+	state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 
 	// Networkgroups are piloted on the Java application backing the add-on
-	otoroshiRes := tmp.GetOtoroshi(ctx, r.Client(), plan.ID.ValueString())
+	otoroshiRes := r.SDK.V4().AddonProviders().AddonOtoroshi().Addons().Otoroshiid(plan.ID.ValueString()).Getotoroshi(ctx)
 	if otoroshiRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Otoroshi", otoroshiRes.Error().Error())
 	} else {
@@ -179,7 +181,7 @@ func (r *ResourceOtoroshi) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), otoroshi.ID.ValueString())
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(otoroshi.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

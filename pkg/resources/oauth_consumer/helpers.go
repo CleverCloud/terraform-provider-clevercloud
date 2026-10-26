@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // Available OAuth rights
@@ -73,41 +73,33 @@ func ValidateRights() validator.Set {
 	})
 }
 
-// setToRightsRequest converts a Terraform Set to an OAuthConsumerRightsRequest
-func (r *ResourceOAuthConsumer) setToRightsRequest(ctx context.Context, rightsSet types.Set, diags *diag.Diagnostics) tmp.OAuthConsumerRightsRequest {
-	rights := tmp.OAuthConsumerRightsRequest{}
+// setToRightsRequest converts a Terraform Set to the rights of an OAuth consumer
+// request. Every right is sent, granted or not, as the API has always received them.
+func (r *ResourceOAuthConsumer) setToRightsRequest(ctx context.Context, rightsSet types.Set, diags *diag.Diagnostics) map[string]bool {
+	rights := map[string]bool{}
+	for _, right := range []string{
+		RightAccessOrganisations,
+		RightAccessOrganisationsBills,
+		RightAccessOrganisationsConsumptionStatistics,
+		RightAccessOrganisationsCreditCount,
+		RightAccessPersonalInformation,
+		RightManageOrganisations,
+		RightManageOrganisationsApplications,
+		RightManageOrganisationsMembers,
+		RightManageOrganisationsServices,
+		RightManagePersonalInformation,
+		RightManageSSHKeys,
+	} {
+		rights[right] = false
+	}
 
 	if rightsSet.IsNull() || rightsSet.IsUnknown() {
 		return rights
 	}
 
-	rightsSlice := pkg.SetToStringSlice(ctx, rightsSet, diags)
-
-	// Iterate through the slice and set boolean values based on right name
-	for _, right := range rightsSlice {
-		switch right {
-		case RightAccessOrganisations:
-			rights.AccessOrganisations = true
-		case RightAccessOrganisationsBills:
-			rights.AccessOrganisationsBills = true
-		case RightAccessOrganisationsConsumptionStatistics:
-			rights.AccessOrganisationsConsumptionStatistics = true
-		case RightAccessOrganisationsCreditCount:
-			rights.AccessOrganisationsCreditCount = true
-		case RightAccessPersonalInformation:
-			rights.AccessPersonalInformation = true
-		case RightManageOrganisations:
-			rights.ManageOrganisations = true
-		case RightManageOrganisationsApplications:
-			rights.ManageOrganisationsApplications = true
-		case RightManageOrganisationsMembers:
-			rights.ManageOrganisationsMembers = true
-		case RightManageOrganisationsServices:
-			rights.ManageOrganisationsServices = true
-		case RightManagePersonalInformation:
-			rights.ManagePersonalInformation = true
-		case RightManageSSHKeys:
-			rights.ManageSSHKeys = true
+	for _, right := range pkg.SetToStringSlice(ctx, rightsSet, diags) {
+		if _, known := rights[right]; known {
+			rights[right] = true
 		}
 	}
 
@@ -115,7 +107,7 @@ func (r *ResourceOAuthConsumer) setToRightsRequest(ctx context.Context, rightsSe
 }
 
 // rightsResponseToSet converts an OAuthConsumerRightsResponse to a Terraform Set
-func (r *ResourceOAuthConsumer) rightsResponseToSet(ctx context.Context, rightsResp tmp.OAuthConsumerRightsResponse, diags *diag.Diagnostics) types.Set {
+func (r *ResourceOAuthConsumer) rightsResponseToSet(ctx context.Context, rightsResp models.OAuthRightsView, diags *diag.Diagnostics) types.Set {
 	var rightsSlice []string
 
 	// Add each enabled right to the slice
@@ -149,7 +141,7 @@ func (r *ResourceOAuthConsumer) rightsResponseToSet(ctx context.Context, rightsR
 	if rightsResp.ManagePersonalInformation {
 		rightsSlice = append(rightsSlice, RightManagePersonalInformation)
 	}
-	if rightsResp.ManageSSHKeys {
+	if rightsResp.ManageSshKeys {
 		rightsSlice = append(rightsSlice, RightManageSSHKeys)
 	}
 

@@ -17,9 +17,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestAccPostgreSQL_basic(t *testing.T) {
@@ -130,7 +132,7 @@ func TestAccPostgreSQL_RefreshDeleted(t *testing.T) {
 		}, {
 			ResourceName: rName,
 			PreConfig: func() {
-				tmp.DeleteAddon(context.Background(), cc, tests.ORGANISATION, rName)
+				pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(rName).Deprovisionaddonbyorgaandaddonid(context.Background())
 			},
 			RefreshState:       true,
 			ExpectNonEmptyPlan: true,
@@ -347,7 +349,7 @@ func TestAccPostgreSQL_Import(t *testing.T) {
 
 	t.Cleanup(func() {
 		if addonID != "" {
-			tmp.DeleteAddon(context.Background(), cc, tests.ORGANISATION, addonID)
+			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(context.Background())
 		}
 	})
 
@@ -379,7 +381,7 @@ func TestAccPostgreSQL_Import(t *testing.T) {
 						t.Fatal("failed to find xs_sml plan for postgresql-addon")
 					}
 
-					res := tmp.CreateAddon(ctx, cc, tests.ORGANISATION, tmp.AddonRequest{
+					res := resources.CreateAddon(ctx, cc, tests.ORGANISATION, models.WannabeAddonProvision{
 						Name:       rName,
 						Plan:       plan.ID,
 						ProviderID: "postgresql-addon",
@@ -390,7 +392,7 @@ func TestAccPostgreSQL_Import(t *testing.T) {
 						t.Fatalf("failed to create postgresql addon: %s", res.Error())
 					}
 					addonID = res.Payload().ID
-					realID = res.Payload().RealID
+					realID = pkg.Deref(res.Payload().RealID)
 				},
 				Config:             providerBlock.Append(pgBlock).String(),
 				ResourceName:       fullName,
@@ -428,7 +430,7 @@ func TestAccPostgreSQL_LocaleImportOnDevPlan(t *testing.T) {
 
 	t.Cleanup(func() {
 		if addonID != "" {
-			tmp.DeleteAddon(context.Background(), cc, tests.ORGANISATION, addonID)
+			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(context.Background())
 		}
 	})
 
@@ -469,7 +471,7 @@ func TestAccPostgreSQL_LocaleImportOnDevPlan(t *testing.T) {
 						t.Fatal("failed to find dev plan for postgresql-addon")
 					}
 
-					createRes := tmp.CreateAddon(ctx, cc, tests.ORGANISATION, tmp.AddonRequest{
+					createRes := resources.CreateAddon(ctx, cc, tests.ORGANISATION, models.WannabeAddonProvision{
 						Name:       rName,
 						Plan:       addonPlan.ID,
 						ProviderID: "postgresql-addon",
@@ -479,7 +481,7 @@ func TestAccPostgreSQL_LocaleImportOnDevPlan(t *testing.T) {
 						t.Fatalf("failed to create postgresql addon: %s", createRes.Error())
 					}
 					addonID = createRes.Payload().ID
-					realID = createRes.Payload().RealID
+					realID = pkg.Deref(createRes.Payload().RealID)
 				},
 				Config:             config,
 				ResourceName:       fullName,

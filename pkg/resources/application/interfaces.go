@@ -8,7 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/miton18/helper/maps"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // RuntimeResource interface defines methods required by resources to use generic CRUD operations
@@ -29,7 +29,7 @@ type RuntimePlan interface {
 
 // AppResponseProvider abstracts access to the underlying AppResponse for response mapping
 type AppResponseProvider interface {
-	GetApp() *tmp.AppResponse
+	GetApp() *models.ApplicationView
 	GetBuildFlavor() types.String
 }
 

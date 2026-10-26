@@ -7,7 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 )
 
 const addonIDPrefix = "addon_"
@@ -43,7 +43,7 @@ func (c *AddonConfigurer) importHint(ctx context.Context, addonID string) string
 		return generic
 	}
 
-	realID, err := tmp.AddonIDToRealID(ctx, c.Client(), c.Organization(), addonID)
+	realID, err := addonid.ToRealID(ctx, c.Client(), c.Organization(), addonID)
 	if err != nil {
 		return generic
 	}

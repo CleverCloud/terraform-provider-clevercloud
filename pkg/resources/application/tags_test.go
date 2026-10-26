@@ -12,9 +12,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
@@ -44,7 +44,7 @@ func TestAccTags_application(t *testing.T) {
 	)
 
 	fetchTags := func(ctx context.Context, id string) (*[]string, error) {
-		res := tmp.GetAppTags(ctx, cc, tests.ORGANISATION, id)
+		res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Tags().Listorganisationapplicationtags(ctx)
 		if res.HasError() {
 			return nil, res.Error()
 		}

@@ -2,15 +2,16 @@ package networkgroup
 
 import (
 	"context"
+	"fmt"
 	"time"
 
+	"github.com/hashicorp/go-uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/models"
 )
 
@@ -46,7 +47,7 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 		return
 	}
 
-	id := tmp.GenID()
+	id := genID()
 	plan.ID = basetypes.NewStringValue(id)
 
 	label := plan.Name.ValueString()
@@ -166,4 +167,13 @@ func (r *ResourceNG) WaitForNG(ctx context.Context, ngId string) (*models.Networ
 		}
 	}
 
+}
+
+// genID returns a new network group ID, `ng_<uuid>`.
+func genID() string {
+	id, err := uuid.GenerateUUID()
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("ng_%s", id)
 }

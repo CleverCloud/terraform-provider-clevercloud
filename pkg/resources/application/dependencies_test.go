@@ -12,29 +12,30 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // DepsResult holds both app and addon dependencies for verification
 type DepsResult struct {
-	Apps   []tmp.AppResponse
-	Addons []tmp.AddonResponse
+	Apps   []models.ApplicationView
+	Addons []models.AddonView
 }
 
 // fetchDependencies retrieves both app and addon dependencies from the API
 func fetchDependencies(ctx context.Context, cc *client.Client, org, appID string) (*DepsResult, error) {
 	result := &DepsResult{}
 
-	appsRes := tmp.GetAppDependencies(ctx, cc, org, appID)
+	appsRes := pkg.SDK(cc).V2().Organisations().ID(org).Applications().Appid(appID).Dependencies().Getapplicationdependenciesbyorgaandappid(ctx)
 	if appsRes.HasError() {
 		return nil, appsRes.Error()
 	}
 	result.Apps = *appsRes.Payload()
 
-	addonsRes := tmp.GetAppLinkedAddons(ctx, cc, org, appID)
+	addonsRes := pkg.SDK(cc).V2().Organisations().ID(org).Applications().Appid(appID).Addons().Listorganisationapplicationaddons(ctx)
 	if addonsRes.HasError() {
 		return nil, addonsRes.Error()
 	}

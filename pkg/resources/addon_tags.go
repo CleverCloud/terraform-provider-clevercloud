@@ -5,8 +5,9 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
@@ -21,14 +22,14 @@ func ReadAddonTags(ctx context.Context, p provider.Provider, id string, stateVal
 		return NullTags
 	}
 
-	addonID, err := tmp.RealIDToAddonID(ctx, p.Client(), p.Organization(), id)
+	addonID, err := addonid.FromRealID(ctx, p.Client(), p.Organization(), id)
 	if err != nil {
 		diags.AddError("failed to resolve add-on ID", err.Error())
 		return stateValue
 	}
 
 	return ReadTags(ctx, stateValue, func() client.Response[[]string] {
-		return tmp.GetAddonTags(ctx, p.Client(), p.Organization(), addonID)
+		return pkg.SDK(p.Client()).V2().Organisations().ID(p.Organization()).Addons().Addonid(addonID).Tags().Getaddontagsbyorgaidandaddonid(ctx)
 	}, diags)
 }
 
@@ -39,13 +40,13 @@ func SyncAddonTags(ctx context.Context, p provider.Provider, id string, planned,
 		return NullTags
 	}
 
-	addonID, err := tmp.RealIDToAddonID(ctx, p.Client(), p.Organization(), id)
+	addonID, err := addonid.FromRealID(ctx, p.Client(), p.Organization(), id)
 	if err != nil {
 		diags.AddError("failed to resolve add-on ID", err.Error())
 		return current
 	}
 
 	return SyncTags(ctx, planned, current, func(tags []string) client.Response[[]string] {
-		return tmp.UpdateAddonTags(ctx, p.Client(), p.Organization(), addonID, tags)
+		return pkg.SDK(p.Client()).V2().Organisations().ID(p.Organization()).Addons().Addonid(addonID).Tags().Replaceaddontags(ctx, TagRefs(tags))
 	}, diags)
 }

@@ -8,6 +8,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -145,7 +146,7 @@ func (r *ResourcePostgreSQL) ModifyPlan(ctx context.Context, req resource.Modify
 		return
 	}
 
-	isDedicated := addonPlan.IsDedicated()
+	isDedicated := pkg.IsDedicatedPlan(addonPlan)
 	tflog.Debug(ctx, "Plan validation", map[string]any{"plan": plan.Plan.ValueString(), "isDedicated": isDedicated})
 
 	// Validate encryption option
@@ -209,7 +210,7 @@ func (r *ResourcePostgreSQL) localeFromAPI(ctx context.Context, realID string) s
 		return ""
 	}
 
-	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), realID)
+	addonID, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), realID)
 	if err != nil {
 		tflog.Warn(ctx, "failed to resolve addon ID while reading locale", map[string]any{"error": err.Error()})
 		return ""
@@ -221,5 +222,5 @@ func (r *ResourcePostgreSQL) localeFromAPI(ctx context.Context, realID string) s
 		return ""
 	}
 
-	return res.Payload().Locale
+	return pkg.Deref(res.Payload().Locale)
 }

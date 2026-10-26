@@ -15,10 +15,10 @@ import (
 	"github.com/miton18/helper/set"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk"
 	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/network_group"
 )
 
 type NetworkgroupConfig struct {
@@ -71,14 +71,14 @@ func SyncNetworkGroups(
 	// Create SDK instance from provider client
 	sdkClient := sdk.NewSDK(sdk.WithClient(prov.Client()))
 
-	allngRes := tmp.ListNetworkgroups(ctx, prov.Client(), prov.Organization())
+	allngRes := pkg.SDK(prov.Client()).V4().Networkgroups().Organisations().Ownerid(prov.Organization()).Networkgroups().Listnetworkgroups(ctx)
 	if allngRes.HasError() {
 		diags.AddError("failed to list Networkgroups", allngRes.Error().Error())
 		return
 	}
 	allNG := *allngRes.Payload()
 
-	_currentNg := pkg.Reduce(allNG, []string{}, func(acc []string, ng tmp.Networkgroup) []string {
+	_currentNg := pkg.Reduce(allNG, []string{}, func(acc []string, ng models.NetworkGroup) []string {
 		for _, member := range ng.Members {
 			if member.ID == applicationID {
 				return append(acc, ng.ID)
@@ -203,13 +203,13 @@ func validateMemberFQDNs(
 	ngIDToFQDN map[string]string,
 	diags *diag.Diagnostics,
 ) {
-	confRes := tmp.GetNetworkgroupConfiguration(ctx, prov.Client())
+	confRes := network_group.GetNetworkgroupsConfiguration(ctx, prov.Client(), pkg.Tracer)
 	if confRes.HasError() {
 		tflog.Warn(ctx, "cannot fetch the networkgroup configuration, skipping FQDN validation", map[string]any{"error": confRes.Error().Error()})
 		return
 	}
 
-	suffixes := confRes.Payload().DNSSuffixes
+	suffixes := confRes.Payload().DnsSuffixes
 	if len(suffixes) == 0 {
 		return
 	}
@@ -243,7 +243,7 @@ func ReadNetworkGroups(
 		return NullNetworkgroupConfig
 	}
 
-	allngRes := tmp.ListNetworkgroups(ctx, prov.Client(), prov.Organization())
+	allngRes := pkg.SDK(prov.Client()).V4().Networkgroups().Organisations().Ownerid(prov.Organization()).Networkgroups().Listnetworkgroups(ctx)
 	if allngRes.HasError() {
 		diags.AddError("failed to list Networkgroups", allngRes.Error().Error())
 		return NullNetworkgroupConfig
