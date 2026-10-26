@@ -66,7 +66,7 @@ func TestReadFromAPI_Description(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			state := &Networkgroup{Description: tc.stateDesc, Tags: setNull()}
-			ng := &models.NetworkGroup1{
+			ng := &models.NetworkGroup{
 				Label:       "n",
 				NetworkIP:   "10.0.0.0/24",
 				Description: tc.apiDesc,
@@ -131,7 +131,7 @@ func TestReadFromAPI_Tags(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			state := &Networkgroup{Description: basetypes.NewStringNull(), Tags: tc.stateTags}
-			ng := &models.NetworkGroup1{
+			ng := &models.NetworkGroup{
 				Label:     "n",
 				NetworkIP: "10.0.0.0/24",
 				Tags:      tc.apiTags,
@@ -177,7 +177,7 @@ func TestReadFromAPI_Tags(t *testing.T) {
 
 func TestReadFromAPI_RequiredFields(t *testing.T) {
 	state := &Networkgroup{Description: basetypes.NewStringNull(), Tags: setNull()}
-	ng := &models.NetworkGroup1{Label: "myng", NetworkIP: "10.42.0.0/16"}
+	ng := &models.NetworkGroup{Label: "myng", NetworkIP: "10.42.0.0/16"}
 	var diags diag.Diagnostics
 
 	readFromAPI(state, ng, &diags)
@@ -196,6 +196,6 @@ func TestReadFromAPI_RequiredFields(t *testing.T) {
 func TestReadFromAPI_NilSafe(t *testing.T) {
 	var diags diag.Diagnostics
 	// Should not panic.
-	readFromAPI(nil, &models.NetworkGroup1{}, &diags)
+	readFromAPI(nil, &models.NetworkGroup{}, &diags)
 	readFromAPI(&Networkgroup{}, nil, &diags)
 }

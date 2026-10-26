@@ -19,12 +19,12 @@ import (
 // For optional fields (description, tags), the rule is:
 //   - state null + API empty → keep null (user never set it, nothing to sync)
 //   - otherwise              → sync from API (state was set, or API returned a value)
-func readFromAPI(state *Networkgroup, ng *models.NetworkGroup1, diags *diag.Diagnostics) {
+func readFromAPI(state *Networkgroup, ng *models.NetworkGroup, diags *diag.Diagnostics) {
 	if ng == nil || state == nil {
 		return
 	}
 
-	state.Name = pkg.FromStrMaxLen(ng.Label)
+	state.Name = pkg.FromStr(ng.Label)
 
 	apiDescEmpty := ng.Description == nil || *ng.Description == ""
 	if !state.Description.IsNull() || !apiDescEmpty {
@@ -140,7 +140,7 @@ func (r *ResourceNG) Delete(ctx context.Context, req resource.DeleteRequest, res
 	resp.State.RemoveResource(ctx)
 }
 
-func (r *ResourceNG) WaitForNG(ctx context.Context, ngId string) (*models.NetworkGroup1, error) {
+func (r *ResourceNG) WaitForNG(ctx context.Context, ngId string) (*models.NetworkGroup, error) {
 	var lastErr error
 
 	for {

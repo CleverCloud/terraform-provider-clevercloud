@@ -166,6 +166,7 @@ func SyncNetworkGroups(
 	}
 
 	for ng := range missingNG.Iter() {
+		domainName := ngIDToFQDN[ng]
 		addRes := sdkClient.
 			V4().
 			Networkgroups().
@@ -176,8 +177,8 @@ func SyncNetworkGroups(
 			Members().
 			Createnetworkgroupmember(ctx, &models.WannabeNetworkgroupMember{
 				ID:         applicationID,
-				Kind:       models.MemberKind(kind),
-				DomainName: ngIDToFQDN[ng],
+				Kind:       kind,
+				DomainName: &domainName,
 			})
 		if addRes.HasError() {
 			detail := addRes.Error().Error()

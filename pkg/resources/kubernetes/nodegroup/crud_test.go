@@ -106,7 +106,7 @@ func nodegroupTestState(t *testing.T, r *ResourceKubernetesNodegroup) (tfsdk.Sta
 	return state, identity
 }
 
-func nodegroupTestView(labels models.MapLabelkeyLabelvalue) models.NodeGroup {
+func nodegroupTestView(labels map[string]string) models.NodeGroup {
 	return models.NodeGroup{
 		ID:              "test-nodegroup",
 		ClusterID:       "test-cluster",
@@ -156,7 +156,7 @@ func nodegroupTestOperation(t *testing.T, r *ResourceKubernetesNodegroup, operat
 func TestNodegroupRejectsKarpenterGroups(t *testing.T) {
 	for _, operation := range []string{"Read", "Update", "Delete"} {
 		t.Run(operation, func(t *testing.T) {
-			view := nodegroupTestView(models.MapLabelkeyLabelvalue{"karpenter.sh/nodepool": "default"})
+			view := nodegroupTestView(map[string]string{"karpenter.sh/nodepool": "default"})
 			r := nodegroupTestResource(t, nodegroupHTTPResponse{method: http.MethodGet, status: http.StatusOK, body: view})
 			state, identity := nodegroupTestState(t, r)
 			gotState, diags := nodegroupTestOperation(t, r, operation, state, identity)
@@ -173,12 +173,12 @@ func TestNodegroupRejectsKarpenterGroups(t *testing.T) {
 func TestNodegroupAllowsStaticGroups(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
-		labels models.MapLabelkeyLabelvalue
+		labels map[string]string
 	}{
 		{name: "nil labels"},
-		{name: "empty labels", labels: models.MapLabelkeyLabelvalue{}},
-		{name: "unrelated labels", labels: models.MapLabelkeyLabelvalue{"team": "platform"}},
-		{name: "empty nodepool", labels: models.MapLabelkeyLabelvalue{"karpenter.sh/nodepool": ""}},
+		{name: "empty labels", labels: map[string]string{}},
+		{name: "unrelated labels", labels: map[string]string{"team": "platform"}},
+		{name: "empty nodepool", labels: map[string]string{"karpenter.sh/nodepool": ""}},
 	} {
 		for _, operation := range []string{"Read", "Update", "Delete"} {
 			t.Run(tc.name+"/"+operation, func(t *testing.T) {
@@ -254,7 +254,7 @@ func TestNodegroupAlreadyDeleted(t *testing.T) {
 	deleted := nodegroupTestView(nil)
 	deleted.Status = models.NodeGroupStatusTypeDELETED
 	deletedKarpenter := deleted
-	deletedKarpenter.Labels = models.MapLabelkeyLabelvalue{"karpenter.sh/nodepool": "default"}
+	deletedKarpenter.Labels = map[string]string{"karpenter.sh/nodepool": "default"}
 	for _, operation := range []string{"Read", "Update", "Delete"} {
 		for _, tc := range []struct {
 			name     string
@@ -332,8 +332,8 @@ func TestNodegroupCreateDoesNotRequireClusterFeatureLookup(t *testing.T) {
 			if payload.Name != view.Name || payload.TargetNodeCount != 1 || payload.Flavor != view.Flavor {
 				t.Errorf("unexpected creation payload: %+v", payload)
 			}
-			if payload.Labels != nil && len(*payload.Labels) != 0 {
-				t.Errorf("fixed group must not receive Karpenter labels: %v", *payload.Labels)
+			if payload.Labels != nil && len(payload.Labels) != 0 {
+				t.Errorf("fixed group must not receive Karpenter labels: %v", payload.Labels)
 			}
 		},
 	})
