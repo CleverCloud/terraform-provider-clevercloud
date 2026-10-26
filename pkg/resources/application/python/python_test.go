@@ -19,10 +19,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/app"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestAccPython_basic(t *testing.T) {
@@ -70,13 +71,13 @@ func TestAccPython_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
-					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
 					if appRes.Name != rName {
 						return tests.AssertError("invalid name", appRes.Name, rName)
 					}
@@ -89,12 +90,12 @@ func TestAccPython_basic(t *testing.T) {
 						return tests.AssertError("invalid max instance count", appRes.Instance.MaxInstances, 2)
 					}
 
-					if appRes.Instance.MinFlavor.Name != "XS" {
-						return tests.AssertError("invalid min flavor", appRes.Instance.MinFlavor.Name, "XS")
+					if pkg.FlavorName(appRes.Instance.MinFlavor) != "XS" {
+						return tests.AssertError("invalid min flavor", pkg.FlavorName(appRes.Instance.MinFlavor), "XS")
 					}
 
-					if appRes.Instance.MaxFlavor.Name != "M" {
-						return tests.AssertError("invalid max flavor", appRes.Instance.MaxFlavor.Name, "M")
+					if pkg.FlavorName(appRes.Instance.MaxFlavor) != "M" {
+						return tests.AssertError("invalid max flavor", pkg.FlavorName(appRes.Instance.MaxFlavor), "M")
 					}
 
 					if appRes.ForceHTTPS != "ENABLED" {
@@ -106,15 +107,15 @@ func TestAccPython_basic(t *testing.T) {
 					}
 
 					if len(appRes.Vhosts) != 1 || !strings.HasSuffix(appRes.Vhosts[0].Fqdn, ".cleverapps.io/") {
-						return tests.AssertError("invalid vhost list", appRes.Vhosts.AsString(), "1 cleverapps.io domain")
+						return tests.AssertError("invalid vhost list", application.VHostNames(appRes.Vhosts), "1 cleverapps.io domain")
 					}
 
-					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
+					appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
 					if appEnvRes.HasError() {
 						return fmt.Errorf("failed to get application: %w", appEnvRes.Error())
 					}
 
-					env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
+					env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e models.AddonEnvironmentView) map[string]string {
 						acc[e.Name] = e.Value
 						return acc
 					})
@@ -156,15 +157,15 @@ func TestAccPython_basic(t *testing.T) {
 			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("biggest_flavor"), knownvalue.StringExact("XS")),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
-					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
 					if len(appRes.Vhosts) != 1 || appRes.Vhosts[0].Fqdn != (vhost+"/") {
-						return tests.AssertError("invalid vhost list", appRes.Vhosts.AsString(), vhost)
+						return tests.AssertError("invalid vhost list", application.VHostNames(appRes.Vhosts), vhost)
 					}
 					return nil
 				}),
@@ -192,18 +193,18 @@ func TestAccPython_basic(t *testing.T) {
 				),
 			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
-				tests.NewCheckRemoteResource(fullName2, func(ctx context.Context, id string) (*tmp.VHosts, error) {
-					appRes := tmp.GetAppVhosts(ctx, cc, tests.ORGANISATION, id)
+				tests.NewCheckRemoteResource(fullName2, func(ctx context.Context, id string) (*[]models.VhostView, error) {
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Vhosts().Listorganisationapplicationvirtualhosts(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, vhosts *tmp.VHosts) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, vhosts *[]models.VhostView) error {
 					if len(*vhosts) == 0 {
 						return fmt.Errorf("there is no vhost for app: %s", id)
 					}
 
-					err := tests.HealthCheck(ctx, vhosts.CleverAppsFQDN(id).Fqdn, 2*time.Minute)
+					err := tests.HealthCheck(ctx, application.CleverAppsVHost(*vhosts, id).Fqdn, 2*time.Minute)
 					if err != nil {
 						return fmt.Errorf("application did not respond in the allowed time: %w", err)
 					}
@@ -276,7 +277,7 @@ func TestAccPython_exposedEnv(t *testing.T) {
 					appResource := s.RootModule().Resources[fullName]
 					appID := appResource.Primary.ID
 
-					exposedEnvRes := tmp.GetExposedEnv(ctx, cc, tests.ORGANISATION, appID)
+					exposedEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(appID).ExposedEnv().Listorganisationappplicationexposedenvironmentvariables(ctx)
 					if exposedEnvRes.HasError() {
 						return fmt.Errorf("failed to get exposed env: %w", exposedEnvRes.Error())
 					}
@@ -309,7 +310,7 @@ func TestAccPython_exposedEnv(t *testing.T) {
 					appResource := s.RootModule().Resources[fullName]
 					appID := appResource.Primary.ID
 
-					exposedEnvRes := tmp.GetExposedEnv(ctx, cc, tests.ORGANISATION, appID)
+					exposedEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(appID).ExposedEnv().Listorganisationappplicationexposedenvironmentvariables(ctx)
 					if exposedEnvRes.HasError() {
 						return fmt.Errorf("failed to get exposed env: %w", exposedEnvRes.Error())
 					}
@@ -415,7 +416,7 @@ func TestAccPython_networkgroup(t *testing.T) {
 					appResource := s.RootModule().Resources[fullName]
 					ngID := ngResource.Primary.ID
 
-					membersRes := tmp.ListMembers(ctx, cc, tests.ORGANISATION, ngID)
+					membersRes := pkg.SDK(cc).V4().Networkgroups().Organisations().Ownerid(tests.ORGANISATION).Networkgroups().Networkgroupid(ngID).Members().Listnetworkgroupmembers(ctx)
 					if membersRes.HasError() {
 						return fmt.Errorf("failed to list members: %w", membersRes.Error())
 					}
@@ -448,7 +449,7 @@ func TestAccPython_networkgroup(t *testing.T) {
 					ngResource := s.RootModule().Resources["clevercloud_networkgroup."+ngName]
 					ngID := ngResource.Primary.ID
 
-					membersRes := tmp.ListMembers(ctx, cc, tests.ORGANISATION, ngID)
+					membersRes := pkg.SDK(cc).V4().Networkgroups().Organisations().Ownerid(tests.ORGANISATION).Networkgroups().Networkgroupid(ngID).Members().Listnetworkgroupmembers(ctx)
 					if membersRes.HasError() {
 						return fmt.Errorf("failed to list members: %w", membersRes.Error())
 					}
@@ -493,18 +494,18 @@ func TestAccPython_envAttributes(t *testing.T) {
 	}
 
 	remoteEnv := func(want map[string]string) statecheck.StateCheck {
-		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
-			appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
+			appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
 			if appRes.HasError() {
 				return nil, appRes.Error()
 			}
 			return appRes.Payload(), nil
-		}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
-			appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
+		}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
+			appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
 			if appEnvRes.HasError() {
 				return fmt.Errorf("failed to get application env: %w", appEnvRes.Error())
 			}
-			env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
+			env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e models.AddonEnvironmentView) map[string]string {
 				acc[e.Name] = e.Value
 				return acc
 			})

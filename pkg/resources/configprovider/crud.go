@@ -10,6 +10,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 // Create a new resource
@@ -26,7 +28,7 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 
 	provider := pkg.LookupAddonProvider(*addonsProviders, "config-provider")
 
-	plan := provider.FirstPlan()
+	plan := pkg.FirstPlan(provider)
 	if plan == nil {
 		res.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
@@ -37,7 +39,7 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name: addonConfigProvider.Name.ValueString(),
 		Plan: plan.ID,
 		// Unused by this add-on, but the create API validates it against the provider's own regions.
@@ -45,14 +47,14 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 		ProviderID: "config-provider",
 	}
 
-	createAddonRes := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	createAddonRes := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if createAddonRes.HasError() {
 		res.Diagnostics.AddError("failed to create ConfigProvider", createAddonRes.Error().Error())
 		return
 	}
 	createdAddon := createAddonRes.Payload()
 
-	addonConfigProvider.ID = pkg.FromStr(createdAddon.RealID)
+	addonConfigProvider.ID = pkg.FromStr(pkg.Deref(createdAddon.RealID))
 
 	// Set the state before updating environment variables
 	res.Diagnostics.Append(res.State.Set(ctx, addonConfigProvider)...)
@@ -66,15 +68,15 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 	}
 
 	// Always initialize an empty slice, even if there are no environment variables
-	envVarsArray := []tmp.EnvVar{}
+	envVarsArray := []*models.WannabeEnvVar{}
 
-	// Convert the map to the expected format: []tmp.EnvVar
+	// Convert the map to the expected format: []*models.WannabeEnvVar
 	for k, v := range envVars {
-		envVarsArray = append(envVarsArray, tmp.EnvVar{Name: k, Value: v})
+		envVarsArray = append(envVarsArray, &models.WannabeEnvVar{Name: k, Value: v})
 	}
 
 	tflog.Debug(ctx, "Setting environment variables on create", map[string]interface{}{"count": len(envVarsArray)})
-	envRes := tmp.UpdateConfigProviderEnv(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString(), envVarsArray)
+	envRes := r.SDK.V4().AddonProviders().ConfigProvider().Addons().Addonid(addonConfigProvider.ID.ValueString()).Env().Replaceconfigurationproviderenv(ctx, envVarsArray)
 	if envRes.HasError() {
 		res.Diagnostics.AddError("failed to configure application environment", envRes.Error().Error())
 		return
@@ -103,7 +105,7 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 	// import leaves name null, and the required attribute makes the plan fail.
 	// The v2 add-on endpoint takes a real ID as readily as an add-on ID, so no
 	// lookup is needed here.
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString())
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonConfigProvider.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -113,16 +115,16 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 		return
 	}
 
-	addonConfigProvider.Name = pkg.FromStr(addonRes.Payload().Name)
+	addonConfigProvider.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 
-	addonEnvRes := tmp.GetConfigProviderEnv(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString())
+	addonEnvRes := r.SDK.V4().AddonProviders().ConfigProvider().Addons().Addonid(addonConfigProvider.ID.ValueString()).Env().Listconfigurationproviderenv(ctx)
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
 	}
 
 	// Convert the environment variables to a map
-	envVars := pkg.Reduce(*addonEnvRes.Payload(), map[string]string{}, func(acc map[string]string, envVar tmp.EnvVar) map[string]string {
+	envVars := pkg.Reduce(*addonEnvRes.Payload(), map[string]string{}, func(acc map[string]string, envVar models.WannabeEnvVar) map[string]string {
 		acc[envVar.Name] = envVar.Value
 		return acc
 	})
@@ -157,34 +159,34 @@ func (r *ResourceConfigProvider) Update(ctx context.Context, req resource.Update
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update ConfigProvider", addonRes.Error().Error())
 		return
 	}
-	state.Name = pkg.FromStr(addonRes.Payload().Name)
+	state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 
 	tflog.Debug(ctx, "Updating environment variables")
 	envVars := plan.toEnv(ctx, &resp.Diagnostics)
 
 	// Always initialize an empty slice, even if there are no environment variables
-	envVarsArray := []tmp.EnvVar{}
+	envVarsArray := []*models.WannabeEnvVar{}
 
-	// Convert the map to the expected format: []tmp.EnvVar
+	// Convert the map to the expected format: []*models.WannabeEnvVar
 	for k, v := range envVars {
-		envVarsArray = append(envVarsArray, tmp.EnvVar{Name: k, Value: v})
+		envVarsArray = append(envVarsArray, &models.WannabeEnvVar{Name: k, Value: v})
 	}
 
 	tflog.Debug(ctx, "Environment variables to update", map[string]any{"count": len(envVarsArray)})
-	envRes := tmp.UpdateConfigProviderEnv(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), envVarsArray)
+	envRes := r.SDK.V4().AddonProviders().ConfigProvider().Addons().Addonid(plan.ID.ValueString()).Env().Replaceconfigurationproviderenv(ctx, envVarsArray)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to configure application environment", envRes.Error().Error())
 		return
 	}
 
-	envVarsFromAPI := pkg.Reduce(*envRes.Payload(), map[string]string{}, func(acc map[string]string, envVar tmp.EnvVar) map[string]string {
+	envVarsFromAPI := pkg.Reduce(*envRes.Payload(), map[string]string{}, func(acc map[string]string, envVar models.WannabeEnvVar) map[string]string {
 		acc[envVar.Name] = envVar.Value
 		return acc
 	})
@@ -211,7 +213,7 @@ func (r *ResourceConfigProvider) Delete(ctx context.Context, req resource.Delete
 
 	tflog.Debug(ctx, "ConfigProvider DELETE", map[string]any{"configProvider": addonConfigProvider})
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonConfigProvider.ID.ValueString())
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonConfigProvider.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

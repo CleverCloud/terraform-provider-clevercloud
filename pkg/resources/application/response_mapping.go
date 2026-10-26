@@ -10,7 +10,7 @@ import (
 
 // FromApp maps the application view onto the fields every runtime shares.
 //
-// It takes the AppResponseProvider interface rather than a *tmp.AppResponse,
+// It takes the AppResponseProvider interface rather than a *models.ApplicationView,
 // which is the one deviation from the convention's "name and type the API
 // payload" rule: GetBuildFlavor() encodes the "no separate build means no build
 // flavour" rule, which is state logic rather than API shape, and Create, Read
@@ -26,16 +26,16 @@ func (r *Runtime) FromApp(ctx context.Context, res AppResponseProvider, diags *d
 	r.Description = pkg.FromStr(app.Description)
 	r.MinInstanceCount = pkg.FromI(int64(app.Instance.MinInstances))
 	r.MaxInstanceCount = pkg.FromI(int64(app.Instance.MaxInstances))
-	r.SmallestFlavor = pkg.FromStr(app.Instance.MinFlavor.Name)
-	r.BiggestFlavor = pkg.FromStr(app.Instance.MaxFlavor.Name)
+	r.SmallestFlavor = pkg.FromStr(pkg.FlavorName(app.Instance.MinFlavor))
+	r.BiggestFlavor = pkg.FromStr(pkg.FlavorName(app.Instance.MaxFlavor))
 	r.BuildFlavor = res.GetBuildFlavor()
 	r.Region = pkg.FromStr(app.Zone)
 	r.StickySessions = pkg.FromBool(app.StickySessions)
 	r.RedirectHTTPS = pkg.FromBool(ToForceHTTPS(app.ForceHTTPS))
-	r.DeployURL = pkg.FromStr(app.DeployURL)
+	r.DeployURL = pkg.FromStr(pkg.Deref(app.DeployURL))
 
 	// The prior value goes in so the mapper can tell a null set from an empty one.
-	r.VHosts = helper.VHostsFromAPIHosts(ctx, app.Vhosts.AsString(), r.VHosts, diags)
+	r.VHosts = helper.VHostsFromAPIHosts(ctx, VHostNames(app.Vhosts), r.VHosts, diags)
 }
 
 // FromForceHTTPS converts a boolean to Clever Cloud's ForceHTTPS enum

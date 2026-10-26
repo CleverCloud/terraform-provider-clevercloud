@@ -7,6 +7,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
@@ -124,7 +125,7 @@ func checkDestroy(ctx context.Context, state *terraform.State) error {
 // checkApplicationDestroyed verifies that an application has been deleted or is in TO_DELETE state.
 // This is also used for drains since they verify the parent application's state.
 func checkApplicationDestroyed(ctx context.Context, cc *client.Client, appID, resourceName string) error {
-	res := tmp.GetApp(ctx, cc, ORGANISATION, appID)
+	res := pkg.SDK(cc).V2().Organisations().ID(ORGANISATION).Applications().Appid(appID).Getorganisationapplication(ctx)
 
 	if res.IsNotFoundError() {
 		return nil // Successfully destroyed
@@ -144,7 +145,7 @@ func checkApplicationDestroyed(ctx context.Context, cc *client.Client, appID, re
 
 // checkAddonDestroyed verifies that an addon has been deleted.
 func checkAddonDestroyed(ctx context.Context, cc *client.Client, addonID, resourceName string) error {
-	res := tmp.GetAddon(ctx, cc, ORGANISATION, addonID)
+	res := pkg.SDK(cc).V2().Organisations().ID(ORGANISATION).Addons().Addonid(addonID).Getaddonbyorgaandaddonid(ctx)
 
 	if res.IsNotFoundError() {
 		return nil // Successfully destroyed
@@ -161,7 +162,7 @@ func checkAddonDestroyed(ctx context.Context, cc *client.Client, addonID, resour
 // Elasticsearch uses a different ID format - need to convert real ID to addon ID first.
 func checkElasticsearchDestroyed(ctx context.Context, cc *client.Client, realID, resourceName string) error {
 	// Elasticsearch uses a different ID format - need to convert real ID to addon ID
-	addonID, err := tmp.RealIDToAddonID(ctx, cc, ORGANISATION, realID)
+	addonID, err := addonid.FromRealID(ctx, cc, ORGANISATION, realID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return nil // Successfully destroyed
@@ -191,7 +192,7 @@ func checkElasticsearchDestroyed(ctx context.Context, cc *client.Client, realID,
 // ConfigProvider uses the same pattern as Elasticsearch - ID conversion required.
 func checkConfigProviderDestroyed(ctx context.Context, cc *client.Client, realID, resourceName string) error {
 	// ConfigProvider uses a different ID format - need to convert real ID to addon ID
-	addonID, err := tmp.RealIDToAddonID(ctx, cc, ORGANISATION, realID)
+	addonID, err := addonid.FromRealID(ctx, cc, ORGANISATION, realID)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return nil // Successfully destroyed
@@ -199,7 +200,7 @@ func checkConfigProviderDestroyed(ctx context.Context, cc *client.Client, realID
 		return fmt.Errorf("failed to get addon ID for ConfigProvider %s: %s", resourceName, err.Error())
 	}
 
-	res := tmp.GetConfigProvider(ctx, cc, addonID)
+	res := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(addonID).Getconfigurationprovider(ctx)
 
 	if res.IsNotFoundError() {
 		return nil // Successfully destroyed
@@ -209,17 +210,12 @@ func checkConfigProviderDestroyed(ctx context.Context, cc *client.Client, realID
 		return fmt.Errorf("unexpected error checking if ConfigProvider %s was destroyed: %s", resourceName, res.Error().Error())
 	}
 
-	// ConfigProvider exists - check if it's in deletion state
-	if res.Payload().Status == "TO_DELETE" {
-		return nil // In process of being deleted
-	}
-
 	return fmt.Errorf("expected ConfigProvider %s (ID: %s) to be deleted but it still exists", resourceName, realID)
 }
 
 // checkNetworkgroupDestroyed verifies that a network group has been deleted.
 func checkNetworkgroupDestroyed(ctx context.Context, cc *client.Client, ngID, resourceName string) error {
-	res := tmp.GetNetworkgroup(ctx, cc, ORGANISATION, ngID)
+	res := pkg.SDK(cc).V4().Networkgroups().Organisations().Ownerid(ORGANISATION).Networkgroups().Networkgroupid(ngID).Getnetworkgroup(ctx)
 
 	if res.IsNotFoundError() {
 		return nil // Successfully destroyed
@@ -234,7 +230,7 @@ func checkNetworkgroupDestroyed(ctx context.Context, cc *client.Client, ngID, re
 
 // checkAddonProviderDestroyed verifies that an addon provider has been deleted or is in DELETED state.
 func checkAddonProviderDestroyed(ctx context.Context, cc *client.Client, providerID, resourceName string) error {
-	res := tmp.GetAddonProvider(ctx, cc, ORGANISATION, providerID)
+	res := pkg.SDK(cc).V2().Organisations().ID(ORGANISATION).Addonproviders().Providerid(providerID).Getproviderinfo(ctx)
 	if res.IsNotFoundError() {
 		return nil
 	}
@@ -267,7 +263,7 @@ func checkElasticsearchClusterDestroyed(ctx context.Context, cc *client.Client, 
 
 // checkOAuthConsumerDestroyed verifies that an OAuth consumer has been deleted.
 func checkOAuthConsumerDestroyed(ctx context.Context, cc *client.Client, consumerKey, resourceName string) error {
-	res := tmp.GetOAuthConsumer(ctx, cc, ORGANISATION, consumerKey)
+	res := pkg.SDK(cc).V2().Organisations().ID(ORGANISATION).Consumers().Key(consumerKey).Getorganisationconsumer(ctx)
 
 	if res.IsNotFoundError() {
 		return nil // Successfully destroyed

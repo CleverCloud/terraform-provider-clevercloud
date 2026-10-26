@@ -1,4 +1,4 @@
-package tmp
+package application
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestRestartApp(t *testing.T) {
@@ -29,12 +30,12 @@ func TestRestartApp(t *testing.T) {
 				}
 				gotUseCache = r.URL.Query().Get("useCache")
 				w.Header().Set("Content-Type", "application/json")
-				_ = json.NewEncoder(w).Encode(RestartAppRes{DeploymentID: "deployment_test"})
+				_ = json.NewEncoder(w).Encode(models.DeploySuccessMessage{DeploymentID: "deployment_test"})
 			}))
 			defer srv.Close()
 			cc := client.New(client.WithEndpoint(srv.URL), client.WithBearerAuth("test"))
 
-			res := RestartApp(context.Background(), cc, "orga_test", "app_test", tt.withoutCache)
+			res := restartApp(context.Background(), cc, "orga_test", "app_test", tt.withoutCache)
 			if res.HasError() {
 				t.Fatalf("unexpected error: %s", res.Error())
 			}

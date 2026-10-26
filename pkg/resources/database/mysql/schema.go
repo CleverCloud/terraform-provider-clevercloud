@@ -131,8 +131,8 @@ func (r ResourceMySQL) validateMyVersion(ctx context.Context, req validator.Stri
 
 	switch plan {
 	case "dev":
-		cluster := pkg.First(infos.Clusters, func(cluster tmp.MysqlCluster) bool {
-			return cluster.Region == region
+		cluster := pkg.First(infos.Clusters, func(cluster tmp.MysqlClusterConsole) bool {
+			return cluster.Zone == region
 		})
 		if cluster == nil {
 			res.Diagnostics.Append(diag.NewAttributeErrorDiagnostic(

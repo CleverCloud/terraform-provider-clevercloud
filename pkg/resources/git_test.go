@@ -21,8 +21,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // This is a test for local Git repositories, we don't care about the runtime
@@ -168,16 +168,16 @@ func TestAccApplication_envChangeTriggersNewDeployment(t *testing.T) {
 	expectDeployments := func(count int) statecheck.StateCheck {
 		return tests.NewCheckRemoteResource(
 			fullName,
-			func(ctx context.Context, id string) (*[]tmp.DeploymentResponse, error) {
+			func(ctx context.Context, id string) (*[]models.DeploymentView, error) {
 				deadline := time.Now().Add(5 * time.Minute)
 				for {
-					deploymentsRes := tmp.ListDeployments(ctx, cc, tests.ORGANISATION, id)
+					deploymentsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Deployments().Getapplicationdeploymentsfororga(ctx)
 					if deploymentsRes.HasError() {
 						return nil, deploymentsRes.Error()
 					}
 					deployments := *deploymentsRes.Payload()
 
-					running := pkg.HasSome(deployments, func(d tmp.DeploymentResponse) bool {
+					running := pkg.HasSome(deployments, func(d models.DeploymentView) bool {
 						return d.State == "WIP"
 					})
 					if len(deployments) >= count && !running {
@@ -190,7 +190,7 @@ func TestAccApplication_envChangeTriggersNewDeployment(t *testing.T) {
 					time.Sleep(10 * time.Second)
 				}
 			},
-			func(ctx context.Context, id string, state *tfjson.State, deployments *[]tmp.DeploymentResponse) error {
+			func(ctx context.Context, id string, state *tfjson.State, deployments *[]models.DeploymentView) error {
 				return nil
 			})
 	}
@@ -219,15 +219,15 @@ func TestAccApplication_envChangeTriggersNewDeployment(t *testing.T) {
 				expectDeployments(2),
 				tests.NewCheckRemoteResource(
 					fullName,
-					func(ctx context.Context, id string) (*[]tmp.Env, error) {
-						envRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
+					func(ctx context.Context, id string) (*[]models.AddonEnvironmentView, error) {
+						envRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
 						if envRes.HasError() {
 							return nil, envRes.Error()
 						}
 						return envRes.Payload(), nil
 					},
-					func(ctx context.Context, id string, state *tfjson.State, envs *[]tmp.Env) error {
-						env := pkg.First(*envs, func(e tmp.Env) bool { return e.Name == "MY_KEY" })
+					func(ctx context.Context, id string, state *tfjson.State, envs *[]models.AddonEnvironmentView) error {
+						env := pkg.First(*envs, func(e models.AddonEnvironmentView) bool { return e.Name == "MY_KEY" })
 						if env == nil || env.Value != "second" {
 							return tests.AssertError("bad env var value MY_KEY", env, "second")
 						}

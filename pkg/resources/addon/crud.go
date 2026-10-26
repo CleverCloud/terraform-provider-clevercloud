@@ -13,6 +13,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 // Create a new resource
@@ -41,29 +43,29 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       ad.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: provider.ID,
 		Region:     ad.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create add-on", res.Error().Error())
 		return
 	}
 
 	ad.ID = pkg.FromStr(res.Payload().ID)
-	ad.CreationDate = pkg.FromI(res.Payload().CreationDate)
+	ad.CreationDate = pkg.FromI(pkg.Deref(res.Payload().CreationDate))
 
-	envRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), res.Payload().ID)
-	if res.HasError() {
-		resp.Diagnostics.AddError("failed to get add-on env", res.Error().Error())
+	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(res.Payload().ID).Env().Getaddonenvbyorgaandaddonid(ctx)
+	if envRes.HasError() {
+		resp.Diagnostics.AddError("failed to get add-on env", envRes.Error().Error())
 		return
 	}
 
-	envAsMap := pkg.Reduce(*envRes.Payload(), map[string]attr.Value{}, func(acc map[string]attr.Value, v tmp.EnvVar) map[string]attr.Value {
+	envAsMap := pkg.Reduce(*envRes.Payload(), map[string]attr.Value{}, func(acc map[string]attr.Value, v models.AddonEnvironmentView) map[string]attr.Value {
 		acc[v.Name] = pkg.FromStr(v.Value)
 		return acc
 	})
@@ -90,7 +92,7 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), ad.ID.ValueString())
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(ad.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.IsNotFoundError() {
 		req.State.RemoveResource(ctx)
 		return
@@ -100,32 +102,32 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	addonEnvRes := tmp.GetAddonEnv(ctx, r.Client(), r.Organization(), ad.ID.ValueString())
+	addonEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(ad.ID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
 	}
 
-	envAsMap := pkg.Reduce(*addonEnvRes.Payload(), map[string]attr.Value{}, func(acc map[string]attr.Value, v tmp.EnvVar) map[string]attr.Value {
+	envAsMap := pkg.Reduce(*addonEnvRes.Payload(), map[string]attr.Value{}, func(acc map[string]attr.Value, v models.AddonEnvironmentView) map[string]attr.Value {
 		acc[v.Name] = pkg.FromStr(v.Value)
 		return acc
 	})
 
 	a := addonRes.Payload()
-	ad.Name = pkg.FromStr(a.Name)
+	ad.Name = pkg.FromStr(pkg.Deref(a.Name))
 	// Providers do not agree on the case of their plan slugs: jenkins answers S,
 	// M, L while postgresql answers dev, xs_sml. LookupProviderPlan matches
 	// case-insensitively, so both spellings create the same add-on; keep the one
 	// already in state so a plan never drifts on case alone. An import has
 	// nothing in state yet and takes the provider's spelling.
-	plan := a.Plan.Slug
+	plan := pkg.Deref(a.Plan.Slug)
 	if configured := ad.Plan.ValueString(); strings.EqualFold(configured, plan) {
 		plan = configured
 	}
 	ad.Plan = pkg.FromStr(plan)
 	ad.Region = pkg.FromStr(a.Region)
 	ad.ThirdPartyProvider = pkg.FromStr(a.Provider.ID)
-	ad.CreationDate = pkg.FromI(a.CreationDate)
+	ad.CreationDate = pkg.FromI(pkg.Deref(a.CreationDate))
 	ad.Configurations = types.MapValueMust(types.StringType, envAsMap)
 
 	ad.Tags = resources.ReadAddonTags(ctx, r, ad.ID.ValueString(), ad.Tags, &resp.Diagnostics)
@@ -148,14 +150,14 @@ func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Addon", addonRes.Error().Error())
 		return
 	}
-	state.Name = pkg.FromStr(addonRes.Payload().Name)
+	state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 
 	if !plan.Tags.Equal(state.Tags) {
 		state.Tags = resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
@@ -175,7 +177,7 @@ func (r *ResourceAddon) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 	tflog.Debug(ctx, "Add-on DELETE", map[string]any{"addon": ad})
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), ad.ID.ValueString())
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(ad.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

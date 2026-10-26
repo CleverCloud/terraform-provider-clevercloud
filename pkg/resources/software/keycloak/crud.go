@@ -11,6 +11,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 // Create a new resource
@@ -25,13 +26,13 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 	addonsProviders := addonsProvidersRes.Payload()
 	provider := pkg.LookupAddonProvider(*addonsProviders, "keycloak")
 
-	addonPlan := provider.FirstPlan()
+	addonPlan := pkg.FirstPlan(provider)
 	if addonPlan == nil {
 		res.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       plan.Name.ValueString(),
 		Plan:       addonPlan.ID,
 		ProviderID: "keycloak",
@@ -46,14 +47,14 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		addonReq.Options["version"] = plan.Version.ValueString()
 	}
 
-	createAddonRes := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	createAddonRes := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if createAddonRes.HasError() {
 		res.Diagnostics.AddError("failed to create Keycloak", createAddonRes.Error().Error())
 		return
 	}
 	addon := createAddonRes.Payload()
 
-	plan.ID = pkg.FromStr(addon.RealID)
+	plan.ID = pkg.FromStr(pkg.Deref(addon.RealID))
 	plan.Region = pkg.FromStr(addon.Region)
 
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
@@ -63,7 +64,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		AddonProviders().
 		AddonKeycloak().
 		Addons().
-		Addonkeycloakid(addon.RealID).
+		Addonkeycloakid(pkg.Deref(addon.RealID)).
 		Getkeycloakwithoutownerid(ctx)
 	if keycloakRes.HasError() {
 		res.Diagnostics.AddError("failed to get Keycloak", keycloakRes.Error().Error())
@@ -95,7 +96,7 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -103,7 +104,7 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 		resp.Diagnostics.AddError("failed to get Keycloak addon", addonRes.Error().Error())
 	} else {
 		addon := addonRes.Payload()
-		state.Name = pkg.FromStr(addon.Name)
+		state.Name = pkg.FromStr(pkg.Deref(addon.Name))
 		state.Region = pkg.FromStr(addon.Region)
 	}
 
@@ -143,13 +144,13 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Keycloak", addonRes.Error().Error())
 	} else {
-		state.Name = pkg.FromStr(addonRes.Payload().Name)
+		state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 	}
 
 	// Handle version upgrade
@@ -199,7 +200,7 @@ func (r *ResourceKeycloak) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete addon", res.Error().Error())
 	} else {

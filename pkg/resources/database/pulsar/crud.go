@@ -12,6 +12,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 // Create a new resource
@@ -31,31 +33,31 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 	addonsProviders := addonsProvidersRes.Payload()
 
 	prov := pkg.LookupAddonProvider(*addonsProviders, "addon-pulsar")
-	addonPlan := prov.FirstPlan()
+	addonPlan := pkg.FirstPlan(prov)
 	if addonPlan == nil {
 		resp.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       plan.Name.ValueString(),
 		Plan:       addonPlan.ID,
 		ProviderID: "addon-pulsar",
 		Region:     plan.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create add-on", res.Error().Error())
 		return
 	}
 	addon := res.Payload()
 
-	plan.ID = pkg.FromStr(addon.RealID)
+	plan.ID = pkg.FromStr(pkg.Deref(addon.RealID))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
-	pulsarRes := tmp.GetPulsar(ctx, r.Client(), r.Organization(), addon.RealID)
+	pulsarRes := tmp.GetPulsar(ctx, r.Client(), pkg.Deref(addon.RealID))
 	if pulsarRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())
 		return
@@ -63,7 +65,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 	pulsar := pulsarRes.Payload()
 	readAddon(&plan, pulsar, &resp.Diagnostics)
 
-	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.Client(), pulsar.ClusterID)
+	pulsarClusterRes := r.SDK.V4().AddonProviders().AddonPulsar().Clusters().Clusterid(pulsar.ClusterID).Getpulsarcluster(ctx)
 	if pulsarClusterRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar env", pulsarClusterRes.Error().Error())
 		return
@@ -97,7 +99,7 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	pulsarRes := tmp.GetPulsar(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	pulsarRes := tmp.GetPulsar(ctx, r.Client(), state.ID.ValueString())
 	if pulsarRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())
 		return
@@ -105,7 +107,7 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 	pulsar := pulsarRes.Payload()
 	readAddon(&state, pulsar, &resp.Diagnostics)
 
-	pulsarClusterRes := tmp.GetPulsarCluster(ctx, r.Client(), pulsar.ClusterID)
+	pulsarClusterRes := r.SDK.V4().AddonProviders().AddonPulsar().Clusters().Clusterid(pulsar.ClusterID).Getpulsarcluster(ctx)
 	if pulsarClusterRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar env", pulsarClusterRes.Error().Error())
 		return
@@ -113,7 +115,7 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 	pulsarCluster := pulsarClusterRes.Payload()
 	readCluster(&state, pulsarCluster, &resp.Diagnostics)
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on", addonRes.Error().Error())
 		return
@@ -138,30 +140,30 @@ func readAddon(state *Pulsar, addon *tmp.Pulsar, diags *diag.Diagnostics) {
 	state.Token = pkg.FromStr(addon.Token)
 }
 
-func readOldAddon(state *Pulsar, addon *tmp.AddonResponse, diags *diag.Diagnostics) {
+func readOldAddon(state *Pulsar, addon *models.AddonView, diags *diag.Diagnostics) {
 	if addon == nil {
 		return
 	}
 
-	state.Name = pkg.FromStr(addon.Name)
+	state.Name = pkg.FromStr(pkg.Deref(addon.Name))
 	state.Region = pkg.FromStr(addon.Region)
 }
 
-func readCluster(state *Pulsar, cluster *tmp.PulsarCluster, diags *diag.Diagnostics) {
+func readCluster(state *Pulsar, cluster *models.PulsarCluster, diags *diag.Diagnostics) {
 	if cluster == nil {
 		return
 	}
 
-	if cluster.PulsarTLSPort != 0 {
-		state.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar+ssl://%s:%d", cluster.URL, cluster.PulsarTLSPort))
+	if pkg.Deref(cluster.PulsarTLSPort) != 0 {
+		state.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar+ssl://%s:%d", cluster.URL, pkg.Deref(cluster.PulsarTLSPort)))
 	} else {
 		state.BinaryURL = pkg.FromStr(fmt.Sprintf("pulsar://%s:%d", cluster.URL, cluster.PulsarPort))
 	}
 
-	if cluster.WebTLSPort != 0 {
-		state.HTTPUrl = pkg.FromStr(fmt.Sprintf("https://%s:%d", cluster.URL, cluster.WebTLSPort))
+	if pkg.Deref(cluster.WebTLSPort) != 0 {
+		state.HTTPUrl = pkg.FromStr(fmt.Sprintf("https://%s:%d", cluster.URL, pkg.Deref(cluster.WebTLSPort)))
 	} else {
-		state.HTTPUrl = pkg.FromStr(fmt.Sprintf("http://%s:%d", cluster.URL, cluster.WebPort))
+		state.HTTPUrl = pkg.FromStr(fmt.Sprintf("http://%s:%d", cluster.URL, pkg.Deref(cluster.WebPort)))
 	}
 }
 
@@ -241,13 +243,13 @@ func (r *ResourcePulsar) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Pulsar", addonRes.Error().Error())
 	} else {
-		state.Name = pkg.FromStr(addonRes.Payload().Name)
+		state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 	}
 
@@ -273,7 +275,7 @@ func (r *ResourcePulsar) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 	tflog.Debug(ctx, "Pulsar DELETE", map[string]any{"pulsar": state})
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

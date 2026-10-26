@@ -11,33 +11,30 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // ReadAppRes represents the response from reading an application
 type ReadAppRes struct {
-	App          tmp.AppResponse
+	App          models.ApplicationView
 	AppIsDeleted bool
-	Env          []tmp.Env
+	Env          []models.AddonEnvironmentView
 }
 
-func (res *ReadAppRes) GetApp() *tmp.AppResponse {
+func (res *ReadAppRes) GetApp() *models.ApplicationView {
 	return &res.App
 }
 
 func (res *ReadAppRes) GetBuildFlavor() types.String {
-	if !res.App.SeparateBuild {
-		return types.StringNull()
-	}
-	return types.StringValue(res.App.BuildFlavor.Name)
+	return buildFlavor(&res.App)
 }
 
 func (r ReadAppRes) EnvAsMap() *helpermaps.Map[string, string] {
 	return pkg.Reduce(
 		r.Env,
 		helpermaps.NewMap(map[string]string{}),
-		func(acc *helpermaps.Map[string, string], entry tmp.Env) *helpermaps.Map[string, string] {
+		func(acc *helpermaps.Map[string, string], entry models.AddonEnvironmentView) *helpermaps.Map[string, string] {
 			acc.Set(entry.Name, entry.Value)
 			return acc
 		})
@@ -54,7 +51,7 @@ func ReadApp(ctx context.Context, cc *client.Client, orgId, appId string) (*Read
 		return r, diags
 	}
 
-	appRes := tmp.GetApp(ctx, cc, orgId, appId)
+	appRes := pkg.SDK(cc).V2().Organisations().ID(orgId).Applications().Appid(appId).Getorganisationapplication(ctx)
 	if appRes.IsNotFoundError() {
 		r.AppIsDeleted = true
 		return r, diags
@@ -66,7 +63,7 @@ func ReadApp(ctx context.Context, cc *client.Client, orgId, appId string) (*Read
 
 	r.App = *appRes.Payload()
 
-	envRes := tmp.GetAppEnv(ctx, cc, orgId, appId)
+	envRes := pkg.SDK(cc).V2().Organisations().ID(orgId).Applications().Appid(appId).Env().Listorganisationapplicationenvironmentvariables(ctx)
 	if envRes.IsNotFoundError() {
 		r.AppIsDeleted = true
 		return r, diags
@@ -158,7 +155,7 @@ func Read[T RuntimePlan](ctx context.Context, resource RuntimeResource, state T)
 
 	// Reflect the commit currently running on the application, only when the
 	// user manages deployment through Terraform (deployment block present)
-	syncDeploymentCommit(runtime.Deployment, readRes.App.CommitID)
+	syncDeploymentCommit(runtime.Deployment, pkg.Deref(readRes.App.CommitID))
 
 	return false, diags
 }

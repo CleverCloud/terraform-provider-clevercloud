@@ -12,12 +12,12 @@ import (
 	"github.com/miton18/helper/set"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // apiFeatureToState converts an API feature response to a state Feature
-func apiFeatureToState(apiFeature tmp.AddonProviderFeatureView) Feature {
+func apiFeatureToState(apiFeature models.AddonProviderFeatureView) Feature {
 	return Feature{
 		Name: pkg.FromStr(apiFeature.Name),
 		Type: pkg.FromStr(apiFeature.Type),
@@ -25,23 +25,23 @@ func apiFeatureToState(apiFeature tmp.AddonProviderFeatureView) Feature {
 }
 
 // apiPlanToState converts an API plan response to a state Plan
-func apiPlanToState(apiPlan tmp.AddonProviderPlanView) Plan {
+func apiPlanToState(apiPlan models.AddonPlanView) Plan {
 	// Convert API features to state features
 	planFeatures := make([]PlanFeature, 0, len(apiPlan.Features))
 	for _, apiFeature := range apiPlan.Features {
 		// Only include features that have a non-empty value
-		if apiFeature.Value != "" {
+		if pkg.Deref(apiFeature.Value) != "" {
 			planFeatures = append(planFeatures, PlanFeature{
 				Name:  pkg.FromStr(apiFeature.Name),
-				Value: pkg.FromStr(apiFeature.Value),
+				Value: pkg.FromStr(pkg.Deref(apiFeature.Value)),
 			})
 		}
 	}
 
 	return Plan{
 		ID:       pkg.FromStr(apiPlan.ID),
-		Name:     pkg.FromStr(apiPlan.Name),
-		Slug:     pkg.FromStr(apiPlan.Slug),
+		Name:     pkg.FromStr(pkg.Deref(apiPlan.Name)),
+		Slug:     pkg.FromStr(pkg.Deref(apiPlan.Slug)),
 		Price:    pkg.FromFloat64(apiPlan.Price),
 		Features: planFeatures,
 	}
@@ -62,7 +62,7 @@ func SyncFeatures(
 	diags *diag.Diagnostics,
 ) []Feature {
 	// Step 1: Get current features from API
-	currentFeaturesRes := tmp.ListAddonProviderFeatures(ctx, cc, organization, providerID)
+	currentFeaturesRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Features().Getproviderfeatures(ctx)
 	var currentFeatureNames []string
 	if currentFeaturesRes.HasError() && !currentFeaturesRes.IsNotFoundError() {
 		diags.AddError("failed to list addon provider features", currentFeaturesRes.Error().Error())
@@ -96,7 +96,7 @@ func SyncFeatures(
 	for featureName := range currentSet.Difference(expectedSet).Iter() {
 		tflog.Debug(ctx, "deleting feature", map[string]any{"name": featureName})
 
-		delRes := tmp.DeleteAddonProviderFeature(ctx, cc, organization, providerID, featureName)
+		delRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Features().Featureid(featureName).Deleteproviderfeature(ctx)
 		if delRes.HasError() && !delRes.IsNotFoundError() {
 			diags.AddError(
 				fmt.Sprintf("failed to delete feature %s", featureName),
@@ -113,7 +113,7 @@ func SyncFeatures(
 	// features back to make sure they are really gone instead of reporting a
 	// success that leaves the provider out of sync with the state.
 	if deletedFeatures.Size() > 0 {
-		remainingRes := tmp.ListAddonProviderFeatures(ctx, cc, organization, providerID)
+		remainingRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Features().Getproviderfeatures(ctx)
 		if remainingRes.HasError() && !remainingRes.IsNotFoundError() {
 			diags.AddError("failed to list addon provider features", remainingRes.Error().Error())
 			return nil
@@ -138,12 +138,12 @@ func SyncFeatures(
 		feature := expectedFeatureMap[featureName]
 		tflog.Info(ctx, "creating feature", map[string]any{"name": featureName})
 
-		featureReq := tmp.AddonProviderFeature{
+		featureReq := models.WannabeAddonFeature{
 			Name: feature.Name.ValueString(),
 			Type: feature.Type.ValueString(),
 		}
 
-		featureRes := tmp.CreateAddonProviderFeature(ctx, cc, organization, providerID, featureReq)
+		featureRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Features().Addproviderfeature(ctx, &featureReq)
 		if featureRes.HasError() {
 			diags.AddError(
 				fmt.Sprintf("failed to create feature %s", featureName),
@@ -179,23 +179,17 @@ func SyncPlans(
 	expectedPlans []Plan,
 	diags *diag.Diagnostics,
 ) []Plan {
-	// Build feature types map (needed for plan features)
-	featureTypes := make(map[string]string)
-	for _, feature := range currentFeatures {
-		featureTypes[feature.Name.ValueString()] = feature.Type.ValueString()
-	}
-
 	// Step 1: Get current plans from API
-	currentPlansRes := tmp.ListAddonProviderPlans(ctx, cc, organization, providerID)
+	currentPlansRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Plans().Getproviderplans(ctx)
 	var currentPlanSlugs []string
-	currentPlanMap := make(map[string]tmp.AddonProviderPlanView)
+	currentPlanMap := make(map[string]models.AddonPlanView)
 	if currentPlansRes.HasError() && !currentPlansRes.IsNotFoundError() {
 		diags.AddError("failed to list addon provider plans", currentPlansRes.Error().Error())
 		return nil
 	} else if !currentPlansRes.IsNotFoundError() {
 		for _, p := range *currentPlansRes.Payload() {
-			currentPlanSlugs = append(currentPlanSlugs, p.Slug)
-			currentPlanMap[p.Slug] = p
+			currentPlanSlugs = append(currentPlanSlugs, pkg.Deref(p.Slug))
+			currentPlanMap[pkg.Deref(p.Slug)] = p
 		}
 	}
 
@@ -222,7 +216,7 @@ func SyncPlans(
 		currentPlan := currentPlanMap[planSlug]
 		tflog.Info(ctx, "deleting plan", map[string]any{"slug": planSlug, "id": currentPlan.ID})
 
-		delRes := tmp.DeleteAddonProviderPlan(ctx, cc, organization, providerID, currentPlan.ID)
+		delRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Plans().Planid(currentPlan.ID).Deleteproviderplan(ctx)
 		if delRes.HasError() && !delRes.IsNotFoundError() {
 			diags.AddError(
 				fmt.Sprintf("failed to delete plan %s", planSlug),
@@ -232,22 +226,19 @@ func SyncPlans(
 	}
 
 	// Helper function to build plan request from a Plan
-	buildPlanRequest := func(plan Plan) tmp.AddonProviderPlan {
-		planFeatures := make([]tmp.AddonProviderPlanFeature, 0, len(plan.Features))
+	// The published schema of a plan feature has no type: it is not sent.
+	buildPlanRequest := func(plan Plan) models.WannabeAddonPlan {
+		planFeatures := make([]models.WannabeAddonPlanFeature, 0, len(plan.Features))
 		for _, feature := range plan.Features {
-			featureName := feature.Name.ValueString()
-			featureType := featureTypes[featureName]
-
-			planFeatures = append(planFeatures, tmp.AddonProviderPlanFeature{
-				Name:  featureName,
-				Value: feature.Value.ValueString(),
-				Type:  &featureType,
+			planFeatures = append(planFeatures, models.WannabeAddonPlanFeature{
+				Name:  feature.Name.ValueString(),
+				Value: pkg.Ptr(feature.Value.ValueString()),
 			})
 		}
 
-		return tmp.AddonProviderPlan{
+		return models.WannabeAddonPlan{
 			Name:     plan.Name.ValueString(),
-			Slug:     plan.Slug.ValueString(),
+			Slug:     pkg.Ptr(plan.Slug.ValueString()),
 			Price:    plan.Price.ValueFloat64(),
 			Features: planFeatures,
 		}
@@ -260,7 +251,7 @@ func SyncPlans(
 		tflog.Info(ctx, "creating plan", map[string]any{"slug": planSlug})
 
 		planReq := buildPlanRequest(plan)
-		planRes := tmp.CreateAddonProviderPlan(ctx, cc, organization, providerID, planReq)
+		planRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Plans().Addproviderplan(ctx, &planReq)
 		if planRes.HasError() {
 			diags.AddError(
 				fmt.Sprintf("failed to create plan %s", planSlug),
@@ -287,7 +278,7 @@ func SyncPlans(
 		tflog.Info(ctx, "updating plan", map[string]any{"slug": planSlug, "id": currentPlan.ID})
 
 		planReq := buildPlanRequest(expectedPlan)
-		planRes := tmp.UpdateAddonProviderPlan(ctx, cc, organization, providerID, currentPlan.ID, planReq)
+		planRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Plans().Planid(currentPlan.ID).Editproviderplan(ctx, &planReq)
 		if planRes.HasError() {
 			diags.AddError(
 				fmt.Sprintf("failed to update plan %s", planSlug),
@@ -310,30 +301,25 @@ func (r *ResourceAddonProvider) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	configVars := pkg.SetToStringSlice(ctx, plan.ConfigVars, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	manifest := tmp.AddonProviderManifest{
+	// The published schema of the manifest has no `config_vars`: they are not sent.
+	manifest := models.WannabeAddonProvider{
 		ID:   plan.ProviderID.ValueString(),
-		Name: plan.Name.ValueString(),
-		API: tmp.AddonProviderManifestAPIConfig{
-			ConfigVars: configVars,
-			Password:   plan.Password.ValueString(),
-			SSOSalt:    plan.SSOSalt.ValueString(),
-			Production: tmp.AddonProviderManifestEnvironmentConfig{
-				BaseURL: plan.ProductionBaseURL.ValueString(),
-				SSOURL:  plan.ProductionSSOURL.ValueString(),
+		Name: pkg.Ptr(plan.Name.ValueString()),
+		API: &models.WannabeAddonProviderApi{
+			Password: pkg.Ptr(plan.Password.ValueString()),
+			SsoSalt:  pkg.Ptr(plan.SSOSalt.ValueString()),
+			Production: &models.WannabeAddonProviderApiUrl{
+				BaseURL: pkg.Ptr(plan.ProductionBaseURL.ValueString()),
+				SsoURL:  pkg.Ptr(plan.ProductionSSOURL.ValueString()),
 			},
-			Test: tmp.AddonProviderManifestEnvironmentConfig{
-				BaseURL: plan.TestBaseURL.ValueString(),
-				SSOURL:  plan.TestSSOURL.ValueString(),
+			Test: &models.WannabeAddonProviderApiUrl{
+				BaseURL: pkg.Ptr(plan.TestBaseURL.ValueString()),
+				SsoURL:  pkg.Ptr(plan.TestSSOURL.ValueString()),
 			},
 		},
 	}
 
-	res := tmp.CreateAddonProvider(ctx, r.Client(), r.Organization(), manifest)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Createprovider(ctx, &manifest)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon provider", res.Error().Error())
 		return
@@ -344,7 +330,7 @@ func (r *ResourceAddonProvider) Create(ctx context.Context, req resource.CreateR
 	// The API returns basic info (ID, name, regions) but not the actual config (config_vars, sensitive fields, URLs)
 	state := AddonProvider{
 		ProviderID:        pkg.FromStr(apiProvider.ID),
-		Name:              pkg.FromStr(apiProvider.Name),
+		Name:              pkg.FromStr(pkg.Deref(apiProvider.Name)),
 		ConfigVars:        plan.ConfigVars,                                           // Not returned by API
 		Regions:           pkg.FromSetString(apiProvider.Regions, &resp.Diagnostics), // Computed from API
 		Password:          plan.Password,                                             // Not returned by API (sensitive)
@@ -388,7 +374,7 @@ func (r *ResourceAddonProvider) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Call API to get current state
-	res := tmp.GetAddonProvider(ctx, r.Client(), r.Organization(), ap.ProviderID.ValueString())
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(ap.ProviderID.ValueString()).Getproviderinfo(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -399,7 +385,7 @@ func (r *ResourceAddonProvider) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Read features from API
-	featuresRes := tmp.ListAddonProviderFeatures(ctx, r.Client(), r.Organization(), ap.ProviderID.ValueString())
+	featuresRes := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(ap.ProviderID.ValueString()).Features().Getproviderfeatures(ctx)
 	if featuresRes.HasError() && !featuresRes.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to read addon provider features", featuresRes.Error().Error())
 		return
@@ -414,7 +400,7 @@ func (r *ResourceAddonProvider) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Read plans from API
-	plansRes := tmp.ListAddonProviderPlans(ctx, r.Client(), r.Organization(), ap.ProviderID.ValueString())
+	plansRes := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(ap.ProviderID.ValueString()).Plans().Getproviderplans(ctx)
 	if plansRes.HasError() && !plansRes.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to read addon provider plans", plansRes.Error().Error())
 		return
@@ -442,32 +428,16 @@ func (r *ResourceAddonProvider) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Extract config_vars set
-	configVars := pkg.SetToStringSlice(ctx, plan.ConfigVars, &resp.Diagnostics)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
 	// Build the JSON manifest with updated values
-	manifest := tmp.AddonProviderManifest{
-		ID:   plan.ProviderID.ValueString(),
-		Name: plan.Name.ValueString(),
-		API: tmp.AddonProviderManifestAPIConfig{
-			ConfigVars: configVars,
-			Password:   plan.Password.ValueString(),
-			SSOSalt:    plan.SSOSalt.ValueString(),
-			Production: tmp.AddonProviderManifestEnvironmentConfig{
-				BaseURL: plan.ProductionBaseURL.ValueString(),
-				SSOURL:  plan.ProductionSSOURL.ValueString(),
-			},
-			Test: tmp.AddonProviderManifestEnvironmentConfig{
-				BaseURL: plan.TestBaseURL.ValueString(),
-				SSOURL:  plan.TestSSOURL.ValueString(),
-			},
-		},
+	// The published schema of this route takes the provider's infos, not its manifest:
+	// only the name is sent; the config vars, the password, the SSO salt and the URLs
+	// are not.
+	infos := models.WannabeAddonProviderInfos{
+		Name: pkg.Ptr(plan.Name.ValueString()),
 	}
 
 	// Update the addon provider via API
-	res := tmp.UpdateAddonProvider(ctx, r.Client(), r.Organization(), plan.ProviderID.ValueString(), manifest)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(plan.ProviderID.ValueString()).Updateproviderinfos(ctx, &infos)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to update addon provider", res.Error().Error())
 		return
@@ -508,7 +478,7 @@ func (r *ResourceAddonProvider) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	res := tmp.DeleteAddonProvider(ctx, r.Client(), r.Organization(), ap.ProviderID.ValueString())
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(ap.ProviderID.ValueString()).Deleteprovider(ctx)
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete addon provider", res.Error().Error())
 		return

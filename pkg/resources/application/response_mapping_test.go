@@ -5,32 +5,33 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/application"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // stubResponse is the AppResponseProvider the generic CRUD hands to FromApp.
 type stubResponse struct {
-	app         *tmp.AppResponse
+	app         *models.ApplicationView
 	buildFlavor types.String
 }
 
-func (s stubResponse) GetApp() *tmp.AppResponse     { return s.app }
-func (s stubResponse) GetBuildFlavor() types.String { return s.buildFlavor }
+func (s stubResponse) GetApp() *models.ApplicationView { return s.app }
+func (s stubResponse) GetBuildFlavor() types.String    { return s.buildFlavor }
 
-func apiApp() *tmp.AppResponse {
-	app := &tmp.AppResponse{
+func apiApp() *models.ApplicationView {
+	app := &models.ApplicationView{
 		Name:           "tf-test-app",
 		Description:    "a description",
 		Zone:           "par",
-		DeployURL:      "https://push.clever-cloud.com/app_1.git",
+		DeployURL:      pkg.Ptr("https://push.clever-cloud.com/app_1.git"),
 		StickySessions: true,
 		ForceHTTPS:     "ENABLED",
 	}
 	app.Instance.MinInstances = 1
 	app.Instance.MaxInstances = 3
-	app.Instance.MinFlavor.Name = "nano"
-	app.Instance.MaxFlavor.Name = "XS"
+	app.Instance.MinFlavor = &models.Flavor{Name: pkg.Ptr("nano")}
+	app.Instance.MaxFlavor = &models.Flavor{Name: pkg.Ptr("XS")}
 	return app
 }
 

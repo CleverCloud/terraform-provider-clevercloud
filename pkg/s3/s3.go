@@ -3,7 +3,7 @@ package s3
 import (
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func minioClientFor(endpoint, id, secret string) (*minio.Client, error) {
@@ -20,7 +20,7 @@ type CellarCreds struct {
 }
 
 // Extract S3 credentials from Clever Cloud Cellar exposed env vars
-func FromEnvVars(envVars tmp.EnvVars) *CellarCreds {
+func FromEnvVars(envVars []models.AddonEnvironmentView) *CellarCreds {
 	creds := &CellarCreds{}
 
 	for _, envVar := range envVars {
@@ -38,7 +38,7 @@ func FromEnvVars(envVars tmp.EnvVars) *CellarCreds {
 	return creds
 }
 
-func MinioClientFromEnvsFor(envVars tmp.EnvVars) (*minio.Client, error) {
+func MinioClientFromEnvsFor(envVars []models.AddonEnvironmentView) (*minio.Client, error) {
 	creds := FromEnvVars(envVars)
 	return minioClientFor(creds.Host, creds.KeyID, creds.KeySecret)
 }

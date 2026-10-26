@@ -13,9 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
@@ -87,7 +87,7 @@ func TestAccRedis_importAddonID(t *testing.T) {
 			ImportState:  true,
 			ImportStateIdFunc: func(state *terraform.State) (string, error) {
 				cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
-				return tmp.RealIDToAddonID(ctx, cc, tests.ORGANISATION, stateID(state))
+				return addonid.FromRealID(ctx, cc, tests.ORGANISATION, stateID(state))
 			},
 			ExpectError: regexp.MustCompile(`(?s)cannot\s+import.*redis_`),
 		}, {

@@ -12,6 +12,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 // Create a new resource
@@ -30,36 +32,31 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 	addonsProviders := addonsProvidersRes.Payload()
 	provider := pkg.LookupAddonProvider(*addonsProviders, "kv")
 
-	plan := provider.FirstPlan()
+	plan := pkg.FirstPlan(provider)
 	if plan == nil {
 		resp.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       kv.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: "kv",
 		Region:     kv.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
 	}
 
-	kv.ID = pkg.FromStr(res.Payload().RealID)
-	kv.CreationDate = pkg.FromI(res.Payload().CreationDate)
+	kv.ID = pkg.FromStr(pkg.Deref(res.Payload().RealID))
+	kv.CreationDate = pkg.FromI(pkg.Deref(res.Payload().CreationDate))
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
 
-	kvInfoRes := r.SDK.V4().
-		Materia().
-		Organisations().
-		Ownerid(r.Organization()).
-		Materia().
-		Databases().Kvid(kv.ID.ValueString()).Getmateriakv(ctx)
+	kvInfoRes := tmp.GetMateriaKV(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
 	if kvInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get materia kv connection infos", kvInfoRes.Error().Error())
 		return
@@ -94,9 +91,7 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	addonKVRes := r.SDK.V4().Materia().
-		Organisations().Ownerid(r.Organization()).Materia().
-		Databases().Kvid(kv.ID.ValueString()).Getmateriakv(ctx)
+	addonKVRes := tmp.GetMateriaKV(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
 	if addonKVRes.IsNotFoundError() {
 		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
 		resp.Diagnostics.Append(diags...)
@@ -124,7 +119,7 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 	// attribute makes the plan fail.
 	// The v2 add-on endpoint takes a real ID as readily as an add-on ID, so no
 	// lookup is needed here.
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(kv.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -135,9 +130,9 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 	}
 
 	addon := addonRes.Payload()
-	kv.Name = pkg.FromStr(addon.Name)
+	kv.Name = pkg.FromStr(pkg.Deref(addon.Name))
 	kv.Region = pkg.FromStr(addon.Region)
-	kv.CreationDate = pkg.FromI(addon.CreationDate)
+	kv.CreationDate = pkg.FromI(pkg.Deref(addon.CreationDate))
 
 	tflog.Debug(ctx, "STATE", map[string]any{"kv": kv})
 	tflog.Debug(ctx, "API", map[string]any{"kv": addonKV})
@@ -162,14 +157,14 @@ func (r *ResourceMateriaKV) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update MateriaKV", addonRes.Error().Error())
 		return
 	}
-	state.Name = pkg.FromStr(addonRes.Payload().Name)
+	state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 	if !plan.Tags.Equal(state.Tags) {
 		state.Tags = resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
 	}
@@ -185,7 +180,7 @@ func (r *ResourceMateriaKV) Delete(ctx context.Context, req resource.DeleteReque
 	}
 	tflog.Debug(ctx, "MateriaKV DELETE", map[string]any{"kv": kv})
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(kv.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

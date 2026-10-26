@@ -9,7 +9,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"go.clever-cloud.com/terraform-provider/pkg"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
@@ -59,7 +58,7 @@ func (w waitForAppInstanceUp) CheckState(ctx context.Context, req statecheck.Che
 			resp.Error = fmt.Errorf("timeout waiting for app %s instance UP: %w", appID, deadline.Err())
 			return
 		default:
-			res := tmp.ListInstances(deadline, cc, ORGANISATION, appID)
+			res := pkg.SDK(cc).V2().Organisations().ID(ORGANISATION).Applications().Appid(appID).Instances().Listorganisationapplicationinstances(deadline)
 			if res.HasError() {
 				tflog.Warn(deadline, "ListInstances error", map[string]any{"err": res.Error().Error()})
 				time.Sleep(2 * time.Second)

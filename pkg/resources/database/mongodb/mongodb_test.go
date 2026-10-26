@@ -15,9 +15,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestAccMongoDB_basic(t *testing.T) {
@@ -84,7 +86,7 @@ func TestAccMongoDB_RefreshDeleted(t *testing.T) {
 				ResourceName: rName,
 				PreConfig: func() {
 					// delete the database using an api call
-					tmp.DeleteAddon(context.Background(), cc, tests.ORGANISATION, rName)
+					pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(rName).Deprovisionaddonbyorgaandaddonid(context.Background())
 				},
 				// refreshing state
 				RefreshState: true,
@@ -111,7 +113,7 @@ func TestAccMongoDB_Import(t *testing.T) {
 
 	t.Cleanup(func() {
 		if addonID != "" {
-			tmp.DeleteAddon(context.Background(), cc, tests.ORGANISATION, addonID)
+			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(context.Background())
 		}
 	})
 
@@ -142,7 +144,7 @@ func TestAccMongoDB_Import(t *testing.T) {
 						t.Fatal("failed to find xs_med plan for mongodb-addon")
 					}
 
-					res := tmp.CreateAddon(ctx, cc, tests.ORGANISATION, tmp.AddonRequest{
+					res := resources.CreateAddon(ctx, cc, tests.ORGANISATION, models.WannabeAddonProvision{
 						Name:       rName,
 						Plan:       plan.ID,
 						ProviderID: "mongodb-addon",
@@ -153,7 +155,7 @@ func TestAccMongoDB_Import(t *testing.T) {
 						t.Fatalf("failed to create mongodb addon: %s", res.Error())
 					}
 					addonID = res.Payload().ID
-					realID = res.Payload().RealID
+					realID = pkg.Deref(res.Payload().RealID)
 				},
 				Config:             providerBlock.Append(mgBlock).String(),
 				ResourceName:       fullName,

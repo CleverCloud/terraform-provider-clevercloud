@@ -17,9 +17,9 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/app"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestAccStaticApache_basic(t *testing.T) {
@@ -89,18 +89,18 @@ func TestAccStaticApache_envAttributes(t *testing.T) {
 	}
 
 	remoteEnv := func(want map[string]string) statecheck.StateCheck {
-		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
-			appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
+			appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
 			if appRes.HasError() {
 				return nil, appRes.Error()
 			}
 			return appRes.Payload(), nil
-		}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
-			appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
+		}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
+			appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
 			if appEnvRes.HasError() {
 				return fmt.Errorf("failed to get application env: %w", appEnvRes.Error())
 			}
-			env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
+			env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e models.AddonEnvironmentView) map[string]string {
 				acc[e.Name] = e.Value
 				return acc
 			})

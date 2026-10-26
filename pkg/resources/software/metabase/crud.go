@@ -6,9 +6,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 // Create a new resource
@@ -26,31 +29,31 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 	addonsProviders := addonsProvidersRes.Payload()
 
 	prov := pkg.LookupAddonProvider(*addonsProviders, "metabase")
-	plan := prov.FirstPlan()
+	plan := pkg.FirstPlan(prov)
 	if plan == nil {
 		resp.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       mb.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: "metabase",
 		Region:     mb.Region.ValueString(),
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
 	}
 	addon := res.Payload()
 
-	mb.ID = pkg.FromStr(addon.RealID)
+	mb.ID = pkg.FromStr(pkg.Deref(addon.RealID))
 	mb.Region = pkg.FromStr(addon.Region)
 	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
 
-	metabaseRes := tmp.GetMetabase(ctx, r.Client(), addon.RealID)
+	metabaseRes := r.SDK.V4().AddonProviders().AddonMetabase().Addons().Addonmetabaseid(pkg.Deref(addon.RealID)).Getmetabase(ctx)
 	if metabaseRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Metabase", metabaseRes.Error().Error())
 	} else {
@@ -75,7 +78,7 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonMBRes := tmp.GetMetabase(ctx, r.Client(), state.ID.ValueString())
+	addonMBRes := r.SDK.V4().AddonProviders().AddonMetabase().Addons().Addonmetabaseid(state.ID.ValueString()).Getmetabase(ctx)
 	if addonMBRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -87,13 +90,13 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 		state.Host = pkg.FromStr(metabase.AccessURL)
 	}
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	addonId, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Metabase addon", addonRes.Error().Error())
 	} else {
@@ -124,13 +127,13 @@ func (r *ResourceMetabase) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Metabase", addonRes.Error().Error())
 	} else {
-		state.Name = pkg.FromStr(addonRes.Payload().Name)
+		state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 	}
 
 	if !plan.Tags.Equal(state.Tags) {
@@ -149,13 +152,13 @@ func (r *ResourceMetabase) Delete(ctx context.Context, req resource.DeleteReques
 
 	tflog.Debug(ctx, "Metabase DELETE", map[string]any{"mb": mb})
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), mb.ID.ValueString())
+	addonId, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), mb.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

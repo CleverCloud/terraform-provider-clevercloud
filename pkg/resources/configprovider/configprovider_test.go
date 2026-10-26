@@ -16,9 +16,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestAccConfigProvider_basic(t *testing.T) {
@@ -34,8 +36,8 @@ func TestAccConfigProvider_basic(t *testing.T) {
 		helper.SetKeyValues(map[string]any{"name": rName, "environment": map[string]any{"foo": "this is foo"}}),
 	)
 
-	retrieveConfigProvider := func(ctx context.Context, id string) (*tmp.ConfigProvider, error) {
-		res := tmp.GetConfigProvider(ctx, cc, id)
+	retrieveConfigProvider := func(ctx context.Context, id string) (*models.ConfigProvider, error) {
+		res := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Getconfigurationprovider(ctx)
 		if res.IsNotFoundError() {
 			return nil, fmt.Errorf("Unable to find configProvider by real id: %s", id)
 		}
@@ -55,14 +57,14 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^config_.*`))),
-				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
+				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *models.ConfigProvider) error {
 					// Verify environment variables were updated
-					cpEnvRes := tmp.GetConfigProviderEnv(ctx, cc, tests.ORGANISATION, id)
+					cpEnvRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Env().Listconfigurationproviderenv(ctx)
 					if cpEnvRes.HasError() {
 						return fmt.Errorf("Failed to get application: %w", cpEnvRes.Error())
 					}
 
-					env := pkg.Reduce(*cpEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.EnvVar) map[string]string {
+					env := pkg.Reduce(*cpEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e models.WannabeEnvVar) map[string]string {
 						acc[e.Name] = e.Value
 						return acc
 					})
@@ -89,13 +91,13 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			ResourceName: rName,
 			Config:       providerBlock.Append(configProviderBlock.SetOneValue("environment", map[string]any{"foo": "this is foo", "bar": "this is bar"})).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
-				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
-					cpEnvRes := tmp.GetConfigProviderEnv(ctx, cc, tests.ORGANISATION, id)
+				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *models.ConfigProvider) error {
+					cpEnvRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Env().Listconfigurationproviderenv(ctx)
 					if cpEnvRes.HasError() {
 						return fmt.Errorf("Failed to get application: %w", cpEnvRes.Error())
 					}
 
-					env := pkg.Reduce(*cpEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.EnvVar) map[string]string {
+					env := pkg.Reduce(*cpEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e models.WannabeEnvVar) map[string]string {
 						acc[e.Name] = e.Value
 						return acc
 					})
@@ -119,14 +121,14 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			ResourceName: rName,
 			Config:       providerBlock.Append(configProviderBlock.SetOneValue("environment", map[string]any{"bar": "this is bar"})).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
-				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
+				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *models.ConfigProvider) error {
 					// Verify environment variables were updated
-					cpEnvRes := tmp.GetConfigProviderEnv(ctx, cc, tests.ORGANISATION, id)
+					cpEnvRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Env().Listconfigurationproviderenv(ctx)
 					if cpEnvRes.HasError() {
 						return fmt.Errorf("Failed to get application: %w", cpEnvRes.Error())
 					}
 
-					env := pkg.Reduce(*cpEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.EnvVar) map[string]string {
+					env := pkg.Reduce(*cpEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e models.WannabeEnvVar) map[string]string {
 						acc[e.Name] = e.Value
 						return acc
 					})
@@ -146,14 +148,14 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			ResourceName: rName,
 			Config:       providerBlock.Append(configProviderBlock.SetOneValue("environment", map[string]any{})).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
-				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *tmp.ConfigProvider) error {
+				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *models.ConfigProvider) error {
 					// Verify environment variables were updated
-					cpEnvRes := tmp.GetConfigProviderEnv(ctx, cc, tests.ORGANISATION, id)
+					cpEnvRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Env().Listconfigurationproviderenv(ctx)
 					if cpEnvRes.HasError() {
 						return fmt.Errorf("Failed to get application: %w", cpEnvRes.Error())
 					}
 
-					env := pkg.Reduce(*cpEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.EnvVar) map[string]string {
+					env := pkg.Reduce(*cpEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e models.WannabeEnvVar) map[string]string {
 						acc[e.Name] = e.Value
 						return acc
 					})
@@ -183,7 +185,7 @@ func TestAccConfigProvider_Import(t *testing.T) {
 	// before Terraform takes ownership of the resource.
 	t.Cleanup(func() {
 		if addonID != "" {
-			tmp.DeleteAddon(context.Background(), cc, tests.ORGANISATION, addonID)
+			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(context.Background())
 		}
 	})
 
@@ -213,7 +215,7 @@ func TestAccConfigProvider_Import(t *testing.T) {
 						t.Fatal("failed to find std plan for config-provider")
 					}
 
-					res := tmp.CreateAddon(ctx, cc, tests.ORGANISATION, tmp.AddonRequest{
+					res := resources.CreateAddon(ctx, cc, tests.ORGANISATION, models.WannabeAddonProvision{
 						Name:       rName,
 						Plan:       plan.ID,
 						ProviderID: "config-provider",
@@ -223,12 +225,12 @@ func TestAccConfigProvider_Import(t *testing.T) {
 						t.Fatalf("failed to create config provider addon: %s", res.Error())
 					}
 					addonID = res.Payload().ID
-					realID = res.Payload().RealID
+					realID = pkg.Deref(res.Payload().RealID)
 
 					// The fixture has to carry the same environment as the
 					// config, otherwise the plan below legitimately wants to add
 					// it and the step fails for the wrong reason.
-					envRes := tmp.UpdateConfigProviderEnv(ctx, cc, tests.ORGANISATION, realID, tmp.EnvVars{
+					envRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(realID).Env().Replaceconfigurationproviderenv(ctx, []*models.WannabeEnvVar{
 						{Name: "foo", Value: "this is foo"},
 					})
 					if envRes.HasError() {
