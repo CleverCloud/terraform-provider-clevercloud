@@ -15,10 +15,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/miton18/helper/set"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // runtimeCommon defines common schema attributes for all application runtimes
@@ -321,7 +323,7 @@ func ValidateRuntimeFlavors(ctx context.Context, r provider.Provider, variantSlu
 		diags.AddError("failed to lookup instance", fmt.Sprintf("no instance named '%s'", variantSlug))
 		return
 	}
-	flavorSet := instance.Flavors.NamesAsSet()
+	flavorSet := set.New(pkg.Map(instance.Flavors, func(flavor models.Flavor) string { return pkg.Deref(flavor.Name) })...)
 
 	availableFlavors := strings.Join(flavorSet.Slice(), ", ")
 

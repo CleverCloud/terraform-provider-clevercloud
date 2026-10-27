@@ -1,38 +1,44 @@
-package tmp
+package kubernetes
 
 import (
 	"encoding/json"
 	"testing"
+
+	"go.clever-cloud.dev/sdk/models"
 )
 
-func TestKubernetesPatchRequest_Marshal(t *testing.T) {
+// The payloads the cluster resource sends and the views it reads, as the SDK
+// encodes them: the features patch is a merge patch, so an omitted field and an
+// explicit false must stay distinguishable.
+
+func TestClusterPatchPayload_Marshal(t *testing.T) {
 	enabled, disabled := true, false
 
 	tests := []struct {
 		name     string
-		req      KubernetesPatchRequest
+		req      models.ClusterPatchPayload
 		expected string
 	}{
 		{
 			name:     "no feature set",
-			req:      KubernetesPatchRequest{},
+			req:      models.ClusterPatchPayload{},
 			expected: `{}`,
 		},
 		{
 			name:     "empty features object",
-			req:      KubernetesPatchRequest{Features: &KubernetesFeatures{}},
+			req:      models.ClusterPatchPayload{Features: &models.ClusterFeaturesPatch{}},
 			expected: `{"features":{}}`,
 		},
 		{
 			name:     "enable node autoprovisioning",
-			req:      KubernetesPatchRequest{Features: &KubernetesFeatures{NodeAutoprovisioning: &enabled}},
+			req:      models.ClusterPatchPayload{Features: &models.ClusterFeaturesPatch{NodeAutoprovisioning: &enabled}},
 			expected: `{"features":{"nodeAutoprovisioning":true}}`,
 		},
 		{
 			// a non pointer bool would be dropped by omitempty here and would
 			// silently turn every disable request into a no-op
 			name:     "disable node autoprovisioning",
-			req:      KubernetesPatchRequest{Features: &KubernetesFeatures{NodeAutoprovisioning: &disabled}},
+			req:      models.ClusterPatchPayload{Features: &models.ClusterFeaturesPatch{NodeAutoprovisioning: &disabled}},
 			expected: `{"features":{"nodeAutoprovisioning":false}}`,
 		},
 	}
@@ -50,26 +56,26 @@ func TestKubernetesPatchRequest_Marshal(t *testing.T) {
 	}
 }
 
-func TestKubernetesCreateRequest_Marshal(t *testing.T) {
+func TestClusterCreationPayload_Marshal(t *testing.T) {
 	enabled := true
 
 	tests := []struct {
 		name     string
-		req      KubernetesCreateRequest
+		req      models.ClusterCreationPayload
 		expected string
 	}{
 		{
 			// the payload production receives today, adding the features field
 			// must not change it
 			name:     "without features",
-			req:      KubernetesCreateRequest{Name: "tf-test-kubernetes"},
+			req:      models.ClusterCreationPayload{Name: "tf-test-kubernetes"},
 			expected: `{"name":"tf-test-kubernetes"}`,
 		},
 		{
 			name: "with node autoprovisioning",
-			req: KubernetesCreateRequest{
+			req: models.ClusterCreationPayload{
 				Name:     "tf-test-kubernetes",
-				Features: &KubernetesFeatures{NodeAutoprovisioning: &enabled},
+				Features: &models.ClusterFeatures{NodeAutoprovisioning: &enabled},
 			},
 			expected: `{"features":{"nodeAutoprovisioning":true},"name":"tf-test-kubernetes"}`,
 		},
@@ -88,7 +94,7 @@ func TestKubernetesCreateRequest_Marshal(t *testing.T) {
 	}
 }
 
-func TestClusterView_UnmarshalFeatures(t *testing.T) {
+func TestKubernetesCluster_UnmarshalFeatures(t *testing.T) {
 	tests := []struct {
 		name        string
 		payload     string
@@ -123,7 +129,7 @@ func TestClusterView_UnmarshalFeatures(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cluster := ClusterView{}
+			cluster := models.KubernetesCluster{}
 			if err := json.Unmarshal([]byte(tt.payload), &cluster); err != nil {
 				t.Fatalf("Unmarshal() error = %v", err)
 			}

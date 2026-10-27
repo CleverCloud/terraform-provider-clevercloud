@@ -10,6 +10,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // SyncTCPRedirection reconciles the application TCP redirection with the plan.
@@ -22,7 +23,7 @@ func SyncTCPRedirection(ctx context.Context, cc *client.Client, organisation, ap
 		return nil
 	}
 
-	redirsRes := tmp.GetTCPRedirections(ctx, cc, organisation, applicationID)
+	redirsRes := pkg.SDK(cc).V2().Organisations().ID(organisation).Applications().Appid(applicationID).Tcpredirs().Listorganisationapplicationtcpredirections(ctx)
 	if redirsRes.HasError() {
 		diags.AddError("failed to get application TCP redirections", redirsRes.Error().Error())
 		return state
@@ -38,7 +39,7 @@ func SyncTCPRedirection(ctx context.Context, cc *client.Client, organisation, ap
 
 		// only remove redirections previously managed by this resource
 		if state != nil && redir.Namespace == state.Namespace.ValueString() {
-			deleteRes := tmp.DeleteTCPRedirection(ctx, cc, organisation, applicationID, redir.Port, redir.Namespace)
+			deleteRes := tmp.DeleteTCPRedirection(ctx, cc, organisation, applicationID, int64(redir.Port), redir.Namespace)
 			if deleteRes.HasError() {
 				diags.AddError(fmt.Sprintf("failed to delete TCP redirection on namespace %q", redir.Namespace), deleteRes.Error().Error())
 			}
@@ -46,8 +47,8 @@ func SyncTCPRedirection(ctx context.Context, cc *client.Client, organisation, ap
 	}
 
 	if plan != nil && result == nil {
-		createRes := tmp.CreateTCPRedirection(ctx, cc, organisation, applicationID, tmp.CreateTCPRedirectionRequest{
-			Namespace: plan.Namespace.ValueString(),
+		createRes := pkg.SDK(cc).V2().Organisations().ID(organisation).Applications().Appid(applicationID).Tcpredirs().Createorganisationapplicationtcpredirection(ctx, &models.WannabeNamespace{
+			Namespace: pkg.Ptr(plan.Namespace.ValueString()),
 		})
 		if createRes.HasError() {
 			diags.AddError(fmt.Sprintf("failed to create TCP redirection on namespace %q", plan.Namespace.ValueString()), createRes.Error().Error())
@@ -66,7 +67,7 @@ func ReadTCPRedirection(ctx context.Context, cc *client.Client, organisation, ap
 		return nil
 	}
 
-	redirsRes := tmp.GetTCPRedirections(ctx, cc, organisation, applicationID)
+	redirsRes := pkg.SDK(cc).V2().Organisations().ID(organisation).Applications().Appid(applicationID).Tcpredirs().Listorganisationapplicationtcpredirections(ctx)
 	if redirsRes.HasError() {
 		diags.AddError("failed to get application TCP redirections", redirsRes.Error().Error())
 		return state

@@ -6,14 +6,15 @@ import (
 	"sort"
 	"time"
 
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // WaitForDeploymentsSettled polls the application deployments until every
 // one of them reached a final state (OK or FAIL) and returns them, most
 // recent first.
-func WaitForDeploymentsSettled(ctx context.Context, cc *client.Client, appID string, timeout time.Duration) ([]tmp.DeploymentResponse, error) {
+func WaitForDeploymentsSettled(ctx context.Context, cc *client.Client, appID string, timeout time.Duration) ([]models.DeploymentView, error) {
 	deadline, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
@@ -25,7 +26,7 @@ func WaitForDeploymentsSettled(ctx context.Context, cc *client.Client, appID str
 		case <-deadline.Done():
 			return nil, fmt.Errorf("timeout waiting for deployments of %s to settle: %w", appID, deadline.Err())
 		case <-ticker.C:
-			res := tmp.ListDeployments(deadline, cc, ORGANISATION, appID)
+			res := pkg.SDK(cc).V2().Organisations().ID(ORGANISATION).Applications().Appid(appID).Deployments().Getapplicationdeploymentsfororga(deadline)
 			if res.IsNotFoundError() {
 				continue
 			}
@@ -48,7 +49,7 @@ func WaitForDeploymentsSettled(ctx context.Context, cc *client.Client, appID str
 				continue
 			}
 
-			sort.Slice(deployments, func(i, j int) bool { return deployments[i].Date > deployments[j].Date })
+			sort.Slice(deployments, func(i, j int) bool { return pkg.Deref(deployments[i].Date) > pkg.Deref(deployments[j].Date) })
 			return deployments, nil
 		}
 	}

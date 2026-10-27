@@ -10,10 +10,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 func (r *ResourcePostgreSQL) FetchPostgresInfos(ctx context.Context, diags *diag.Diagnostics) {
@@ -62,7 +65,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       pg.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: "postgresql-addon",
@@ -93,14 +96,14 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		addonReq.Options["locale"] = pg.Locale.ValueString()
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
 	}
 	createdPg := res.Payload()
 
-	pg.ID = pkg.FromStr(createdPg.RealID)
+	pg.ID = pkg.FromStr(pkg.Deref(createdPg.RealID))
 	r.readFromAddon(&pg, *createdPg)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
@@ -139,20 +142,20 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	realID, err := tmp.AddonIDToRealID(ctx, r.Client(), r.Organization(), pg.ID.ValueString())
+	realID, err := addonid.ToRealID(ctx, r.Client(), r.Organization(), pg.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 	} else {
 		pg.ID = pkg.FromStr(realID)
 	}
 
-	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), pg.ID.ValueString())
+	addonID, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), pg.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonID)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonID).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -183,31 +186,31 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 }
 
-func (r *ResourcePostgreSQL) readFromAddon(state *PostgreSQL, addon tmp.AddonResponse) {
-	state.Name = pkg.FromStr(addon.Name)
-	state.Plan = pkg.FromStr(addon.Plan.Slug)
+func (r *ResourcePostgreSQL) readFromAddon(state *PostgreSQL, addon models.AddonView) {
+	state.Name = pkg.FromStr(pkg.Deref(addon.Name))
+	state.Plan = pkg.FromStr(pkg.Deref(addon.Plan.Slug))
 	state.Region = pkg.FromStr(addon.Region)
-	state.CreationDate = pkg.FromI(addon.CreationDate)
+	state.CreationDate = pkg.FromI(pkg.Deref(addon.CreationDate))
 }
 
 // defaultLocale is the locale the platform uses when none is requested at creation
 const defaultLocale = "en_GB"
 
-func (r *ResourcePostgreSQL) readFromAPI(ctx context.Context, state *PostgreSQL, pg tmp.PostgreSQL) {
+func (r *ResourcePostgreSQL) readFromAPI(ctx context.Context, state *PostgreSQL, pg tmp.PostgresqlAddonView) {
 	state.Host = pkg.FromStr(pg.Host)
 	state.Port = pkg.FromI(int64(pg.Port))
 	state.Database = pkg.FromStr(pg.Database)
 	state.User = pkg.FromStr(pg.User)
 	state.Password = pkg.FromStr(pg.Password)
 	state.Version = pkg.FromStr(pg.Version)
-	state.Uri = pkg.FromStr(pg.Uri())
+	state.Uri = pkg.FromStr(uri(pg))
 
 	// The locale is fixed at creation time (LC_COLLATE cannot change afterwards)
 	// and exposed by the API. When the API does not return it, keep the value
 	// already in state (config or default) and only fall back on import.
 	switch {
-	case pg.Locale != "":
-		state.Locale = pkg.FromStr(pg.Locale)
+	case pkg.Deref(pg.Locale) != "":
+		state.Locale = pkg.FromStr(*pg.Locale)
 	case state.Locale.IsNull() || state.Locale.IsUnknown():
 		tflog.Warn(ctx, "API did not return the PostgreSQL locale, using default", map[string]any{"locale": defaultLocale})
 		state.Locale = pkg.FromStr(defaultLocale)
@@ -245,14 +248,14 @@ func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequ
 
 	// Only name can be edited
 	if !plan.Name.Equal(state.Name) {
-		addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-			"name": plan.Name.ValueString(),
+		addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+			Name: plan.Name.ValueString(),
 		})
 		if addonRes.HasError() {
 			resp.Diagnostics.AddError("failed to update PostgreSQL", addonRes.Error().Error())
 		} else {
 			addon := addonRes.Payload()
-			state.Name = pkg.FromStr(addon.Name)
+			state.Name = pkg.FromStr(pkg.Deref(addon.Name))
 			resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 		}
 	}
@@ -295,7 +298,7 @@ func (r *ResourcePostgreSQL) migrate(ctx context.Context, plan PostgreSQL, state
 		return
 	}
 
-	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	addonID, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if err != nil {
 		diags.AddError("failed to get addon ID", err.Error())
 		return
@@ -324,7 +327,7 @@ func (r *ResourcePostgreSQL) migrate(ctx context.Context, plan PostgreSQL, state
 	// migration cannot be run if instance is not ready
 	// hard to know when instance is OK, because instance API return UP even if Postgres is not listening
 	/*for {
-		pgRes := tmp.ListInstances(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+		pgRes := r.SDK.V2().Organisations().ID(r.Organization()).Applications().Appid(state.ID.ValueString()).Instances().Listorganisationapplicationinstances(ctx)
 		if pgRes.HasError() {
 			tflog.Warn(ctx, "failed to get PG", map[string]any{"error": pgRes.Error().Error()})
 			continue
@@ -335,7 +338,7 @@ func (r *ResourcePostgreSQL) migrate(ctx context.Context, plan PostgreSQL, state
 			continue
 		}
 
-		firstInstance := pkg.First(instances, func(instance tmp.AppInstance) bool { return true })
+		firstInstance := pkg.First(instances, func(instance models.SuperNovaInstanceView) bool { return true })
 		state := firstInstance.State
 		if state != "UP" { // BOOTING
 			tflog.Info(ctx, "pg status not OK", map[string]any{"state": state})
@@ -403,7 +406,7 @@ func (r *ResourcePostgreSQL) migrate(ctx context.Context, plan PostgreSQL, state
 			}
 
 			if currentMigration.Status == "OK" {
-				state.Plan = pkg.FromStr(billingPlan.Slug)
+				state.Plan = pkg.FromStr(pkg.Deref(billingPlan.Slug))
 				state.Region = pkg.FromStr(migrationReq.Region)
 				state.Version = pkg.FromStr(*migrationReq.Version)
 
@@ -419,7 +422,7 @@ func (r *ResourcePostgreSQL) migrate(ctx context.Context, plan PostgreSQL, state
 					state.User = pkg.FromStr(addonPG.User)
 					state.Password = pkg.FromStr(addonPG.Password)
 					state.Version = pkg.FromStr(addonPG.Version)
-					state.Uri = pkg.FromStr(addonPG.Uri())
+					state.Uri = pkg.FromStr(uri(*addonPG))
 				}
 				return
 			} else if currentMigration.Status != "RUNNING" {
@@ -439,16 +442,21 @@ func (r *ResourcePostgreSQL) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), pg.ID.ValueString())
+	addonID, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), pg.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonID)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete addon", res.Error().Error())
 	} else {
 		resp.State.RemoveResource(ctx)
 	}
+}
+
+// uri is the connection URI of a PostgreSQL add-on.
+func uri(pg tmp.PostgresqlAddonView) string {
+	return fmt.Sprintf("postgresql://%s:%s@%s:%d/%s", pg.User, pg.Password, pg.Host, pg.Port, pg.Database)
 }

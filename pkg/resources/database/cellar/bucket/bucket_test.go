@@ -11,10 +11,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/minio/minio-go/v7"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/s3"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
@@ -96,7 +96,7 @@ func TestAccCellarBucket_deleteNonEmpty(t *testing.T) {
 				cellarID := resourceState.Primary.Attributes["cellar_id"]
 				bucketName := resourceState.Primary.Attributes["id"]
 
-				res := tmp.GetAddonEnv(ctx, cc, tests.ORGANISATION, cellarID)
+				res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(cellarID).Env().Getaddonenvbyorgaandaddonid(ctx)
 				if res.HasError() {
 					return fmt.Errorf("failed to get cellar env: %s", res.Error().Error())
 				}

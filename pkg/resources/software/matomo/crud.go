@@ -6,9 +6,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 // Create a new resource
@@ -27,31 +30,31 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 
 	provider := pkg.LookupAddonProvider(*addonsProviders, "addon-matomo")
 
-	plan := provider.FirstPlan()
+	plan := pkg.FirstPlan(provider)
 	if plan == nil {
 		res.Diagnostics.AddError("at least 1 plan for addon is required", "no plans")
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       appMatomo.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: "addon-matomo",
 		Region:     appMatomo.Region.ValueString(),
 	}
 
-	createAddonRes := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	createAddonRes := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if createAddonRes.HasError() {
 		res.Diagnostics.AddError("failed to create Matomo", createAddonRes.Error().Error())
 		return
 	}
 	addon := createAddonRes.Payload()
 
-	appMatomo.ID = pkg.FromStr(addon.RealID)
+	appMatomo.ID = pkg.FromStr(pkg.Deref(addon.RealID))
 	appMatomo.Region = pkg.FromStr(addon.Region)
 	res.Diagnostics.Append(res.State.Set(ctx, appMatomo)...)
 
-	matomoRes := tmp.GetMatomo(ctx, r.Client(), addon.RealID)
+	matomoRes := r.SDK.V4().AddonProviders().AddonMatomo().Addons().Addonmatomoid(pkg.Deref(addon.RealID)).Getmatomo(ctx)
 	if matomoRes.HasError() {
 		res.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
 	} else {
@@ -77,7 +80,7 @@ func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	matomoRes := tmp.GetMatomo(ctx, r.Client(), state.ID.ValueString())
+	matomoRes := r.SDK.V4().AddonProviders().AddonMatomo().Addons().Addonmatomoid(state.ID.ValueString()).Getmatomo(ctx)
 	if matomoRes.HasError() {
 		resp.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
 	} else {
@@ -87,13 +90,13 @@ func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, res
 		state.Version = pkg.FromStr(matomo.Version)
 	}
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	addonId, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Matomo addon", addonRes.Error().Error())
 	} else {
@@ -124,13 +127,13 @@ func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update Matomo", addonRes.Error().Error())
 	} else {
-		state.Name = pkg.FromStr(addonRes.Payload().Name)
+		state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 	}
 
 	if !plan.Tags.Equal(state.Tags) {
@@ -148,12 +151,12 @@ func (r *ResourceMatomo) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 	tflog.Debug(ctx, "Matomo DELETE", map[string]any{"matomo": state})
 
-	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	addonID, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("cannot get ID of matomo", err.Error())
 	}
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonID)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

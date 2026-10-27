@@ -15,7 +15,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
@@ -74,7 +73,7 @@ func TestAccAddon_UppercasePlan(t *testing.T) {
 
 	t.Cleanup(func() {
 		if addonID != "" {
-			tmp.DeleteAddon(context.Background(), cc, tests.ORGANISATION, addonID)
+			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(context.Background())
 		}
 	})
 

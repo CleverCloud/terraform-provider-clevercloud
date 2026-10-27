@@ -13,9 +13,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
@@ -133,13 +133,13 @@ func TestAccOtoroshi_networkgroup(t *testing.T) {
 					otoroshiResource := s.RootModule().Resources[fullName]
 					ngID := ngResource.Primary.ID
 
-					otoroshiRes := tmp.GetOtoroshi(ctx, cc, otoroshiResource.Primary.ID)
+					otoroshiRes := pkg.SDK(cc).V4().AddonProviders().AddonOtoroshi().Addons().Otoroshiid(otoroshiResource.Primary.ID).Getotoroshi(ctx)
 					if otoroshiRes.HasError() {
 						return fmt.Errorf("failed to get otoroshi: %w", otoroshiRes.Error())
 					}
 					entrypoint := otoroshiRes.Payload().Resources.Entrypoint
 
-					membersRes := tmp.ListMembers(ctx, cc, tests.ORGANISATION, ngID)
+					membersRes := pkg.SDK(cc).V4().Networkgroups().Organisations().Ownerid(tests.ORGANISATION).Networkgroups().Networkgroupid(ngID).Members().Listnetworkgroupmembers(ctx)
 					if membersRes.HasError() {
 						return fmt.Errorf("failed to list members: %w", membersRes.Error())
 					}
@@ -169,7 +169,7 @@ func TestAccOtoroshi_networkgroup(t *testing.T) {
 					ngResource := s.RootModule().Resources["clevercloud_networkgroup."+ngName]
 					ngID := ngResource.Primary.ID
 
-					membersRes := tmp.ListMembers(ctx, cc, tests.ORGANISATION, ngID)
+					membersRes := pkg.SDK(cc).V4().Networkgroups().Organisations().Ownerid(tests.ORGANISATION).Networkgroups().Networkgroupid(ngID).Members().Listnetworkgroupmembers(ctx)
 					if membersRes.HasError() {
 						return fmt.Errorf("failed to list members: %w", membersRes.Error())
 					}

@@ -15,8 +15,8 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func RebootApplication() action.Action {
@@ -92,7 +92,7 @@ func (ar *ActionRebootApplication) Invoke(ctx context.Context, req action.Invoke
 		return
 	}
 
-	rebootRes := tmp.RebootApp(ctx, ar.Client(), ar.Organization(), cfg.ApplicationID.ValueString())
+	rebootRes := pkg.SDK(ar.Client()).V2().Organisations().ID(ar.Organization()).Applications().Appid(cfg.ApplicationID.ValueString()).Instances().Redeployorganisationapplication(ctx)
 	if rebootRes.HasError() {
 		res.Diagnostics.AddError("failed to reboot application", rebootRes.Error().Error())
 	}
@@ -134,9 +134,9 @@ func WatchDeployment(
 	application,
 	deployment string,
 	diags *diag.Diagnostics,
-) <-chan tmp.DeploymentResponse {
-	out := make(chan tmp.DeploymentResponse, 1)
-	var lastState tmp.DeploymentResponse
+) <-chan models.DeploymentView {
+	out := make(chan models.DeploymentView, 1)
+	var lastState models.DeploymentView
 
 	go func() {
 		for {
@@ -144,7 +144,7 @@ func WatchDeployment(
 				return
 			}
 
-			deployRes := tmp.GetDeployment(ctx, client, organisation, application, deployment)
+			deployRes := pkg.SDK(client).V2().Organisations().ID(organisation).Applications().Appid(application).Deployments().Deploymentid(deployment).Getapplicationdeploymentfororga(ctx)
 			if deployRes.HasError() {
 				tflog.Error(ctx, "failed to get deployment status", map[string]any{
 					"error": deployRes.Error().Error(),
@@ -160,7 +160,7 @@ func WatchDeployment(
 				"action": deploy.Action,
 			})
 
-			if !lastState.Equal(deploy) {
+			if !sameDeploymentState(lastState, deploy) {
 				out <- *deploy
 				lastState = *deploy
 			}
@@ -176,4 +176,14 @@ func WatchDeployment(
 	}()
 
 	return out
+}
+
+// sameDeploymentState reports whether two readings of a deployment show the same
+// progress: date, state, action and instance count.
+func sameDeploymentState(d1 models.DeploymentView, d2 *models.DeploymentView) bool {
+	return d2 != nil &&
+		pkg.Deref(d1.Date) == pkg.Deref(d2.Date) &&
+		d1.State == d2.State &&
+		d1.Action == d2.Action &&
+		d1.Instances == d2.Instances
 }

@@ -17,9 +17,9 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/app"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestAccRuby_basic(t *testing.T) {
@@ -75,13 +75,13 @@ func TestAccRuby_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("ruby_version"), knownvalue.StringExact("3.3")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("enable_sidekiq"), knownvalue.Bool(true)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("rails_env"), knownvalue.StringExact("production")),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
-					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
 					if appRes.Name != rName {
 						return tests.AssertError("invalid name", appRes.Name, rName)
 					}
@@ -94,16 +94,16 @@ func TestAccRuby_basic(t *testing.T) {
 						return tests.AssertError("invalid max instance count", appRes.Instance.MaxInstances, 2)
 					}
 
-					if appRes.Instance.MinFlavor.Name != "XS" {
-						return tests.AssertError("invalid smallest flavor", appRes.Instance.MinFlavor.Name, "XS")
+					if pkg.FlavorName(appRes.Instance.MinFlavor) != "XS" {
+						return tests.AssertError("invalid smallest flavor", pkg.FlavorName(appRes.Instance.MinFlavor), "XS")
 					}
 
-					if appRes.Instance.MaxFlavor.Name != "M" {
-						return tests.AssertError("invalid biggest flavor", appRes.Instance.MaxFlavor.Name, "M")
+					if pkg.FlavorName(appRes.Instance.MaxFlavor) != "M" {
+						return tests.AssertError("invalid biggest flavor", pkg.FlavorName(appRes.Instance.MaxFlavor), "M")
 					}
 
-					if appRes.BuildFlavor.Name != "XL" {
-						return tests.AssertError("invalid build flavor", appRes.BuildFlavor.Name, "XL")
+					if pkg.FlavorName(appRes.BuildFlavor) != "XL" {
+						return tests.AssertError("invalid build flavor", pkg.FlavorName(appRes.BuildFlavor), "XL")
 					}
 
 					if appRes.ForceHTTPS != "ENABLED" {
@@ -116,12 +116,12 @@ func TestAccRuby_basic(t *testing.T) {
 					if appRes.Zone != "par" {
 						return tests.AssertError("expect region to be 'par'", "region", appRes.Zone)
 					}
-					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
+					appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
 					if appEnvRes.HasError() {
 						return fmt.Errorf("failed to get application: %w", appEnvRes.Error())
 					}
 
-					env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
+					env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e models.AddonEnvironmentView) map[string]string {
 						acc[e.Name] = e.Value
 						return acc
 					})
@@ -211,13 +211,13 @@ func TestAccRuby_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("enable_sidekiq"), knownvalue.Bool(false)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("rackup_server"), knownvalue.StringExact("unicorn")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("nginx_read_timeout"), knownvalue.Int64Exact(900)),
-				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
-					appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
-				}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
+				}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
 					// Verify instance counts were updated
 					if appRes.Instance.MinInstances != 2 {
 						return tests.AssertError("invalid updated min instance count", appRes.Instance.MinInstances, 2)
@@ -227,12 +227,12 @@ func TestAccRuby_basic(t *testing.T) {
 					}
 
 					// Verify environment variables were updated
-					appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
+					appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
 					if appEnvRes.HasError() {
 						return fmt.Errorf("failed to get application: %w", appEnvRes.Error())
 					}
 
-					env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
+					env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e models.AddonEnvironmentView) map[string]string {
 						acc[e.Name] = e.Value
 						return acc
 					})
@@ -298,18 +298,18 @@ func TestAccRuby_envAttributes(t *testing.T) {
 	}
 
 	remoteEnv := func(want map[string]string) statecheck.StateCheck {
-		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*tmp.AppResponse, error) {
-			appRes := tmp.GetApp(ctx, cc, tests.ORGANISATION, id)
+		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
+			appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
 			if appRes.HasError() {
 				return nil, appRes.Error()
 			}
 			return appRes.Payload(), nil
-		}, func(ctx context.Context, id string, state *tfjson.State, appRes *tmp.AppResponse) error {
-			appEnvRes := tmp.GetAppEnv(ctx, cc, tests.ORGANISATION, id)
+		}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
+			appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
 			if appEnvRes.HasError() {
 				return fmt.Errorf("failed to get application env: %w", appEnvRes.Error())
 			}
-			env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e tmp.Env) map[string]string {
+			env := pkg.Reduce(*appEnvRes.Payload(), map[string]string{}, func(acc map[string]string, e models.AddonEnvironmentView) map[string]string {
 				acc[e.Name] = e.Value
 				return acc
 			})

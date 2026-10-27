@@ -19,6 +19,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
@@ -120,7 +121,7 @@ func (a *ActionExecuteDatabaseSQL) Invoke(ctx context.Context, req action.Invoke
 func (a *ActionExecuteDatabaseSQL) InvokePG(ctx context.Context, cfg *DatabaseQuery, progress func(msg string, args ...any), diags *diag.Diagnostics) {
 	progress("Resolving database ID")
 
-	addonID, err := tmp.RealIDToAddonID(ctx, a.Client(), a.Organization(), cfg.DatabaseID.ValueString())
+	addonID, err := addonid.FromRealID(ctx, a.Client(), a.Organization(), cfg.DatabaseID.ValueString())
 	if err != nil {
 		diags.AddError("failed to resolve database ID", err.Error())
 		return

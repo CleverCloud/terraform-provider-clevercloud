@@ -12,10 +12,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestAccAddonProvider_basic(t *testing.T) {
@@ -76,7 +77,7 @@ func TestAccAddonProvider_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("test_sso_url"), knownvalue.StringExact("https://test.example.com/clevercloud/sso/login")),
 			},
 			Check: func(state *terraform.State) error {
-				providerRes := tmp.GetAddonProvider(ctx, cc, tests.ORGANISATION, rName)
+				providerRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Getproviderinfo(ctx)
 				if providerRes.HasError() {
 					return fmt.Errorf("failed to get addon provider from API: %w", providerRes.Error())
 				}
@@ -88,8 +89,8 @@ func TestAccAddonProvider_basic(t *testing.T) {
 				if provider.ID != rName {
 					return fmt.Errorf("expected provider ID %q, got %q", rName, provider.ID)
 				}
-				if provider.Name != "TF Test Addon Provider" {
-					return fmt.Errorf("expected provider name %q, got %q", "TF Test Addon Provider", provider.Name)
+				if pkg.Deref(provider.Name) != "TF Test Addon Provider" {
+					return fmt.Errorf("expected provider name %q, got %q", "TF Test Addon Provider", pkg.Deref(provider.Name))
 				}
 
 				// Verify regions - API returns all supported regions, not just the one we specified
@@ -384,7 +385,7 @@ func TestAccAddonProvider_withFeatures(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("feature"), knownvalue.SetSizeExact(3)),
 			},
 			Check: func(state *terraform.State) error {
-				featuresRes := tmp.ListAddonProviderFeatures(ctx, cc, tests.ORGANISATION, rName)
+				featuresRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Features().Getproviderfeatures(ctx)
 				if featuresRes.HasError() {
 					return fmt.Errorf("failed to get providerfeatures : %w", featuresRes.Error())
 				}
@@ -453,7 +454,7 @@ func TestAccAddonProvider_withPlans(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.SetSizeExact(3)),
 			},
 			Check: func(state *terraform.State) error {
-				plansRes := tmp.ListAddonProviderPlans(ctx, cc, tests.ORGANISATION, rName)
+				plansRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Plans().Getproviderplans(ctx)
 				if plansRes.HasError() {
 					return fmt.Errorf("failed to get provider plans: %w", plansRes.Error())
 				}
@@ -464,30 +465,30 @@ func TestAccAddonProvider_withPlans(t *testing.T) {
 				}
 
 				// Verify plan details
-				plansBySlug := make(map[string]tmp.AddonProviderPlanView)
+				plansBySlug := make(map[string]models.AddonPlanView)
 				for _, plan := range plans {
-					plansBySlug[plan.Slug] = plan
+					plansBySlug[pkg.Deref(plan.Slug)] = plan
 				}
 
 				// Check Free Plan
 				if freePlan, ok := plansBySlug["free"]; !ok {
 					return fmt.Errorf("free plan not found")
-				} else if freePlan.Name != "Free Plan" || freePlan.Price != 0 {
-					return fmt.Errorf("free plan has incorrect values: name=%s, price=%f", freePlan.Name, freePlan.Price)
+				} else if pkg.Deref(freePlan.Name) != "Free Plan" || freePlan.Price != 0 {
+					return fmt.Errorf("free plan has incorrect values: name=%s, price=%f", pkg.Deref(freePlan.Name), freePlan.Price)
 				}
 
 				// Check Basic Plan
 				if basicPlan, ok := plansBySlug["basic"]; !ok {
 					return fmt.Errorf("basic plan not found")
-				} else if basicPlan.Name != "Basic Plan" || basicPlan.Price != 9.99 {
-					return fmt.Errorf("basic plan has incorrect values: name=%s, price=%f", basicPlan.Name, basicPlan.Price)
+				} else if pkg.Deref(basicPlan.Name) != "Basic Plan" || basicPlan.Price != 9.99 {
+					return fmt.Errorf("basic plan has incorrect values: name=%s, price=%f", pkg.Deref(basicPlan.Name), basicPlan.Price)
 				}
 
 				// Check Premium Plan
 				if premiumPlan, ok := plansBySlug["premium"]; !ok {
 					return fmt.Errorf("premium plan not found")
-				} else if premiumPlan.Name != "Premium Plan" || premiumPlan.Price != 29.99 {
-					return fmt.Errorf("premium plan has incorrect values: name=%s, price=%f", premiumPlan.Name, premiumPlan.Price)
+				} else if pkg.Deref(premiumPlan.Name) != "Premium Plan" || premiumPlan.Price != 29.99 {
+					return fmt.Errorf("premium plan has incorrect values: name=%s, price=%f", pkg.Deref(premiumPlan.Name), premiumPlan.Price)
 				}
 
 				return nil
@@ -578,7 +579,7 @@ func TestAccAddonProvider_plansWithFeatures(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.SetSizeExact(2)),
 			},
 			Check: func(state *terraform.State) error {
-				plansRes := tmp.ListAddonProviderPlans(ctx, cc, tests.ORGANISATION, rName)
+				plansRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Plans().Getproviderplans(ctx)
 				if plansRes.HasError() {
 					return fmt.Errorf("failed to get provider plans: %w", plansRes.Error())
 				}
@@ -589,9 +590,9 @@ func TestAccAddonProvider_plansWithFeatures(t *testing.T) {
 				}
 
 				// Verify plan details and their feature values
-				plansBySlug := make(map[string]tmp.AddonProviderPlanView)
+				plansBySlug := make(map[string]models.AddonPlanView)
 				for _, plan := range plans {
-					plansBySlug[plan.Slug] = plan
+					plansBySlug[pkg.Deref(plan.Slug)] = plan
 				}
 
 				// Check Free Plan
@@ -599,20 +600,20 @@ func TestAccAddonProvider_plansWithFeatures(t *testing.T) {
 				if !ok {
 					return fmt.Errorf("free plan not found")
 				}
-				if freePlan.Name != "Free Plan" || freePlan.Price != 0 {
-					return fmt.Errorf("free plan has incorrect values: name=%s, price=%f", freePlan.Name, freePlan.Price)
+				if pkg.Deref(freePlan.Name) != "Free Plan" || freePlan.Price != 0 {
+					return fmt.Errorf("free plan has incorrect values: name=%s, price=%f", pkg.Deref(freePlan.Name), freePlan.Price)
 				}
 
 				// Verify free plan features
-				freeFeaturesByName := make(map[string]tmp.AddonPlanFeatureView)
+				freeFeaturesByName := make(map[string]models.AddonFeatureInstanceView)
 				for _, feature := range freePlan.Features {
 					freeFeaturesByName[feature.Name] = feature
 				}
-				if diskSize, ok := freeFeaturesByName["disk_size"]; !ok || diskSize.Value != "100" {
-					return fmt.Errorf("free plan disk_size incorrect: expected '100', got '%s'", diskSize.Value)
+				if diskSize, ok := freeFeaturesByName["disk_size"]; !ok || pkg.Deref(diskSize.Value) != "100" {
+					return fmt.Errorf("free plan disk_size incorrect: expected '100', got '%s'", pkg.Deref(diskSize.Value))
 				}
-				if connLimit, ok := freeFeaturesByName["connection_limit"]; !ok || connLimit.Value != "5" {
-					return fmt.Errorf("free plan connection_limit incorrect: expected '5', got '%s'", connLimit.Value)
+				if connLimit, ok := freeFeaturesByName["connection_limit"]; !ok || pkg.Deref(connLimit.Value) != "5" {
+					return fmt.Errorf("free plan connection_limit incorrect: expected '5', got '%s'", pkg.Deref(connLimit.Value))
 				}
 
 				// Check Premium Plan
@@ -620,20 +621,20 @@ func TestAccAddonProvider_plansWithFeatures(t *testing.T) {
 				if !ok {
 					return fmt.Errorf("premium plan not found")
 				}
-				if premiumPlan.Name != "Premium Plan" || premiumPlan.Price != 29.99 {
-					return fmt.Errorf("premium plan has incorrect values: name=%s, price=%f", premiumPlan.Name, premiumPlan.Price)
+				if pkg.Deref(premiumPlan.Name) != "Premium Plan" || premiumPlan.Price != 29.99 {
+					return fmt.Errorf("premium plan has incorrect values: name=%s, price=%f", pkg.Deref(premiumPlan.Name), premiumPlan.Price)
 				}
 
 				// Verify premium plan features
-				premiumFeaturesByName := make(map[string]tmp.AddonPlanFeatureView)
+				premiumFeaturesByName := make(map[string]models.AddonFeatureInstanceView)
 				for _, feature := range premiumPlan.Features {
 					premiumFeaturesByName[feature.Name] = feature
 				}
-				if diskSize, ok := premiumFeaturesByName["disk_size"]; !ok || diskSize.Value != "1000" {
-					return fmt.Errorf("premium plan disk_size incorrect: expected '1000', got '%s'", diskSize.Value)
+				if diskSize, ok := premiumFeaturesByName["disk_size"]; !ok || pkg.Deref(diskSize.Value) != "1000" {
+					return fmt.Errorf("premium plan disk_size incorrect: expected '1000', got '%s'", pkg.Deref(diskSize.Value))
 				}
-				if connLimit, ok := premiumFeaturesByName["connection_limit"]; !ok || connLimit.Value != "100" {
-					return fmt.Errorf("premium plan connection_limit incorrect: expected '100', got '%s'", connLimit.Value)
+				if connLimit, ok := premiumFeaturesByName["connection_limit"]; !ok || pkg.Deref(connLimit.Value) != "100" {
+					return fmt.Errorf("premium plan connection_limit incorrect: expected '100', got '%s'", pkg.Deref(connLimit.Value))
 				}
 
 				return nil
@@ -710,7 +711,7 @@ func TestAccAddonProvider_updateFeatures(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("feature"), knownvalue.SetSizeExact(2)),
 			},
 			Check: func(state *terraform.State) error {
-				featuresRes := tmp.ListAddonProviderFeatures(ctx, cc, tests.ORGANISATION, rName)
+				featuresRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Features().Getproviderfeatures(ctx)
 				if featuresRes.HasError() {
 					return fmt.Errorf("failed to get features: %w", featuresRes.Error())
 				}
@@ -736,7 +737,7 @@ func TestAccAddonProvider_updateFeatures(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("feature"), knownvalue.SetSizeExact(2)),
 			},
 			Check: func(state *terraform.State) error {
-				featuresRes := tmp.ListAddonProviderFeatures(ctx, cc, tests.ORGANISATION, rName)
+				featuresRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Features().Getproviderfeatures(ctx)
 				if featuresRes.HasError() {
 					return fmt.Errorf("failed to get features: %w", featuresRes.Error())
 				}
@@ -898,7 +899,7 @@ func TestAccAddonProvider_updatePlans(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.SetSizeExact(2)),
 			},
 			Check: func(state *terraform.State) error {
-				plansRes := tmp.ListAddonProviderPlans(ctx, cc, tests.ORGANISATION, rName)
+				plansRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Plans().Getproviderplans(ctx)
 				if plansRes.HasError() {
 					return fmt.Errorf("failed to get plans: %w", plansRes.Error())
 				}
@@ -907,9 +908,9 @@ func TestAccAddonProvider_updatePlans(t *testing.T) {
 					return fmt.Errorf("expected 2 plans, got %d", len(plans))
 				}
 
-				plansBySlug := make(map[string]tmp.AddonProviderPlanView)
+				plansBySlug := make(map[string]models.AddonPlanView)
 				for _, plan := range plans {
-					plansBySlug[plan.Slug] = plan
+					plansBySlug[pkg.Deref(plan.Slug)] = plan
 				}
 
 				// Verify free plan
@@ -917,8 +918,8 @@ func TestAccAddonProvider_updatePlans(t *testing.T) {
 				if !ok {
 					return fmt.Errorf("free plan not found")
 				}
-				if freePlan.Name != "Free Plan" || freePlan.Price != 0 {
-					return fmt.Errorf("free plan incorrect: name=%s, price=%f", freePlan.Name, freePlan.Price)
+				if pkg.Deref(freePlan.Name) != "Free Plan" || freePlan.Price != 0 {
+					return fmt.Errorf("free plan incorrect: name=%s, price=%f", pkg.Deref(freePlan.Name), freePlan.Price)
 				}
 
 				// Verify starter plan exists
@@ -934,7 +935,7 @@ func TestAccAddonProvider_updatePlans(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.SetSizeExact(2)),
 			},
 			Check: func(state *terraform.State) error {
-				plansRes := tmp.ListAddonProviderPlans(ctx, cc, tests.ORGANISATION, rName)
+				plansRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Plans().Getproviderplans(ctx)
 				if plansRes.HasError() {
 					return fmt.Errorf("failed to get plans: %w", plansRes.Error())
 				}
@@ -943,9 +944,9 @@ func TestAccAddonProvider_updatePlans(t *testing.T) {
 					return fmt.Errorf("expected 2 plans, got %d", len(plans))
 				}
 
-				plansBySlug := make(map[string]tmp.AddonProviderPlanView)
+				plansBySlug := make(map[string]models.AddonPlanView)
 				for _, plan := range plans {
-					plansBySlug[plan.Slug] = plan
+					plansBySlug[pkg.Deref(plan.Slug)] = plan
 				}
 
 				// Verify starter was removed
@@ -958,8 +959,8 @@ func TestAccAddonProvider_updatePlans(t *testing.T) {
 				if !ok {
 					return fmt.Errorf("premium plan not found")
 				}
-				if premiumPlan.Name != "Premium Plan" || premiumPlan.Price != 20.0 {
-					return fmt.Errorf("premium plan incorrect: name=%s, price=%f", premiumPlan.Name, premiumPlan.Price)
+				if pkg.Deref(premiumPlan.Name) != "Premium Plan" || premiumPlan.Price != 20.0 {
+					return fmt.Errorf("premium plan incorrect: name=%s, price=%f", pkg.Deref(premiumPlan.Name), premiumPlan.Price)
 				}
 
 				// Verify free plan was updated
@@ -969,17 +970,17 @@ func TestAccAddonProvider_updatePlans(t *testing.T) {
 				}
 
 				// Check updated feature values
-				freeFeaturesByName := make(map[string]tmp.AddonPlanFeatureView)
+				freeFeaturesByName := make(map[string]models.AddonFeatureInstanceView)
 				for _, feature := range freePlan.Features {
 					freeFeaturesByName[feature.Name] = feature
 				}
 
-				if diskSize, ok := freeFeaturesByName["disk_size"]; !ok || diskSize.Value != "200" {
-					return fmt.Errorf("free plan disk_size should be '200', got '%s'", diskSize.Value)
+				if diskSize, ok := freeFeaturesByName["disk_size"]; !ok || pkg.Deref(diskSize.Value) != "200" {
+					return fmt.Errorf("free plan disk_size should be '200', got '%s'", pkg.Deref(diskSize.Value))
 				}
 
-				if connLimit, ok := freeFeaturesByName["connection_limit"]; !ok || connLimit.Value != "10" {
-					return fmt.Errorf("free plan connection_limit should be '10', got '%s'", connLimit.Value)
+				if connLimit, ok := freeFeaturesByName["connection_limit"]; !ok || pkg.Deref(connLimit.Value) != "10" {
+					return fmt.Errorf("free plan connection_limit should be '10', got '%s'", pkg.Deref(connLimit.Value))
 				}
 
 				return nil

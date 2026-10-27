@@ -11,10 +11,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
@@ -37,7 +40,7 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       plan.Name.ValueString(),
 		Plan:       providerPlan.ID,
 		ProviderID: "es-addon",
@@ -66,14 +69,14 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 		addonReq.Options["plugins"] = strings.Join(plugins, ",")
 	}
 
-	addonRes := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	addonRes := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if addonRes.HasError() {
 		res.Diagnostics.AddError("failed to create addon", addonRes.Error().Error())
 		return
 	}
 	createdAddon := addonRes.Payload()
 
-	plan.ID = pkg.FromStr(createdAddon.RealID)
+	plan.ID = pkg.FromStr(pkg.Deref(createdAddon.RealID))
 	res.Diagnostics.Append(res.State.Set(ctx, plan)...)
 
 	r.readFromAddon(&plan, *createdAddon)
@@ -105,7 +108,7 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.IsNotFoundError() {
 		res.State.RemoveResource(ctx)
 		return
@@ -116,7 +119,7 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 		r.readFromAddon(&state, *addonRes.Payload())
 	}
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	addonId, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if err != nil {
 		res.Diagnostics.AddError("failed to get addon ID", err.Error())
 	} else {
@@ -201,9 +204,9 @@ func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic tmp.El
 	}
 }
 
-func (r *ResourceElasticsearch) readFromAddon(state *Elasticsearch, addon tmp.AddonResponse) {
-	state.Plan = pkg.FromStr(addon.Plan.Slug)
-	state.Name = pkg.FromStr(addon.Name)
+func (r *ResourceElasticsearch) readFromAddon(state *Elasticsearch, addon models.AddonView) {
+	state.Plan = pkg.FromStr(pkg.Deref(addon.Plan.Slug))
+	state.Name = pkg.FromStr(pkg.Deref(addon.Name))
 	state.Region = pkg.FromStr(addon.Region)
 }
 
@@ -235,13 +238,13 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), state.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		res.Diagnostics.AddError("failed to update Elasticsearch", addonRes.Error().Error())
 	} else {
-		state.Name = pkg.FromStr(addonRes.Payload().Name)
+		state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 	}
 
 	addon.SyncNetworkGroups(
@@ -266,12 +269,12 @@ func (r *ResourceElasticsearch) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	addonID, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
+	addonID, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), state.ID.ValueString())
 	if err != nil {
 		res.Diagnostics.AddError("failed to convert real ID to addon ID", err.Error())
 	}
 
-	deleteRes := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonID)
+	deleteRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(ctx)
 	if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
 		res.Diagnostics.AddError("failed to delete addon", deleteRes.Error().Error())
 		return

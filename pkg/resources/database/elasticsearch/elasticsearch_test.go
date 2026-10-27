@@ -15,9 +15,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestAccElasticsearch_basic(t *testing.T) {
@@ -322,7 +324,7 @@ func TestAccElasticsearch_RefreshDeleted(t *testing.T) {
 			ResourceName: rName,
 			PreConfig: func() {
 				// delete the elasticsearch using an api call
-				tmp.DeleteAddon(ctx, cc, tests.ORGANISATION, rName)
+				pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(rName).Deprovisionaddonbyorgaandaddonid(ctx)
 			},
 			// refreshing state
 			RefreshState: true,
@@ -346,7 +348,7 @@ func TestAccElasticsearch_Import(t *testing.T) {
 	// before Terraform takes ownership of the resource.
 	t.Cleanup(func() {
 		if addonID != "" {
-			tmp.DeleteAddon(context.Background(), cc, tests.ORGANISATION, addonID)
+			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(context.Background())
 		}
 	})
 
@@ -379,7 +381,7 @@ func TestAccElasticsearch_Import(t *testing.T) {
 						t.Fatal("failed to find xs plan for es-addon")
 					}
 
-					res := tmp.CreateAddon(ctx, cc, tests.ORGANISATION, tmp.AddonRequest{
+					res := resources.CreateAddon(ctx, cc, tests.ORGANISATION, models.WannabeAddonProvision{
 						Name:       rName,
 						Plan:       plan.ID,
 						ProviderID: "es-addon",
@@ -389,7 +391,7 @@ func TestAccElasticsearch_Import(t *testing.T) {
 						t.Fatalf("failed to create elasticsearch addon: %s", res.Error())
 					}
 					addonID = res.Payload().ID
-					realID = res.Payload().RealID
+					realID = pkg.Deref(res.Payload().RealID)
 				},
 				Config:             providerBlock.Append(elasticsearchBlock).String(),
 				ResourceName:       fullName,

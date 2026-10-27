@@ -14,9 +14,9 @@ import (
 
 // Lookup for the instance matching this criteria
 // return the
-func LookupInstanceByVariantSlug(ctx context.Context, cc *client.Client, ownerId *string, variantSlug string, diags *diag.Diagnostics) *tmp.ProductInstance {
+func LookupInstanceByVariantSlug(ctx context.Context, cc *client.Client, ownerId *string, variantSlug string, diags *diag.Diagnostics) *tmp.AvailableInstanceView {
 
-	productRes := tmp.GetProductInstance(ctx, cc, ownerId)
+	productRes := tmp.GetProductInstances(ctx, cc, ownerId)
 	if productRes.HasError() {
 		diags.AddError("failed to get variant", productRes.Error().Error())
 		return nil
@@ -24,7 +24,7 @@ func LookupInstanceByVariantSlug(ctx context.Context, cc *client.Client, ownerId
 
 	instances := *productRes.Payload()
 
-	instance := pkg.First(instances, func(instance tmp.ProductInstance) bool {
+	instance := pkg.First(instances, func(instance tmp.AvailableInstanceView) bool {
 		return strings.EqualFold(instance.Variant.Slug, variantSlug)
 	})
 	if instance == nil {
@@ -35,7 +35,7 @@ func LookupInstanceByVariantSlug(ctx context.Context, cc *client.Client, ownerId
 	return instance
 }
 
-func lastVariant(variants []tmp.ProductInstance) tmp.ProductInstance {
+func lastVariant(variants []tmp.AvailableInstanceView) tmp.AvailableInstanceView {
 
 	sort.SliceStable(variants, func(i, j int) bool {
 		return variants[i].Version > variants[j].Version

@@ -8,10 +8,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
+	"go.clever-cloud.dev/sdk/services/addons"
 )
 
 // Create a new resource
@@ -32,7 +35,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		return
 	}
 
-	addonReq := tmp.AddonRequest{
+	addonReq := models.WannabeAddonProvision{
 		Name:       mg.Name.ValueString(),
 		Plan:       plan.ID,
 		ProviderID: "mongodb-addon",
@@ -48,14 +51,14 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 		addonReq.Options["direct-host-only"] = fmt.Sprintf("%t", mg.DirectHostOnly.ValueBool())
 	}
 
-	res := tmp.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
+	res := resources.CreateAddon(ctx, r.Client(), r.Organization(), addonReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon", res.Error().Error())
 		return
 	}
 
 	createdMg := res.Payload()
-	mg.ID = pkg.FromStr(createdMg.RealID)
+	mg.ID = pkg.FromStr(pkg.Deref(createdMg.RealID))
 	r.readFromAddon(&mg, *createdMg)
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
@@ -95,7 +98,7 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), mg.ID.ValueString())
+	addonId, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), mg.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
@@ -117,7 +120,7 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	addonRes := tmp.GetAddon(ctx, r.Client(), r.Organization(), addonId)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Getaddonbyorgaandaddonid(ctx)
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get MongoDB addon", addonRes.Error().Error())
 		return
@@ -132,11 +135,11 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 }
 
-func (r *ResourceMongoDB) readFromAddon(state *MongoDB, addon tmp.AddonResponse) {
-	state.Name = pkg.FromStr(addon.Name)
-	state.Plan = pkg.FromStr(addon.Plan.Slug)
+func (r *ResourceMongoDB) readFromAddon(state *MongoDB, addon models.AddonView) {
+	state.Name = pkg.FromStr(pkg.Deref(addon.Name))
+	state.Plan = pkg.FromStr(pkg.Deref(addon.Plan.Slug))
 	state.Region = pkg.FromStr(addon.Region)
-	state.CreationDate = pkg.FromI(addon.CreationDate)
+	state.CreationDate = pkg.FromI(pkg.Deref(addon.CreationDate))
 }
 
 func (r *ResourceMongoDB) readFromAPI(state *MongoDB, mg tmp.MongoDB) {
@@ -180,14 +183,14 @@ func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// Only name can be edited
-	addonRes := tmp.UpdateAddon(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), map[string]string{
-		"name": plan.Name.ValueString(),
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to update MongoDB", addonRes.Error().Error())
 		return
 	}
-	state.Name = pkg.FromStr(addonRes.Payload().Name)
+	state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 
 	addon.SyncNetworkGroups(
 		ctx,
@@ -213,13 +216,13 @@ func (r *ResourceMongoDB) Delete(ctx context.Context, req resource.DeleteRequest
 
 	tflog.Debug(ctx, "MongoDB DELETE", map[string]any{"mg": mg})
 
-	addonId, err := tmp.RealIDToAddonID(ctx, r.Client(), r.Organization(), mg.ID.ValueString())
+	addonId, err := addonid.FromRealID(ctx, r.Client(), r.Organization(), mg.ID.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get addon ID", err.Error())
 		return
 	}
 
-	res := tmp.DeleteAddon(ctx, r.Client(), r.Organization(), addonId)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Deprovisionaddonbyorgaandaddonid(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

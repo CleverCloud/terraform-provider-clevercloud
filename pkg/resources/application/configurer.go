@@ -5,7 +5,6 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type Configurer[T RuntimePlan] struct {
@@ -20,7 +19,7 @@ func (c Configurer[T]) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	runtime := (*state).GetRuntimePtr()
 
-	deleteRes := tmp.DeleteApp(ctx, c.Client(), c.Organization(), runtime.ID.ValueString())
+	deleteRes := c.SDK.V2().Organisations().ID(c.Organization()).Applications().Appid(runtime.ID.ValueString()).Deleteorganisationapplication(ctx)
 	if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
 		res.Diagnostics.AddError("failed to delete app", deleteRes.Error().Error())
 	} else {

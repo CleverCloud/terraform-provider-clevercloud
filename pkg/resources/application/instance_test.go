@@ -9,7 +9,7 @@ import (
 func TestAccNodejs_basic(t *testing.T) {
 	t.Parallel()
 
-	variants := []tmp.ProductInstance{{
+	variants := []tmp.AvailableInstanceView{{
 		Version: "20220101",
 	}, {
 		Version: "20230503",

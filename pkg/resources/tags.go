@@ -87,3 +87,12 @@ func SyncTags(ctx context.Context, planned, current types.Set, replace func(tags
 // NullTags is the value of unmanaged tags, and of a state that predates the
 // attribute
 var NullTags = types.SetNull(types.StringType)
+
+// TagRefs turns tags into the payload the SDK's tag replacement routes take.
+func TagRefs(tags []string) []*string {
+	refs := make([]*string, len(tags))
+	for i := range tags {
+		refs[i] = &tags[i]
+	}
+	return refs
+}

@@ -18,7 +18,7 @@ var (
 
 type ResourceMySQL struct {
 	helper.Configurer
-	infos             *tmp.MysqlInfos
+	infos             *tmp.ProvidersConsoleView
 	dedicatedVersions []string
 }
 
@@ -68,7 +68,7 @@ func (r *ResourceMySQL) ModifyPlan(ctx context.Context, req resource.ModifyPlanR
 		return
 	}
 
-	isDedicated := addonPlan.IsDedicated()
+	isDedicated := pkg.IsDedicatedPlan(addonPlan)
 
 	if !plan.Encryption.IsNull() && !plan.Encryption.IsUnknown() && plan.Encryption.ValueBool() && !isDedicated {
 		res.Diagnostics.AddAttributeError(

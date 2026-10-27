@@ -11,8 +11,8 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // testClient points the Clever Cloud client at a local server. The client only
@@ -39,9 +39,9 @@ func blockUntilCancelled(r *http.Request) {
 func writeCluster(t *testing.T, w http.ResponseWriter, status string, nodeAutoprovisioning *bool) {
 	t.Helper()
 
-	view := tmp.ClusterView{ID: "cluster", Name: "tf-test-cluster", Status: status}
+	view := models.KubernetesCluster{ID: "cluster", Name: "tf-test-cluster", Status: models.ClusterStatusType(status)}
 	if nodeAutoprovisioning != nil {
-		view.Features = &tmp.KubernetesFeatures{NodeAutoprovisioning: nodeAutoprovisioning}
+		view.Features = &models.ClusterFeatures{NodeAutoprovisioning: nodeAutoprovisioning}
 	}
 
 	w.Header().Set("Content-Type", "application/json")

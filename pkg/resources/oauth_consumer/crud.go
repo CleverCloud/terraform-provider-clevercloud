@@ -6,7 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func (r *ResourceOAuthConsumer) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
@@ -21,16 +21,16 @@ func (r *ResourceOAuthConsumer) Create(ctx context.Context, req resource.CreateR
 	}
 
 	// Create request
-	createReq := tmp.OAuthConsumerRequest{
-		Name:        consumer.Name.ValueString(),
-		Description: consumer.Description.ValueString(),
-		BaseURL:     consumer.BaseURL.ValueString(),
-		LogoURL:     consumer.LogoURL.ValueString(),
-		WebsiteURL:  consumer.WebsiteURL.ValueString(),
+	createReq := models.WannabeOAuth1Consumer{
+		Name:        pkg.Ptr(consumer.Name.ValueString()),
+		Description: pkg.Ptr(consumer.Description.ValueString()),
+		BaseURL:     pkg.Ptr(consumer.BaseURL.ValueString()),
+		Picture:     pkg.Ptr(consumer.LogoURL.ValueString()),
+		URL:         pkg.Ptr(consumer.WebsiteURL.ValueString()),
 		Rights:      rightsReq,
 	}
 
-	res := tmp.CreateOAuthConsumer(ctx, r.Client(), r.Organization(), createReq)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Createorganisationconsumer(ctx, &createReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create OAuth consumer", res.Error().Error())
 		return
@@ -43,7 +43,7 @@ func (r *ResourceOAuthConsumer) Create(ctx context.Context, req resource.CreateR
 	resp.Diagnostics.Append(resp.State.Set(ctx, consumer)...)
 
 	// Get the secret (requires separate API call)
-	secretRes := tmp.GetOAuthConsumerSecret(ctx, r.Client(), r.Organization(), created.Key)
+	secretRes := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(created.Key).Secret().Getorganisationconsumersecret(ctx)
 	if secretRes.HasError() {
 		resp.Diagnostics.AddError("failed to get OAuth consumer secret", secretRes.Error().Error())
 		return
@@ -65,7 +65,7 @@ func (r *ResourceOAuthConsumer) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	consumerRes := tmp.GetOAuthConsumer(ctx, r.Client(), r.Organization(), consumer.ID.ValueString())
+	consumerRes := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(consumer.ID.ValueString()).Getorganisationconsumer(ctx)
 	if consumerRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -73,15 +73,15 @@ func (r *ResourceOAuthConsumer) Read(ctx context.Context, req resource.ReadReque
 		resp.Diagnostics.AddError("failed to get OAuth consumer", consumerRes.Error().Error())
 	} else {
 		consumerData := consumerRes.Payload()
-		consumer.Name = pkg.FromStr(consumerData.Name)
-		consumer.Description = pkg.FromStr(consumerData.Description)
-		consumer.BaseURL = pkg.FromStr(consumerData.BaseURL)
-		consumer.LogoURL = pkg.FromStr(consumerData.LogoURL)
-		consumer.WebsiteURL = pkg.FromStr(consumerData.WebsiteURL)
+		consumer.Name = pkg.FromStr(pkg.Deref(consumerData.Name))
+		consumer.Description = pkg.FromStr(pkg.Deref(consumerData.Description))
+		consumer.BaseURL = pkg.FromStr(pkg.Deref(consumerData.BaseURL))
+		consumer.LogoURL = pkg.FromStr(pkg.Deref(consumerData.Picture))
+		consumer.WebsiteURL = pkg.FromStr(pkg.Deref(consumerData.URL))
 		consumer.Rights = r.rightsResponseToSet(ctx, consumerData.Rights, &resp.Diagnostics)
 	}
 
-	secretRes := tmp.GetOAuthConsumerSecret(ctx, r.Client(), r.Organization(), consumer.ID.ValueString())
+	secretRes := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(consumer.ID.ValueString()).Secret().Getorganisationconsumersecret(ctx)
 	if secretRes.HasError() {
 		resp.Diagnostics.AddError("failed to get OAuth consumer secret", secretRes.Error().Error())
 	} else {
@@ -110,26 +110,26 @@ func (r *ResourceOAuthConsumer) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Create update request
-	updateReq := tmp.OAuthConsumerRequest{
-		Name:        plan.Name.ValueString(),
-		Description: plan.Description.ValueString(),
-		BaseURL:     plan.BaseURL.ValueString(),
-		LogoURL:     plan.LogoURL.ValueString(),
-		WebsiteURL:  plan.WebsiteURL.ValueString(),
+	updateReq := models.WannabeOAuth1Consumer{
+		Name:        pkg.Ptr(plan.Name.ValueString()),
+		Description: pkg.Ptr(plan.Description.ValueString()),
+		BaseURL:     pkg.Ptr(plan.BaseURL.ValueString()),
+		Picture:     pkg.Ptr(plan.LogoURL.ValueString()),
+		URL:         pkg.Ptr(plan.WebsiteURL.ValueString()),
 		Rights:      rightsReq,
 	}
 
-	res := tmp.UpdateOAuthConsumer(ctx, r.Client(), r.Organization(), plan.ID.ValueString(), updateReq)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(plan.ID.ValueString()).Updateorganisationconsumer(ctx, &updateReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to update OAuth consumer", res.Error().Error())
 		return
 	} else {
 		updated := res.Payload()
-		state.Name = pkg.FromStr(updated.Name)
-		state.Description = pkg.FromStr(updated.Description)
-		state.BaseURL = pkg.FromStr(updated.BaseURL)
-		state.LogoURL = pkg.FromStr(updated.LogoURL)
-		state.WebsiteURL = pkg.FromStr(updated.WebsiteURL)
+		state.Name = pkg.FromStr(pkg.Deref(updated.Name))
+		state.Description = pkg.FromStr(pkg.Deref(updated.Description))
+		state.BaseURL = pkg.FromStr(pkg.Deref(updated.BaseURL))
+		state.LogoURL = pkg.FromStr(pkg.Deref(updated.Picture))
+		state.WebsiteURL = pkg.FromStr(pkg.Deref(updated.URL))
 		state.Rights = r.rightsResponseToSet(ctx, updated.Rights, &resp.Diagnostics)
 	}
 
@@ -142,7 +142,7 @@ func (r *ResourceOAuthConsumer) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	res := tmp.DeleteOAuthConsumer(ctx, r.Client(), r.Organization(), consumer.ID.ValueString())
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(consumer.ID.ValueString()).Deleteorganisationconsumer(ctx)
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete OAuth consumer", res.Error().Error())
 	} else {
