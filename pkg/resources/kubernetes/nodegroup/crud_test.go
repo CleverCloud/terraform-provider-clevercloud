@@ -11,6 +11,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/models"
@@ -249,6 +250,47 @@ func TestNodegroupGETFailurePreservesState(t *testing.T) {
 	}
 }
 
+func TestNodegroupReadWithNullIdentity(t *testing.T) {
+	deleted := nodegroupTestView(nil)
+	deleted.Status = models.NodeGroupStatusTypeDELETED
+	for _, tc := range []struct {
+		name     string
+		response nodegroupHTTPResponse
+		kept     bool
+	}{
+		{name: "existing", response: nodegroupHTTPResponse{method: http.MethodGet, status: http.StatusOK, body: nodegroupTestView(nil)}, kept: true},
+		{name: "not found", response: nodegroupHTTPResponse{method: http.MethodGet, status: http.StatusNotFound}},
+		{name: "deleted", response: nodegroupHTTPResponse{method: http.MethodGet, status: http.StatusOK, body: deleted}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			r := nodegroupTestResource(t, tc.response)
+			state, expectedIdentity := nodegroupTestState(t, r)
+			nullIdentity := tftypes.NewValue(expectedIdentity.Schema.Type().TerraformType(t.Context()), nil)
+			// The framework initializes separate request and response identities
+			// from the null identity in legacy state.
+			request := resource.ReadRequest{State: state, Identity: &tfsdk.ResourceIdentity{
+				Schema: expectedIdentity.Schema, Raw: nullIdentity.Copy(),
+			}}
+			response := resource.ReadResponse{State: state, Identity: &tfsdk.ResourceIdentity{
+				Schema: expectedIdentity.Schema, Raw: nullIdentity.Copy(),
+			}}
+			r.Read(t.Context(), request, &response)
+			if response.Diagnostics.HasError() {
+				t.Fatalf("read nodegroup: %v", response.Diagnostics)
+			}
+			if tc.kept && !response.State.Raw.Equal(state.Raw) {
+				t.Errorf("existing nodegroup must keep its state, got %s", response.State.Raw)
+			}
+			if !tc.kept && !response.State.Raw.IsNull() {
+				t.Error("deleted nodegroup must be removed from state")
+			}
+			if !response.Identity.Raw.Equal(expectedIdentity.Raw) {
+				t.Errorf("response must retain the recovered identity, got %s", response.Identity.Raw)
+			}
+		})
+	}
+}
+
 func TestNodegroupAlreadyDeleted(t *testing.T) {
 	// The API can retain a DELETED group and its old labels instead of returning 404.
 	deleted := nodegroupTestView(nil)
@@ -332,7 +374,7 @@ func TestNodegroupCreateDoesNotRequireClusterFeatureLookup(t *testing.T) {
 			if payload.Name != view.Name || payload.TargetNodeCount != 1 || payload.Flavor != view.Flavor {
 				t.Errorf("unexpected creation payload: %+v", payload)
 			}
-			if payload.Labels != nil && len(payload.Labels) != 0 {
+			if len(payload.Labels) != 0 {
 				t.Errorf("fixed group must not receive Karpenter labels: %v", payload.Labels)
 			}
 		},

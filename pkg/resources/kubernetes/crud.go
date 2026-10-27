@@ -131,8 +131,18 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 }
 
 func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
-	identity := helper.From[KubernetesIdentity](ctx, req.Identity, &resp.Diagnostics)
+	identity := KubernetesIdentity{ID: helper.IdentityIDFrom(ctx, req.Identity, req.State, &resp.Diagnostics)}
 	state := Kubernetes{}
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	// The framework requires an identity even when Read removes a missing
+	// cluster from state. Recover it before any removal return below.
+	resp.Diagnostics.Append(resp.Identity.Set(ctx, identity)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	if identity.ID.ValueString() == "" {
 		resp.State.RemoveResource(ctx)
@@ -140,6 +150,10 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	kubernetesRes := tmp.GetKubernetes(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	if kubernetesRes.IsNotFoundError() {
+		resp.State.RemoveResource(ctx)
+		return
+	}
 	if kubernetesRes.HasError() {
 		resp.Diagnostics.AddError("Failed to get kubernetes instance", kubernetesRes.Error().Error())
 		return
@@ -198,11 +212,12 @@ func (r *ResourceKubernetes) Update(ctx context.Context, req resource.UpdateRequ
 	newState := *state
 	newState.NodeAutoprovisioning = nodeAutoprovisioning
 
+	resp.Diagnostics.Append(resp.Identity.Set(ctx, KubernetesIdentity{ID: state.ID})...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
 }
 
 func (r *ResourceKubernetes) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
-	identity := helper.From[KubernetesIdentity](ctx, req.Identity, &resp.Diagnostics)
+	identity := KubernetesIdentity{ID: helper.IdentityIDFrom(ctx, req.Identity, req.State, &resp.Diagnostics)}
 	if resp.Diagnostics.HasError() {
 		return
 	}
