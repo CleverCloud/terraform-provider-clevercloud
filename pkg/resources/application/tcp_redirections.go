@@ -8,9 +8,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/models"
-	"go.clever-cloud.dev/sdk/services/applications"
 )
 
 // SyncTCPRedirection reconciles the application TCP redirection with the plan.
@@ -39,7 +39,7 @@ func SyncTCPRedirection(ctx context.Context, cc *client.Client, organisation, ap
 
 		// only remove redirections previously managed by this resource
 		if state != nil && redir.Namespace == state.Namespace.ValueString() {
-			deleteRes := pkg.SDK(cc).V2().Organisations().ID(organisation).Applications().Appid(applicationID).Tcpredirs().Sourceport(int64(redir.Port)).Deleteorganisationapplicationtcpredirection(ctx, applications.WithNamespace(redir.Namespace))
+			deleteRes := tmp.DeleteTCPRedirection(ctx, cc, organisation, applicationID, int64(redir.Port), redir.Namespace)
 			if deleteRes.HasError() {
 				diags.AddError(fmt.Sprintf("failed to delete TCP redirection on namespace %q", redir.Namespace), deleteRes.Error().Error())
 			}

@@ -8,6 +8,7 @@ import (
 
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
@@ -240,7 +241,7 @@ func SweepAddonProviders(region string) error {
 		}
 
 		log.Printf("[INFO] Deleting addon provider: %s (%s)", pkg.Deref(provider.Name), provider.ID)
-		delRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(provider.ID).Deleteprovider(ctx)
+		delRes := tmp.DeleteAddonProvider(ctx, cc, tests.ORGANISATION, provider.ID)
 		if delRes.IsNotFoundError() {
 			log.Printf("[INFO] Addon provider %s already deleted", provider.ID)
 			continue
