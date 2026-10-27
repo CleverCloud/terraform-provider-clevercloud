@@ -6,10 +6,77 @@ import (
 	"testing"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/provider"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/client"
 )
+
+type clusterReadTestProvider struct {
+	provider.Provider
+	client *client.Client
+}
+
+func (p clusterReadTestProvider) Organization() string   { return "orga" }
+func (p clusterReadTestProvider) Client() *client.Client { return p.client }
+
+func TestClusterReadAPIErrorWithNullIdentity(t *testing.T) {
+	for _, status := range []int{http.StatusNotFound, http.StatusUnauthorized, http.StatusForbidden, http.StatusInternalServerError} {
+		t.Run(http.StatusText(status), func(t *testing.T) {
+			calls := 0
+			cc := testClient(t, func(w http.ResponseWriter, req *http.Request) {
+				calls++
+				if req.Method != http.MethodGet || req.URL.Path != "/v4/kubernetes/organisations/orga/clusters/cluster" {
+					t.Errorf("unexpected request: %s %s", req.Method, req.URL.Path)
+				}
+				w.WriteHeader(status)
+			})
+			r := &ResourceKubernetes{}
+			r.Provider = clusterReadTestProvider{client: cc}
+			var schema resource.SchemaResponse
+			r.Schema(t.Context(), resource.SchemaRequest{}, &schema)
+			state := tfsdk.State{Schema: schema.Schema}
+			if diags := state.Set(t.Context(), Kubernetes{ID: types.StringValue("cluster"), Name: types.StringValue("test-cluster")}); diags.HasError() {
+				t.Fatalf("set state: %v", diags)
+			}
+			var identitySchema resource.IdentitySchemaResponse
+			r.IdentitySchema(t.Context(), resource.IdentitySchemaRequest{}, &identitySchema)
+			nullIdentity := tftypes.NewValue(identitySchema.IdentitySchema.Type().TerraformType(t.Context()), nil)
+			request := resource.ReadRequest{State: state, Identity: &tfsdk.ResourceIdentity{Schema: identitySchema.IdentitySchema, Raw: nullIdentity.Copy()}}
+			response := resource.ReadResponse{State: state, Identity: &tfsdk.ResourceIdentity{Schema: identitySchema.IdentitySchema, Raw: nullIdentity.Copy()}}
+			r.Read(t.Context(), request, &response)
+			if calls != 1 {
+				t.Errorf("got %d API calls, want 1", calls)
+			}
+			if status != http.StatusNotFound {
+				if !response.Diagnostics.HasError() {
+					t.Error("API failure must return an error")
+				}
+				if !response.State.Raw.Equal(state.Raw) {
+					t.Error("API failure must preserve state")
+				}
+				return
+			}
+			if response.Diagnostics.HasError() {
+				t.Fatalf("read missing cluster: %v", response.Diagnostics)
+			}
+			if !response.State.Raw.IsNull() {
+				t.Error("missing cluster must be removed from state")
+			}
+			var identity KubernetesIdentity
+			if diags := response.Identity.Get(t.Context(), &identity); diags.HasError() {
+				t.Fatalf("read recovered identity: %v", diags)
+			}
+			if identity.ID.ValueString() != "cluster" {
+				t.Errorf("got identity %v, want cluster", identity.ID)
+			}
+		})
+	}
+}
 
 func TestAutoprovisioningFeatureEnabled(t *testing.T) {
 	enabled, disabled := true, false

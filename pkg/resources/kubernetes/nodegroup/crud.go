@@ -68,8 +68,15 @@ func (r *ResourceKubernetesNodegroup) Create(ctx context.Context, req resource.C
 }
 
 func (r *ResourceKubernetesNodegroup) Read(ctx context.Context, req resource.ReadRequest, res *resource.ReadResponse) {
-	identity := helper.From[KubernetesNodegroupIdentity](ctx, req.Identity, &res.Diagnostics)
+	identity := KubernetesNodegroupIdentity{ID: helper.IdentityIDFrom(ctx, req.Identity, req.State, &res.Diagnostics)}
 	state := helper.From[KubernetesNodegroup](ctx, req.State, &res.Diagnostics)
+	if res.Diagnostics.HasError() {
+		return
+	}
+
+	// The framework requires an identity even when Read removes a deleted
+	// resource from state. Recover it before any removal return below.
+	res.Diagnostics.Append(res.Identity.Set(ctx, identity)...)
 	if res.Diagnostics.HasError() {
 		return
 	}
@@ -112,7 +119,7 @@ func (r *ResourceKubernetesNodegroup) Read(ctx context.Context, req resource.Rea
 func (r *ResourceKubernetesNodegroup) Update(ctx context.Context, req resource.UpdateRequest, res *resource.UpdateResponse) {
 	// Keep the prior state until a mutation succeeds.
 	res.State = req.State
-	identity := helper.From[KubernetesNodegroupIdentity](ctx, req.Identity, &res.Diagnostics)
+	identity := KubernetesNodegroupIdentity{ID: helper.IdentityIDFrom(ctx, req.Identity, req.State, &res.Diagnostics)}
 	plan := helper.From[KubernetesNodegroup](ctx, req.Plan, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
@@ -169,11 +176,12 @@ func (r *ResourceKubernetesNodegroup) Update(ctx context.Context, req resource.U
 		Size:         pkg.FromI(nodegroup.TargetNodeCount),
 	}
 
+	res.Diagnostics.Append(res.Identity.Set(ctx, identity)...)
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }
 
 func (r *ResourceKubernetesNodegroup) Delete(ctx context.Context, req resource.DeleteRequest, res *resource.DeleteResponse) {
-	identity := helper.From[KubernetesNodegroupIdentity](ctx, req.Identity, &res.Diagnostics)
+	identity := KubernetesNodegroupIdentity{ID: helper.IdentityIDFrom(ctx, req.Identity, req.State, &res.Diagnostics)}
 	state := helper.From[KubernetesNodegroup](ctx, req.State, &res.Diagnostics)
 	if res.Diagnostics.HasError() {
 		return
