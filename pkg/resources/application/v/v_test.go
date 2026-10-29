@@ -179,7 +179,8 @@ func TestAccV_basic(t *testing.T) {
 					}
 
 					// Test deployed app
-					err := tests.HealthCheck(ctx, vhosts.CleverAppsFQDN(id).Fqdn, 2*time.Minute)
+					// V compiles the application at deploy time: 2 minutes is not always enough
+					err := tests.HealthCheck(ctx, vhosts.CleverAppsFQDN(id).Fqdn, 5*time.Minute)
 					if err != nil {
 						return fmt.Errorf("application did not respond in the allowed time: %w", err)
 					}
