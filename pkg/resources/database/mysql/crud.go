@@ -119,7 +119,7 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 	addon.SyncNetworkGroups(
 		ctx,
 		r,
-		createdMy.ID,
+		createdMy.RealID,
 		my.Networkgroups,
 		&my.Networkgroups,
 		&resp.Diagnostics,
@@ -183,7 +183,7 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 		r.readFromAPI(&my, *addonMy)
 	}
 
-	my.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
+	my.Networkgroups = resources.ReadNetworkGroups(ctx, r, my.ID.ValueString(), &resp.Diagnostics)
 	my.Tags = resources.ReadAddonTags(ctx, r, addonId, my.Tags, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, my)...)
 }

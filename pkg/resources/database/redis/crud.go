@@ -82,7 +82,7 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 	addon.SyncNetworkGroups(
 		ctx,
 		r,
-		res.Payload().ID,
+		res.Payload().RealID,
 		rd.Networkgroups,
 		&rd.Networkgroups,
 		&resp.Diagnostics,

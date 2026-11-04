@@ -88,7 +88,7 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 	addon.SyncNetworkGroups(
 		ctx,
 		r,
-		createdAddon.ID,
+		createdAddon.RealID,
 		plan.Networkgroups,
 		&plan.Networkgroups,
 		&res.Diagnostics,
