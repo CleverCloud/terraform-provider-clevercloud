@@ -71,7 +71,7 @@ func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest
 	addon.SyncNetworkGroups(
 		ctx,
 		r,
-		createdMg.ID,
+		createdMg.RealID,
 		mg.Networkgroups,
 		&mg.Networkgroups,
 		&resp.Diagnostics,
@@ -127,7 +127,7 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 	r.readFromAddon(&mg, *addonInfo)
 	r.readFromAPI(&mg, *addonMG)
 
-	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonId, &resp.Diagnostics)
+	mg.Networkgroups = resources.ReadNetworkGroups(ctx, r, mg.ID.ValueString(), &resp.Diagnostics)
 	mg.Tags = resources.ReadAddonTags(ctx, r, addonId, mg.Tags, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, mg)...)
 }

@@ -118,7 +118,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 	addon.SyncNetworkGroups(
 		ctx,
 		r,
-		createdPg.ID,
+		createdPg.RealID,
 		pg.Networkgroups,
 		&pg.Networkgroups,
 		&resp.Diagnostics,
@@ -178,7 +178,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 		r.readFromAPI(ctx, &pg, *addonPG)
 	}
 
-	pg.Networkgroups = resources.ReadNetworkGroups(ctx, r, addonID, &resp.Diagnostics)
+	pg.Networkgroups = resources.ReadNetworkGroups(ctx, r, pg.ID.ValueString(), &resp.Diagnostics)
 	pg.Tags = resources.ReadAddonTags(ctx, r, addonID, pg.Tags, &resp.Diagnostics)
 	resp.Diagnostics.Append(resp.State.Set(ctx, pg)...)
 }
