@@ -223,29 +223,6 @@ func TestPlanChecks(t *testing.T) {
 	}
 }
 
-func TestVersionLower(t *testing.T) {
-	tests := []struct {
-		a, b string
-		want bool
-	}{
-		{"1.34", "1.35", true},
-		{"1.35", "1.34", false},
-		{"1.35", "1.35", false},
-		{"1.9", "1.10", true}, // not a string comparison
-		{"1.10", "1.9", false},
-		{"1.35", "2.0", true},
-		{"1.35.2", "1.36", true},
-		{"latest", "1.36", false},
-		{"1", "1.36", false},
-	}
-
-	for _, tt := range tests {
-		if got := versionLower(tt.a, tt.b); got != tt.want {
-			t.Errorf("versionLower(%s, %s) = %v, want %v", tt.a, tt.b, got, tt.want)
-		}
-	}
-}
-
 func TestValidateVersion(t *testing.T) {
 	versions := models.VersionsConfig{Available: []string{"1.37", "1.36"}, Default: "1.36"}
 
@@ -422,11 +399,11 @@ func TestResolveValue(t *testing.T) {
 	}
 }
 
-// TestUpgradeClusterWaitsForAStableCluster pins the order against the API: it
+// TestChangeClusterVersionWaitsForAStableCluster pins the order against the API: it
 // answers a 409 to an upgrade unless the cluster is ACTIVE, and reports the
 // target version as soon as it accepts one, so neither the reconciliation before
 // nor the version field after can be trusted to mean the upgrade is over
-func TestUpgradeClusterWaitsForAStableCluster(t *testing.T) {
+func TestChangeClusterVersionWaitsForAStableCluster(t *testing.T) {
 	status, upgrades := "RECONCILING", 0
 	polls := 0
 
@@ -456,7 +433,7 @@ func TestUpgradeClusterWaitsForAStableCluster(t *testing.T) {
 	})
 
 	var diags diag.Diagnostics
-	if !upgradeCluster(t.Context(), cc, "orga", "cluster", "1.36", time.Millisecond, time.Second, time.Second, &diags) {
+	if !changeClusterVersion(t.Context(), cc, "orga", "cluster", "1.36", time.Millisecond, time.Second, time.Second, &diags) {
 		t.Fatalf("the upgrade failed: %v", diags)
 	}
 	if upgrades != 1 {
@@ -467,7 +444,7 @@ func TestUpgradeClusterWaitsForAStableCluster(t *testing.T) {
 	}
 }
 
-func TestUpgradeClusterReportsARejection(t *testing.T) {
+func TestChangeClusterVersionReportsARejection(t *testing.T) {
 	cc := testClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodPost {
@@ -479,7 +456,7 @@ func TestUpgradeClusterReportsARejection(t *testing.T) {
 	})
 
 	var diags diag.Diagnostics
-	if upgradeCluster(t.Context(), cc, "orga", "cluster", "1.99", time.Millisecond, time.Second, time.Second, &diags) {
+	if changeClusterVersion(t.Context(), cc, "orga", "cluster", "1.99", time.Millisecond, time.Second, time.Second, &diags) {
 		t.Fatal("expected the upgrade to fail")
 	}
 	if diags.ErrorsCount() != 1 {
@@ -487,7 +464,7 @@ func TestUpgradeClusterReportsARejection(t *testing.T) {
 	}
 }
 
-func TestUpgradeClusterStopsOnAFailedCluster(t *testing.T) {
+func TestChangeClusterVersionStopsOnAFailedCluster(t *testing.T) {
 	status := "ACTIVE"
 	cc := testClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
@@ -498,7 +475,7 @@ func TestUpgradeClusterStopsOnAFailedCluster(t *testing.T) {
 	})
 
 	var diags diag.Diagnostics
-	if upgradeCluster(t.Context(), cc, "orga", "cluster", "1.36", time.Millisecond, time.Second, time.Minute, &diags) {
+	if changeClusterVersion(t.Context(), cc, "orga", "cluster", "1.36", time.Millisecond, time.Second, time.Minute, &diags) {
 		t.Fatal("expected the upgrade to fail")
 	}
 	if detail := diags.Errors()[0].Detail(); !strings.Contains(detail, "resumed") {

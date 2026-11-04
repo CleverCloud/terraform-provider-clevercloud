@@ -277,14 +277,14 @@ func (r *ResourceKubernetes) Update(ctx context.Context, req resource.UpdateRequ
 		}
 	}
 
-	// last, as the API refuses an upgrade while a feature is being reconciled. A
+	// last, as the API refuses a version change while a feature is being reconciled. A
 	// state holding no version predates the attribute, the next refresh tells
 	// what the cluster really runs
-	if isSet(version) && isSet(state.Version) && !version.Equal(state.Version) && !upgradeCluster(
+	if isSet(version) && isSet(state.Version) && !version.Equal(state.Version) && !changeClusterVersion(
 		ctx, r.Client(), r.Organization(), clusterID, version.ValueString(),
 		nodeAutoprovisioningPollInterval, nodeAutoprovisioningTimeout, versionUpgradeTimeout, &resp.Diagnostics,
 	) {
-		return // keep the previous state, the next plan shows the upgrade again
+		return // keep the previous state, the next plan shows the change again
 	}
 
 	newState := *state
@@ -812,23 +812,23 @@ func waitForPersistentStorage(
 	}, pollInterval, timeout, diags)
 }
 
-// upgradeCluster moves a cluster to another Kubernetes version and waits for the
-// end of the rollout. The API answers a 409 unless the cluster is ACTIVE, and
+// changeClusterVersion moves a cluster to another Kubernetes version, older ones
+// included, and waits for the end of the rollout. The API answers a 409 unless the cluster is ACTIVE, and
 // reports the target version as soon as it accepts the request, so ACTIVE is the
-// only proof that the upgrade is over
-func upgradeCluster(
+// only proof that the rollout is over
+func changeClusterVersion(
 	ctx context.Context,
 	cc *client.Client,
 	organisationID, clusterID, version string,
 	pollInterval, readyTimeout, upgradeTimeout time.Duration,
 	diags *diag.Diagnostics,
 ) bool {
-	const summary = "failed to upgrade the kubernetes cluster"
+	const summary = "failed to change the kubernetes version"
 
 	if !waitForCluster(ctx, cc, organisationID, clusterID, clusterWait{
 		summary:   summary,
-		operation: "waiting to start the upgrade",
-		expired:   fmt.Sprintf("the cluster did not become ACTIVE in %s, the upgrade was not started", readyTimeout),
+		operation: "waiting to change its version",
+		expired:   fmt.Sprintf("the cluster did not become ACTIVE in %s, the version change was not started", readyTimeout),
 		reached:   func(cluster *tmp.ClusterView) bool { return cluster.Status == "ACTIVE" },
 	}, pollInterval, readyTimeout, diags) {
 		return false
@@ -843,8 +843,8 @@ func upgradeCluster(
 
 	return waitForCluster(ctx, cc, organisationID, clusterID, clusterWait{
 		summary:   summary,
-		operation: "it was being upgraded",
-		expired:   fmt.Sprintf("the upgrade did not finish in %s, it may still be running, run terraform plan once the cluster is ACTIVE to reconcile it", upgradeTimeout),
+		operation: "its version was being changed",
+		expired:   fmt.Sprintf("the version change did not finish in %s, it may still be running, run terraform plan once the cluster is ACTIVE to reconcile it", upgradeTimeout),
 		reached:   func(cluster *tmp.ClusterView) bool { return cluster.Status == "ACTIVE" && cluster.Version == version },
 	}, pollInterval, upgradeTimeout, diags)
 }

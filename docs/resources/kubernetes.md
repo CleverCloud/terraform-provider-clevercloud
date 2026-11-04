@@ -61,10 +61,11 @@ description: |-
   
   Changing the topology replaces the cluster, the API cannot change it on an
   existing one.
-  Raising version upgrades the cluster in place, the control plane first and then
-  every node group, and terraform apply waits for the end of the rollout. Should a
-  node refuse to drain, the upgrade stops and leaves that node cordoned. Lowering version is refused during the plan, as Kubernetes
-  does not support downgrades.
+  Changing version moves the cluster to that version in place, the control plane
+  first and then every node group, and terraform apply waits for the end of the
+  rollout. Should a node refuse to drain, the operation stops and leaves that node
+  cordoned. The API also accepts an older version, but Kubernetes does not officially
+  support downgrades: check that your workloads and stored objects allow it first.
   persistent_storage installs the CSI driver that provides persistent volumes. The
   API leaves it disabled unless it is requested, so set it to true if your workloads
   use them. Enabling or disabling it reconciles the cluster, and terraform apply
@@ -172,10 +173,11 @@ resource "clevercloud_kubernetes" "my_cluster" {
 Changing the topology **replaces the cluster**, the API cannot change it on an
 existing one.
 
-Raising `version` upgrades the cluster in place, the control plane first and then
-every node group, and `terraform apply` waits for the end of the rollout. Should a
-node refuse to drain, the upgrade stops and leaves that node cordoned. Lowering `version` is refused during the plan, as Kubernetes
-does not support downgrades.
+Changing `version` moves the cluster to that version in place, the control plane
+first and then every node group, and `terraform apply` waits for the end of the
+rollout. Should a node refuse to drain, the operation stops and leaves that node
+cordoned. The API also accepts an older version, but Kubernetes does not officially
+support downgrades: check that your workloads and stored objects allow it first.
 
 `persistent_storage` installs the CSI driver that provides persistent volumes. The
 API leaves it disabled unless it is requested, so set it to `true` if your workloads
@@ -231,7 +233,7 @@ until that feature is disabled.
 - `persistent_storage` (Boolean) Enable the CSI driver that provides persistent volumes. The API leaves it disabled on a new cluster unless it is set to `true`. Removing the attribute keeps the current value
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
 - `topology` (Attributes) Control plane topology, the API defaults to `DEDICATED_COMPUTE` with the `XS` flavor and a replication factor of 1. It cannot be changed on an existing cluster: changing it replaces the cluster (see [below for nested schema](#nestedatt--topology))
-- `version` (String) Kubernetes version (`MAJOR.MINOR`), the API default when unset. It is checked at plan time against the versions the platform offers. Raising it upgrades the cluster in place, lowering it is refused. Removing the attribute keeps the current version
+- `version` (String) Kubernetes version (`MAJOR.MINOR`), the API default when unset. It is checked at plan time against the versions the platform offers. Changing it moves the cluster to that version in place, in either direction. Removing the attribute keeps the current version
 
 ### Read-Only
 

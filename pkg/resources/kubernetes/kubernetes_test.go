@@ -3,6 +3,7 @@ package kubernetes_test
 import (
 	_ "embed"
 	"fmt"
+	"os"
 	"regexp"
 	"testing"
 	"time"
@@ -119,6 +120,11 @@ func TestAccKubernetes_nodeAutoprovisioning(t *testing.T) {
 }
 
 func TestAccKubernetes_options(t *testing.T) {
+	// the versions are fetched before resource.Test gets a chance to skip
+	if os.Getenv("TF_ACC") == "" {
+		t.Skip("TF_ACC is not set")
+	}
+
 	ctx := t.Context()
 	rName := fmt.Sprintf("tf-test-kubernetes-%d", time.Now().UnixMilli())
 	fullName := fmt.Sprintf("clevercloud_kubernetes.%s", rName)
@@ -199,10 +205,15 @@ func TestAccKubernetes_options(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetSizeExact(0)),
 			},
 		}, {
+			// an older version is the same in place operation
 			ResourceName: rName,
-			Config:       cluster(map[string]any{"name": rName + "-renamed", "version": older, "topology": allInOne}),
-			PlanOnly:     true,
-			ExpectError:  regexp.MustCompile(`cannot downgrade the kubernetes cluster`),
+			Config:       cluster(map[string]any{"name": rName + "-renamed", "version": older, "tags": []string{}, "topology": allInOne}),
+			ConfigPlanChecks: resource.ConfigPlanChecks{
+				PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(fullName, plancheck.ResourceActionUpdate)},
+			},
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("version"), knownvalue.StringExact(older)),
+			},
 		}, {
 			// removing the attributes keeps the values and plans nothing
 			ResourceName: rName,
@@ -211,15 +222,13 @@ func TestAccKubernetes_options(t *testing.T) {
 				PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 			},
 			ConfigStateChecks: []statecheck.StateCheck{
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("version"), knownvalue.StringExact(newest)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("version"), knownvalue.StringExact(older)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("topology").AtMapKey("type"), knownvalue.StringExact("ALL_IN_ONE")),
 			},
 		}, {
-			// a replacement starts over, the version it asks for may be older
 			ResourceName: rName,
 			Config: cluster(map[string]any{
-				"name":    rName + "-renamed",
-				"version": older,
+				"name": rName + "-renamed",
 				"topology": map[string]any{
 					"type": "DISTRIBUTED",
 					"components": map[string]any{
@@ -235,7 +244,6 @@ func TestAccKubernetes_options(t *testing.T) {
 				PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(fullName, plancheck.ResourceActionReplace)},
 			},
 			ConfigStateChecks: []statecheck.StateCheck{
-				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("version"), knownvalue.StringExact(older)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("topology").AtMapKey("type"), knownvalue.StringExact("DISTRIBUTED")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("topology").AtMapKey("flavor"), knownvalue.Null()),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("topology").AtMapKey("components").AtMapKey("scheduler").AtMapKey("flavor"), knownvalue.StringExact("2XS")),
