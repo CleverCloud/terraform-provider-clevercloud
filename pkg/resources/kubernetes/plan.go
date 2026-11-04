@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"slices"
-	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -54,18 +53,6 @@ func (r *ResourceKubernetes) ModifyPlan(ctx context.Context, req resource.Modify
 
 	checkVersion, checkTopology := planChecks(plan, config, state)
 
-	// a replacement starts from a new cluster, which may run any version
-	if checkVersion && state != nil && !topologyChanged(plan.Topology, state.Topology) &&
-		versionLower(plan.Version.ValueString(), state.Version.ValueString()) {
-		resp.Diagnostics.AddAttributeError(
-			path.Root("version"),
-			"cannot downgrade the kubernetes cluster",
-			fmt.Sprintf("the cluster runs %s and Kubernetes does not support going back to %s, keep the current version or recreate the cluster",
-				state.Version.ValueString(), plan.Version.ValueString()),
-		)
-		return
-	}
-
 	if (!checkVersion && !checkTopology) || r.Provider == nil {
 		return
 	}
@@ -103,36 +90,6 @@ func planChecks(plan, config, state *Kubernetes) (checkVersion, checkTopology bo
 // still a replacement
 func topologyChanged(plan, state types.Object) bool {
 	return isSet(plan) && !plan.Equal(state)
-}
-
-// versionLower reports whether a is an older MAJOR.MINOR than b. A version it
-// cannot parse is left for the API to judge
-func versionLower(a, b string) bool {
-	aMajor, aMinor, aOk := parseVersion(a)
-	bMajor, bMinor, bOk := parseVersion(b)
-	if !aOk || !bOk {
-		return false
-	}
-
-	return aMajor < bMajor || (aMajor == bMajor && aMinor < bMinor)
-}
-
-func parseVersion(version string) (major, minor int, ok bool) {
-	parts := strings.Split(version, ".")
-	if len(parts) < 2 {
-		return 0, 0, false
-	}
-
-	major, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return 0, 0, false
-	}
-	minor, err = strconv.Atoi(parts[1])
-	if err != nil {
-		return 0, 0, false
-	}
-
-	return major, minor, true
 }
 
 func validateVersion(version string, versions models.VersionsConfig, diags *diag.Diagnostics) {

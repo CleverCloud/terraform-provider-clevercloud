@@ -112,7 +112,7 @@ func (r ResourceKubernetes) Schema(_ context.Context, req resource.SchemaRequest
 				Computed:      true,
 				PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 				MarkdownDescription: "Kubernetes version (`MAJOR.MINOR`), the API default when unset. It is checked at plan time against the versions the platform offers. " +
-					"Raising it upgrades the cluster in place, lowering it is refused. Removing the attribute keeps the current version",
+					"Changing it moves the cluster to that version in place, in either direction. Removing the attribute keeps the current version",
 			},
 		},
 	}

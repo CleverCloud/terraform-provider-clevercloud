@@ -70,10 +70,11 @@ resource "clevercloud_kubernetes" "my_cluster" {
 Changing the topology **replaces the cluster**, the API cannot change it on an
 existing one.
 
-Raising `version` upgrades the cluster in place, the control plane first and then
-every node group, and `terraform apply` waits for the end of the rollout. Should a
-node refuse to drain, the upgrade stops and leaves that node cordoned. Lowering `version` is refused during the plan, as Kubernetes
-does not support downgrades.
+Changing `version` moves the cluster to that version in place, the control plane
+first and then every node group, and `terraform apply` waits for the end of the
+rollout. Should a node refuse to drain, the operation stops and leaves that node
+cordoned. The API also accepts an older version, but Kubernetes does not officially
+support downgrades: check that your workloads and stored objects allow it first.
 
 `persistent_storage` installs the CSI driver that provides persistent volumes. The
 API leaves it disabled unless it is requested, so set it to `true` if your workloads
