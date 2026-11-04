@@ -7,14 +7,19 @@ import (
 	"strings"
 	"time"
 
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 const (
@@ -31,6 +36,9 @@ const (
 	// carry no HTTP status at all. A blip is worth another try, a dead endpoint
 	// is not worth the whole budget
 	nodeAutoprovisioningTransportRetries = 3
+	// versionUpgradeTimeout bounds a version upgrade, which rolls the control
+	// plane and then every node group
+	versionUpgradeTimeout = 2 * time.Hour
 )
 
 // nodeAutoprovisioningRequestTimeout bounds a single API call inside a loop's
@@ -64,16 +72,13 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 	enabled := nodeAutoprovisioning.ValueBool()
+	persistentStorage := resolveValue(plan.PersistentStorage, config.PersistentStorage)
+	tags := resolveValue(plan.Tags, config.Tags)
 
 	// Create Kubernetes cluster
-	createReq := tmp.KubernetesCreateRequest{
-		Name: plan.Name.ValueString(),
-		//KubeMajorVersion: "1.34",
-	}
-	// only send the features object when something is requested, so clusters
-	// without node autoprovisioning keep the exact same payload
-	if enabled {
-		createReq.Features = &tmp.KubernetesFeatures{NodeAutoprovisioning: &enabled}
+	createReq := createPayload(ctx, plan.Name.ValueString(), enabled, persistentStorage, tags, resolveValue(plan.Topology, config.Topology), resolveValue(plan.Version, config.Version), &resp.Diagnostics)
+	if resp.Diagnostics.HasError() {
+		return
 	}
 
 	createRes := tmp.CreateKubernetes(ctx, r.Client(), r.Organization(), createReq)
@@ -94,6 +99,13 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		ID:                   pkg.FromStr(k8sCluster.ID),
 		Name:                 pkg.FromStr(k8sCluster.Name),
 		NodeAutoprovisioning: nodeAutoprovisioning,
+		PersistentStorage:    persistentStorage,
+		Tags:                 tags,
+		Topology:             topologyFromAPI(ctx, k8sCluster.Topology, &resp.Diagnostics),
+		Version:              pkg.FromStr(k8sCluster.Version),
+	}
+	if !isSet(state.PersistentStorage) {
+		state.PersistentStorage = pkg.FromBool(persistentStorageFeatureEnabled(k8sCluster.Features))
 	}
 
 	for k8sCluster := range WaitForKubernetes(ctx, r.Client(), r.Organization(), k8sCluster.ID, 1*time.Second) {
@@ -105,17 +117,27 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	// no early return on failure here, the cluster exists and has to be saved in
-	// state whatever Karpenter did, otherwise Terraform loses track of it. The
-	// wait reports a failure as an error, so the apply fails instead of claiming
+	// state whatever the features did, otherwise Terraform loses track of it. The
+	// waits report a failure as an error, so the apply fails instead of claiming
 	// a feature the API never confirmed
-	if enabled && !waitForNodeAutoprovisioning(
-		ctx, r.Client(), r.Organization(), state.ID.ValueString(), true,
-		nodeAutoprovisioningPollInterval, nodeAutoprovisioningTimeout, &resp.Diagnostics,
-	) {
+	featuresConverged := true
+	if enabled {
+		featuresConverged = waitForNodeAutoprovisioning(
+			ctx, r.Client(), r.Organization(), state.ID.ValueString(), true,
+			nodeAutoprovisioningPollInterval, nodeAutoprovisioningTimeout, &resp.Diagnostics,
+		)
+	}
+	if persistentStorage.ValueBool() {
+		featuresConverged = waitForPersistentStorage(
+			ctx, r.Client(), r.Organization(), state.ID.ValueString(), true,
+			nodeAutoprovisioningPollInterval, nodeAutoprovisioningTimeout, &resp.Diagnostics,
+		) && featuresConverged
+	}
+	if !featuresConverged {
 		resp.Diagnostics.AddWarning(
 			"the cluster was created and is saved in state",
 			"the failure happened after the cluster itself was created, so Terraform marks this resource tainted and the next apply would destroy and recreate it. "+
-				"If Karpenter only needed more time, run terraform untaint on this resource and plan again rather than replacing the cluster",
+				"If the feature only needed more time, run terraform untaint on this resource and plan again rather than replacing the cluster",
 		)
 	}
 
@@ -159,10 +181,22 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
+	// the state is rebuilt from the API, but whether tags are managed is only
+	// known from the previous one. It holds nothing but the id on an import
+	var previousTags types.Set
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("tags"), &previousTags)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	k8sInfo := kubernetesRes.Payload()
 	state.ID = identity.ID
 	state.Name = pkg.FromStr(k8sInfo.Name)
 	state.NodeAutoprovisioning = pkg.FromBool(autoprovisioningFeatureEnabled(k8sInfo.Features))
+	state.PersistentStorage = pkg.FromBool(persistentStorageFeatureEnabled(k8sInfo.Features))
+	state.Tags = resources.TagsFromAPI(ctx, k8sInfo.Tags, previousTags, &resp.Diagnostics)
+	state.Topology = topologyFromAPI(ctx, k8sInfo.Topology, &resp.Diagnostics)
+	state.Version = pkg.FromStr(k8sInfo.Version)
 
 	// Get kubeconfig
 	kubeConfigRes := tmp.GetKubeconfig(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
@@ -188,7 +222,41 @@ func (r *ResourceKubernetes) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	// name is still not patchable, only the features are
+	persistentStorage := resolveValue(plan.PersistentStorage, config.PersistentStorage)
+	tags := resolveValue(plan.Tags, config.Tags)
+	topology := resolveValue(plan.Topology, config.Topology)
+	version := resolveValue(plan.Version, config.Version)
+	clusterID := state.ID.ValueString()
+
+	// name and tags are applied on the spot, they do not reconcile the cluster
+	if payload := metadataPatch(ctx, plan.Name, state.Name, tags, state.Tags, &resp.Diagnostics); payload != nil && !patchCluster(
+		ctx, r.Client(), r.Organization(), clusterID, *payload, "failed to update the kubernetes cluster", classifyClusterPatchError,
+		nodeAutoprovisioningPollInterval, nodeAutoprovisioningPatchTimeout, &resp.Diagnostics,
+	) {
+		return // keep the previous state, the patch is idempotent and will be replayed
+	}
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	if isSet(persistentStorage) && persistentStorage.ValueBool() != state.PersistentStorage.ValueBool() {
+		enabled := persistentStorage.ValueBool()
+
+		if !patchPersistentStorage(
+			ctx, r.Client(), r.Organization(), clusterID, enabled,
+			nodeAutoprovisioningPollInterval, nodeAutoprovisioningPatchTimeout, &resp.Diagnostics,
+		) {
+			return // keep the previous state, the patch is idempotent and will be replayed
+		}
+
+		if !waitForPersistentStorage(
+			ctx, r.Client(), r.Organization(), clusterID, enabled,
+			nodeAutoprovisioningPollInterval, nodeAutoprovisioningTimeout, &resp.Diagnostics,
+		) {
+			return // keep the previous state, the next plan shows the change again
+		}
+	}
+
 	if nodeAutoprovisioningChanged(nodeAutoprovisioning, state.NodeAutoprovisioning) {
 		enabled := nodeAutoprovisioning.ValueBool()
 
@@ -209,8 +277,29 @@ func (r *ResourceKubernetes) Update(ctx context.Context, req resource.UpdateRequ
 		}
 	}
 
+	// last, as the API refuses an upgrade while a feature is being reconciled. A
+	// state holding no version predates the attribute, the next refresh tells
+	// what the cluster really runs
+	if isSet(version) && isSet(state.Version) && !version.Equal(state.Version) && !upgradeCluster(
+		ctx, r.Client(), r.Organization(), clusterID, version.ValueString(),
+		nodeAutoprovisioningPollInterval, nodeAutoprovisioningTimeout, versionUpgradeTimeout, &resp.Diagnostics,
+	) {
+		return // keep the previous state, the next plan shows the upgrade again
+	}
+
 	newState := *state
+	newState.Name = plan.Name
 	newState.NodeAutoprovisioning = nodeAutoprovisioning
+	newState.Tags = tags
+	if isSet(persistentStorage) {
+		newState.PersistentStorage = persistentStorage
+	}
+	if isSet(topology) {
+		newState.Topology = topology
+	}
+	if isSet(version) {
+		newState.Version = version
+	}
 
 	resp.Diagnostics.Append(resp.Identity.Set(ctx, KubernetesIdentity{ID: state.ID})...)
 	resp.Diagnostics.Append(resp.State.Set(ctx, newState)...)
@@ -281,6 +370,90 @@ func autoprovisioningFeatureEnabled(features *tmp.KubernetesFeatures) bool {
 	return features != nil && features.NodeAutoprovisioning != nil && *features.NodeAutoprovisioning
 }
 
+// persistentStorageFeatureEnabled reports whether the API says the CSI driver is
+// installed, an absent flag means disabled
+func persistentStorageFeatureEnabled(features *tmp.KubernetesFeatures) bool {
+	return features != nil && features.Csi != nil && *features.Csi
+}
+
+// resolveValue returns the value to apply. An expression that could not be resolved
+// at plan time leaves the planned value unknown while the configuration knows it
+// by the time apply runs, see nodeAutoprovisioningValue. The result is null when
+// the attribute is absent from the configuration and the API picks the value
+func resolveValue[T attr.Value](plan, config T) T {
+	if plan.IsUnknown() {
+		return config
+	}
+
+	return plan
+}
+
+// createPayload builds the cluster creation request. Attributes without a value
+// are left out so the API applies its own defaults, and the features object is
+// only sent when something is requested
+func createPayload(
+	ctx context.Context,
+	name string,
+	nodeAutoprovisioning bool,
+	persistentStorage types.Bool,
+	tags types.Set,
+	topology types.Object,
+	version types.String,
+	diags *diag.Diagnostics,
+) tmp.KubernetesCreateRequest {
+	payload := tmp.KubernetesCreateRequest{
+		Name:     name,
+		Topology: topologyToAPI(ctx, topology, diags),
+		Version:  version.ValueString(),
+	}
+
+	if isSet(tags) {
+		payload.Tags = pkg.SetToStringSlice(ctx, tags, diags)
+	}
+
+	if nodeAutoprovisioning || persistentStorage.ValueBool() {
+		payload.Features = &tmp.KubernetesFeatures{}
+		if nodeAutoprovisioning {
+			payload.Features.NodeAutoprovisioning = &nodeAutoprovisioning
+		}
+		if persistentStorage.ValueBool() {
+			enabled := true
+			payload.Features.Csi = &enabled
+		}
+	}
+
+	return payload
+}
+
+// metadataPatch builds the request applying a new name and new tags, nil when
+// neither changed. Tags without a planned value are not managed by Terraform and
+// are left alone
+func metadataPatch(ctx context.Context, name, stateName types.String, tags, stateTags types.Set, diags *diag.Diagnostics) *tmp.KubernetesPatchRequest {
+	payload := tmp.KubernetesPatchRequest{}
+	changed := false
+
+	if !name.Equal(stateName) {
+		newName := name.ValueString()
+		payload.Name = &newName
+		changed = true
+	}
+
+	if isSet(tags) && !tags.Equal(stateTags) {
+		newTags := pkg.SetToStringSlice(ctx, tags, diags)
+		if newTags == nil {
+			newTags = []string{} // null would not remove them
+		}
+		payload.Tags = &newTags
+		changed = true
+	}
+
+	if !changed {
+		return nil
+	}
+
+	return &payload
+}
+
 const (
 	unresolvedNodeAutoprovisioningSummary = "cannot resolve node_autoprovisioning"
 	unresolvedNodeAutoprovisioningDetail  = "the value is still unknown at apply time, which Terraform is supposed to make impossible: " +
@@ -329,7 +502,7 @@ func pollErrorFatal(statusCode int) bool {
 func pollErrorDetail(statusCode int) string {
 	switch statusCode {
 	case http.StatusNotFound:
-		return "the cluster does not exist any more, it was deleted while Karpenter was being installed or removed"
+		return "the cluster does not exist any more, it was deleted while Terraform was waiting for it"
 	case http.StatusUnauthorized, http.StatusForbidden:
 		return "the credentials were refused while polling the cluster, they may have expired or lost access to this organisation"
 	default:
@@ -356,8 +529,6 @@ func clusterTerminalStatus(status string) bool {
 // and a 409 both need the user to change something first
 func classifyPatchError(statusCode int, enabled bool) (retryable bool, detail string) {
 	switch statusCode {
-	case http.StatusPreconditionFailed:
-		return true, ""
 	case http.StatusBadRequest:
 		// the cluster wide autoscalingEnabled feature is mutually exclusive with
 		// this one and is not exposed by this provider
@@ -367,6 +538,17 @@ func classifyPatchError(statusCode int, enabled bool) (retryable bool, detail st
 			return false, "a Karpenter installation already runs in the kube-system namespace of this cluster, remove it before enabling node_autoprovisioning"
 		}
 		return false, "Karpenter custom resources still exist in this cluster, delete every NodePool, NodeClaim, NodeOverlay and CleverNodeClass, let Karpenter drain the nodes, then retry"
+	}
+
+	return classifyClusterPatchError(statusCode)
+}
+
+// classifyClusterPatchError is the retry decision of a patch whose rejection
+// needs no feature specific explanation, the API error is enough
+func classifyClusterPatchError(statusCode int) (retryable bool, detail string) {
+	switch statusCode {
+	case http.StatusPreconditionFailed:
+		return true, ""
 	case http.StatusNotFound:
 		return false, "the cluster does not exist any more"
 	case http.StatusUnauthorized, http.StatusForbidden:
@@ -408,15 +590,15 @@ func patchExpiryDetail(lastStatus int, timeout time.Duration) string {
 	return fmt.Sprintf("the cluster never accepted the change in %s", timeout)
 }
 
-// terminalStatusDetail explains a status the feature can never converge from. A
-// failed cluster is resumed on the Clever Cloud side, a cluster on its way out
-// cannot be resumed at all
-func terminalStatusDetail(status string) string {
+// terminalStatusDetail explains a status the cluster can never converge from,
+// operation being what was going on. A failed cluster is resumed on the Clever
+// Cloud side, a cluster on its way out cannot be resumed at all
+func terminalStatusDetail(status, operation string) string {
 	if status == "FAILED" {
-		return "the cluster went FAILED while node autoprovisioning was being installed or removed, it has to be resumed before it accepts any other change"
+		return fmt.Sprintf("the cluster went FAILED while %s, it has to be resumed before it accepts any other change", operation)
 	}
 
-	return fmt.Sprintf("the cluster went %s while node autoprovisioning was being installed or removed, it cannot be resumed: recreate the cluster or remove it from state", status)
+	return fmt.Sprintf("the cluster went %s while %s, it cannot be resumed: recreate the cluster or remove it from state", status, operation)
 }
 
 // nodeAutoprovisioningChanged reports whether the cluster has to be patched.
@@ -470,6 +652,45 @@ func patchNodeAutoprovisioning(
 		summary = "failed to enable node autoprovisioning"
 	}
 
+	return patchCluster(ctx, cc, organisationID, clusterID, tmp.KubernetesPatchRequest{
+		Features: &tmp.KubernetesFeatures{NodeAutoprovisioning: &enabled},
+	}, summary, func(statusCode int) (bool, string) {
+		return classifyPatchError(statusCode, enabled)
+	}, pollInterval, timeout, diags)
+}
+
+// patchPersistentStorage enables or disables the CSI driver of a cluster, with
+// the same retries on locked features as patchNodeAutoprovisioning
+func patchPersistentStorage(
+	ctx context.Context,
+	cc *client.Client,
+	organisationID, clusterID string,
+	enabled bool,
+	pollInterval, timeout time.Duration,
+	diags *diag.Diagnostics,
+) bool {
+	summary := "failed to disable persistent storage"
+	if enabled {
+		summary = "failed to enable persistent storage"
+	}
+
+	return patchCluster(ctx, cc, organisationID, clusterID, tmp.KubernetesPatchRequest{
+		Features: &tmp.KubernetesFeatures{Csi: &enabled},
+	}, summary, classifyClusterPatchError, pollInterval, timeout, diags)
+}
+
+// patchCluster sends an idempotent patch until the cluster accepts it. classify
+// decides which answers are worth another try and explains the others
+func patchCluster(
+	ctx context.Context,
+	cc *client.Client,
+	organisationID, clusterID string,
+	payload tmp.KubernetesPatchRequest,
+	summary string,
+	classify func(statusCode int) (retryable bool, detail string),
+	pollInterval, timeout time.Duration,
+	diags *diag.Diagnostics,
+) bool {
 	// the Terraform operation context carries no deadline and neither does the
 	// API client, so the budget has to be a context or a stalled request would
 	// outlive the timeout this loop believes it enforces
@@ -483,9 +704,7 @@ func patchNodeAutoprovisioning(
 
 	for {
 		reqCtx, cancelRequest := context.WithTimeout(loopCtx, nodeAutoprovisioningRequestTimeout)
-		res := tmp.UpdateKubernetes(reqCtx, cc, organisationID, clusterID, tmp.KubernetesPatchRequest{
-			Features: &tmp.KubernetesFeatures{NodeAutoprovisioning: &enabled},
-		})
+		res := tmp.UpdateKubernetes(reqCtx, cc, organisationID, clusterID, payload)
 		cancelRequest()
 
 		if !res.HasError() {
@@ -498,7 +717,7 @@ func patchNodeAutoprovisioning(
 		if loopCtx.Err() == nil {
 			lastStatus, lastErr = res.StatusCode(), res.Error().Error()
 
-			retryable, detail := classifyPatchError(lastStatus, enabled)
+			retryable, detail := classify(lastStatus)
 			if !retryable {
 				diags.AddError(summary, patchErrorDetail(detail, lastErr, res.SozuID()))
 				return false
@@ -557,13 +776,105 @@ func waitForNodeAutoprovisioning(
 		summary = "node autoprovisioning was not enabled"
 	}
 
+	return waitForCluster(ctx, cc, organisationID, clusterID, clusterWait{
+		summary:   summary,
+		operation: "node autoprovisioning was being installed or removed",
+		expired:   fmt.Sprintf("the API never reported the requested value in %s, Karpenter may still be installing or being removed, run terraform plan once the cluster is ACTIVE to reconcile it", timeout),
+		reached: func(cluster *tmp.ClusterView) bool {
+			return autoprovisioningFeatureEnabled(cluster.Features) == expected
+		},
+	}, pollInterval, timeout, diags)
+}
+
+// waitForPersistentStorage polls the cluster until the API reports the expected
+// CSI value on an ACTIVE cluster. Like node autoprovisioning it is reported by
+// proof of installation, and the cluster reconciles while it is installed
+func waitForPersistentStorage(
+	ctx context.Context,
+	cc *client.Client,
+	organisationID, clusterID string,
+	expected bool,
+	pollInterval, timeout time.Duration,
+	diags *diag.Diagnostics,
+) bool {
+	summary := "persistent storage was not disabled"
+	if expected {
+		summary = "persistent storage was not enabled"
+	}
+
+	return waitForCluster(ctx, cc, organisationID, clusterID, clusterWait{
+		summary:   summary,
+		operation: "persistent storage was being installed or removed",
+		expired:   fmt.Sprintf("the API never reported the requested value in %s, run terraform plan once the cluster is ACTIVE to reconcile it", timeout),
+		reached: func(cluster *tmp.ClusterView) bool {
+			return cluster.Status == "ACTIVE" && persistentStorageFeatureEnabled(cluster.Features) == expected
+		},
+	}, pollInterval, timeout, diags)
+}
+
+// upgradeCluster moves a cluster to another Kubernetes version and waits for the
+// end of the rollout. The API answers a 409 unless the cluster is ACTIVE, and
+// reports the target version as soon as it accepts the request, so ACTIVE is the
+// only proof that the upgrade is over
+func upgradeCluster(
+	ctx context.Context,
+	cc *client.Client,
+	organisationID, clusterID, version string,
+	pollInterval, readyTimeout, upgradeTimeout time.Duration,
+	diags *diag.Diagnostics,
+) bool {
+	const summary = "failed to upgrade the kubernetes cluster"
+
+	if !waitForCluster(ctx, cc, organisationID, clusterID, clusterWait{
+		summary:   summary,
+		operation: "waiting to start the upgrade",
+		expired:   fmt.Sprintf("the cluster did not become ACTIVE in %s, the upgrade was not started", readyTimeout),
+		reached:   func(cluster *tmp.ClusterView) bool { return cluster.Status == "ACTIVE" },
+	}, pollInterval, readyTimeout, diags) {
+		return false
+	}
+
+	res := sdk.NewSDK(sdk.WithClient(cc)).V4().Kubernetes().Organisations().Ownerid(organisationID).Clusters().Kubernetesid(clusterID).
+		Version().Update().Updatekubernetesclusterversion(ctx, &models.PatchClusterVersion{TargetVersion: version})
+	if res.HasError() {
+		diags.AddError(summary, patchErrorDetail("", res.Error().Error(), res.SozuID()))
+		return false
+	}
+
+	return waitForCluster(ctx, cc, organisationID, clusterID, clusterWait{
+		summary:   summary,
+		operation: "it was being upgraded",
+		expired:   fmt.Sprintf("the upgrade did not finish in %s, it may still be running, run terraform plan once the cluster is ACTIVE to reconcile it", upgradeTimeout),
+		reached:   func(cluster *tmp.ClusterView) bool { return cluster.Status == "ACTIVE" && cluster.Version == version },
+	}, pollInterval, upgradeTimeout, diags)
+}
+
+// clusterWait describes what waitForCluster is waiting for
+type clusterWait struct {
+	summary   string                              // summary of the diagnostics
+	operation string                              // what was going on, should the cluster fail
+	expired   string                              // explanation of an expired timeout
+	reached   func(cluster *tmp.ClusterView) bool // whether the wait is over
+}
+
+// waitForCluster polls the cluster until wait.reached accepts it, and reports
+// whether it ever did. Giving up is an error, never a silent success
+func waitForCluster(
+	ctx context.Context,
+	cc *client.Client,
+	organisationID, clusterID string,
+	wait clusterWait,
+	pollInterval, timeout time.Duration,
+	diags *diag.Diagnostics,
+) bool {
+	summary := wait.summary
+
 	loopCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
-	expired := fmt.Sprintf("the API never reported the requested value in %s, Karpenter may still be installing or being removed, run terraform plan once the cluster is ACTIVE to reconcile it", timeout)
 	lastErr := ""
 
 	for {
@@ -585,34 +896,31 @@ func waitForNodeAutoprovisioning(
 				diags.AddError(summary, patchErrorDetail(pollErrorDetail(res.StatusCode()), lastErr, res.SozuID()))
 				return false
 			}
-			tflog.Warn(ctx, "failed to poll cluster features", map[string]any{"error": lastErr})
+			tflog.Warn(ctx, "failed to poll the cluster", map[string]any{"error": lastErr})
 		case clusterTerminalStatus(res.Payload().Status):
-			// installing or removing Karpenter can fail the whole cluster, and
-			// the cluster can also be deleted from under us: neither ever
-			// converges, and the two need different advice
-			diags.AddError(summary, terminalStatusDetail(res.Payload().Status))
+			// the operation can fail the whole cluster, and the cluster can also
+			// be deleted from under us: neither ever converges, and the two need
+			// different advice
+			diags.AddError(summary, terminalStatusDetail(res.Payload().Status, wait.operation))
 			return false
-		case autoprovisioningFeatureEnabled(res.Payload().Features) == expected:
-			tflog.Info(ctx, "node autoprovisioning converged", map[string]any{"enabled": expected})
+		case wait.reached(res.Payload()):
+			tflog.Info(ctx, "the cluster converged", map[string]any{"operation": wait.operation})
 			return true
 		default:
 			// the cluster answered, so whatever failed before has recovered and
 			// must not be reported as the reason the loop later gave up
 			lastErr = ""
-			tflog.Debug(ctx, "waiting for node autoprovisioning", map[string]any{
-				"status":  res.Payload().Status,
-				"enabled": autoprovisioningFeatureEnabled(res.Payload().Features),
-			})
+			tflog.Debug(ctx, "waiting for the cluster", map[string]any{"status": res.Payload().Status, "operation": wait.operation})
 		}
 
 		if loopCtx.Err() != nil {
-			diags.AddError(summary, loopFailureDetail(ctx, expired, lastErr))
+			diags.AddError(summary, loopFailureDetail(ctx, wait.expired, lastErr))
 			return false
 		}
 
 		select {
 		case <-loopCtx.Done():
-			diags.AddError(summary, loopFailureDetail(ctx, expired, lastErr))
+			diags.AddError(summary, loopFailureDetail(ctx, wait.expired, lastErr))
 			return false
 		case <-ticker.C:
 		}

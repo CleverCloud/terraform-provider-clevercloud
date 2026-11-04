@@ -40,7 +40,12 @@ func TestClusterReadAPIErrorWithNullIdentity(t *testing.T) {
 			var schema resource.SchemaResponse
 			r.Schema(t.Context(), resource.SchemaRequest{}, &schema)
 			state := tfsdk.State{Schema: schema.Schema}
-			if diags := state.Set(t.Context(), Kubernetes{ID: types.StringValue("cluster"), Name: types.StringValue("test-cluster")}); diags.HasError() {
+			if diags := state.Set(t.Context(), Kubernetes{
+				ID:       types.StringValue("cluster"),
+				Name:     types.StringValue("test-cluster"),
+				Tags:     types.SetNull(types.StringType),
+				Topology: types.ObjectNull(topologyAttrTypes),
+			}); diags.HasError() {
 				t.Fatalf("set state: %v", diags)
 			}
 			var identitySchema resource.IdentitySchemaResponse
@@ -538,12 +543,12 @@ func TestPatchExpiryDetail(t *testing.T) {
 }
 
 func TestTerminalStatusDetail(t *testing.T) {
-	if got := terminalStatusDetail("FAILED"); !strings.Contains(got, "has to be resumed") {
+	if got := terminalStatusDetail("FAILED", "node autoprovisioning was being installed or removed"); !strings.Contains(got, "has to be resumed") {
 		t.Errorf("terminalStatusDetail(FAILED) = %q, want the resume remedy", got)
 	}
 
 	for _, status := range []string{"DELETING", "DELETED"} {
-		got := terminalStatusDetail(status)
+		got := terminalStatusDetail(status, "node autoprovisioning was being installed or removed")
 		if strings.Contains(got, "has to be resumed") {
 			t.Errorf("terminalStatusDetail(%s) = %q, a cluster on its way out cannot be resumed", status, got)
 		}

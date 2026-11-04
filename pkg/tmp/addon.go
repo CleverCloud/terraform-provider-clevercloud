@@ -726,8 +726,9 @@ type KubernetesInfo struct {
 	ID           string              `json:"id"`
 	Name         string              `json:"name"`
 	Status       string              `json:"status"` // ACTIVE, DELETED, DELETING, DEPLOYING, FAILED, RECONCILING
-	Tag          string              `json:"tag"`
+	Tags         []string            `json:"tags"`
 	TenantID     string              `json:"tenantId"`
+	Topology     *KubernetesTopology `json:"topologyConfig,omitempty"`
 	Version      string              `json:"version"`
 }
 
@@ -749,23 +750,54 @@ func GetKubeconfig(ctx context.Context, cc *client.Client, organisationID, addon
 // patch is a merge patch, an omitted field is left untouched by the API while an
 // explicit false disables the feature
 type KubernetesFeatures struct {
+	Csi                  *bool `json:"csi,omitempty"`
 	NodeAutoprovisioning *bool `json:"nodeAutoprovisioning,omitempty"`
+}
+
+// KubernetesTopology is the control plane topology of a cluster. ALL_IN_ONE and
+// DEDICATED_COMPUTE take a flavor and a replication factor, DISTRIBUTED takes
+// both for each component instead
+type KubernetesTopology struct {
+	Topology          string                        `json:"topology"`
+	Flavor            string                        `json:"flavor,omitempty"`
+	ReplicationFactor int64                         `json:"replicationFactor,omitempty"`
+	Components        *KubernetesTopologyComponents `json:"components,omitempty"`
+}
+
+// KubernetesTopologyComponents holds the settings of each control plane
+// component of a DISTRIBUTED topology
+type KubernetesTopologyComponents struct {
+	Apiserver              KubernetesTopologyComponent `json:"apiserver"`
+	CloudControllerManager KubernetesTopologyComponent `json:"cloudControllerManager"`
+	ControllerManager      KubernetesTopologyComponent `json:"controllerManager"`
+	NodeGroupOperator      KubernetesTopologyComponent `json:"nodeGroupOperator"`
+	Scheduler              KubernetesTopologyComponent `json:"scheduler"`
+}
+
+// KubernetesTopologyComponent is the size of one control plane component
+type KubernetesTopologyComponent struct {
+	Flavor            string `json:"flavor"`
+	ReplicationFactor int64  `json:"replicationFactor"`
 }
 
 // KubernetesCreateRequest represents the request body for creating a Kubernetes cluster
 type KubernetesCreateRequest struct {
-	Description      string              `json:"description,omitempty"`
-	Features         *KubernetesFeatures `json:"features,omitempty"`
-	KubeMajorVersion string              `json:"kubeMajorVersion,omitempty"`
-	Name             string              `json:"name"`
-	NetworkGroupID   *string             `json:"networkGroupId,omitempty"`
-	Tag              string              `json:"tag,omitempty"`
+	Description    string              `json:"description,omitempty"`
+	Features       *KubernetesFeatures `json:"features,omitempty"`
+	Name           string              `json:"name"`
+	NetworkGroupID *string             `json:"networkGroupId,omitempty"`
+	Tags           []string            `json:"tags,omitempty"`
+	Topology       *KubernetesTopology `json:"topologyConfig,omitempty"`
+	Version        string              `json:"version,omitempty"`
 }
 
 // KubernetesPatchRequest represents the request body for updating a Kubernetes
 // cluster, only the fields set here are modified
 type KubernetesPatchRequest struct {
 	Features *KubernetesFeatures `json:"features,omitempty"`
+	Name     *string             `json:"name,omitempty"`
+	// a pointer so an empty list, which removes every tag, is still sent
+	Tags *[]string `json:"tags,omitempty"`
 }
 
 // ClusterView represents a Kubernetes cluster (same as KubernetesCreateResponse)
@@ -776,8 +808,9 @@ type ClusterView struct {
 	ID           string              `json:"id"`
 	Name         string              `json:"name"`
 	Status       string              `json:"status"` // ACTIVE, DELETED, DELETING, DEPLOYING, FAILED, RECONCILING
-	Tag          string              `json:"tag"`
+	Tags         []string            `json:"tags"`
 	TenantID     string              `json:"tenantId"`
+	Topology     *KubernetesTopology `json:"topologyConfig,omitempty"`
 	Version      string              `json:"version"`
 }
 

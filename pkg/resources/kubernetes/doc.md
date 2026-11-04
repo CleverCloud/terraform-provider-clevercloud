@@ -27,6 +27,59 @@ resource "clevercloud_kubernetes_nodegroup" "workers" {
 }
 ```
 
+### Kubernetes Cluster with explicit options
+
+```terraform
+resource "clevercloud_kubernetes" "my_cluster" {
+  name               = "my-kubernetes-cluster"
+  version            = "1.36"
+  persistent_storage = true
+  tags               = ["env:prod"]
+
+  topology = {
+    type               = "DEDICATED_COMPUTE"
+    flavor             = "S"
+    replication_factor = 3
+  }
+}
+```
+
+The available versions, and the flavors and replication factors each topology
+accepts, are decided by the platform: the provider checks them during
+`terraform plan` and lists the accepted values when one is refused.
+
+The `DISTRIBUTED` topology sizes each control plane component instead:
+
+```terraform
+resource "clevercloud_kubernetes" "my_cluster" {
+  name = "my-kubernetes-cluster"
+
+  topology = {
+    type = "DISTRIBUTED"
+    components = {
+      apiserver                = { flavor = "S", replication_factor = 3 }
+      controller_manager       = { flavor = "XS", replication_factor = 2 }
+      scheduler                = { flavor = "XS", replication_factor = 2 }
+      node_group_operator      = { flavor = "2XS", replication_factor = 2 }
+      cloud_controller_manager = { flavor = "2XS", replication_factor = 2 }
+    }
+  }
+}
+```
+
+Changing the topology **replaces the cluster**, the API cannot change it on an
+existing one.
+
+Raising `version` upgrades the cluster in place, the control plane first and then
+every node group, and `terraform apply` waits for the end of the rollout. Should a
+node refuse to drain, the upgrade stops and leaves that node cordoned. Lowering `version` is refused during the plan, as Kubernetes
+does not support downgrades.
+
+`persistent_storage` installs the CSI driver that provides persistent volumes. The
+API leaves it disabled unless it is requested, so set it to `true` if your workloads
+use them. Enabling or disabling it reconciles the cluster, and `terraform apply`
+waits for it.
+
 ### Kubernetes Cluster with node autoscaling
 
 Node auto-provisioning, powered by [Karpenter](https://karpenter.sh/), creates and

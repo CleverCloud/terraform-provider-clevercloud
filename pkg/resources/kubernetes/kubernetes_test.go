@@ -9,10 +9,14 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
+	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk"
 )
 
 func TestAccKubernetes_basic(t *testing.T) {
@@ -110,6 +114,137 @@ func TestAccKubernetes_nodeAutoprovisioning(t *testing.T) {
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("node_autoprovisioning"), knownvalue.Bool(true)),
 			},
+		}},
+	})
+}
+
+func TestAccKubernetes_options(t *testing.T) {
+	ctx := t.Context()
+	rName := fmt.Sprintf("tf-test-kubernetes-%d", time.Now().UnixMilli())
+	fullName := fmt.Sprintf("clevercloud_kubernetes.%s", rName)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+
+	// the platform decides which versions exist, the test must outlive them
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	product := sdk.NewSDK(sdk.WithClient(cc)).V4().KubernetesProduct().Getkubernetesserviceconfig(ctx)
+	if product.HasError() {
+		t.Fatalf("failed to get the kubernetes service configuration: %s", product.Error())
+	}
+	available := product.Payload().Versions.Available
+	if len(available) < 2 {
+		t.Skipf("an upgrade takes two versions, the platform offers %v", available)
+	}
+	newest, older := available[0], available[1]
+
+	cluster := func(values map[string]any) string {
+		return providerBlock.Append(helper.NewRessource("clevercloud_kubernetes", rName, helper.SetKeyValues(values))).String()
+	}
+	allInOne := map[string]any{"type": "ALL_IN_ONE", "flavor": "S", "replication_factor": 1}
+	component := map[string]any{"flavor": "2XS", "replication_factor": 1}
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			// refused values fail the plan, nothing gets created
+			ResourceName: rName,
+			Config:       cluster(map[string]any{"name": rName, "version": "0.1"}),
+			PlanOnly:     true,
+			ExpectError:  regexp.MustCompile(`version '0.1' is not available`),
+		}, {
+			ResourceName: rName,
+			Config:       cluster(map[string]any{"name": rName, "topology": map[string]any{"type": "ALL_IN_ONE", "flavor": "2XS", "replication_factor": 1}}),
+			PlanOnly:     true,
+			ExpectError:  regexp.MustCompile(`not allowed for ALL_IN_ONE`),
+		}, {
+			ResourceName: rName,
+			Config:       cluster(map[string]any{"name": rName, "topology": map[string]any{"type": "DISTRIBUTED"}}),
+			PlanOnly:     true,
+			ExpectError:  regexp.MustCompile(`missing topology components`),
+		}, {
+			ResourceName: rName,
+			Config: cluster(map[string]any{
+				"name":               rName,
+				"version":            older,
+				"persistent_storage": true,
+				"tags":               []string{"tf-test", "env:test"},
+				"topology":           allInOne,
+			}),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("version"), knownvalue.StringExact(older)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("persistent_storage"), knownvalue.Bool(true)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetExact([]knownvalue.Check{knownvalue.StringExact("tf-test"), knownvalue.StringExact("env:test")})),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("topology").AtMapKey("type"), knownvalue.StringExact("ALL_IN_ONE")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("topology").AtMapKey("flavor"), knownvalue.StringExact("S")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("topology").AtMapKey("replication_factor"), knownvalue.Int64Exact(1)),
+			},
+		}, {
+			// everything but the topology changes in place
+			ResourceName: rName,
+			Config: cluster(map[string]any{
+				"name":               rName + "-renamed",
+				"version":            newest,
+				"persistent_storage": false,
+				"tags":               []string{},
+				"topology":           allInOne,
+			}),
+			ConfigPlanChecks: resource.ConfigPlanChecks{
+				PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(fullName, plancheck.ResourceActionUpdate)},
+			},
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName+"-renamed")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("version"), knownvalue.StringExact(newest)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("persistent_storage"), knownvalue.Bool(false)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("tags"), knownvalue.SetSizeExact(0)),
+			},
+		}, {
+			ResourceName: rName,
+			Config:       cluster(map[string]any{"name": rName + "-renamed", "version": older, "topology": allInOne}),
+			PlanOnly:     true,
+			ExpectError:  regexp.MustCompile(`cannot downgrade the kubernetes cluster`),
+		}, {
+			// removing the attributes keeps the values and plans nothing
+			ResourceName: rName,
+			Config:       cluster(map[string]any{"name": rName + "-renamed", "tags": []string{}}),
+			ConfigPlanChecks: resource.ConfigPlanChecks{
+				PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+			},
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("version"), knownvalue.StringExact(newest)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("topology").AtMapKey("type"), knownvalue.StringExact("ALL_IN_ONE")),
+			},
+		}, {
+			// a replacement starts over, the version it asks for may be older
+			ResourceName: rName,
+			Config: cluster(map[string]any{
+				"name":    rName + "-renamed",
+				"version": older,
+				"topology": map[string]any{
+					"type": "DISTRIBUTED",
+					"components": map[string]any{
+						"apiserver":                component,
+						"cloud_controller_manager": component,
+						"controller_manager":       component,
+						"node_group_operator":      component,
+						"scheduler":                component,
+					},
+				},
+			}),
+			ConfigPlanChecks: resource.ConfigPlanChecks{
+				PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(fullName, plancheck.ResourceActionReplace)},
+			},
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("version"), knownvalue.StringExact(older)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("topology").AtMapKey("type"), knownvalue.StringExact("DISTRIBUTED")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("topology").AtMapKey("flavor"), knownvalue.Null()),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("topology").AtMapKey("components").AtMapKey("scheduler").AtMapKey("flavor"), knownvalue.StringExact("2XS")),
+			},
+		}, {
+			ResourceName:            fullName,
+			ImportState:             true,
+			ImportStateVerify:       true,
+			ImportStateVerifyIgnore: []string{"kubeconfig", "tags"},
 		}},
 	})
 }
