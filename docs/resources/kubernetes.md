@@ -24,6 +24,51 @@ description: |-
     size          = 2
   }
   
+  Kubernetes Cluster with explicit options
+  
+  resource "clevercloud_kubernetes" "my_cluster" {
+    name               = "my-kubernetes-cluster"
+    version            = "1.36"
+    persistent_storage = true
+    tags               = ["env:prod"]
+  
+    topology = {
+      type               = "DEDICATED_COMPUTE"
+      flavor             = "S"
+      replication_factor = 3
+    }
+  }
+  
+  The available versions, and the flavors and replication factors each topology
+  accepts, are decided by the platform: the provider checks them during
+  terraform plan and lists the accepted values when one is refused.
+  The DISTRIBUTED topology sizes each control plane component instead:
+  
+  resource "clevercloud_kubernetes" "my_cluster" {
+    name = "my-kubernetes-cluster"
+  
+    topology = {
+      type = "DISTRIBUTED"
+      components = {
+        apiserver                = { flavor = "S", replication_factor = 3 }
+        controller_manager       = { flavor = "XS", replication_factor = 2 }
+        scheduler                = { flavor = "XS", replication_factor = 2 }
+        node_group_operator      = { flavor = "2XS", replication_factor = 2 }
+        cloud_controller_manager = { flavor = "2XS", replication_factor = 2 }
+      }
+    }
+  }
+  
+  Changing the topology replaces the cluster, the API cannot change it on an
+  existing one.
+  Raising version upgrades the cluster in place, the control plane first and then
+  every node group, and terraform apply waits for the end of the rollout. Should a
+  node refuse to drain, the upgrade stops and leaves that node cordoned. Lowering version is refused during the plan, as Kubernetes
+  does not support downgrades.
+  persistent_storage installs the CSI driver that provides persistent volumes. The
+  API leaves it disabled unless it is requested, so set it to true if your workloads
+  use them. Enabling or disabling it reconciles the cluster, and terraform apply
+  waits for it.
   Kubernetes Cluster with node autoscaling
   Node auto-provisioning, powered by Karpenter https://karpenter.sh/, creates and
   deletes nodes on demand instead of relying on statically sized node groups.
@@ -84,6 +129,59 @@ resource "clevercloud_kubernetes_nodegroup" "workers" {
 }
 ```
 
+### Kubernetes Cluster with explicit options
+
+```terraform
+resource "clevercloud_kubernetes" "my_cluster" {
+  name               = "my-kubernetes-cluster"
+  version            = "1.36"
+  persistent_storage = true
+  tags               = ["env:prod"]
+
+  topology = {
+    type               = "DEDICATED_COMPUTE"
+    flavor             = "S"
+    replication_factor = 3
+  }
+}
+```
+
+The available versions, and the flavors and replication factors each topology
+accepts, are decided by the platform: the provider checks them during
+`terraform plan` and lists the accepted values when one is refused.
+
+The `DISTRIBUTED` topology sizes each control plane component instead:
+
+```terraform
+resource "clevercloud_kubernetes" "my_cluster" {
+  name = "my-kubernetes-cluster"
+
+  topology = {
+    type = "DISTRIBUTED"
+    components = {
+      apiserver                = { flavor = "S", replication_factor = 3 }
+      controller_manager       = { flavor = "XS", replication_factor = 2 }
+      scheduler                = { flavor = "XS", replication_factor = 2 }
+      node_group_operator      = { flavor = "2XS", replication_factor = 2 }
+      cloud_controller_manager = { flavor = "2XS", replication_factor = 2 }
+    }
+  }
+}
+```
+
+Changing the topology **replaces the cluster**, the API cannot change it on an
+existing one.
+
+Raising `version` upgrades the cluster in place, the control plane first and then
+every node group, and `terraform apply` waits for the end of the rollout. Should a
+node refuse to drain, the upgrade stops and leaves that node cordoned. Lowering `version` is refused during the plan, as Kubernetes
+does not support downgrades.
+
+`persistent_storage` installs the CSI driver that provides persistent volumes. The
+API leaves it disabled unless it is requested, so set it to `true` if your workloads
+use them. Enabling or disabling it reconciles the cluster, and `terraform apply`
+waits for it.
+
 ### Kubernetes Cluster with node autoscaling
 
 Node auto-provisioning, powered by [Karpenter](https://karpenter.sh/), creates and
@@ -130,8 +228,77 @@ until that feature is disabled.
 ### Optional
 
 - `node_autoprovisioning` (Boolean) Enable node autoscaling via node auto-provisioning, powered by Karpenter. Nodes are created and deleted on demand from the `NodePool` and `CleverNodeClass` custom resources you deploy in the cluster
+- `persistent_storage` (Boolean) Enable the CSI driver that provides persistent volumes. The API leaves it disabled on a new cluster unless it is set to `true`. Removing the attribute keeps the current value
+- `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
+- `topology` (Attributes) Control plane topology, the API defaults to `DEDICATED_COMPUTE` with the `XS` flavor and a replication factor of 1. It cannot be changed on an existing cluster: changing it replaces the cluster (see [below for nested schema](#nestedatt--topology))
+- `version` (String) Kubernetes version (`MAJOR.MINOR`), the API default when unset. It is checked at plan time against the versions the platform offers. Raising it upgrades the cluster in place, lowering it is refused. Removing the attribute keeps the current version
 
 ### Read-Only
 
 - `id` (String) Generated unique identifier
 - `kubeconfig` (String) Kubernetes configuration file content for accessing the cluster
+
+<a id="nestedatt--topology"></a>
+### Nested Schema for `topology`
+
+Optional:
+
+- `components` (Attributes) Flavor and replication factor of each control plane component, required when `type` is `DISTRIBUTED` (see [below for nested schema](#nestedatt--topology--components))
+- `flavor` (String) Flavor of the control plane, required unless `type` is `DISTRIBUTED`. The accepted flavors depend on the topology and are checked at plan time
+- `replication_factor` (Number) Replication factor of the control plane, required unless `type` is `DISTRIBUTED`
+- `type` (String) Topology type, required: `ALL_IN_ONE` (control plane and workloads share the same VMs), `DEDICATED_COMPUTE` or `DISTRIBUTED`
+
+<a id="nestedatt--topology--components"></a>
+### Nested Schema for `topology.components`
+
+Optional:
+
+- `apiserver` (Attributes) Size of the API server, required (see [below for nested schema](#nestedatt--topology--components--apiserver))
+- `cloud_controller_manager` (Attributes) Size of the cloud controller manager, required (see [below for nested schema](#nestedatt--topology--components--cloud_controller_manager))
+- `controller_manager` (Attributes) Size of the controller manager, required (see [below for nested schema](#nestedatt--topology--components--controller_manager))
+- `node_group_operator` (Attributes) Size of the node group operator, required (see [below for nested schema](#nestedatt--topology--components--node_group_operator))
+- `scheduler` (Attributes) Size of the scheduler, required (see [below for nested schema](#nestedatt--topology--components--scheduler))
+
+<a id="nestedatt--topology--components--apiserver"></a>
+### Nested Schema for `topology.components.apiserver`
+
+Optional:
+
+- `flavor` (String) Flavor of the API server, required
+- `replication_factor` (Number) Replication factor of the API server, required
+
+
+<a id="nestedatt--topology--components--cloud_controller_manager"></a>
+### Nested Schema for `topology.components.cloud_controller_manager`
+
+Optional:
+
+- `flavor` (String) Flavor of the cloud controller manager, required
+- `replication_factor` (Number) Replication factor of the cloud controller manager, required
+
+
+<a id="nestedatt--topology--components--controller_manager"></a>
+### Nested Schema for `topology.components.controller_manager`
+
+Optional:
+
+- `flavor` (String) Flavor of the controller manager, required
+- `replication_factor` (Number) Replication factor of the controller manager, required
+
+
+<a id="nestedatt--topology--components--node_group_operator"></a>
+### Nested Schema for `topology.components.node_group_operator`
+
+Optional:
+
+- `flavor` (String) Flavor of the node group operator, required
+- `replication_factor` (Number) Replication factor of the node group operator, required
+
+
+<a id="nestedatt--topology--components--scheduler"></a>
+### Nested Schema for `topology.components.scheduler`
+
+Optional:
+
+- `flavor` (String) Flavor of the scheduler, required
+- `replication_factor` (Number) Replication factor of the scheduler, required

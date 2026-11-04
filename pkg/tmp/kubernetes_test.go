@@ -7,6 +7,7 @@ import (
 
 func TestKubernetesPatchRequest_Marshal(t *testing.T) {
 	enabled, disabled := true, false
+	name, noTags := "new", []string{}
 
 	tests := []struct {
 		name     string
@@ -34,6 +35,22 @@ func TestKubernetesPatchRequest_Marshal(t *testing.T) {
 			name:     "disable node autoprovisioning",
 			req:      KubernetesPatchRequest{Features: &KubernetesFeatures{NodeAutoprovisioning: &disabled}},
 			expected: `{"features":{"nodeAutoprovisioning":false}}`,
+		},
+		{
+			name:     "disable persistent storage",
+			req:      KubernetesPatchRequest{Features: &KubernetesFeatures{Csi: &disabled}},
+			expected: `{"features":{"csi":false}}`,
+		},
+		{
+			name:     "rename",
+			req:      KubernetesPatchRequest{Name: &name},
+			expected: `{"name":"new"}`,
+		},
+		{
+			// without the pointer omitempty drops it, and the tags stay
+			name:     "remove every tag",
+			req:      KubernetesPatchRequest{Tags: &noTags},
+			expected: `{"tags":[]}`,
 		},
 	}
 
