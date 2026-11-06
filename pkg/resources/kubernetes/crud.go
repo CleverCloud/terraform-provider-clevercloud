@@ -878,6 +878,21 @@ func changeClusterVersion(
 	}, pollInterval, upgradeTimeout, diags)
 }
 
+// lastSeenDetail tells what a cluster was doing when a wait gave up on it, which
+// is the only clue left once the wait is over
+func lastSeenDetail(cluster *tmp.ClusterView) string {
+	detail := fmt.Sprintf("the cluster was last seen %s", cluster.Status)
+
+	if waiting := cluster.Waiting; waiting != nil {
+		detail += fmt.Sprintf(", waiting for %s since %s after %d attempts", waiting.Dependency, waiting.Since, waiting.Attempts)
+		if waiting.Step != "" {
+			detail += fmt.Sprintf(" on step %s", waiting.Step)
+		}
+	}
+
+	return detail
+}
+
 // clusterWait describes what waitForCluster is waiting for
 type clusterWait struct {
 	summary   string                                // summary of the diagnostics
@@ -905,7 +920,7 @@ func waitForCluster(
 	ticker := time.NewTicker(pollInterval)
 	defer ticker.Stop()
 
-	lastErr := ""
+	lastErr, lastSeen := "", ""
 
 	for {
 		// probe before waiting, a ticker never fires at t=0
@@ -943,17 +958,18 @@ func waitForCluster(
 			// the cluster answered, so whatever failed before has recovered and
 			// must not be reported as the reason the loop later gave up
 			lastErr = ""
+			lastSeen = lastSeenDetail(res.Payload())
 			tflog.Debug(ctx, "waiting for the cluster", map[string]any{"status": res.Payload().Status, "operation": wait.operation})
 		}
 
 		if loopCtx.Err() != nil {
-			diags.AddError(summary, loopFailureDetail(ctx, wait.expired, lastErr))
+			diags.AddError(summary, patchErrorDetail(loopFailureDetail(ctx, wait.expired, lastErr), lastSeen, ""))
 			return false
 		}
 
 		select {
 		case <-loopCtx.Done():
-			diags.AddError(summary, loopFailureDetail(ctx, wait.expired, lastErr))
+			diags.AddError(summary, patchErrorDetail(loopFailureDetail(ctx, wait.expired, lastErr), lastSeen, ""))
 			return false
 		case <-ticker.C:
 		}
