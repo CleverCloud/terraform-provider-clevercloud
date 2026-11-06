@@ -9,7 +9,11 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/models"
@@ -387,6 +391,29 @@ func TestMetadataPatch(t *testing.T) {
 	}
 }
 
+func TestVersionLower(t *testing.T) {
+	tests := []struct {
+		a, b string
+		want bool
+	}{
+		{"1.34", "1.35", true},
+		{"1.35", "1.34", false},
+		{"1.35", "1.35", false},
+		{"1.9", "1.10", true}, // not a string comparison
+		{"1.10", "1.9", false},
+		{"1.35", "2.0", true},
+		{"1.35.2", "1.36", true},
+		{"latest", "1.36", false},
+		{"1", "1.36", false},
+	}
+
+	for _, tt := range tests {
+		if got := versionLower(tt.a, tt.b); got != tt.want {
+			t.Errorf("versionLower(%s, %s) = %v, want %v", tt.a, tt.b, got, tt.want)
+		}
+	}
+}
+
 func TestResolveValue(t *testing.T) {
 	if got := resolveValue(types.StringUnknown(), types.StringValue("1.35")); !got.Equal(types.StringValue("1.35")) {
 		t.Errorf("an unknown plan has to fall back on the configuration, got %s", got)
@@ -404,7 +431,7 @@ func TestResolveValue(t *testing.T) {
 // target version as soon as it accepts one, so neither the reconciliation before
 // nor the version field after can be trusted to mean the upgrade is over
 func TestChangeClusterVersionWaitsForAStableCluster(t *testing.T) {
-	status, upgrades := "RECONCILING", 0
+	status, version, upgrades := "RECONCILING", "1.35", 0
 	polls := 0
 
 	cc := testClient(t, func(w http.ResponseWriter, r *http.Request) {
@@ -417,8 +444,8 @@ func TestChangeClusterVersionWaitsForAStableCluster(t *testing.T) {
 			}
 
 			upgrades++
-			status = "UPDATING"
-			_ = json.NewEncoder(w).Encode(tmp.ClusterView{ID: "cluster", Status: status, Version: "1.36", CreationDate: "2026-01-01T00:00:00Z"})
+			status, version = "UPDATING", "1.36"
+			_ = json.NewEncoder(w).Encode(tmp.ClusterView{ID: "cluster", Status: status, Version: version, CreationDate: "2026-01-01T00:00:00Z"})
 			return
 		}
 
@@ -429,7 +456,7 @@ func TestChangeClusterVersionWaitsForAStableCluster(t *testing.T) {
 		if polls > 5 {
 			status = "ACTIVE"
 		}
-		_ = json.NewEncoder(w).Encode(tmp.ClusterView{ID: "cluster", Status: status, Version: "1.36"})
+		_ = json.NewEncoder(w).Encode(tmp.ClusterView{ID: "cluster", Status: status, Version: version})
 	})
 
 	var diags diag.Diagnostics
@@ -465,13 +492,13 @@ func TestChangeClusterVersionReportsARejection(t *testing.T) {
 }
 
 func TestChangeClusterVersionStopsOnAFailedCluster(t *testing.T) {
-	status := "ACTIVE"
+	status, version := "ACTIVE", "1.35"
 	cc := testClient(t, func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		if r.Method == http.MethodPost {
-			status = "FAILED"
+			status, version = "FAILED", "1.36"
 		}
-		_ = json.NewEncoder(w).Encode(tmp.ClusterView{ID: "cluster", Status: status, Version: "1.36", CreationDate: "2026-01-01T00:00:00Z"})
+		_ = json.NewEncoder(w).Encode(tmp.ClusterView{ID: "cluster", Status: status, Version: version, CreationDate: "2026-01-01T00:00:00Z"})
 	})
 
 	var diags diag.Diagnostics
@@ -527,4 +554,325 @@ func TestPatchPersistentStorageSendsOnlyItsFlag(t *testing.T) {
 	if body != `{"features":{"csi":false}}` {
 		t.Errorf("sent %s", body)
 	}
+}
+
+// modifyPlan runs ModifyPlan on an unconfigured resource, which covers everything
+// but the checks against the platform
+func modifyPlan(t *testing.T, plan, config Kubernetes, state *Kubernetes) (resource.ModifyPlanResponse, Kubernetes) {
+	t.Helper()
+	ctx := t.Context()
+
+	r := &ResourceKubernetes{}
+	var s resource.SchemaResponse
+	r.Schema(ctx, resource.SchemaRequest{}, &s)
+	null := tftypes.NewValue(s.Schema.Type().TerraformType(ctx), nil)
+
+	req := resource.ModifyPlanRequest{
+		Plan:   tfsdk.Plan{Schema: s.Schema, Raw: null.Copy()},
+		Config: tfsdk.Config{Schema: s.Schema, Raw: null.Copy()},
+		State:  tfsdk.State{Schema: s.Schema, Raw: null.Copy()},
+	}
+	if d := req.Plan.Set(ctx, withNulls(plan)); d.HasError() {
+		t.Fatalf("set plan: %v", d)
+	}
+	rawConfig := tfsdk.State{Schema: s.Schema, Raw: null.Copy()}
+	if d := rawConfig.Set(ctx, withNulls(config)); d.HasError() {
+		t.Fatalf("set config: %v", d)
+	}
+	req.Config.Raw = rawConfig.Raw
+	if state != nil {
+		if d := req.State.Set(ctx, withNulls(*state)); d.HasError() {
+			t.Fatalf("set state: %v", d)
+		}
+	}
+
+	resp := resource.ModifyPlanResponse{Plan: req.Plan}
+	r.ModifyPlan(ctx, req, &resp)
+
+	var planned Kubernetes
+	if d := resp.Plan.Get(ctx, &planned); d.HasError() {
+		t.Fatalf("get plan: %v", d)
+	}
+
+	return resp, planned
+}
+
+// withNulls types the attributes a test case leaves out
+func withNulls(k Kubernetes) Kubernetes {
+	if k.Tags.ElementType(context.Background()) == nil {
+		k.Tags = resources.NullTags
+	}
+	if k.Topology.AttributeTypes(context.Background()) == nil {
+		k.Topology = types.ObjectNull(topologyAttrTypes)
+	}
+
+	return k
+}
+
+func TestModifyPlanTopology(t *testing.T) {
+	upper := simpleTopology(t, topologyAllInOne, "S", 1)
+	other := simpleTopology(t, topologyAllInOne, "M", 1)
+	unset := types.ObjectNull(topologyAttrTypes)
+
+	tests := []struct {
+		name     string
+		config   types.Object
+		state    types.Object
+		replaced bool
+		planned  types.Object
+	}{
+		{name: "same topology", config: upper, state: upper, planned: upper},
+		{name: "another topology", config: other, state: upper, replaced: true, planned: other},
+		{name: "a state without topology never replaces", config: upper, state: unset, planned: upper},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, planned := modifyPlan(t,
+				Kubernetes{Topology: tt.config},
+				Kubernetes{Topology: tt.config},
+				&Kubernetes{Topology: tt.state},
+			)
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
+			}
+
+			if got := len(resp.RequiresReplace) == 1; got != tt.replaced {
+				t.Errorf("replaced = %v, want %v", got, tt.replaced)
+			}
+			if got := resp.Diagnostics.WarningsCount() == 1; got != tt.replaced {
+				t.Errorf("warned = %v, a replacement and only a replacement warns: %v", got, resp.Diagnostics)
+			}
+			if !planned.Topology.Equal(tt.planned) {
+				t.Errorf("planned %s, want %s", planned.Topology, tt.planned)
+			}
+		})
+	}
+}
+
+func TestModifyPlanWarnsOnDowngrade(t *testing.T) {
+	other := simpleTopology(t, topologyAllInOne, "M", 1)
+	current := simpleTopology(t, topologyAllInOne, "S", 1)
+
+	tests := []struct {
+		name     string
+		version  string
+		topology types.Object
+		warnings int
+		detail   string
+	}{
+		{name: "downgrade", version: "1.35", topology: current, warnings: 1, detail: "from 1.36 to 1.35"},
+		{name: "upgrade", version: "1.37", topology: current},
+		{name: "same version", version: "1.36", topology: current},
+		// only the replacement warns, the new cluster does not move anywhere
+		{name: "older version on a replacement", version: "1.35", topology: other, warnings: 1, detail: "creates a new one"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			version := types.StringValue(tt.version)
+			resp, _ := modifyPlan(t,
+				Kubernetes{Version: version, Topology: tt.topology},
+				Kubernetes{Version: version, Topology: tt.topology},
+				&Kubernetes{Version: types.StringValue("1.36"), Topology: current},
+			)
+			if resp.Diagnostics.HasError() {
+				t.Fatalf("a downgrade is allowed: %v", resp.Diagnostics)
+			}
+			if got := resp.Diagnostics.WarningsCount(); got != tt.warnings {
+				t.Fatalf("got %d warnings, want %d: %v", got, tt.warnings, resp.Diagnostics)
+			}
+			if tt.warnings > 0 && !strings.Contains(resp.Diagnostics.Warnings()[0].Detail(), tt.detail) {
+				t.Errorf("warning %q, want it to contain %q", resp.Diagnostics.Warnings()[0].Detail(), tt.detail)
+			}
+		})
+	}
+}
+
+func TestFlavorValidators(t *testing.T) {
+	ctx := context.Background()
+
+	for value, valid := range map[string]bool{"XS": true, "2XS": true, "S": true, "xs": false, "2xs": false, "Xs": false, "": false} {
+		var diags diag.Diagnostics
+		for _, v := range flavorValidators {
+			res := &validator.StringResponse{}
+			v.ValidateString(ctx, validator.StringRequest{ConfigValue: types.StringValue(value)}, res)
+			diags.Append(res.Diagnostics...)
+		}
+		if got := !diags.HasError(); got != valid {
+			t.Errorf("flavor %q valid = %v, want %v", value, got, valid)
+		}
+	}
+}
+
+func TestVersionFromAPI(t *testing.T) {
+	old := types.StringValue("1.35")
+
+	tests := []struct {
+		name     string
+		status   string
+		previous types.String
+		want     types.String
+		warnings int
+	}{
+		{name: "rollout over", status: "ACTIVE", previous: old, want: types.StringValue("1.36")},
+		{name: "rollout failed", status: "FAILED", previous: old, want: old, warnings: 1},
+		{name: "rollout running", status: "UPDATING", previous: old, want: old, warnings: 1},
+		{name: "failed with nothing to say about the version", status: "FAILED", previous: types.StringValue("1.36"), want: types.StringValue("1.36")},
+		{name: "import of a failed cluster", status: "FAILED", previous: types.StringNull(), want: types.StringValue("1.36")},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var diags diag.Diagnostics
+			if got := versionFromAPI(tt.status, "1.36", tt.previous, &diags); !got.Equal(tt.want) {
+				t.Errorf("versionFromAPI() = %s, want %s", got, tt.want)
+			}
+			if got := diags.WarningsCount(); got != tt.warnings {
+				t.Errorf("got %d warnings, want %d", got, tt.warnings)
+			}
+		})
+	}
+}
+
+func clusterPayload(status, version string) tmp.ClusterView {
+	return tmp.ClusterView{ID: "cluster", Status: status, Version: version, CreationDate: "2026-01-01T00:00:00Z"}
+}
+
+// TestChangeClusterVersionReportsAnAsynchronousRejection pins that a change the
+// API refuses after accepting it fails on the spot: the cluster goes back to
+// ACTIVE on its previous version instead of going FAILED
+func TestChangeClusterVersionReportsAnAsynchronousRejection(t *testing.T) {
+	status, version, polls := "ACTIVE", "1.35", 0
+	cc := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPost {
+			status, version = "UPDATING", "1.36"
+			_ = json.NewEncoder(w).Encode(clusterPayload(status, version))
+			return
+		}
+
+		if status == "UPDATING" {
+			polls++
+			if polls > 2 {
+				status, version = "ACTIVE", "1.35"
+			}
+		}
+		_ = json.NewEncoder(w).Encode(clusterPayload(status, version))
+	})
+
+	var diags diag.Diagnostics
+	if changeClusterVersion(t.Context(), cc, "orga", "cluster", "1.36", time.Millisecond, time.Second, time.Minute, &diags) {
+		t.Fatal("expected the version change to fail")
+	}
+	if detail := diags.Errors()[0].Detail(); !strings.Contains(detail, "stays on 1.35") {
+		t.Errorf("the error has to name the version the cluster stays on, got %q", detail)
+	}
+}
+
+// TestChangeClusterVersionDoesNotReplayARolloutThatEnded pins the other side of
+// keeping the previous version in state during a rollout: the plan can show a
+// change that is already done by the time it is applied
+func TestChangeClusterVersionDoesNotReplayARolloutThatEnded(t *testing.T) {
+	cc := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			t.Error("the cluster already runs that version, nothing has to be sent")
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(clusterPayload("ACTIVE", "1.36"))
+	})
+
+	var diags diag.Diagnostics
+	if !changeClusterVersion(t.Context(), cc, "orga", "cluster", "1.36", time.Millisecond, time.Second, time.Second, &diags) {
+		t.Fatalf("unexpected failure: %v", diags)
+	}
+}
+
+func TestUpgradeStateFromV0(t *testing.T) {
+	ctx := t.Context()
+	current := Kubernetes{}
+	var s resource.SchemaResponse
+	(&ResourceKubernetes{}).Schema(ctx, resource.SchemaRequest{}, &s)
+
+	run := func(t *testing.T, r *ResourceKubernetes) (Kubernetes, diag.Diagnostics) {
+		t.Helper()
+
+		prior := tfsdk.State{Schema: schemaKubernetesV0, Raw: tftypes.NewValue(schemaKubernetesV0.Type().TerraformType(ctx), nil)}
+		if d := prior.Set(ctx, KubernetesV0{
+			ID:                   types.StringValue("cluster"),
+			Name:                 types.StringValue("c"),
+			KubeConfig:           types.StringValue("kubeconfig"),
+			NodeAutoprovisioning: types.BoolValue(true),
+		}); d.HasError() {
+			t.Fatalf("set prior state: %v", d)
+		}
+
+		res := resource.UpgradeStateResponse{State: tfsdk.State{Schema: s.Schema, Raw: tftypes.NewValue(s.Schema.Type().TerraformType(ctx), nil)}}
+		r.UpgradeState(ctx)[0].StateUpgrader(ctx, resource.UpgradeStateRequest{State: &prior}, &res)
+
+		got := current
+		if d := res.State.Get(ctx, &got); d.HasError() {
+			t.Fatalf("get state: %v", d)
+		}
+
+		return got, res.Diagnostics
+	}
+
+	keepsWhatItHad := func(t *testing.T, got Kubernetes) {
+		t.Helper()
+		if got.ID.ValueString() != "cluster" || got.Name.ValueString() != "c" || got.KubeConfig.ValueString() != "kubeconfig" || !got.NodeAutoprovisioning.ValueBool() {
+			t.Errorf("lost part of the prior state: %+v", got)
+		}
+	}
+
+	t.Run("reads the new attributes from the API", func(t *testing.T) {
+		enabled := true
+		cc := testClient(t, func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			view := clusterPayload("ACTIVE", "1.36")
+			view.Features = &tmp.KubernetesFeatures{Csi: &enabled}
+			view.Topology = &tmp.KubernetesTopology{Topology: topologyAllInOne, Flavor: "S", ReplicationFactor: 1}
+			_ = json.NewEncoder(w).Encode(view)
+		})
+		r := &ResourceKubernetes{}
+		r.Provider = clusterReadTestProvider{client: cc}
+
+		got, diags := run(t, r)
+		if diags.HasError() {
+			t.Fatalf("unexpected diagnostics: %v", diags)
+		}
+		keepsWhatItHad(t, got)
+		if got.Version.ValueString() != "1.36" || !got.PersistentStorage.ValueBool() || !got.Topology.Equal(simpleTopology(t, topologyAllInOne, "S", 1)) {
+			t.Errorf("did not read the API: %+v", got)
+		}
+		if !got.Tags.IsNull() {
+			t.Errorf("tags are not managed until configured, got %s", got.Tags)
+		}
+	})
+
+	t.Run("does not fail without a configured provider", func(t *testing.T) {
+		got, diags := run(t, &ResourceKubernetes{})
+		if diags.HasError() {
+			t.Fatalf("unexpected diagnostics: %v", diags)
+		}
+		keepsWhatItHad(t, got)
+		if !got.Topology.IsNull() || !got.Version.IsNull() {
+			t.Errorf("expected the new attributes to stay null: %+v", got)
+		}
+	})
+
+	t.Run("does not fail when the API refuses", func(t *testing.T) {
+		cc := testClient(t, func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusInternalServerError) })
+		r := &ResourceKubernetes{}
+		r.Provider = clusterReadTestProvider{client: cc}
+
+		got, diags := run(t, r)
+		if diags.HasError() {
+			t.Fatalf("unexpected diagnostics: %v", diags)
+		}
+		keepsWhatItHad(t, got)
+		if !got.Topology.IsNull() {
+			t.Errorf("expected the topology to stay null: %s", got.Topology)
+		}
+	})
 }

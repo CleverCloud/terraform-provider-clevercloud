@@ -60,12 +60,26 @@ description: |-
   }
   
   Changing the topology replaces the cluster, the API cannot change it on an
-  existing one.
+  existing one: every workload and volume it holds is deleted. The plan warns about
+  it, and lifecycle { prevent_destroy = true } protects a cluster you cannot lose:
+  
+  resource "clevercloud_kubernetes" "my_cluster" {
+    name = "my-kubernetes-cluster"
+  
+    lifecycle {
+      prevent_destroy = true
+    }
+  }
+  
   Changing version moves the cluster to that version in place, the control plane
   first and then every node group, and terraform apply waits for the end of the
   rollout. Should a node refuse to drain, the operation stops and leaves that node
-  cordoned. The API also accepts an older version, but Kubernetes does not officially
-  support downgrades: check that your workloads and stored objects allow it first.
+  cordoned. Should the cluster fail, or the rollout still be running, the plan warns
+  about it and keeps showing the change.
+  An older version is accepted too and the plan warns about it. Kubernetes does not
+  support downgrades, and the API moves the cluster in a single step, without the
+  checks an upgrade gets: objects stored by the newer version may not be readable by
+  the older one.
   persistent_storage installs the CSI driver that provides persistent volumes. The
   API leaves it disabled unless it is requested, so set it to true if your workloads
   use them. Enabling or disabling it reconciles the cluster, and terraform apply
@@ -171,13 +185,29 @@ resource "clevercloud_kubernetes" "my_cluster" {
 ```
 
 Changing the topology **replaces the cluster**, the API cannot change it on an
-existing one.
+existing one: every workload and volume it holds is deleted. The plan warns about
+it, and `lifecycle { prevent_destroy = true }` protects a cluster you cannot lose:
+
+```terraform
+resource "clevercloud_kubernetes" "my_cluster" {
+  name = "my-kubernetes-cluster"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+}
+```
 
 Changing `version` moves the cluster to that version in place, the control plane
 first and then every node group, and `terraform apply` waits for the end of the
 rollout. Should a node refuse to drain, the operation stops and leaves that node
-cordoned. The API also accepts an older version, but Kubernetes does not officially
-support downgrades: check that your workloads and stored objects allow it first.
+cordoned. Should the cluster fail, or the rollout still be running, the plan warns
+about it and keeps showing the change.
+
+An older version is accepted too and the plan warns about it. Kubernetes does not
+support downgrades, and the API moves the cluster in a single step, without the
+checks an upgrade gets: objects stored by the newer version may not be readable by
+the older one.
 
 `persistent_storage` installs the CSI driver that provides persistent volumes. The
 API leaves it disabled unless it is requested, so set it to `true` if your workloads
@@ -246,7 +276,7 @@ until that feature is disabled.
 Optional:
 
 - `components` (Attributes) Flavor and replication factor of each control plane component, required when `type` is `DISTRIBUTED` (see [below for nested schema](#nestedatt--topology--components))
-- `flavor` (String) Flavor of the control plane, required unless `type` is `DISTRIBUTED`. The accepted flavors depend on the topology and are checked at plan time
+- `flavor` (String) Flavor of the control plane in uppercase, required unless `type` is `DISTRIBUTED`. The accepted flavors depend on the topology and are checked at plan time
 - `replication_factor` (Number) Replication factor of the control plane, required unless `type` is `DISTRIBUTED`
 - `type` (String) Topology type, required: `ALL_IN_ONE` (control plane and workloads share the same VMs), `DEDICATED_COMPUTE` or `DISTRIBUTED`
 
@@ -266,7 +296,7 @@ Optional:
 
 Optional:
 
-- `flavor` (String) Flavor of the API server, required
+- `flavor` (String) Flavor of the API server in uppercase, required
 - `replication_factor` (Number) Replication factor of the API server, required
 
 
@@ -275,7 +305,7 @@ Optional:
 
 Optional:
 
-- `flavor` (String) Flavor of the cloud controller manager, required
+- `flavor` (String) Flavor of the cloud controller manager in uppercase, required
 - `replication_factor` (Number) Replication factor of the cloud controller manager, required
 
 
@@ -284,7 +314,7 @@ Optional:
 
 Optional:
 
-- `flavor` (String) Flavor of the controller manager, required
+- `flavor` (String) Flavor of the controller manager in uppercase, required
 - `replication_factor` (Number) Replication factor of the controller manager, required
 
 
@@ -293,7 +323,7 @@ Optional:
 
 Optional:
 
-- `flavor` (String) Flavor of the node group operator, required
+- `flavor` (String) Flavor of the node group operator in uppercase, required
 - `replication_factor` (Number) Replication factor of the node group operator, required
 
 
@@ -302,5 +332,5 @@ Optional:
 
 Optional:
 
-- `flavor` (String) Flavor of the scheduler, required
+- `flavor` (String) Flavor of the scheduler in uppercase, required
 - `replication_factor` (Number) Replication factor of the scheduler, required

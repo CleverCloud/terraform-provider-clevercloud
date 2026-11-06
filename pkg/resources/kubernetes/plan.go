@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -47,11 +48,26 @@ func (r *ResourceKubernetes) ModifyPlan(ctx context.Context, req resource.Modify
 		}
 	}
 
-	if state != nil && isSet(config.Topology) && topologyChanged(plan.Topology, state.Topology) {
+	replaced := state != nil && isSet(config.Topology) && topologyChanged(plan.Topology, state.Topology)
+	if replaced {
 		resp.RequiresReplace.Append(path.Root("topology"))
+		resp.Diagnostics.AddAttributeWarning(
+			path.Root("topology"),
+			"changing the topology replaces the kubernetes cluster",
+			"the API cannot change the topology of a cluster: this plan deletes it, with every workload and volume it holds, and creates a new one",
+		)
 	}
 
 	checkVersion, checkTopology := planChecks(plan, config, state)
+
+	if checkVersion && state != nil && !replaced && versionLower(plan.Version.ValueString(), state.Version.ValueString()) {
+		resp.Diagnostics.AddAttributeWarning(
+			path.Root("version"),
+			"this version change is a downgrade",
+			fmt.Sprintf("moving the cluster from %s to %s is a downgrade, which Kubernetes does not support: objects stored by the newer version may not be readable by the older one",
+				state.Version.ValueString(), plan.Version.ValueString()),
+		)
+	}
 
 	if (!checkVersion && !checkTopology) || r.Provider == nil {
 		return
@@ -85,11 +101,41 @@ func planChecks(plan, config, state *Kubernetes) (checkVersion, checkTopology bo
 	return checkVersion, checkTopology
 }
 
-// topologyChanged reports whether the plan replaces the cluster. A state written
-// before this attribute existed holds null, and planning a value on top of it is
-// still a replacement
+// topologyChanged reports whether the plan replaces the cluster. A state holding
+// null says nothing about the real topology, and deleting a cluster takes more
+// than not knowing: the next refresh tells, and the plan after it can decide
 func topologyChanged(plan, state types.Object) bool {
-	return isSet(plan) && !plan.Equal(state)
+	return isSet(plan) && isSet(state) && !plan.Equal(state)
+}
+
+// versionLower reports whether a is an older MAJOR.MINOR than b. A version it
+// cannot parse is not reported as one
+func versionLower(a, b string) bool {
+	aMajor, aMinor, aOk := parseVersion(a)
+	bMajor, bMinor, bOk := parseVersion(b)
+	if !aOk || !bOk {
+		return false
+	}
+
+	return aMajor < bMajor || (aMajor == bMajor && aMinor < bMinor)
+}
+
+func parseVersion(version string) (major, minor int, ok bool) {
+	parts := strings.Split(version, ".")
+	if len(parts) < 2 {
+		return 0, 0, false
+	}
+
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, 0, false
+	}
+	minor, err = strconv.Atoi(parts[1])
+	if err != nil {
+		return 0, 0, false
+	}
+
+	return major, minor, true
 }
 
 func validateVersion(version string, versions models.VersionsConfig, diags *diag.Diagnostics) {
