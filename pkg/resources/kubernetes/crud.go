@@ -39,6 +39,8 @@ const (
 	// versionUpgradeTimeout bounds a version upgrade, which rolls the control
 	// plane and then every node group
 	versionUpgradeTimeout = 2 * time.Hour
+	// clusterCreationTimeout bounds the deployment of a new cluster
+	clusterCreationTimeout = 30 * time.Minute
 )
 
 // nodeAutoprovisioningRequestTimeout bounds a single API call inside a loop's
@@ -108,12 +110,16 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		state.PersistentStorage = pkg.FromBool(persistentStorageFeatureEnabled(k8sCluster.Features))
 	}
 
-	for k8sCluster := range WaitForKubernetes(ctx, r.Client(), r.Organization(), k8sCluster.ID, 1*time.Second) {
-		tflog.Info(ctx, "cluster state changed", map[string]any{"state": k8sCluster.Status})
-		if k8sCluster.Status == "FAILED" {
-			resp.Diagnostics.AddError("failed to provision kubernetes cluster", k8sCluster.Status)
-			return // without running k8s cluster, nothing possible
-		}
+	// the cluster exists from here on, whatever becomes of it: it has to be saved
+	// in state or Terraform loses track of it, and the next apply creates another
+	if !waitForClusterCreation(ctx, r.Client(), r.Organization(), state.ID.ValueString(), nodeAutoprovisioningPollInterval, clusterCreationTimeout, &resp.Diagnostics) {
+		resp.Diagnostics.AddWarning(
+			"the cluster was created and is saved in state",
+			"the failure happened after the API accepted the cluster, so Terraform marks this resource tainted and the next apply would destroy and recreate it. "+
+				"If the cluster can be resumed or only needed more time, run terraform untaint on this resource once it is ACTIVE rather than replacing it",
+		)
+		resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+		return
 	}
 
 	// no early return on failure here, the cluster exists and has to be saved in
@@ -325,45 +331,6 @@ func (r *ResourceKubernetes) Delete(ctx context.Context, req resource.DeleteRequ
 	}
 
 	resp.State.RemoveResource(ctx)
-}
-
-// WaitForKubernetes monitors a Kubernetes cluster status and returns a channel
-// that emits cluster object on the first call and whenever the Status field changes.
-// The channel is automatically closed when status becomes ACTIVE or FAILED (terminal states).
-func WaitForKubernetes(ctx context.Context, cc *client.Client, organisationID, clusterID string, pollInterval time.Duration) <-chan *tmp.ClusterView {
-	ch := make(chan *tmp.ClusterView)
-
-	go func() {
-		var previousStatus string
-		defer close(ch)
-
-		ticker := time.NewTicker(pollInterval)
-		defer ticker.Stop()
-
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				res := tmp.GetKubernetesCluster(ctx, cc, organisationID, clusterID)
-				if res.HasError() {
-					continue
-				}
-				status := res.Payload().Status
-
-				if status != previousStatus {
-					ch <- res.Payload()
-					previousStatus = status
-				}
-
-				if status == "ACTIVE" || status == "FAILED" {
-					return
-				}
-			}
-		}
-	}()
-
-	return ch
 }
 
 // autoprovisioningFeatureEnabled reports whether the API says node autoprovisioning is installed.
@@ -809,6 +776,23 @@ func waitForNodeAutoprovisioning(
 		reached: func(cluster *tmp.ClusterView) bool {
 			return autoprovisioningFeatureEnabled(cluster.Features) == expected
 		},
+	}, pollInterval, timeout, diags)
+}
+
+// waitForClusterCreation polls a new cluster until it is ACTIVE, and reports
+// whether it ever was
+func waitForClusterCreation(
+	ctx context.Context,
+	cc *client.Client,
+	organisationID, clusterID string,
+	pollInterval, timeout time.Duration,
+	diags *diag.Diagnostics,
+) bool {
+	return waitForCluster(ctx, cc, organisationID, clusterID, clusterWait{
+		summary:   "failed to provision kubernetes cluster",
+		operation: "it was being created",
+		expired:   fmt.Sprintf("the cluster did not become ACTIVE in %s, it may still be deploying", timeout),
+		reached:   func(cluster *tmp.ClusterView) bool { return cluster.Status == "ACTIVE" },
 	}, pollInterval, timeout, diags)
 }
 
