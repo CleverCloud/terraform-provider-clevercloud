@@ -1,5 +1,41 @@
 # Changelog
 
+## [3.1.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v3.0.0...v3.1.0) (2026-11-06)
+
+
+### Features
+
+* **apps:** deprecate attributes backed by variables the platform ignores ([cfad5af](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/cfad5afd85cfc8ba60274487b32535e036fdc3c9))
+* **docker:** expose every docker variable, reject them in environment ([5842372](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/5842372bfb9b5302de3b6bc340d46a48cd673007))
+* **dotnet:** reject dotnet variables in environment, handle app_folder ([cd7636b](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/cd7636b73f10276d480d2a92aba934f44b2e4eea))
+* **frankenphp:** expose every frankenphp variable, reject them in environment ([eb4d8fe](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/eb4d8feb6975114abaa4183ff6933f555cd6ab7f))
+* **go:** expose every go variable, reject them in environment ([1bd0050](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1bd0050f2b4b5514f6d77467285fd27b6a4955fd))
+* **haskell:** reject haskell variables in environment, handle app_folder ([499856d](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/499856d7c94610951ef9f9a12ad258daf7e6195e))
+* **java:** expose every java variable, reject them in environment ([449410e](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/449410ec20e5e1866ea823fa3309ec0967f19c37))
+* **kubernetes:** allow moving a cluster to an older version ([eb3e33e](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/eb3e33eec3bbe317fee82676cfa6dfbcdafeeacf))
+* **kubernetes:** expose version, topology, storage and tags on clusters ([bf2b1dd](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/bf2b1ddf5046d3eeea286c6cdbd330fd7a1a8067))
+* **linux:** reject linux variables in environment ([36464c9](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/36464c99de48804111d31167aca99ffbaf407a13))
+* **nodejs:** expose every node variable, reject them in environment ([b37ed9f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/b37ed9f05919df1f4c104f30465722347646d320))
+* **php:** expose every php variable, reject them in environment ([1b317c4](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1b317c41366ff78c3808ac0775247d1840e58b6e))
+* **pkg:** Int64Env maps an integer attribute to its variable ([7260ae1](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/7260ae18ed73f1d8011ca625d4105b1fd6df1c5d))
+* **play2:** expose every play2 variable, reject them in environment ([4ff6c8e](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/4ff6c8e49948eff1897441a1d08f22142dde19a5))
+* **python:** expose every python variable, reject them in environment ([3d5bfce](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/3d5bfce8a30f0ef741e8a7704ad95446588918e5))
+* **ruby:** map every ruby variable, reject them in environment ([94442ae](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/94442ae2294466926d4d3902d324c59074484658))
+* **rust:** expose every rust variable, reject them in environment ([d6c90de](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/d6c90ded4e939045f85396c46b5cb7ea33efb647))
+* **scala:** expose every scala variable, reject them in environment ([dde8fe1](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/dde8fe1d55bd91c3d6b1b6fce57c13acf056bdff))
+* **static_apache:** expose the webroot variable, reject it in environment ([3890163](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/3890163eb46194df9b9720fa4ef315fd6e27c474))
+* **static:** expose every static variable, reject them in environment ([e1b91cd](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/e1b91cdd6c64d2b7b732ae34933480c6a86307b6))
+* **v:** expose every v variable, reject them in environment ([4fce140](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/4fce140a97ed5fe427e30b8a5654c695ee374eed))
+
+
+### Bug Fixes
+
+* **addons:** refuse an add-on ID on import ([140bf58](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/140bf58fb9a3366af98af029e1121d6154a380bd))
+* **kubernetes:** address the review of the cluster options ([915af54](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/915af54cd2980e129bc2c5d593aa99afbbc9d18e))
+* **kubernetes:** handle missing resource identity on read, update and delete ([4679753](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/4679753d47af479a1f2e3b95766137e5258d4990))
+* **kubernetes:** keep a failed cluster in state and bound its creation ([a0665f7](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/a0665f752fa291a4337dd2a1077ecaed37f1082d))
+* **networkgroups:** use the real ID of database addons as member ID ([2b64e31](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/2b64e31476e6a39201ea3cd1e96a0c8cbabf1f07))
+
 ## [3.0.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v2.3.0...v3.0.0) (2026-10-15)
 
 
