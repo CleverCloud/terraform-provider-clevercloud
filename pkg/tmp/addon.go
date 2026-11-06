@@ -800,6 +800,15 @@ type KubernetesPatchRequest struct {
 	Tags *[]string `json:"tags,omitempty"`
 }
 
+// KubernetesWaiting tells what a cluster creation is waiting for, the API only
+// reports it during that wait
+type KubernetesWaiting struct {
+	Attempts   int    `json:"attempts"`
+	Dependency string `json:"dependency"`
+	Since      string `json:"since"`
+	Step       string `json:"step,omitempty"`
+}
+
 // ClusterView represents a Kubernetes cluster (same as KubernetesCreateResponse)
 type ClusterView struct {
 	CreationDate string              `json:"creationDate"`
@@ -812,6 +821,7 @@ type ClusterView struct {
 	TenantID     string              `json:"tenantId"`
 	Topology     *KubernetesTopology `json:"topologyConfig,omitempty"`
 	Version      string              `json:"version"`
+	Waiting      *KubernetesWaiting  `json:"waiting,omitempty"`
 }
 
 // KubernetesCreateResponse is an alias for ClusterView
