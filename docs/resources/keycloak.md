@@ -4,6 +4,8 @@ page_title: "clevercloud_keycloak Resource - terraform-provider-clevercloud"
 description: |-
   Manage Keycloak https://www.keycloak.org/ product.
   See Keycloak product specification https://www.clever.cloud/developers/doc/addons/keycloak/.
+  Import
+  Import this resource with its real ID, the value of its id attribute. The add-on ID (addon_xxx) is refused.
 ---
 
 # clevercloud_keycloak (Resource)
@@ -11,6 +13,10 @@ description: |-
 Manage [Keycloak](https://www.keycloak.org/) product.
 
 See [Keycloak product specification](https://www.clever.cloud/developers/doc/addons/keycloak/).
+
+## Import
+
+Import this resource with its real ID, the value of its `id` attribute. The add-on ID (`addon_xxx`) is refused.
 
 
 

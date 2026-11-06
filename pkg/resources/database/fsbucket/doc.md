@@ -26,3 +26,7 @@ resource "clevercloud_fsbucket" "my_fsbucket" {
 * `host` - FS Bucket FTP endpoint.
 * `ftp_username` - FTP username used to authenticate.
 * `ftp_password` - FTP password used to authenticate.
+
+## Import
+
+Import this resource with its real ID, the value of its `id` attribute. The add-on ID (`addon_xxx`) is refused.

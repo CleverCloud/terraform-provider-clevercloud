@@ -8,7 +8,7 @@ import (
 )
 
 type ResourceMateriaKV struct {
-	helper.Configurer
+	helper.AddonConfigurer
 }
 
 func NewResourceMateriaKV() resource.Resource {

@@ -8,7 +8,7 @@ import (
 )
 
 type ResourcePulsar struct {
-	helper.Configurer
+	helper.AddonConfigurer
 }
 
 func NewResourcePulsar() resource.Resource {

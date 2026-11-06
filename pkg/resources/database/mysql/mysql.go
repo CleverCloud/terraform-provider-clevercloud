@@ -17,7 +17,7 @@ var (
 )
 
 type ResourceMySQL struct {
-	helper.Configurer
+	helper.AddonConfigurer
 	infos             *tmp.MysqlInfos
 	dedicatedVersions []string
 }

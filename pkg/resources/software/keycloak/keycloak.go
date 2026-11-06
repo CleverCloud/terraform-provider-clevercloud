@@ -8,7 +8,7 @@ import (
 )
 
 type ResourceKeycloak struct {
-	helper.Configurer
+	helper.AddonConfigurer
 }
 
 func NewResourceKeycloak() resource.Resource {

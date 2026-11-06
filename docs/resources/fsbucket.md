@@ -17,6 +17,8 @@ description: |-
   name - (Required) Name of the FS Bucket.region - (Optional) Geographical region where the data will be stored. Defaults to par.
   Attribute Reference
   id - Generated unique identifier.host - FS Bucket FTP endpoint.ftp_username - FTP username used to authenticate.ftp_password - FTP password used to authenticate.
+  Import
+  Import this resource with its real ID, the value of its id attribute. The add-on ID (addon_xxx) is refused.
 ---
 
 # clevercloud_fsbucket (Resource)
@@ -49,6 +51,10 @@ resource "clevercloud_fsbucket" "my_fsbucket" {
 * `host` - FS Bucket FTP endpoint.
 * `ftp_username` - FTP username used to authenticate.
 * `ftp_password` - FTP password used to authenticate.
+
+## Import
+
+Import this resource with its real ID, the value of its `id` attribute. The add-on ID (`addon_xxx`) is refused.
 
 
 

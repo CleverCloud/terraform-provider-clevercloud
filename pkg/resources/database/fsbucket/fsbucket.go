@@ -8,7 +8,7 @@ import (
 )
 
 type ResourceFSBucket struct {
-	helper.Configurer
+	helper.AddonConfigurer
 }
 
 func NewResourceFSBucket() resource.Resource {

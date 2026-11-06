@@ -8,7 +8,7 @@ import (
 )
 
 type ResourceMetabase struct {
-	helper.Configurer
+	helper.AddonConfigurer
 }
 
 func NewResourceMetabase() resource.Resource {

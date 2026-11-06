@@ -8,7 +8,7 @@ import (
 )
 
 type ResourceOtoroshi struct {
-	helper.Configurer
+	helper.AddonConfigurer
 }
 
 func NewResourceOtoroshi() resource.Resource {

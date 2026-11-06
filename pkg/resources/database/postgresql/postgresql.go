@@ -22,7 +22,7 @@ var (
 )
 
 type ResourcePostgreSQL struct {
-	helper.Configurer
+	helper.AddonConfigurer
 	infos             *tmp.PostgresInfos
 	dedicatedVersions []string
 }

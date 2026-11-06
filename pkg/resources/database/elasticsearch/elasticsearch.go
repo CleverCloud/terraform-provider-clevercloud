@@ -8,7 +8,7 @@ import (
 )
 
 type ResourceElasticsearch struct {
-	helper.Configurer
+	helper.AddonConfigurer
 }
 
 func NewResourceElasticsearch() resource.Resource {

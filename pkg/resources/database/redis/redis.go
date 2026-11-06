@@ -8,7 +8,7 @@ import (
 )
 
 type ResourceRedis struct {
-	helper.Configurer
+	helper.AddonConfigurer
 }
 
 func NewResourceRedis() resource.Resource {

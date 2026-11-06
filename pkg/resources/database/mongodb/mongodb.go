@@ -8,7 +8,7 @@ import (
 )
 
 type ResourceMongoDB struct {
-	helper.Configurer
+	helper.AddonConfigurer
 }
 
 func NewResourceMongoDB() resource.Resource {
