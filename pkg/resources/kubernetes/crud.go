@@ -181,10 +181,13 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	// the state is rebuilt from the API, but whether tags are managed is only
-	// known from the previous one. It holds nothing but the id on an import
+	// the state is rebuilt from the API, but whether tags are managed and which
+	// version really runs are only known from the previous one. It holds nothing
+	// but the id on an import
 	var previousTags types.Set
+	var previousVersion types.String
 	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("tags"), &previousTags)...)
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("version"), &previousVersion)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -196,7 +199,7 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 	state.PersistentStorage = pkg.FromBool(persistentStorageFeatureEnabled(k8sInfo.Features))
 	state.Tags = resources.TagsFromAPI(ctx, k8sInfo.Tags, previousTags, &resp.Diagnostics)
 	state.Topology = topologyFromAPI(ctx, k8sInfo.Topology, &resp.Diagnostics)
-	state.Version = pkg.FromStr(k8sInfo.Version)
+	state.Version = versionFromAPI(k8sInfo.Status, k8sInfo.Version, previousVersion, &resp.Diagnostics)
 
 	// Get kubeconfig
 	kubeConfigRes := tmp.GetKubeconfig(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
@@ -368,6 +371,29 @@ func WaitForKubernetes(ctx context.Context, cc *client.Client, organisationID, c
 // the same thing as disabled
 func autoprovisioningFeatureEnabled(features *tmp.KubernetesFeatures) bool {
 	return features != nil && features.NodeAutoprovisioning != nil && *features.NodeAutoprovisioning
+}
+
+// versionFromAPI maps the version returned by the API to the state value. The API
+// records the target as soon as it accepts a version change, so it only tells what
+// runs once the rollout is over. Until then the previous version stays: reading
+// the target would empty the next plan and hide a rollout that failed
+func versionFromAPI(status, version string, previous types.String, diags *diag.Diagnostics) types.String {
+	if !isSet(previous) || previous.ValueString() == version {
+		return pkg.FromStr(version)
+	}
+
+	switch status {
+	case "FAILED":
+		diags.AddAttributeWarning(path.Root("version"), "the version change did not complete",
+			fmt.Sprintf("the cluster is FAILED and was moving from %s to %s, it has to be resumed before it accepts any other change", previous.ValueString(), version))
+		return previous
+	case "UPDATING":
+		diags.AddAttributeWarning(path.Root("version"), "a version change is still running",
+			fmt.Sprintf("the cluster is moving from %s to %s, run terraform plan again once it is ACTIVE", previous.ValueString(), version))
+		return previous
+	default:
+		return pkg.FromStr(version)
+	}
 }
 
 // persistentStorageFeatureEnabled reports whether the API says the CSI driver is
@@ -825,13 +851,23 @@ func changeClusterVersion(
 ) bool {
 	const summary = "failed to change the kubernetes version"
 
+	current := ""
 	if !waitForCluster(ctx, cc, organisationID, clusterID, clusterWait{
 		summary:   summary,
 		operation: "waiting to change its version",
 		expired:   fmt.Sprintf("the cluster did not become ACTIVE in %s, the version change was not started", readyTimeout),
-		reached:   func(cluster *tmp.ClusterView) bool { return cluster.Status == "ACTIVE" },
+		reached: func(cluster *tmp.ClusterView) bool {
+			current = cluster.Version
+			return cluster.Status == "ACTIVE"
+		},
 	}, pollInterval, readyTimeout, diags) {
 		return false
+	}
+
+	// the state keeps the previous version until a rollout ends, so a plan can
+	// show a change that a rollout still running at that point has since finished
+	if current == version {
+		return true
 	}
 
 	res := sdk.NewSDK(sdk.WithClient(cc)).V4().Kubernetes().Organisations().Ownerid(organisationID).Clusters().Kubernetesid(clusterID).
@@ -845,16 +881,26 @@ func changeClusterVersion(
 		summary:   summary,
 		operation: "its version was being changed",
 		expired:   fmt.Sprintf("the version change did not finish in %s, it may still be running, run terraform plan once the cluster is ACTIVE to reconcile it", upgradeTimeout),
-		reached:   func(cluster *tmp.ClusterView) bool { return cluster.Status == "ACTIVE" && cluster.Version == version },
+		reached:   func(cluster *tmp.ClusterView) bool { return cluster.Status == "ACTIVE" },
+		// the API shows UPDATING while the change runs. When its first checks
+		// refuse the change the cluster does not fail, it goes back to ACTIVE on the
+		// previous version, which no amount of waiting would ever change
+		rejected: func(cluster *tmp.ClusterView) string {
+			if cluster.Status == "ACTIVE" && cluster.Version != version {
+				return fmt.Sprintf("the API rejected the version change, the cluster stays on %s", cluster.Version)
+			}
+			return ""
+		},
 	}, pollInterval, upgradeTimeout, diags)
 }
 
 // clusterWait describes what waitForCluster is waiting for
 type clusterWait struct {
-	summary   string                              // summary of the diagnostics
-	operation string                              // what was going on, should the cluster fail
-	expired   string                              // explanation of an expired timeout
-	reached   func(cluster *tmp.ClusterView) bool // whether the wait is over
+	summary   string                                // summary of the diagnostics
+	operation string                                // what was going on, should the cluster fail
+	expired   string                                // explanation of an expired timeout
+	reached   func(cluster *tmp.ClusterView) bool   // whether the wait is over
+	rejected  func(cluster *tmp.ClusterView) string // why it can never be, optional
 }
 
 // waitForCluster polls the cluster until wait.reached accepts it, and reports
@@ -902,6 +948,9 @@ func waitForCluster(
 			// be deleted from under us: neither ever converges, and the two need
 			// different advice
 			diags.AddError(summary, terminalStatusDetail(res.Payload().Status, wait.operation))
+			return false
+		case wait.rejected != nil && wait.rejected(res.Payload()) != "":
+			diags.AddError(summary, wait.rejected(res.Payload()))
 			return false
 		case wait.reached(res.Payload()):
 			tflog.Info(ctx, "the cluster converged", map[string]any{"operation": wait.operation})

@@ -165,6 +165,11 @@ func TestAccKubernetes_options(t *testing.T) {
 			ExpectError:  regexp.MustCompile(`not allowed for ALL_IN_ONE`),
 		}, {
 			ResourceName: rName,
+			Config:       cluster(map[string]any{"name": rName, "topology": map[string]any{"type": "ALL_IN_ONE", "flavor": "s", "replication_factor": 1}}),
+			PlanOnly:     true,
+			ExpectError:  regexp.MustCompile(`uppercase`),
+		}, {
+			ResourceName: rName,
 			Config:       cluster(map[string]any{"name": rName, "topology": map[string]any{"type": "DISTRIBUTED"}}),
 			PlanOnly:     true,
 			ExpectError:  regexp.MustCompile(`missing topology components`),
@@ -253,6 +258,52 @@ func TestAccKubernetes_options(t *testing.T) {
 			ImportState:             true,
 			ImportStateVerify:       true,
 			ImportStateVerifyIgnore: []string{"kubeconfig", "tags"},
+		}},
+	})
+}
+
+// TestAccKubernetes_upgradeState creates a cluster with a release whose state
+// predates version and topology, then plans its real topology with the current
+// code, without any refresh. Only UpgradeState can fill the state at that point,
+// and planning nothing proves the cluster is not replaced
+func TestAccKubernetes_upgradeState(t *testing.T) {
+	// the state records the provider address, it has to be the released one
+	t.Setenv("TF_ACC_PROVIDER_NAMESPACE", "CleverCloud")
+
+	ctx := t.Context()
+	rName := fmt.Sprintf("tf-test-kubernetes-%d", time.Now().UnixMilli())
+	fullName := fmt.Sprintf("clevercloud_kubernetes.%s", rName)
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	cluster := func(values map[string]any) string {
+		values["name"] = rName
+		return providerBlock.Append(helper.NewRessource("clevercloud_kubernetes", rName, helper.SetKeyValues(values))).String()
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     tests.ExpectOrganisation(t),
+		CheckDestroy: tests.CheckDestroy(ctx),
+		AdditionalCLIOptions: &resource.AdditionalCLIOptions{
+			Plan: resource.PlanOptions{NoRefresh: true},
+		},
+		Steps: []resource.TestStep{{
+			ExternalProviders: map[string]resource.ExternalProvider{
+				"clevercloud": {Source: "CleverCloud/clevercloud", VersionConstraint: "3.0.0"},
+			},
+			Config: cluster(map[string]any{}),
+		}, {
+			ProtoV6ProviderFactories: tests.ProtoV6Provider,
+			Config: cluster(map[string]any{
+				"topology": map[string]any{"type": "DEDICATED_COMPUTE", "flavor": "XS", "replication_factor": 1},
+			}),
+			ConfigPlanChecks: resource.ConfigPlanChecks{
+				PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(fullName, plancheck.ResourceActionNoop)},
+			},
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("version"), knownvalue.NotNull()),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("persistent_storage"), knownvalue.Bool(false)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("topology").AtMapKey("type"), knownvalue.StringExact("DEDICATED_COMPUTE")),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("topology").AtMapKey("flavor"), knownvalue.StringExact("XS")),
+			},
 		}},
 	})
 }

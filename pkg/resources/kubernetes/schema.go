@@ -3,6 +3,7 @@ package kubernetes
 import (
 	"context"
 	_ "embed"
+	"regexp"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -43,7 +44,7 @@ var resourceKubernetesDoc string
 
 func (r ResourceKubernetes) Schema(_ context.Context, req resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Version:             0,
+		Version:             1,
 		MarkdownDescription: resourceKubernetesDoc,
 		Attributes: map[string]schema.Attribute{
 			"id":         schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
@@ -86,7 +87,8 @@ func (r ResourceKubernetes) Schema(_ context.Context, req resource.SchemaRequest
 					"flavor": schema.StringAttribute{
 						Optional:            true,
 						Computed:            true,
-						MarkdownDescription: "Flavor of the control plane, required unless `type` is `DISTRIBUTED`. The accepted flavors depend on the topology and are checked at plan time",
+						Validators:          flavorValidators,
+						MarkdownDescription: "Flavor of the control plane in uppercase, required unless `type` is `DISTRIBUTED`. The accepted flavors depend on the topology and are checked at plan time",
 					},
 					"replication_factor": schema.Int64Attribute{
 						Optional:            true,
@@ -118,13 +120,21 @@ func (r ResourceKubernetes) Schema(_ context.Context, req resource.SchemaRequest
 	}
 }
 
+// flavorValidators refuses a flavor in any other case. The API takes them all and
+// answers in uppercase, so a lowercase value would never match the state and would
+// replace the cluster on every plan. The accepted flavors are not listed here: the
+// platform decides them, and ModifyPlan checks them against it
+var flavorValidators = []validator.String{
+	stringvalidator.RegexMatches(regexp.MustCompile(`^[0-9A-Z]+$`), "must be uppercase, for example XS"),
+}
+
 func topologyComponentSchema(name string) schema.SingleNestedAttribute {
 	return schema.SingleNestedAttribute{
 		Optional:            true,
 		Computed:            true,
 		MarkdownDescription: "Size of the " + name + ", required",
 		Attributes: map[string]schema.Attribute{
-			"flavor":             schema.StringAttribute{Optional: true, Computed: true, MarkdownDescription: "Flavor of the " + name + ", required"},
+			"flavor":             schema.StringAttribute{Optional: true, Computed: true, Validators: flavorValidators, MarkdownDescription: "Flavor of the " + name + " in uppercase, required"},
 			"replication_factor": schema.Int64Attribute{Optional: true, Computed: true, MarkdownDescription: "Replication factor of the " + name + ", required"},
 		},
 	}
