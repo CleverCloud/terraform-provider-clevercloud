@@ -4,6 +4,8 @@ page_title: "clevercloud_redis Resource - terraform-provider-clevercloud"
 description: |-
   Manage Redis https://redis.io/ product.
   See Redis product specification https://www.clever.cloud/developers/doc/addons/redis/.
+  Import
+  Import this resource with its real ID, the value of its id attribute. The add-on ID (addon_xxx) is refused.
 ---
 
 # clevercloud_redis (Resource)
@@ -11,6 +13,10 @@ description: |-
 Manage [Redis](https://redis.io/) product.
 
 See [Redis product specification](https://www.clever.cloud/developers/doc/addons/redis/).
+
+## Import
+
+Import this resource with its real ID, the value of its `id` attribute. The add-on ID (`addon_xxx`) is refused.
 
 
 

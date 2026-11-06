@@ -8,7 +8,7 @@ import (
 )
 
 type ResourceMatomo struct {
-	helper.Configurer
+	helper.AddonConfigurer
 }
 
 func NewResourceMatomo() resource.Resource {

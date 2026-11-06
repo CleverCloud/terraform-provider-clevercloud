@@ -8,7 +8,7 @@ import (
 )
 
 type ResourceCellar struct {
-	helper.Configurer
+	helper.AddonConfigurer
 }
 
 func NewResourceCellar() resource.Resource {

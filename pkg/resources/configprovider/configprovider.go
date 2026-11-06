@@ -8,7 +8,7 @@ import (
 )
 
 type ResourceConfigProvider struct {
-	helper.Configurer
+	helper.AddonConfigurer
 }
 
 func NewResourceConfigProvider() resource.Resource {

@@ -9,3 +9,7 @@ Otoroshi is a lightweight API gateway and management solution that provides:
 * Comprehensive audit logging and monitoring
 
 Learn more about [Otoroshi with LLM](https://www.clever.cloud/developers/doc/addons/otoroshi/) on Clever Cloud.
+
+## Import
+
+Import this resource with its real ID, the value of its `id` attribute. The add-on ID (`addon_xxx`) is refused.
