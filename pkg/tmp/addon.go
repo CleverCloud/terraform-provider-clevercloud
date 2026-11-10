@@ -50,20 +50,29 @@ type AddonPlan struct {
 type AddonPlanFeature struct {
 	Name            string `json:"name"`
 	Type            string `json:"type"`
+	Value           string `json:"value,omitempty"`
 	ComputableValue string `json:"computable_value,omitempty"`
 	NameCode        string `json:"name_code,omitempty"`
 }
 
-// IsDedicated returns true if the plan has the "is-dedicated" feature set to "dedicated" (not "Shared")
+// IsDedicated reports whether the plan is dedicated, from its "is-dedicated"
+// feature. The feature's display value ("Dedicated" / "Shared") is the same for
+// every add-on provider, but its computable_value is not: "dedicated" / "shared"
+// for PostgreSQL, MongoDB, Redis or Elasticsearch, and "false" / "true" (a
+// boolean "is shared") for MySQL. Comparing computable_value to "dedicated"
+// therefore treated every MySQL plan as shared.
 func (plan *AddonPlan) IsDedicated() bool {
 	if plan == nil {
 		return false
 	}
 	for _, feature := range plan.Features {
-		if feature.NameCode == "is-dedicated" {
-			// Value can be "dedicated" or "Shared"
-			return feature.ComputableValue == "dedicated"
+		if feature.NameCode != "is-dedicated" {
+			continue
 		}
+		if feature.Value != "" {
+			return strings.EqualFold(feature.Value, "dedicated")
+		}
+		return strings.EqualFold(feature.ComputableValue, "dedicated")
 	}
 	return false
 }
