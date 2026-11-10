@@ -1,0 +1,1956 @@
+[
+  {
+    "id": "es-addon",
+    "name": "Elastic Stack",
+    "plans": [
+      {
+        "id": "plan_0e0bc5ea-ba21-41e8-865b-1ed48e0163ca",
+        "name": "XS",
+        "slug": "xs",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_7675a239-057e-448e-85fb-77b5aa2ef47e",
+        "name": "S",
+        "slug": "s",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_bb93c360-d60c-4441-b18b-cb530a6b7b11",
+        "name": "M",
+        "slug": "m",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_33ad969a-2f37-4d47-8707-93315650fc0f",
+        "name": "L",
+        "slug": "l",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_0e494649-d62a-45e7-ba81-61c1a5d8503a",
+        "name": "XL",
+        "slug": "xl",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_56265b48-d826-4484-9fd8-d3038c973027",
+        "name": "XXL",
+        "slug": "xxl",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_a9565b70-7d5b-44b9-892f-de9bc6cade84",
+        "name": "XXXL",
+        "slug": "xxxl",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_31ea6328-7df8-4208-a18d-137d2941f16d",
+        "name": "4XL",
+        "slug": "4xl",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_197dbf8a-c30b-49c9-a2ac-126a0b79efba",
+        "name": "5XL",
+        "slug": "5xl",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "jenkins",
+    "name": "Jenkins",
+    "plans": [
+      {
+        "id": "plan_9436de3e-b4e6-48e7-8f5c-0bec0dc8b592",
+        "name": "XS",
+        "slug": "XS",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_36ec7fbb-5c1e-4639-b512-1bc864fe52c2",
+        "name": "S",
+        "slug": "S",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_57ed26d0-5143-49b1-9232-f6f97f1881f2",
+        "name": "M",
+        "slug": "M",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_f8ee2197-dc72-474e-b396-ee952648bb12",
+        "name": "L",
+        "slug": "L",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_f407e34a-2370-4a67-940f-3ef8d1aec772",
+        "name": "XL",
+        "slug": "XL",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mongodb-addon",
+    "name": "MongoDB",
+    "plans": [
+      {
+        "id": "plan_b53983a2-63d3-472d-8c98-f1bdea682912",
+        "name": "XS Small Space",
+        "slug": "xs_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_14ab2ba4-4b61-4e4f-8971-f26e7daa4963",
+        "name": "XS Medium Space",
+        "slug": "xs_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_8c379b80-6f2d-4b93-8839-8cb14aee4218",
+        "name": "XS Big Space",
+        "slug": "xs_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_5ad112b9-15ca-4c1d-800d-f1cb2989ee83",
+        "name": "S Small Space",
+        "slug": "s_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_01fd9ba8-2e8f-4a0a-bbf7-aecb4d982780",
+        "name": "S Medium Space",
+        "slug": "s_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_b60a7496-f44d-4f95-b942-c2445958d58a",
+        "name": "S Big Space",
+        "slug": "s_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_5172896b-9f29-48f6-8820-3d07a04b80c9",
+        "name": "S Huge Space",
+        "slug": "s_hug",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_8c14d2c0-05fe-4137-912b-1e99b01b871d",
+        "name": "M Small Space",
+        "slug": "m_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_5f1e6e86-a9d7-4698-b6c1-6ef5935d16b7",
+        "name": "M Medium Space",
+        "slug": "m_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_e8036bc6-5341-4c6e-b843-f4c60d442198",
+        "name": "M Big Space",
+        "slug": "m_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_df538656-adf7-4846-8e39-d96d0c362706",
+        "name": "M Huge Space",
+        "slug": "m_hug",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_513675e4-32c0-4b3a-991c-24fcff62b0cf",
+        "name": "L Small Space",
+        "slug": "l_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_66f4b19c-621a-4b39-892d-0e6f0bf62fed",
+        "name": "L Medium Space",
+        "slug": "l_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_24bbde1f-e8c7-4a45-b8bf-1ab1e320049c",
+        "name": "L Big Space",
+        "slug": "l_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_36429877-93c4-4639-83f0-cdc96493caf3",
+        "name": "XL Small Space",
+        "slug": "xl_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_e4745876-6013-48fc-9cbf-c7a49be84cb4",
+        "name": "XL Medium Space",
+        "slug": "xl_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_ffdd05ce-5f30-4750-94c5-424899d1f89d",
+        "name": "XL Big Space",
+        "slug": "xl_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_98370e12-e54a-4dc1-8ee4-4d4f3007f3eb",
+        "name": "XXL Small Space",
+        "slug": "xxl_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_8da4539d-198b-48da-9d4e-df4e832085fe",
+        "name": "XXL Medium Space",
+        "slug": "xxl_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_e6030ef6-005a-4f77-939d-f1395b02f5d6",
+        "name": "XXL Big Space",
+        "slug": "xxl_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "mysql-addon",
+    "name": "MySQL",
+    "plans": [
+      {
+        "id": "plan_bf78ef5b-aedd-4024-973a-c2ff45541b88",
+        "name": "DEV",
+        "slug": "dev",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Shared",
+            "computable_value": "true",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_7ab494e2-c319-4330-8170-35d78738c1ee",
+        "name": "XXS Small Space",
+        "slug": "xxs_sml",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_53d3c47d-ce81-466b-8acb-d5efaa68d27b",
+        "name": "XXS Medium Space",
+        "slug": "xxs_med",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_b7ee59a4-4115-41b8-b735-e44378b95c57",
+        "name": "XXS Big Space",
+        "slug": "xxs_big",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_0ffb4a1e-ac15-47c6-965f-f87ac990d99c",
+        "name": "XS Tiny Space",
+        "slug": "xs_tny",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_bde0b41f-77a7-4285-a08c-b8f4d9780fc4",
+        "name": "XS Small Space",
+        "slug": "xs_sml",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_889ddd44-68e1-4473-b152-a1abcaeec5b0",
+        "name": "XS Medium Space",
+        "slug": "xs_med",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_01d5d079-e900-49c7-8273-4fb3473eedea",
+        "name": "XS Big Space",
+        "slug": "xs_big",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_445566dd-b996-456f-96e3-186c29f4bd11",
+        "name": "S Small Space",
+        "slug": "s_sml",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_1940a893-ff6b-4c64-85e7-4955bb3355c0",
+        "name": "S Medium Space",
+        "slug": "s_med",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_a367b384-2942-4226-884c-5211b79aae81",
+        "name": "S Big Space",
+        "slug": "s_big",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_97afb4d4-cfeb-4fcb-966f-6072c6c327dc",
+        "name": "M Small Space",
+        "slug": "m_sml",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_ead3f4d7-a920-4b8c-8706-8fa8280d0bcc",
+        "name": "M Medium Space",
+        "slug": "m_med",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_d7f7bcff-df64-4326-a8f7-9d112d75bbff",
+        "name": "M Big Space",
+        "slug": "m_big",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_65af8c37-a9ca-4f37-8490-c727a9d7fe23",
+        "name": "L Small Space",
+        "slug": "l_sml",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_786d19e3-d5ec-43d1-bb99-4bdf51d1708f",
+        "name": "L Medium Space",
+        "slug": "l_med",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_cecdd927-0c2b-4df5-80bf-7a3956b7da45",
+        "name": "L Big Space",
+        "slug": "l_big",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_85292520-3687-488a-aefc-1884349205e4",
+        "name": "XL Small Space",
+        "slug": "xl_sml",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_b6cac148-b1fe-4018-a605-9ecd92b436d1",
+        "name": "XL Medium Space",
+        "slug": "xl_med",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_df6d36d3-07a4-4027-a0bb-333240a6b7c8",
+        "name": "XL Big Space",
+        "slug": "xl_big",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_8c48584e-4d0a-43db-91a1-f2d1a3475fe5",
+        "name": "XXL Small Space",
+        "slug": "xxl_sml",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_f6108804-9258-41f3-9920-0b5e0a41cb60",
+        "name": "XXL Medium Space",
+        "slug": "xxl_med",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_c26fc00b-abfb-44ec-951d-73ed65892f3e",
+        "name": "XXL Big Space",
+        "slug": "xxl_big",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_9f7b1d05-36e7-493d-a32f-af0507477af0",
+        "name": "XXL Huge Space",
+        "slug": "xxl_hug",
+        "features": [
+          {
+            "name": "TYPE",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "false",
+            "name_code": "is-dedicated"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "postgresql-addon",
+    "name": "PostgreSQL",
+    "plans": [
+      {
+        "id": "plan_d2ada71a-aa8e-4ead-8cb9-28314664437e",
+        "name": "DEV",
+        "slug": "dev",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Shared",
+            "computable_value": "shared",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_ff5a1b32-4aa6-43bc-b3db-f2972c9f2661",
+        "name": "XXS Tiny Space",
+        "slug": "xxs_tny",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_c32d00fb-6c06-48a9-a0a3-9d808937ec68",
+        "name": "XXS Small Space",
+        "slug": "xxs_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_62e92e59-9f94-4563-a448-32efd24c5a67",
+        "name": "XXS Huge Space",
+        "slug": "xxs_hug",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_9ce0a025-f5bd-4ac4-a5be-e2da37c87583",
+        "name": "XXS Medium Space",
+        "slug": "xxs_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_28cc1836-c45f-49c4-ac71-ddb380225edd",
+        "name": "XXS Giant Space",
+        "slug": "xxs_gnt",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_810751de-ab47-4bd8-918b-b857f9011050",
+        "name": "XXS Big Space",
+        "slug": "xxs_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_4b988584-adf5-43a5-891b-9ba1d8fe6d5d",
+        "name": "XS Tiny Space",
+        "slug": "xs_tny",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_ad4994a3-abe5-4e85-bf0e-53711695156e",
+        "name": "XXS Titan Space",
+        "slug": "xxs_tit",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_f14478be-b59a-4f64-870c-6887c561492d",
+        "name": "XS Small Space",
+        "slug": "xs_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_cb267d0a-5a2d-4c5b-9709-ee4d321691e7",
+        "name": "XS Medium Space",
+        "slug": "xs_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_a9cfb2d3-c959-4ab2-8b6f-fcbd07aa4f51",
+        "name": "XS Big Space",
+        "slug": "xs_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_ad94450e-5b1f-401e-baa9-df3c903a7c01",
+        "name": "XS Huge Space",
+        "slug": "xs_hug",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_8f93e9d4-3eb0-4ef4-a31f-2b3c682a3e65",
+        "name": "XS Giant Space",
+        "slug": "xs_gnt",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_be860e70-8d3d-438e-9d90-b079539dc1a4",
+        "name": "S Tiny Space",
+        "slug": "s_tny",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_f1f39547-be55-4be0-96d0-5140da25c138",
+        "name": "S Small Space",
+        "slug": "s_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_db834b61-21d3-423f-81ac-e8ec5b94a51c",
+        "name": "S Medium Space",
+        "slug": "s_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_06303461-b9d1-4418-a352-7be788c17777",
+        "name": "S Big Space",
+        "slug": "s_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_f23e2071-7c6c-4782-9f71-79de68719e36",
+        "name": "XS Titan Space",
+        "slug": "xs_tit",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_926643d1-3180-4e6a-bbc0-da828b884f77",
+        "name": "S Huge Space",
+        "slug": "s_hug",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_39aab3e3-0976-431a-a8f1-7c97821eb88f",
+        "name": "S Giant Space",
+        "slug": "s_gnt",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_13def017-26d9-469d-88b1-6591cbf4422f",
+        "name": "M Small Space",
+        "slug": "m_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_ef13e023-b519-4130-bfa0-54e2e0893362",
+        "name": "M Medium Space",
+        "slug": "m_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_55d54396-799b-4e01-92ce-34ad68392e7a",
+        "name": "M Big Space",
+        "slug": "m_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_597b6c2b-f1b6-4553-8723-363cca47dba7",
+        "name": "S Titan Space",
+        "slug": "s_tit",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_a6fb8084-d732-4cce-9e4e-a68be7b6e91c",
+        "name": "M Huge Space",
+        "slug": "m_hug",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_c6261cff-e759-4f6f-8c18-57ed47cd5411",
+        "name": "M Giant Space",
+        "slug": "m_gnt",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_20cf7db8-2687-495f-978d-785a8ac87814",
+        "name": "L Small Space",
+        "slug": "l_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_bfc12b2d-37af-4d5c-98b5-f5ce8856965c",
+        "name": "L Medium Space",
+        "slug": "l_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_166c1a3f-3e7d-427c-9a2d-adeaf6c30c1c",
+        "name": "L Big Space",
+        "slug": "l_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_ebccac61-b1cc-4d60-8611-9b0ef79c6dd7",
+        "name": "M Titan Space",
+        "slug": "m_tit",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_d7582ab0-342c-4276-aa43-689a11703e0b",
+        "name": "L Huge Space",
+        "slug": "l_hug",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_9b4505e7-ac36-4caa-ac7d-9e11b6a26b15",
+        "name": "XL Small Space",
+        "slug": "xl_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_957a3cbc-022f-430d-aa6e-3156b8da20c6",
+        "name": "L Giant Space",
+        "slug": "l_gnt",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_b35727fe-2100-4f7c-82c8-31d9471769ab",
+        "name": "XL Medium Space",
+        "slug": "xl_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_1067ae12-c433-497d-a20f-d16e50b932d9",
+        "name": "XL Big Space",
+        "slug": "xl_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_033f91e8-19ae-4b22-b1ee-5f8953e243fd",
+        "name": "L Titan Space",
+        "slug": "l_tit",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_b972af97-96cb-4a5d-b4ff-7b3efb6ff44b",
+        "name": "XL Huge Space",
+        "slug": "xl_hug",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_fdbaa2cc-3403-451a-b341-0973e04be1d2",
+        "name": "XL Giant Space",
+        "slug": "xl_gnt",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_1c8a4179-78ef-4bdd-bfd7-7f389782b8c6",
+        "name": "XXL Small Space",
+        "slug": "xxl_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_5e33d20a-fe32-4b4f-91f0-b59bf0deae13",
+        "name": "XXL Medium Space",
+        "slug": "xxl_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_d3131cb3-5d92-4b8c-b3db-30e8be4716af",
+        "name": "XXL Big Space",
+        "slug": "xxl_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_778bfb52-4750-4a2c-a375-71138939ad28",
+        "name": "XL Titan Space",
+        "slug": "xl_tit",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_e89e0986-2664-46b1-aaff-305b9c6ec552",
+        "name": "XXL Huge Space",
+        "slug": "xxl_hug",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_554dc72a-2a07-4ef2-9c6b-5ac8bca90573",
+        "name": "XXL Giant Space",
+        "slug": "xxl_gnt",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_5601b1c6-9850-4a02-9288-8894670f0d7d",
+        "name": "XXXL Small Space",
+        "slug": "xxxl_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_9c7779d2-2701-4420-bd8a-3e7b49083847",
+        "name": "XXXL Medium Space",
+        "slug": "xxxl_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_52b00af0-b49f-477b-a2bb-05e6bdf057af",
+        "name": "XXXL Big Space",
+        "slug": "xxxl_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_c0d763f8-2bb0-4de9-8466-2451480baeff",
+        "name": "XXL Titan Space",
+        "slug": "xxl_tit",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_3ba0db87-d233-4f54-8ed4-9839ae6411ab",
+        "name": "4XL Small Space",
+        "slug": "4xl_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_dc800133-6754-4ad5-ad19-ea44210f7297",
+        "name": "XXXL Huge Space",
+        "slug": "xxxl_hug",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_6eb26fc9-4246-4c60-981c-6f33dce31f68",
+        "name": "4XL Medium Space",
+        "slug": "4xl_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_49cb0874-7c24-4697-93c2-6c30fcd5e10b",
+        "name": "5XL Small Space",
+        "slug": "5xl_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_2bd69cec-cdf6-482a-94f7-e045946a25e4",
+        "name": "XXXL Giant Space",
+        "slug": "xxxl_gnt",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_a76612ad-e4c0-4bf0-85b1-caabb61d0f6f",
+        "name": "4XL Big Space",
+        "slug": "4xl_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_b98b559f-777d-4af8-9b5c-12d3d6273c92",
+        "name": "5XL Medium Space",
+        "slug": "5xl_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_59dc191c-8a84-4ef2-ae9b-8a503c75b900",
+        "name": "4XL Huge Space",
+        "slug": "4xl_hug",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_6ef0f3aa-5441-4848-8295-8f4aa26c2544",
+        "name": "6XL Small Space",
+        "slug": "6xl_sml",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_e993c9c2-340b-475d-b433-dd04bb505f27",
+        "name": "5XL Big Space",
+        "slug": "5xl_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_55c49c1d-c464-485d-ba97-95dfb065fb73",
+        "name": "6XL Medium Space",
+        "slug": "6xl_med",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_953f1c29-0ae1-4474-be46-9f9f0003dfc5",
+        "name": "4XL Giant Space",
+        "slug": "4xl_gnt",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_bd163e3d-d520-44de-90c2-c55fdb747765",
+        "name": "XXXL Titan Space",
+        "slug": "xxxl_tit",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_22ee51f4-1d9a-4999-ac55-2c8b42c47614",
+        "name": "5XL Huge Space",
+        "slug": "5xl_hug",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_66ae9f24-1be6-4e84-836b-d805f4c70996",
+        "name": "6XL Big Space",
+        "slug": "6xl_big",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_fb616579-5c16-4421-8a24-2fc24febf627",
+        "name": "6XL Huge Space",
+        "slug": "6xl_hug",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_5665f990-4271-49c4-ad69-f332455c6989",
+        "name": "5XL Giant Space",
+        "slug": "5xl_gnt",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_095916a8-d4d7-471c-b6d0-61f7ff40284d",
+        "name": "4XL Titan Space",
+        "slug": "4xl_tit",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_4884e8a3-b0ab-44b9-b4d2-5843bd7f9fb9",
+        "name": "6XL Giant Space",
+        "slug": "6xl_gnt",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_64b77c8d-d1ac-4c23-8993-21bfd70bff2f",
+        "name": "5XL Titan Space",
+        "slug": "5xl_tit",
+        "features": [
+          {
+            "name": "Type",
+            "type": "BOOLEAN_SHARED",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "redis-addon",
+    "name": "Redis",
+    "plans": [
+      {
+        "id": "plan_c62dd71e-15c3-483e-879d-75e4c836e21e",
+        "name": "S",
+        "slug": "s_mono",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_221bbf5a-30d0-49a9-b539-ce09b8a734a9",
+        "name": "M",
+        "slug": "m_mono",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_56579711-5b5c-451c-b274-2662eb528fc1",
+        "name": "L",
+        "slug": "l_mono",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_17f3735a-e1e4-4296-9e4c-e41cf74121c5",
+        "name": "XL",
+        "slug": "xl_mono",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_3bb59326-15d2-404b-be6e-97069710e8dd",
+        "name": "2XL",
+        "slug": "xxl_mono",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_3901ff93-bb24-411d-9a5c-be3c625e3dd9",
+        "name": "3XL",
+        "slug": "xxxl_mono",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_b43a32be-ada0-49c1-ab3e-db04f9dcfef2",
+        "name": "4XL",
+        "slug": "xxxxl_mono",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_c08f98c1-a8ae-41f6-a55e-32e1db601f63",
+        "name": "5XL",
+        "slug": "5xl_mono",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_73062568-ce5a-4263-bd38-11abedb9d14a",
+        "name": "6XL",
+        "slug": "6xl_mono",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      },
+      {
+        "id": "plan_3646ebc0-a77f-42a7-a0ca-443326584df8",
+        "name": "7XL",
+        "slug": "7xl_mono",
+        "features": [
+          {
+            "name": "Type",
+            "type": "NUMBER",
+            "value": "Dedicated",
+            "computable_value": "dedicated",
+            "name_code": "is-dedicated"
+          }
+        ]
+      }
+    ]
+  }
+]
