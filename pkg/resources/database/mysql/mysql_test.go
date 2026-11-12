@@ -216,6 +216,49 @@ func TestAccMySQL_DirectHostOnlyOnDevPlan(t *testing.T) {
 	})
 }
 
+// TestAccMySQL_DedicatedPlanOptions checks that the options reserved to
+// dedicated plans are accepted on a dedicated plan. The plan-time validation
+// relies on AddonPlan.IsDedicated(); the API encodes MySQL's "is-dedicated"
+// feature differently from the other add-ons, and every MySQL plan used to be
+// read as shared, so these options were refused on all of them, including the
+// plans the error message itself recommends. Plan only: nothing is created.
+func TestAccMySQL_DedicatedPlanOptions(t *testing.T) {
+	t.Parallel()
+	for option, prefix := range map[string]string{
+		"encryption":       "tf-test-my-enc-ded",
+		"skip_log_bin":     "tf-test-my-skiplog-ded",
+		"direct_host_only": "tf-test-my-direct-ded",
+	} {
+		t.Run(option, func(t *testing.T) {
+			t.Parallel()
+			ctx := t.Context()
+			rName := acctest.RandomWithPrefix(prefix)
+			providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+			mysqlBlock := helper.NewRessource(
+				"clevercloud_mysql",
+				rName,
+				helper.SetKeyValues(map[string]any{
+					"name":   rName,
+					"region": "par",
+					"plan":   "xs_sml",
+					option:   true,
+				}))
+
+			resource.Test(t, resource.TestCase{
+				ProtoV6ProviderFactories: tests.ProtoV6Provider,
+				PreCheck:                 tests.ExpectOrganisation(t),
+				CheckDestroy:             tests.CheckDestroy(ctx),
+				Steps: []resource.TestStep{{
+					ResourceName:       rName,
+					Config:             providerBlock.Append(mysqlBlock).String(),
+					PlanOnly:           true,
+					ExpectNonEmptyPlan: true,
+				}},
+			})
+		})
+	}
+}
+
 // TestAccMySQL_Import tests that importing a MySQL addon doesn't trigger
 // a force-replace on the next plan.
 // Reproduces GitHub issue #399: backup and skip_log_bin remain null in state
@@ -282,9 +325,9 @@ func TestAccMySQL_Import(t *testing.T) {
 					addonID = res.Payload().ID
 					realID = res.Payload().RealID
 				},
-				Config:       providerBlock.Append(mysqlBlock).String(),
-				ResourceName: fullName,
-				ImportState:  true,
+				Config:             providerBlock.Append(mysqlBlock).String(),
+				ResourceName:       fullName,
+				ImportState:        true,
 				ImportStatePersist: true,
 				ImportStateIdFunc: func(_ *terraform.State) (string, error) {
 					return realID, nil
