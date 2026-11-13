@@ -220,13 +220,13 @@ func (r *ResourceMySQL) readFromAPI(state *MySQL, my tmp.MysqlAddonView) {
 	for _, feature := range my.Features {
 		switch feature.Name {
 		case "do-backup":
-			state.Backup = pkg.FromBool(pkg.Deref(feature.Enabled))
+			state.Backup = pkg.FromBool(feature.Enabled)
 		case "encryption":
-			state.Encryption = pkg.FromBool(pkg.Deref(feature.Enabled))
+			state.Encryption = pkg.FromBool(feature.Enabled)
 		case "direct-host-only":
-			state.DirectHostOnly = pkg.FromBool(pkg.Deref(feature.Enabled))
+			state.DirectHostOnly = pkg.FromBool(feature.Enabled)
 		case "skip-log-bin":
-			state.SkipLogBin = pkg.FromBool(pkg.Deref(feature.Enabled))
+			state.SkipLogBin = pkg.FromBool(feature.Enabled)
 		}
 	}
 }
