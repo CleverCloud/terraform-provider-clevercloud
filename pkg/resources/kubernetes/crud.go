@@ -41,6 +41,8 @@ const (
 	versionUpgradeTimeout = 2 * time.Hour
 	// clusterCreationTimeout bounds the deployment of a new cluster
 	clusterCreationTimeout = 30 * time.Minute
+	// zoneLookupTimeout bounds the request naming the zone of a cluster
+	zoneLookupTimeout = 30 * time.Second
 )
 
 // nodeAutoprovisioningRequestTimeout bounds a single API call inside a loop's
@@ -76,9 +78,10 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 	enabled := nodeAutoprovisioning.ValueBool()
 	persistentStorage := resolveValue(plan.PersistentStorage, config.PersistentStorage)
 	tags := resolveValue(plan.Tags, config.Tags)
+	region := resolveValue(plan.Region, config.Region)
 
 	// Create Kubernetes cluster
-	createReq := createPayload(ctx, plan.Name.ValueString(), enabled, persistentStorage, tags, resolveValue(plan.Topology, config.Topology), resolveValue(plan.Version, config.Version), &resp.Diagnostics)
+	createReq := createPayload(ctx, plan.Name.ValueString(), enabled, persistentStorage, region, tags, resolveValue(plan.Topology, config.Topology), resolveValue(plan.Version, config.Version), &resp.Diagnostics)
 	if resp.Diagnostics.HasError() {
 		return
 	}
@@ -102,12 +105,19 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		Name:                 pkg.FromStr(k8sCluster.Name),
 		NodeAutoprovisioning: nodeAutoprovisioning,
 		PersistentStorage:    persistentStorage,
+		Region:               region,
 		Tags:                 tags,
 		Topology:             topologyFromAPI(ctx, k8sCluster.Topology, &resp.Diagnostics),
 		Version:              pkg.FromStr(k8sCluster.Version),
 	}
 	if !isSet(state.PersistentStorage) {
 		state.PersistentStorage = pkg.FromBool(persistentStorageFeatureEnabled(k8sCluster.Features))
+	}
+	// the cluster exists, a failed lookup only leaves the region to the next refresh
+	if named, err := regionFromAPI(ctx, r.Client(), r.Organization(), k8sCluster.ZoneID, region); err != nil {
+		resp.Diagnostics.AddWarning("failed to name the zone of the kubernetes cluster", err.Error())
+	} else {
+		state.Region = named
 	}
 
 	// the cluster exists from here on, whatever becomes of it: it has to be saved
@@ -188,11 +198,12 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 	}
 
 	// the state is rebuilt from the API, but whether tags are managed and which
-	// version really runs are only known from the previous one. It holds nothing
-	// but the id on an import
+	// version really runs are only known from the previous one, and the region
+	// falls back on it. It holds nothing but the id on an import
 	var previousTags types.Set
-	var previousVersion types.String
+	var previousVersion, previousRegion types.String
 	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("tags"), &previousTags)...)
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("region"), &previousRegion)...)
 	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("version"), &previousVersion)...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -203,6 +214,17 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 	state.Name = pkg.FromStr(k8sInfo.Name)
 	state.NodeAutoprovisioning = pkg.FromBool(autoprovisioningFeatureEnabled(k8sInfo.Features))
 	state.PersistentStorage = pkg.FromBool(persistentStorageFeatureEnabled(k8sInfo.Features))
+	// a failed lookup keeps a known region, but must not leave an import without
+	// one: the next plan would replace the cluster
+	region, err := regionFromAPI(ctx, r.Client(), r.Organization(), k8sInfo.ZoneID, previousRegion)
+	if err != nil && !isSet(previousRegion) {
+		resp.Diagnostics.AddError("failed to name the zone of the kubernetes cluster", err.Error())
+		return
+	}
+	if err != nil {
+		resp.Diagnostics.AddWarning("failed to name the zone of the kubernetes cluster, keeping the previous region", err.Error())
+	}
+	state.Region = region
 	state.Tags = resources.TagsFromAPI(ctx, k8sInfo.Tags, previousTags, &resp.Diagnostics)
 	state.Topology = topologyFromAPI(ctx, k8sInfo.Topology, &resp.Diagnostics)
 	state.Version = versionFromAPI(k8sInfo.Status, k8sInfo.Version, previousVersion, &resp.Diagnostics)
@@ -369,6 +391,30 @@ func persistentStorageFeatureEnabled(features *tmp.KubernetesFeatures) bool {
 	return features != nil && features.Csi != nil && *features.Csi
 }
 
+// regionFromAPI names the zone a cluster runs in, the API only gives its id. A
+// missing id, or one absent from the zones the organisation may use, keeps the
+// previous value: dropping it would plan a replacement
+func regionFromAPI(ctx context.Context, cc *client.Client, organisationID, zoneID string, previous types.String) (types.String, error) {
+	if zoneID == "" {
+		return previous, nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, zoneLookupTimeout)
+	defer cancel()
+	res := tmp.ListKubernetesZones(ctx, cc, organisationID)
+	if res.HasError() {
+		return previous, res.Error()
+	}
+	if zones := res.Payload(); zones != nil {
+		for _, zone := range *zones {
+			if zone.ID == zoneID {
+				return pkg.FromStr(zone.Name), nil
+			}
+		}
+	}
+
+	return previous, nil
+}
+
 // resolveValue returns the value to apply. An expression that could not be resolved
 // at plan time leaves the planned value unknown while the configuration knows it
 // by the time apply runs, see nodeAutoprovisioningValue. The result is null when
@@ -389,6 +435,7 @@ func createPayload(
 	name string,
 	nodeAutoprovisioning bool,
 	persistentStorage types.Bool,
+	region types.String,
 	tags types.Set,
 	topology types.Object,
 	version types.String,
@@ -398,6 +445,7 @@ func createPayload(
 		Name:     name,
 		Topology: topologyToAPI(ctx, topology, diags),
 		Version:  version.ValueString(),
+		Zone:     region.ValueString(),
 	}
 
 	if isSet(tags) {

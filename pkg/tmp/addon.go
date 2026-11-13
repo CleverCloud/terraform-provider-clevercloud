@@ -192,6 +192,7 @@ type KubernetesInfo struct {
 	TenantID     string              `json:"tenantId"`
 	Topology     *KubernetesTopology `json:"topologyConfig,omitempty"`
 	Version      string              `json:"version"`
+	ZoneID       string              `json:"zoneId"`
 }
 
 // GetKubernetes retrieves Kubernetes cluster details using the cluster ID
@@ -251,6 +252,7 @@ type KubernetesCreateRequest struct {
 	Tags           []string            `json:"tags,omitempty"`
 	Topology       *KubernetesTopology `json:"topologyConfig,omitempty"`
 	Version        string              `json:"version,omitempty"`
+	Zone           string              `json:"zone,omitempty"`
 }
 
 // KubernetesPatchRequest represents the request body for updating a Kubernetes
@@ -283,6 +285,7 @@ type ClusterView struct {
 	TenantID     string              `json:"tenantId"`
 	Topology     *KubernetesTopology `json:"topologyConfig,omitempty"`
 	Version      string              `json:"version"`
+	ZoneID       string              `json:"zoneId"`
 	Waiting      *KubernetesWaiting  `json:"waiting,omitempty"`
 }
 
@@ -293,6 +296,18 @@ type KubernetesCreateResponse = ClusterView
 func CreateKubernetes(ctx context.Context, cc *client.Client, organisationID string, req KubernetesCreateRequest) client.Response[KubernetesCreateResponse] {
 	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/clusters", organisationID)
 	return client.Post[KubernetesCreateResponse](ctx, cc, path, req)
+}
+
+// KubernetesZone is a zone an organisation may create a cluster in
+type KubernetesZone struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// ListKubernetesZones lists the zones the organisation may create a cluster in
+func ListKubernetesZones(ctx context.Context, cc *client.Client, organisationID string) client.Response[[]KubernetesZone] {
+	path := fmt.Sprintf("/v4/kubernetes/organisations/%s/zones", organisationID)
+	return client.Get[[]KubernetesZone](ctx, cc, path)
 }
 
 // ListKubernetesClusters lists all Kubernetes clusters in an organization

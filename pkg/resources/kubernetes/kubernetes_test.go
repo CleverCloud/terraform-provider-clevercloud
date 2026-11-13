@@ -29,7 +29,8 @@ func TestAccKubernetes_basic(t *testing.T) {
 		"clevercloud_kubernetes",
 		rName,
 		helper.SetKeyValues(map[string]any{
-			"name": rName,
+			"name":   rName,
+			"region": "par",
 		}),
 	)
 
@@ -43,6 +44,7 @@ func TestAccKubernetes_basic(t *testing.T) {
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectIdentityValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^kubernetes_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("node_autoprovisioning"), knownvalue.Bool(false)),
 			},
 		}},
