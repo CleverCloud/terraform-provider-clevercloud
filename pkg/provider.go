@@ -42,16 +42,26 @@ func FirstPlan(provider *models.AddonProviderInfoFullView) *models.AddonPlanView
 	return &provider.Plans[0]
 }
 
-// IsDedicatedPlan reports whether the plan has the "is-dedicated" feature set to
-// "dedicated" (rather than "Shared").
+// IsDedicatedPlan reports whether the plan is dedicated, from its "is-dedicated"
+// feature. The catalogue encodes its computable_value two ways: "dedicated" or
+// "shared" for most add-ons, and for MySQL a boolean telling whether the plan is
+// shared, so "false" on a dedicated plan. Both are read. When computable_value is
+// neither, the displayed value ("Dedicated" or "Shared") decides.
 func IsDedicatedPlan(plan *models.AddonPlanView) bool {
 	if plan == nil {
 		return false
 	}
 	for _, feature := range plan.Features {
-		if Deref(feature.NameCode) == "is-dedicated" {
-			return Deref(feature.ComputableValue) == "dedicated"
+		if Deref(feature.NameCode) != "is-dedicated" {
+			continue
 		}
+		switch strings.ToLower(Deref(feature.ComputableValue)) {
+		case "dedicated", "false":
+			return true
+		case "shared", "true":
+			return false
+		}
+		return strings.EqualFold(Deref(feature.Value), "dedicated")
 	}
 	return false
 }
