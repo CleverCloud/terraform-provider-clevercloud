@@ -30,6 +30,7 @@ type Kubernetes struct {
 	KubeConfig           types.String `tfsdk:"kubeconfig"`
 	NodeAutoprovisioning types.Bool   `tfsdk:"node_autoprovisioning"`
 	PersistentStorage    types.Bool   `tfsdk:"persistent_storage"`
+	Region               types.String `tfsdk:"region"`
 	Tags                 types.Set    `tfsdk:"tags"`
 	Topology             types.Object `tfsdk:"topology"`
 	Version              types.String `tfsdk:"version"`
@@ -63,6 +64,17 @@ func (r ResourceKubernetes) Schema(_ context.Context, req resource.SchemaRequest
 				PlanModifiers: []planmodifier.Bool{boolplanmodifier.UseStateForUnknown()},
 				MarkdownDescription: "Enable the CSI driver that provides persistent volumes. " +
 					"The API leaves it disabled on a new cluster unless it is set to `true`. Removing the attribute keeps the current value",
+			},
+			"region": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+					regionOnUnknownZone{},
+					stringplanmodifier.RequiresReplace(),
+				},
+				MarkdownDescription: "Zone the cluster runs in, by name (`par`). Without it the API picks the only zone the organisation may use, else the platform's default zone, and the attribute reads the zone it picked. " +
+					"Changing it replaces the cluster. Setting it on a cluster whose zone the API does not name fails the plan, taint the resource to replace the cluster",
 			},
 			"tags": resources.TagsAttribute,
 			"topology": schema.SingleNestedAttribute{
@@ -118,6 +130,28 @@ func (r ResourceKubernetes) Schema(_ context.Context, req resource.SchemaRequest
 			},
 		},
 	}
+}
+
+// regionOnUnknownZone refuses a region on a cluster whose zone the state does not
+// hold, which happens when the API does not name it: the cluster may already run
+// there, and replacing it would destroy it for nothing
+type regionOnUnknownZone struct{}
+
+func (regionOnUnknownZone) Description(context.Context) string {
+	return "refuses a region on a cluster whose zone is unknown"
+}
+
+func (m regionOnUnknownZone) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (regionOnUnknownZone) PlanModifyString(_ context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() || !req.StateValue.IsNull() || req.ConfigValue.IsNull() {
+		return
+	}
+	resp.Diagnostics.AddAttributeError(req.Path, "the zone of this cluster is unknown",
+		"The API does not name the zone this cluster runs in, so setting region could destroy a cluster that already runs there. "+
+			"Remove region, or taint this resource to replace the cluster on purpose")
 }
 
 // flavorValidators refuses a flavor in any other case. The API takes them all and

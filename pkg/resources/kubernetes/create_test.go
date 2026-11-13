@@ -26,7 +26,9 @@ func runCreate(t *testing.T, get http.HandlerFunc) (resource.CreateResponse, Kub
 		if r.Method == http.MethodPost {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
-			_ = json.NewEncoder(w).Encode(clusterPayload("DEPLOYING", "1.36"))
+			cluster := clusterPayload("DEPLOYING", "1.36")
+			cluster.ZoneID = "zone-par"
+			_ = json.NewEncoder(w).Encode(cluster)
 			return
 		}
 		get(w, r)
@@ -126,6 +128,10 @@ func TestCreateSavesAClusterThatFails(t *testing.T) {
 
 func TestCreateWaitsForAnActiveCluster(t *testing.T) {
 	resp, state := runCreate(t, func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasSuffix(r.URL.Path, "/zones") {
+			zonesHandler(w, false)
+			return
+		}
 		if strings.HasSuffix(r.URL.Path, "/kubeconfig.yaml") {
 			w.Header().Set("Content-Type", "text/plain")
 			_, _ = w.Write([]byte("kubeconfig"))
@@ -138,7 +144,8 @@ func TestCreateWaitsForAnActiveCluster(t *testing.T) {
 	if resp.Diagnostics.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", resp.Diagnostics)
 	}
-	if state.ID.ValueString() != "cluster" || state.KubeConfig.ValueString() != "kubeconfig" {
+	// no region in the plan: the state names the zone the API picked
+	if state.ID.ValueString() != "cluster" || state.KubeConfig.ValueString() != "kubeconfig" || state.Region.ValueString() != "par" {
 		t.Errorf("unexpected state: %+v", state)
 	}
 }

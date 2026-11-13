@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"encoding/json"
 	"net/http"
 	"strings"
 	"testing"
@@ -78,6 +79,94 @@ func TestClusterReadAPIErrorWithNullIdentity(t *testing.T) {
 			}
 			if identity.ID.ValueString() != "cluster" {
 				t.Errorf("got identity %v, want cluster", identity.ID)
+			}
+		})
+	}
+}
+
+// TestReadKeepsTheRegion pins that Read carries the region over from the state:
+// the API returns no zone name, and a region Read dropped would be planned back
+// on every refresh
+// zonesHandler answers the zone list with par, or fails it
+func zonesHandler(w http.ResponseWriter, fail bool) {
+	if fail {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode([]tmp.KubernetesZone{{ID: "zone-par", Name: "par"}})
+}
+
+// TestReadNamesTheRegion pins that Read names the zone the API reports, an import
+// included, and keeps the previous value whenever it cannot: dropping it would
+// plan a replacement
+func TestReadNamesTheRegion(t *testing.T) {
+	par, deep, null := types.StringValue("par"), types.StringValue("deep"), types.StringNull()
+	tests := []struct {
+		name       string
+		zoneID     string
+		zonesFail  bool
+		previous   types.String
+		wantRegion types.String
+		wantError  bool
+	}{
+		{name: "import", zoneID: "zone-par", previous: null, wantRegion: par},
+		{name: "the API wins over the state", zoneID: "zone-par", previous: deep, wantRegion: par},
+		{name: "no zone reported", previous: par, wantRegion: par},
+		{name: "no zone reported on an import", previous: null, wantRegion: null},
+		{name: "zone not listed", zoneID: "zone-other", previous: par, wantRegion: par},
+		{name: "zone list failed", zoneID: "zone-par", zonesFail: true, previous: par, wantRegion: par},
+		// an import would otherwise end with no region, and the next plan replace the cluster
+		{name: "zone list failed on an import", zoneID: "zone-par", zonesFail: true, previous: null, wantError: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cc := testClient(t, func(w http.ResponseWriter, req *http.Request) {
+				switch {
+				case strings.HasSuffix(req.URL.Path, "/kubeconfig.yaml"):
+					w.WriteHeader(http.StatusNotFound)
+				case strings.HasSuffix(req.URL.Path, "/zones"):
+					zonesHandler(w, tt.zonesFail)
+				default:
+					cluster := clusterPayload("ACTIVE", "1.36")
+					cluster.ZoneID = tt.zoneID
+					w.Header().Set("Content-Type", "application/json")
+					_ = json.NewEncoder(w).Encode(cluster)
+				}
+			})
+			r := &ResourceKubernetes{}
+			r.Provider = clusterReadTestProvider{client: cc}
+			var schema resource.SchemaResponse
+			r.Schema(t.Context(), resource.SchemaRequest{}, &schema)
+			state := tfsdk.State{Schema: schema.Schema}
+			if diags := state.Set(t.Context(), Kubernetes{
+				ID:       types.StringValue("cluster"),
+				Name:     types.StringValue("test-cluster"),
+				Region:   tt.previous,
+				Tags:     types.SetNull(types.StringType),
+				Topology: types.ObjectNull(topologyAttrTypes),
+			}); diags.HasError() {
+				t.Fatalf("set state: %v", diags)
+			}
+			var identitySchema resource.IdentitySchemaResponse
+			r.IdentitySchema(t.Context(), resource.IdentitySchemaRequest{}, &identitySchema)
+			nullIdentity := tftypes.NewValue(identitySchema.IdentitySchema.Type().TerraformType(t.Context()), nil)
+			request := resource.ReadRequest{State: state, Identity: &tfsdk.ResourceIdentity{Schema: identitySchema.IdentitySchema, Raw: nullIdentity.Copy()}}
+			response := resource.ReadResponse{State: state, Identity: &tfsdk.ResourceIdentity{Schema: identitySchema.IdentitySchema, Raw: nullIdentity.Copy()}}
+			r.Read(t.Context(), request, &response)
+			if response.Diagnostics.HasError() != tt.wantError {
+				t.Fatalf("read: %v", response.Diagnostics)
+			}
+			if tt.wantError {
+				return
+			}
+
+			var got Kubernetes
+			if diags := response.State.Get(t.Context(), &got); diags.HasError() {
+				t.Fatalf("get state: %v", diags)
+			}
+			if !got.Region.Equal(tt.wantRegion) {
+				t.Errorf("Region = %v, want %v", got.Region, tt.wantRegion)
 			}
 		})
 	}

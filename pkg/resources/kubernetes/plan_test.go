@@ -9,7 +9,10 @@ import (
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -287,6 +290,7 @@ func TestCreatePayload(t *testing.T) {
 		name                 string
 		nodeAutoprovisioning bool
 		persistentStorage    types.Bool
+		region               types.String
 		tags                 types.Set
 		topology             types.Object
 		version              types.String
@@ -296,6 +300,7 @@ func TestCreatePayload(t *testing.T) {
 			// what a configuration with nothing but a name always sent
 			name:              "defaults stay up to the API",
 			persistentStorage: types.BoolNull(),
+			region:            types.StringNull(),
 			tags:              resources.NullTags,
 			topology:          types.ObjectNull(topologyAttrTypes),
 			version:           types.StringNull(),
@@ -304,6 +309,7 @@ func TestCreatePayload(t *testing.T) {
 		{
 			name:              "disabled storage is what the API does anyway",
 			persistentStorage: types.BoolValue(false),
+			region:            types.StringNull(),
 			tags:              resources.NullTags,
 			topology:          types.ObjectNull(topologyAttrTypes),
 			version:           types.StringNull(),
@@ -313,17 +319,18 @@ func TestCreatePayload(t *testing.T) {
 			name:                 "every option",
 			nodeAutoprovisioning: true,
 			persistentStorage:    types.BoolValue(true),
+			region:               types.StringValue("par"),
 			tags:                 tags,
 			topology:             simpleTopology(t, topologyAllInOne, "S", 3),
 			version:              types.StringValue("1.35"),
-			expected:             `{"features":{"csi":true,"nodeAutoprovisioning":true},"name":"c","tags":["env:test"],"topologyConfig":{"topology":"ALL_IN_ONE","flavor":"S","replicationFactor":3},"version":"1.35"}`,
+			expected:             `{"features":{"csi":true,"nodeAutoprovisioning":true},"name":"c","tags":["env:test"],"topologyConfig":{"topology":"ALL_IN_ONE","flavor":"S","replicationFactor":3},"version":"1.35","zone":"par"}`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var diags diag.Diagnostics
-			payload := createPayload(ctx, "c", tt.nodeAutoprovisioning, tt.persistentStorage, tt.tags, tt.topology, tt.version, &diags)
+			payload := createPayload(ctx, "c", tt.nodeAutoprovisioning, tt.persistentStorage, tt.region, tt.tags, tt.topology, tt.version, &diags)
 			if diags.HasError() {
 				t.Fatalf("unexpected diagnostics: %v", diags)
 			}
@@ -334,6 +341,80 @@ func TestCreatePayload(t *testing.T) {
 			}
 			if string(got) != tt.expected {
 				t.Errorf("createPayload() = %s, want %s", got, tt.expected)
+			}
+		})
+	}
+}
+
+// TestRegionRequiresReplace pins that only a zone the state knows can replace the
+// cluster: the API returns no zone name, so a null state is no proof of a move
+// TestRegionPlan runs the plan modifiers of region in order on an existing
+// cluster. A configured zone other than the state's replaces it, a region absent
+// from the configuration keeps the state's, and one set on a cluster whose zone
+// is unknown is refused
+func TestRegionPlan(t *testing.T) {
+	par, deep, null, unknown := types.StringValue("par"), types.StringValue("deep"), types.StringNull(), types.StringUnknown()
+	tests := []struct {
+		name        string
+		state       types.String
+		config      types.String
+		wantPlan    types.String
+		wantReplace bool
+		wantError   bool
+	}{
+		{name: "unset keeps the state", state: par, config: null, wantPlan: par},
+		{name: "unchanged", state: par, config: par, wantPlan: par},
+		{name: "moved", state: par, config: deep, wantPlan: deep, wantReplace: true},
+		{name: "set on a cluster without a known zone", state: null, config: par, wantError: true},
+		{name: "unset on a cluster without a known zone", state: null, config: null, wantPlan: null},
+		{name: "unknown until apply", state: par, config: unknown, wantPlan: unknown, wantReplace: true},
+	}
+
+	ctx := t.Context()
+	var s resource.SchemaResponse
+	(&ResourceKubernetes{}).Schema(ctx, resource.SchemaRequest{}, &s)
+	region, ok := s.Schema.Attributes["region"].(schema.StringAttribute)
+	if !ok {
+		t.Fatal("region is not a string attribute")
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			state := tfsdk.State{Schema: s.Schema}
+			if d := state.Set(ctx, Kubernetes{
+				ID:       types.StringValue("cluster"),
+				Name:     types.StringValue("c"),
+				Region:   tt.state,
+				Tags:     types.SetNull(types.StringType),
+				Topology: types.ObjectNull(topologyAttrTypes),
+			}); d.HasError() {
+				t.Fatalf("set state: %v", d)
+			}
+			// the framework plans a computed attribute absent from the configuration as unknown
+			planned := tt.config
+			if planned.IsNull() {
+				planned = unknown
+			}
+			req := planmodifier.StringRequest{
+				Path:        path.Root("region"),
+				State:       state,
+				Plan:        tfsdk.Plan{Schema: s.Schema, Raw: state.Raw},
+				StateValue:  tt.state,
+				ConfigValue: tt.config,
+				PlanValue:   planned,
+			}
+			resp := &planmodifier.StringResponse{PlanValue: planned}
+			for _, m := range region.PlanModifiers {
+				m.PlanModifyString(ctx, req, resp)
+				req.PlanValue = resp.PlanValue
+			}
+			if resp.Diagnostics.HasError() != tt.wantError {
+				t.Fatalf("diagnostics %v, want an error: %v", resp.Diagnostics, tt.wantError)
+			}
+			if tt.wantError {
+				return
+			}
+			if !resp.PlanValue.Equal(tt.wantPlan) || resp.RequiresReplace != tt.wantReplace {
+				t.Errorf("plan %v replace %v, want %v replace %v", resp.PlanValue, resp.RequiresReplace, tt.wantPlan, tt.wantReplace)
 			}
 		})
 	}
