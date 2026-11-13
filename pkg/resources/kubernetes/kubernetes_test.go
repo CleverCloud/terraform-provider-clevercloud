@@ -51,6 +51,37 @@ func TestAccKubernetes_basic(t *testing.T) {
 	})
 }
 
+// TestAccKubernetes_regionChecked checks the region against the zones of the
+// organisation at plan time. Plan only: nothing is created
+func TestAccKubernetes_regionChecked(t *testing.T) {
+	rName := fmt.Sprintf("tf-test-kubernetes-%d", time.Now().UnixMilli())
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+	kubernetesBlock := func(region string) string {
+		return providerBlock.Append(helper.NewRessource(
+			"clevercloud_kubernetes",
+			rName,
+			helper.SetKeyValues(map[string]any{
+				"name":   rName,
+				"region": region,
+			}),
+		)).String()
+	}
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		Steps: []resource.TestStep{{
+			Config:      kubernetesBlock("not-a-region"),
+			PlanOnly:    true,
+			ExpectError: regexp.MustCompile(`(?s)invalid kubernetes region.*available\s+regions\s+are:.*par`),
+		}, {
+			Config:             kubernetesBlock("par"),
+			PlanOnly:           true,
+			ExpectNonEmptyPlan: true,
+		}},
+	})
+}
+
 func TestAccKubernetes_nodeAutoprovisioning(t *testing.T) {
 	ctx := t.Context()
 	rName := fmt.Sprintf("tf-test-kubernetes-%d", time.Now().UnixMilli())

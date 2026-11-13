@@ -230,6 +230,88 @@ func TestPlanChecks(t *testing.T) {
 	}
 }
 
+func TestRegionCheck(t *testing.T) {
+	par, deep := types.StringValue("par"), types.StringValue("deep")
+	null, unknown := types.StringNull(), types.StringUnknown()
+
+	tests := []struct {
+		name   string
+		plan   types.String
+		config types.String
+		state  *types.String
+		want   bool
+	}{
+		{name: "create without a region leaves it to the API", plan: unknown, config: null},
+		{name: "create with a region", plan: par, config: par, want: true},
+		// the organisation may no longer create in the zone a cluster runs in,
+		// that must not fail every later plan
+		{name: "unchanged region is not checked", plan: par, config: par, state: &par},
+		{name: "region kept from the state is not checked", plan: par, config: null, state: &par},
+		{name: "moved region is checked", plan: deep, config: deep, state: &par, want: true},
+		{name: "region only known at apply is not checked", plan: unknown, config: unknown},
+		// regionOnUnknownZone refuses it, one error is enough
+		{name: "region set on a state without one is not checked", plan: par, config: par, state: &null},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var state *Kubernetes
+			if tt.state != nil {
+				state = &Kubernetes{Region: *tt.state}
+			}
+			if got := regionCheck(&Kubernetes{Region: tt.plan}, &Kubernetes{Region: tt.config}, state); got != tt.want {
+				t.Errorf("regionCheck() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestValidateRegion(t *testing.T) {
+	zones := []tmp.KubernetesZone{
+		{ID: "zone-par", Name: "par"},
+		{ID: "zone-twin-1", Name: "twin"},
+		{ID: "zone-deep", Name: "deep"},
+		{ID: "zone-twin-2", Name: "twin"},
+	}
+
+	tests := []struct {
+		name       string
+		region     string
+		zones      []tmp.KubernetesZone
+		wantError  string
+		wantDetail string
+	}{
+		{name: "a zone of the organisation", region: "par", zones: zones},
+		{name: "not a zone of the organisation", region: "mars", zones: zones, wantError: "invalid kubernetes region", wantDetail: "available regions are: deep, par, twin"},
+		{name: "the name is matched as it is", region: "PAR", zones: zones, wantError: "invalid kubernetes region", wantDetail: "available regions are: deep, par, twin"},
+		{name: "several zones of that name", region: "twin", zones: zones, wantError: "ambiguous kubernetes region", wantDetail: "2 of the zones"},
+		{name: "no zone at all", region: "par", wantError: "invalid kubernetes region", wantDetail: "may not create a cluster in any region"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var diags diag.Diagnostics
+			validateRegion(tt.region, tt.zones, &diags)
+
+			if tt.wantError == "" {
+				if diags.HasError() {
+					t.Fatalf("unexpected diagnostics: %v", diags)
+				}
+				return
+			}
+			if diags.ErrorsCount() != 1 {
+				t.Fatalf("got %d errors, want 1", diags.ErrorsCount())
+			}
+			if summary := diags.Errors()[0].Summary(); summary != tt.wantError {
+				t.Errorf("got summary %q, want %q", summary, tt.wantError)
+			}
+			if detail := diags.Errors()[0].Detail(); !strings.Contains(detail, tt.wantDetail) {
+				t.Errorf("got detail %q, want it to contain %q", detail, tt.wantDetail)
+			}
+		})
+	}
+}
+
 func TestValidateVersion(t *testing.T) {
 	versions := models.VersionsConfig{Available: []string{"1.37", "1.36"}, Default: "1.36"}
 
