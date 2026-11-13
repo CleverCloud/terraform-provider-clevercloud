@@ -14,14 +14,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
+	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/models"
 )
 
 var _ resource.ResourceWithModifyPlan = (*ResourceKubernetes)(nil)
 
 // ModifyPlan aligns the topology with its configuration and checks the requested
-// version and topology against what the platform offers, so a refused value fails
-// the plan rather than the apply
+// region, version and topology against what the platform offers, so a refused
+// value fails the plan rather than the apply
 func (r *ResourceKubernetes) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	if req.Plan.Raw.IsNull() {
 		return
@@ -69,7 +70,15 @@ func (r *ResourceKubernetes) ModifyPlan(ctx context.Context, req resource.Modify
 		)
 	}
 
-	if (!checkVersion && !checkTopology) || r.Provider == nil {
+	if r.Provider == nil {
+		return
+	}
+
+	if regionCheck(plan, config, state) {
+		r.checkRegion(ctx, plan.Region.ValueString(), &resp.Diagnostics)
+	}
+
+	if !checkVersion && !checkTopology {
 		return
 	}
 
@@ -99,6 +108,70 @@ func planChecks(plan, config, state *Kubernetes) (checkVersion, checkTopology bo
 		(state == nil || !plan.Topology.Equal(state.Topology))
 
 	return checkVersion, checkTopology
+}
+
+// regionCheck tells whether the region has to be validated, under the same rule
+// as planChecks: only a configured value that creates or moves the cluster. A
+// cluster keeps running in a zone the organisation may no longer create in, and
+// setting a region on a state without one is regionOnUnknownZone's to refuse
+func regionCheck(plan, config, state *Kubernetes) bool {
+	return isSet(config.Region) && isSet(plan.Region) &&
+		(state == nil || (isSet(state.Region) && !plan.Region.Equal(state.Region)))
+}
+
+// checkRegion validates the region against the zones the organisation may create
+// a cluster in, so a refused one fails the plan rather than the apply
+func (r *ResourceKubernetes) checkRegion(ctx context.Context, region string, diags *diag.Diagnostics) {
+	ctx, cancel := context.WithTimeout(ctx, zoneLookupTimeout)
+	defer cancel()
+
+	zones := tmp.ListKubernetesZones(ctx, r.Client(), r.Organization())
+	if zones.HasError() || zones.Payload() == nil {
+		// not a reason to block the plan, the API still validates on apply
+		tflog.Warn(ctx, "failed to list the kubernetes zones, skipping the validation of the region", map[string]any{"error": fmt.Sprint(zones.Error())})
+		return
+	}
+
+	validateRegion(region, *zones.Payload(), diags)
+}
+
+// validateRegion refuses a region that names none of the zones, or several of
+// them: zone names are not unique, and the API refuses a name it cannot resolve
+// to a single zone
+func validateRegion(region string, zones []tmp.KubernetesZone, diags *diag.Diagnostics) {
+	matches := 0
+	names := make([]string, 0, len(zones))
+	for _, zone := range zones {
+		if zone.Name == region {
+			matches++
+		}
+		if !slices.Contains(names, zone.Name) {
+			names = append(names, zone.Name)
+		}
+	}
+	slices.Sort(names)
+
+	switch {
+	case matches == 1:
+	case matches > 1:
+		diags.AddAttributeError(
+			path.Root("region"),
+			"ambiguous kubernetes region",
+			fmt.Sprintf("%d of the zones this organisation may create a cluster in are named '%s', and the API refuses a name that designates several zones", matches, region),
+		)
+	case len(names) == 0:
+		diags.AddAttributeError(
+			path.Root("region"),
+			"invalid kubernetes region",
+			fmt.Sprintf("region '%s' is not available, this organisation may not create a cluster in any region", region),
+		)
+	default:
+		diags.AddAttributeError(
+			path.Root("region"),
+			"invalid kubernetes region",
+			fmt.Sprintf("region '%s' is not available, available regions are: %s", region, strings.Join(names, ", ")),
+		)
+	}
 }
 
 // topologyChanged reports whether the plan replaces the cluster. A state holding

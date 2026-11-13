@@ -74,7 +74,7 @@ func (r ResourceKubernetes) Schema(_ context.Context, req resource.SchemaRequest
 					stringplanmodifier.RequiresReplace(),
 				},
 				MarkdownDescription: "Zone the cluster runs in, by name (`par`). Without it the API picks the only zone the organisation may use, else the platform's default zone, and the attribute reads the zone it picked. " +
-					"Changing it replaces the cluster. Setting it on a cluster whose zone the API does not name fails the plan, taint the resource to replace the cluster",
+					"It is checked at plan time against the zones the organisation may use. Changing it replaces the cluster. Setting it on a cluster whose zone the API does not name fails the plan, taint the resource to replace the cluster",
 			},
 			"tags": resources.TagsAttribute,
 			"topology": schema.SingleNestedAttribute{
