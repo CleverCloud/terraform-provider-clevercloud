@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.2.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v3.1.0...v3.2.0) (2026-11-13)
+
+
+### Features
+
+* **kubernetes:** add a region attribute to clevercloud_kubernetes ([b1bf9d7](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/b1bf9d744dbe05820ebdd1c1c40897726fe4d205))
+* **kubernetes:** check the region against the zones of the organisation ([28eab9a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/28eab9aa57a08bbaea5a29d7dd84b237bac69e35))
+
+
+### Bug Fixes
+
+* **application:** accept every real ID an add-on can have in dependencies ([072ff1c](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/072ff1c43fb1d90b075edf20fa9a42a64b183867)), closes [#518](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/518)
+* delete addon providers, plans and TCP redirections through pkg/tmp ([afdbf07](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/afdbf07838267a535e25612182ea60022bb944a8))
+* **mysql:** read both encodings of the dedicated plan feature ([65844eb](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/65844ebbbf3e91189dcba3daccf407b94fb093a5)), closes [#519](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/519)
+
 ## [3.1.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v3.0.0...v3.1.0) (2026-11-06)
 
 
