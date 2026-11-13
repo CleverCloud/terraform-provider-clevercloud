@@ -12,12 +12,12 @@ func TestIsDedicatedPlan(t *testing.T) {
 		plan     *models.AddonPlanView
 		expected bool
 	}{
+		// the two encodings below are the ones GET /v2/products/addonproviders returns
 		{
 			name: "dedicated plan",
 			plan: &models.AddonPlanView{
-				ID: "xs_sml",
 				Features: []models.AddonFeatureInstanceView{
-					{NameCode: Ptr("is-dedicated"), ComputableValue: Ptr("dedicated")},
+					{NameCode: Ptr("is-dedicated"), ComputableValue: Ptr("dedicated"), Value: Ptr("Dedicated")},
 				},
 			},
 			expected: true,
@@ -25,9 +25,80 @@ func TestIsDedicatedPlan(t *testing.T) {
 		{
 			name: "shared plan",
 			plan: &models.AddonPlanView{
-				ID: "dev",
 				Features: []models.AddonFeatureInstanceView{
-					{NameCode: Ptr("is-dedicated"), ComputableValue: Ptr("Shared")},
+					{NameCode: Ptr("is-dedicated"), ComputableValue: Ptr("shared"), Value: Ptr("Shared")},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "MySQL dedicated plan, computable_value tells whether it is shared",
+			plan: &models.AddonPlanView{
+				Features: []models.AddonFeatureInstanceView{
+					{NameCode: Ptr("is-dedicated"), ComputableValue: Ptr("false"), Value: Ptr("Dedicated")},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "MySQL shared plan, computable_value tells whether it is shared",
+			plan: &models.AddonPlanView{
+				Features: []models.AddonFeatureInstanceView{
+					{NameCode: Ptr("is-dedicated"), ComputableValue: Ptr("true"), Value: Ptr("Shared")},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "computable_value wins over the displayed value",
+			plan: &models.AddonPlanView{
+				Features: []models.AddonFeatureInstanceView{
+					{NameCode: Ptr("is-dedicated"), ComputableValue: Ptr("false"), Value: Ptr("Shared")},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "computable_value in another case",
+			plan: &models.AddonPlanView{
+				Features: []models.AddonFeatureInstanceView{
+					{NameCode: Ptr("is-dedicated"), ComputableValue: Ptr("Dedicated")},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "no computable_value, dedicated by its displayed value",
+			plan: &models.AddonPlanView{
+				Features: []models.AddonFeatureInstanceView{
+					{NameCode: Ptr("is-dedicated"), Value: Ptr("Dedicated")},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "no computable_value, shared by its displayed value",
+			plan: &models.AddonPlanView{
+				Features: []models.AddonFeatureInstanceView{
+					{NameCode: Ptr("is-dedicated"), Value: Ptr("Shared")},
+				},
+			},
+			expected: false,
+		},
+		{
+			name: "unknown computable_value, dedicated by its displayed value",
+			plan: &models.AddonPlanView{
+				Features: []models.AddonFeatureInstanceView{
+					{NameCode: Ptr("is-dedicated"), ComputableValue: Ptr("yes"), Value: Ptr("Dedicated")},
+				},
+			},
+			expected: true,
+		},
+		{
+			name: "neither computable_value nor displayed value",
+			plan: &models.AddonPlanView{
+				Features: []models.AddonFeatureInstanceView{
+					{NameCode: Ptr("is-dedicated")},
 				},
 			},
 			expected: false,

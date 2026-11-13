@@ -218,6 +218,40 @@ func TestAccMySQL_DirectHostOnlyOnDevPlan(t *testing.T) {
 	})
 }
 
+// TestAccMySQL_DedicatedPlanOptions tests that the options reserved to dedicated
+// plans are accepted on one. The catalogue does not encode "dedicated" for MySQL
+// the way it does for the other add-ons, and every MySQL plan was read as shared.
+// Plan only: nothing is created
+func TestAccMySQL_DedicatedPlanOptions(t *testing.T) {
+	t.Parallel()
+	for _, option := range []string{"encryption", "skip_log_bin", "direct_host_only"} {
+		t.Run(option, func(t *testing.T) {
+			t.Parallel()
+			rName := acctest.RandomWithPrefix("tf-test-my-dedicated")
+			providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+			mysqlBlock := helper.NewRessource(
+				"clevercloud_mysql",
+				rName,
+				helper.SetKeyValues(map[string]any{
+					"name":   rName,
+					"region": "par",
+					"plan":   "xs_sml",
+					option:   true,
+				}))
+
+			resource.Test(t, resource.TestCase{
+				ProtoV6ProviderFactories: tests.ProtoV6Provider,
+				PreCheck:                 tests.ExpectOrganisation(t),
+				Steps: []resource.TestStep{{
+					Config:             providerBlock.Append(mysqlBlock).String(),
+					PlanOnly:           true,
+					ExpectNonEmptyPlan: true,
+				}},
+			})
+		})
+	}
+}
+
 // TestAccMySQL_Import tests that importing a MySQL addon doesn't trigger
 // a force-replace on the next plan.
 // Reproduces GitHub issue #399: backup and skip_log_bin remain null in state
