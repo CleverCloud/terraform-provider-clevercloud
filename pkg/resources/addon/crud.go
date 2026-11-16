@@ -59,6 +59,9 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 	ad.ID = pkg.FromStr(res.Payload().ID)
 	ad.CreationDate = pkg.FromI(pkg.Deref(res.Payload().CreationDate))
 
+	// the add-on exists from here on: save it before anything else can fail
+	resp.Diagnostics.Append(resp.State.Set(ctx, ad)...)
+
 	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(res.Payload().ID).Env().Getaddonenvbyorgaandaddonid(ctx)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", envRes.Error().Error())

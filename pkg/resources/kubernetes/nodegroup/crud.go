@@ -51,10 +51,8 @@ func (r *ResourceKubernetesNodegroup) Create(ctx context.Context, req resource.C
 	nodegroup := createRes.Payload()
 
 	identity := KubernetesNodegroupIdentity{ID: pkg.FromStr(nodegroup.ID)}
+	// no early return: the node group exists and has to be saved in state
 	res.Diagnostics.Append(res.Identity.Set(ctx, identity)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
 
 	state := KubernetesNodegroup{
 		ID:           pkg.FromStr(nodegroup.ID),

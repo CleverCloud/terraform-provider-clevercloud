@@ -57,6 +57,9 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 
 	cellar.ID = pkg.FromStr(pkg.Deref(addonRes.RealID))
 
+	// the add-on exists from here on: save it before anything else can fail
+	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
+
 	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(pkg.Deref(addonRes.RealID)).Env().Getaddonenvbyorgaandaddonid(ctx)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env vars", envRes.Error().Error())
