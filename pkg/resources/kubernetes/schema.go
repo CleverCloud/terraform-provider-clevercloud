@@ -50,7 +50,7 @@ func (r ResourceKubernetes) Schema(_ context.Context, req resource.SchemaRequest
 		Attributes: map[string]schema.Attribute{
 			"id":         schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
 			"name":       schema.StringAttribute{Required: true, MarkdownDescription: "Name of the Kubernetes cluster"},
-			"kubeconfig": schema.StringAttribute{Computed: true, MarkdownDescription: "Kubernetes configuration file content for accessing the cluster"},
+			"kubeconfig": schema.StringAttribute{Computed: true, Sensitive: true, MarkdownDescription: "Kubernetes configuration file content for accessing the cluster. It holds administrator credentials: an `output` exposing it has to be declared `sensitive = true`"},
 			"node_autoprovisioning": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
