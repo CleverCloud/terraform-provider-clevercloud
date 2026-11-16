@@ -69,6 +69,9 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 		return
 	}
 
+	// the network group exists from here on: save it before anything else can fail
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+
 	ng, err := r.WaitForNG(ctx, id)
 	if err != nil {
 		resp.Diagnostics.AddError("failed to get created networkgroup", err.Error())

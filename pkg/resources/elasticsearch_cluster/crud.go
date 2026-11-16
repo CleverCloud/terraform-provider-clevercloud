@@ -228,6 +228,9 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 	clusterID := cluster.ID
 	stateFromAPI(cluster, &plan)
 
+	// the cluster exists from here on: save it before anything else can fail
+	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
+
 	// Poll until the cluster is deployed and its connection details are
 	// populated. The password lives on a dedicated /credentials endpoint and
 	// the endpoint is the cluster's network group member domain.
@@ -271,7 +274,6 @@ func (r *ResourceElasticsearchCluster) Create(ctx context.Context, req resource.
 			"elasticsearch cluster provisioning timeout",
 			fmt.Sprintf("cluster was not deployed with its connection details (endpoint, username, password) after 10 minutes, last status: %q", cluster.DeploymentStatus),
 		)
-		return
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
