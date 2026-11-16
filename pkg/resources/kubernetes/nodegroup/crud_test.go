@@ -204,7 +204,10 @@ func TestNodegroupAllowsStaticGroups(t *testing.T) {
 						},
 					})
 				case "Delete":
-					responses = append(responses, nodegroupHTTPResponse{method: http.MethodDelete, status: http.StatusOK, body: view})
+					responses = append(responses,
+						nodegroupHTTPResponse{method: http.MethodDelete, status: http.StatusOK, body: view},
+						nodegroupHTTPResponse{method: http.MethodGet, status: http.StatusNotFound},
+					)
 				}
 				r := nodegroupTestResource(t, responses...)
 				state, identity := nodegroupTestState(t, r)

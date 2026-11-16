@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -12,6 +13,13 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/models"
+)
+
+// The API only marks a node group for deletion: its nodes are drained and
+// removed afterwards. Variables so that tests do not wait for real.
+var (
+	deletionPollInterval = 5 * time.Second
+	deletionTimeout      = 20 * time.Minute
 )
 
 func (r *ResourceKubernetesNodegroup) Create(ctx context.Context, req resource.CreateRequest, res *resource.CreateResponse) {
@@ -208,21 +216,72 @@ func (r *ResourceKubernetesNodegroup) Delete(ctx context.Context, req resource.D
 		return
 	}
 
-	deleteRes := r.SDK.V4().Kubernetes().
-		Organisations().Ownerid(r.Organization()).
-		Clusters().Kubernetesid(state.KubernetesID.ValueString()).
-		NodeGroups().Nodegroupid(identity.ID.ValueString()).
-		Deletekubernetesnodegroup(ctx)
-	if deleteRes.IsNotFoundError() {
-		res.State.RemoveResource(ctx)
-		return
+	// a deletion already under way, from an earlier destroy that timed out for
+	// instance, is only waited for
+	if !isTerminating(nodegroup.Status) {
+		deleteRes := r.SDK.V4().Kubernetes().
+			Organisations().Ownerid(r.Organization()).
+			Clusters().Kubernetesid(state.KubernetesID.ValueString()).
+			NodeGroups().Nodegroupid(identity.ID.ValueString()).
+			Deletekubernetesnodegroup(ctx)
+		if deleteRes.IsNotFoundError() {
+			res.State.RemoveResource(ctx)
+			return
+		}
+		if deleteRes.HasError() {
+			res.Diagnostics.AddError("failed to delete nodegroup", deleteRes.Error().Error())
+			return
+		}
 	}
-	if deleteRes.HasError() {
-		res.Diagnostics.AddError("failed to delete nodegroup", deleteRes.Error().Error())
+
+	// The name stays taken until the group is gone: without this wait, a replace
+	// creates the new group too early and the API refuses it with a 409.
+	if err := r.waitForDeletion(ctx, state.KubernetesID.ValueString(), identity.ID.ValueString()); err != nil {
+		res.Diagnostics.AddError("nodegroup deletion is not finished", err.Error())
 		return
 	}
 
 	res.State.RemoveResource(ctx)
+}
+
+func isTerminating(status models.NodeGroupStatusType) bool {
+	return status == models.NodeGroupStatusTypeToTerminate || status == models.NodeGroupStatusTypeTERMINATING
+}
+
+// waitForDeletion polls the node group until the API no longer knows it, or
+// reports it DELETED. A failed poll is retried: only the deadline gives up.
+func (r *ResourceKubernetesNodegroup) waitForDeletion(ctx context.Context, kubernetesID, nodegroupID string) error {
+	ctx, cancel := context.WithTimeout(ctx, deletionTimeout)
+	defer cancel()
+
+	var lastSeen string
+	for {
+		ngRes := r.SDK.V4().Kubernetes().
+			Organisations().Ownerid(r.Organization()).
+			Clusters().Kubernetesid(kubernetesID).
+			NodeGroups().Nodegroupid(nodegroupID).
+			Getkubernetesnodegroup(ctx)
+		switch {
+		case ngRes.IsNotFoundError():
+			return nil
+		case ngRes.HasError():
+			lastSeen = ngRes.Error().Error()
+		case ngRes.Payload().Status == models.NodeGroupStatusTypeDELETED:
+			return nil
+		default:
+			lastSeen = fmt.Sprintf("status %s", ngRes.Payload().Status)
+		}
+
+		select {
+		case <-ctx.Done():
+			return fmt.Errorf(
+				"node group %q was asked to be deleted but is still there (last seen: %s). "+
+					"It is kept in state: run the destroy again to keep waiting for it",
+				nodegroupID, lastSeen,
+			)
+		case <-time.After(deletionPollInterval):
+		}
+	}
 }
 
 // The v4 API exposes node labels, but not the Kubernetes ownership metadata.

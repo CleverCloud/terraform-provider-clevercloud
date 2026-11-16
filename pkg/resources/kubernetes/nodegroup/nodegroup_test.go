@@ -8,6 +8,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
@@ -22,13 +23,13 @@ func TestAccKubernetesNodegroup_basic(t *testing.T) {
 	k8sBlock := helper.
 		NewRessource("clevercloud_kubernetes", rName).
 		SetOneValue("name", rName)
-	nodegroupBlock := helper.
-		NewRessource(
+	nodegroupBlock := func(flavor string) *helper.Ressource {
+		return helper.NewRessource(
 			"clevercloud_kubernetes_nodegroup",
 			rName,
 			helper.SetKeyValues(map[string]any{
 				"kubernetes_id": "${clevercloud_kubernetes." + rName + ".id}",
-				"flavor":        "S",
+				"flavor":        flavor,
 				"name":          rName,
 				// Single node keeps the test under the K8S product quota
 				// when this and TestAccKubernetes_basic run in parallel:
@@ -38,6 +39,7 @@ func TestAccKubernetesNodegroup_basic(t *testing.T) {
 				"size": 1,
 			}),
 		)
+	}
 
 	resource.Test(t, resource.TestCase{
 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
@@ -45,11 +47,25 @@ func TestAccKubernetesNodegroup_basic(t *testing.T) {
 		CheckDestroy:             tests.CheckDestroy(ctx),
 		Steps: []resource.TestStep{{
 			ResourceName: rName,
-			Config:       providerBlock.Append(k8sBlock, nodegroupBlock).String(),
+			Config:       providerBlock.Append(k8sBlock, nodegroupBlock("S")).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				//statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^node_group_.*`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("size"), knownvalue.Int64Exact(1)),
+			},
+		}, {
+			// The flavor of a node group cannot change: it is replaced, under the
+			// same name, which the API only frees once the old group is gone.
+			ResourceName: rName,
+			Config:       providerBlock.Append(k8sBlock, nodegroupBlock("XS")).String(),
+			ConfigPlanChecks: resource.ConfigPlanChecks{
+				PreApply: []plancheck.PlanCheck{
+					plancheck.ExpectResourceAction(fullName, plancheck.ResourceActionDestroyBeforeCreate),
+				},
+			},
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("name"), knownvalue.StringExact(rName)),
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("flavor"), knownvalue.StringExact("XS")),
 			},
 		}},
 	})
