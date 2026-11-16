@@ -269,7 +269,7 @@ until that feature is disabled.
 ### Read-Only
 
 - `id` (String) Generated unique identifier
-- `kubeconfig` (String) Kubernetes configuration file content for accessing the cluster
+- `kubeconfig` (String, Sensitive) Kubernetes configuration file content for accessing the cluster. It holds administrator credentials: an `output` exposing it has to be declared `sensitive = true`
 
 <a id="nestedatt--topology"></a>
 ### Nested Schema for `topology`
