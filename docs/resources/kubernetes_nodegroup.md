@@ -23,7 +23,6 @@ description: |-
   that capacity in between. The name of a node group is unique in its cluster, so
   create_before_destroy cannot be used to avoid the gap unless the name changes
   too.
-  
   Node groups have a fixed size. For nodes created and deleted on demand, enable
   node autoscaling on the cluster with the node_autoprovisioning attribute of
   clevercloud_kubernetes kubernetes. Both can coexist: a node group carries the
