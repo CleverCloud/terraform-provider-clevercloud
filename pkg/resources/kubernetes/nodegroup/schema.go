@@ -41,9 +41,9 @@ func (r ResourceKubernetesNodegroup) Schema(_ context.Context, req resource.Sche
 		MarkdownDescription: resourceKubernetesNodegroupDoc,
 		Attributes: map[string]schema.Attribute{
 			"id":            schema.StringAttribute{Computed: true, MarkdownDescription: "Generated unique identifier", PlanModifiers: []planmodifier.String{stringplanmodifier.UseStateForUnknown()}},
-			"kubernetes_id": schema.StringAttribute{Required: true, MarkdownDescription: "ID of the Kubernetes cluster"},
+			"kubernetes_id": schema.StringAttribute{Required: true, MarkdownDescription: "ID of the Kubernetes cluster. Changing it replaces the node group", PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
 			"name":          schema.StringAttribute{Required: true, MarkdownDescription: "Name of the node group"},
-			"flavor":        schema.StringAttribute{Required: true, MarkdownDescription: "Size of the nodes, see [available flavors](https://www.clever.cloud/developers/doc/kubernetes/)"},
+			"flavor":        schema.StringAttribute{Required: true, MarkdownDescription: "Size of the nodes, see [available flavors](https://www.clever.cloud/developers/doc/kubernetes/). The flavor of a node group cannot change: changing it replaces the node group, its nodes are deleted and new ones are created", PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()}},
 			"size":          schema.Int64Attribute{Required: true, MarkdownDescription: "Number of nodes"}, // add validator with min=0, max=16
 		},
 	}

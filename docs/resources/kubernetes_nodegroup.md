@@ -17,6 +17,13 @@ description: |-
     size          = 2
   }
   
+  The flavor and the cluster of a node group cannot change. Changing flavor or
+  kubernetes_id replaces the node group: Terraform deletes it, waits for its
+  nodes to be drained and removed, then creates the new one. The workloads lose
+  that capacity in between. The name of a node group is unique in its cluster, so
+  create_before_destroy cannot be used to avoid the gap unless the name changes
+  too.
+  
   Node groups have a fixed size. For nodes created and deleted on demand, enable
   node autoscaling on the cluster with the node_autoprovisioning attribute of
   clevercloud_kubernetes kubernetes. Both can coexist: a node group carries the
@@ -54,6 +61,13 @@ resource "clevercloud_kubernetes_nodegroup" "workers" {
 }
 ```
 
+The flavor and the cluster of a node group cannot change. Changing `flavor` or
+`kubernetes_id` replaces the node group: Terraform deletes it, waits for its
+nodes to be drained and removed, then creates the new one. The workloads lose
+that capacity in between. The name of a node group is unique in its cluster, so
+`create_before_destroy` cannot be used to avoid the gap unless the name changes
+too.
+
 Node groups have a fixed size. For nodes created and deleted on demand, enable
 node autoscaling on the cluster with the `node_autoprovisioning` attribute of
 [`clevercloud_kubernetes`](kubernetes). Both can coexist: a node group carries the
@@ -78,8 +92,8 @@ the API and cannot detect groups whose Karpenter labels have been removed.
 
 ### Required
 
-- `flavor` (String) Size of the nodes, see [available flavors](https://www.clever.cloud/developers/doc/kubernetes/)
-- `kubernetes_id` (String) ID of the Kubernetes cluster
+- `flavor` (String) Size of the nodes, see [available flavors](https://www.clever.cloud/developers/doc/kubernetes/). The flavor of a node group cannot change: changing it replaces the node group, its nodes are deleted and new ones are created
+- `kubernetes_id` (String) ID of the Kubernetes cluster. Changing it replaces the node group
 - `name` (String) Name of the node group
 - `size` (Number) Number of nodes
 
