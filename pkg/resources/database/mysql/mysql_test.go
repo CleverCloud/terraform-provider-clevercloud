@@ -17,7 +17,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/models"
 )
@@ -295,7 +294,7 @@ func TestAccMySQL_Import(t *testing.T) {
 				// Create MySQL addon manually via API to simulate a pre-existing
 				// resource, then import it into Terraform state.
 				PreConfig: func() {
-					addonsProvidersRes := tmp.GetAddonsProviders(ctx, cc)
+					addonsProvidersRes := pkg.AddonProviders(ctx, cc)
 					if addonsProvidersRes.HasError() {
 						t.Fatalf("failed to get addon providers: %s", addonsProvidersRes.Error())
 					}

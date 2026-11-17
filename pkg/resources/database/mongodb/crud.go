@@ -21,7 +21,7 @@ import (
 func (r *ResourceMongoDB) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
 	mg := helper.PlanFrom[MongoDB](ctx, req.Plan, &resp.Diagnostics)
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
+	addonsProvidersRes := pkg.AddonProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return

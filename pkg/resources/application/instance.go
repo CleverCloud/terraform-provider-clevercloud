@@ -8,15 +8,15 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"go.clever-cloud.com/terraform-provider/pkg"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // Lookup for the instance matching this criteria
 // return the
-func LookupInstanceByVariantSlug(ctx context.Context, cc *client.Client, ownerId *string, variantSlug string, diags *diag.Diagnostics) *tmp.AvailableInstanceView {
+func LookupInstanceByVariantSlug(ctx context.Context, cc *client.Client, ownerId *string, variantSlug string, diags *diag.Diagnostics) *models.AvailableInstanceView {
 
-	productRes := tmp.GetProductInstances(ctx, cc, ownerId)
+	productRes := pkg.ProductInstances(ctx, cc, ownerId)
 	if productRes.HasError() {
 		diags.AddError("failed to get variant", productRes.Error().Error())
 		return nil
@@ -24,7 +24,7 @@ func LookupInstanceByVariantSlug(ctx context.Context, cc *client.Client, ownerId
 
 	instances := *productRes.Payload()
 
-	instance := pkg.First(instances, func(instance tmp.AvailableInstanceView) bool {
+	instance := pkg.First(instances, func(instance models.AvailableInstanceView) bool {
 		return strings.EqualFold(instance.Variant.Slug, variantSlug)
 	})
 	if instance == nil {
@@ -35,7 +35,7 @@ func LookupInstanceByVariantSlug(ctx context.Context, cc *client.Client, ownerId
 	return instance
 }
 
-func lastVariant(variants []tmp.AvailableInstanceView) tmp.AvailableInstanceView {
+func lastVariant(variants []models.AvailableInstanceView) models.AvailableInstanceView {
 
 	sort.SliceStable(variants, func(i, j int) bool {
 		return variants[i].Version > variants[j].Version

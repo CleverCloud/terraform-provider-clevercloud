@@ -204,7 +204,7 @@ func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID, applic
 
 // wannabeApplication is the payload creating or updating an application. Every field
 // is set, as the hand-written payload this replaces always sent them all.
-func wannabeApplication(runtime *Runtime, instance *tmp.AvailableInstanceView) models.WannabeApplication {
+func wannabeApplication(runtime *Runtime, instance *models.AvailableInstanceView) models.WannabeApplication {
 	return models.WannabeApplication{
 		Name:           pkg.Ptr(runtime.Name.ValueString()),
 		Deploy:         pkg.Ptr("git"),

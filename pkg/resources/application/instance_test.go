@@ -3,13 +3,13 @@ package application
 import (
 	"testing"
 
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 func TestAccNodejs_basic(t *testing.T) {
 	t.Parallel()
 
-	variants := []tmp.AvailableInstanceView{{
+	variants := []models.AvailableInstanceView{{
 		Version: "20220101",
 	}, {
 		Version: "20230503",
