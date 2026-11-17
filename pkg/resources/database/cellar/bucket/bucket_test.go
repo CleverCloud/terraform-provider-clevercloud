@@ -56,8 +56,9 @@ func TestAccCellarBucket_basic(t *testing.T) {
 	})
 }
 
-// TestAccCellarBucket_deleteNonEmpty tests the scenario described in issue #295
-// where a bucket with objects cannot be deleted
+// TestAccCellarBucket_deleteNonEmpty tests the scenarios described in issues #295
+// and #514, where a bucket holding objects, at its root or under a prefix,
+// cannot be deleted
 func TestAccCellarBucket_deleteNonEmpty(t *testing.T) {
 	t.Parallel()
 	cc := client.New(client.WithAutoOauthConfig())
@@ -106,23 +107,31 @@ func TestAccCellarBucket_deleteNonEmpty(t *testing.T) {
 					return fmt.Errorf("failed to create S3 client: %s", err.Error())
 				}
 
-				objectName := "test-object.txt"
 				objectContent := "This is test content to make the bucket non-empty"
-				_, err = minioClient.PutObject(
-					ctx,
-					bucketName,
-					objectName,
-					strings.NewReader(objectContent),
-					int64(len(objectContent)),
-					minio.PutObjectOptions{
-						ContentType: "text/plain",
-					},
-				)
-				if err != nil {
-					return fmt.Errorf("failed to upload test object: %s", err.Error())
-				}
+				// at the root, under a prefix, under nested prefixes, and where the
+				// S3 backend of Terraform stores the state of a workspace
+				for _, objectName := range []string{
+					"test-object.txt",
+					"dir/test-object.txt",
+					"dir/sub/test-object.txt",
+					"env:/staging/terraform.tfstate",
+				} {
+					_, err = minioClient.PutObject(
+						ctx,
+						bucketName,
+						objectName,
+						strings.NewReader(objectContent),
+						int64(len(objectContent)),
+						minio.PutObjectOptions{
+							ContentType: "text/plain",
+						},
+					)
+					if err != nil {
+						return fmt.Errorf("failed to upload test object %s: %s", objectName, err.Error())
+					}
 
-				t.Logf("Successfully uploaded object '%s' to bucket '%s'", objectName, bucketName)
+					t.Logf("Successfully uploaded object '%s' to bucket '%s'", objectName, bucketName)
+				}
 				return nil
 			},
 		}},
