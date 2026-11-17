@@ -49,7 +49,7 @@ func (r *ResourceMySQL) ModifyPlan(ctx context.Context, req resource.ModifyPlanR
 	}
 
 	// Get addon providers to check plan features
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
+	addonsProvidersRes := pkg.AddonProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		res.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return

@@ -58,7 +58,7 @@ func (r *ResourceMySQL) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
+	addonsProvidersRes := pkg.AddonProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return

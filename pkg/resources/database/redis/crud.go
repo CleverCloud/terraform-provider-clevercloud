@@ -14,7 +14,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/app"
 	"go.clever-cloud.dev/sdk/models"
 	"go.clever-cloud.dev/sdk/services/addons"
@@ -27,7 +26,7 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
+	addonsProvidersRes := pkg.AddonProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return

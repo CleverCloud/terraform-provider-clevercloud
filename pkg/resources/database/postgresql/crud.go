@@ -51,7 +51,7 @@ func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
+	addonsProvidersRes := pkg.AddonProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return
@@ -284,7 +284,7 @@ func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequ
 }
 
 func (r *ResourcePostgreSQL) migrate(ctx context.Context, plan PostgreSQL, state *PostgreSQL, diags *diag.Diagnostics) {
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
+	addonsProvidersRes := pkg.AddonProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		diags.AddError("failed to get addon providers", addonsProvidersRes.Error().Error())
 		return

@@ -123,7 +123,7 @@ func (r *ResourcePostgreSQL) ModifyPlan(ctx context.Context, req resource.Modify
 	}
 
 	// Get addon providers to check plan features
-	addonsProvidersRes := tmp.GetAddonsProviders(ctx, r.Client())
+	addonsProvidersRes := pkg.AddonProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
 		tflog.Warn(ctx, "Skipping validation - failed to get addon providers", map[string]any{"error": addonsProvidersRes.Error().Error()})
 		// Silently skip validation if we can't fetch provider info during plan phase

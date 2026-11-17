@@ -12,23 +12,6 @@ import (
 // the SDK generated them before it moved to that document. They leave with the calls
 // of this package once the document publishes those routes.
 
-// AvailableInstanceView AvailableInstanceView — matches cc-api openapi/ccapiv3.json AvailableInstanceView schema.  Thirte...
-type AvailableInstanceView struct {
-	BuildFlavor   *models.Flavor             `json:"buildFlavor,omitempty"`
-	ComingSoon    bool                       `json:"comingSoon"`
-	DefaultFlavor *models.Flavor             `json:"defaultFlavor,omitempty"`
-	Deployments   []string                   `json:"deployments"`
-	Description   string                     `json:"description"` // Nullable, as `ccapidto AvailableInstanceView.java:17` declares it: a NULL `instance_types.descrip...
-	Enabled       bool                       `json:"enabled"`
-	Flavors       []models.Flavor            `json:"flavors"`
-	MaxInstances  models.InstanceCount       `json:"maxInstances"`
-	Name          string                     `json:"name"`
-	Tags          []models.SemanticTag       `json:"tags"`
-	Type          string                     `json:"type"`
-	Variant       models.InstanceVariantView `json:"variant"`
-	Version       string                     `json:"version"`
-}
-
 // MysqlAddonView `GET /v4/.../addons/{appId}` and internal getAddon body. Field names are the legacy snake_case (N...
 type MysqlAddonView struct {
 	AppID         string             `json:"app_id"`

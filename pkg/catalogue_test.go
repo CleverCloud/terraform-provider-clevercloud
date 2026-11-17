@@ -1,4 +1,4 @@
-package tmp
+package pkg
 
 import (
 	"context"
@@ -22,7 +22,7 @@ func catalogueServer(t *testing.T, handler http.HandlerFunc) *client.Client {
 
 // Twenty resources created at once read the add-on catalogue together: it is
 // downloaded once, and the callers arriving during the download wait for it.
-func TestGetAddonsProvidersDownloadsTheCatalogueOnce(t *testing.T) {
+func TestAddonProvidersDownloadsTheCatalogueOnce(t *testing.T) {
 	var hits atomic.Int32
 	cc := catalogueServer(t, func(w http.ResponseWriter, r *http.Request) {
 		hits.Add(1)
@@ -36,7 +36,7 @@ func TestGetAddonsProvidersDownloadsTheCatalogueOnce(t *testing.T) {
 	var wg sync.WaitGroup
 	for range 20 {
 		wg.Go(func() {
-			res := GetAddonsProviders(context.Background(), cc)
+			res := AddonProviders(context.Background(), cc)
 			if res.HasError() {
 				t.Errorf("unexpected error: %s", res.Error())
 				return
@@ -54,7 +54,7 @@ func TestGetAddonsProvidersDownloadsTheCatalogueOnce(t *testing.T) {
 }
 
 // A failed download is not remembered, the next caller gets a fresh attempt.
-func TestGetAddonsProvidersDoesNotKeepAFailure(t *testing.T) {
+func TestAddonProvidersDoesNotKeepAFailure(t *testing.T) {
 	var hits atomic.Int32
 	cc := catalogueServer(t, func(w http.ResponseWriter, r *http.Request) {
 		if hits.Add(1) == 1 {
@@ -65,13 +65,13 @@ func TestGetAddonsProvidersDoesNotKeepAFailure(t *testing.T) {
 		_, _ = w.Write([]byte(`[]`))
 	})
 
-	if res := GetAddonsProviders(context.Background(), cc); !res.HasError() {
+	if res := AddonProviders(context.Background(), cc); !res.HasError() {
 		t.Fatal("the first download should fail")
 	}
-	if res := GetAddonsProviders(context.Background(), cc); res.HasError() {
+	if res := AddonProviders(context.Background(), cc); res.HasError() {
 		t.Fatalf("the second download should succeed: %s", res.Error())
 	}
-	if res := GetAddonsProviders(context.Background(), cc); res.HasError() {
+	if res := AddonProviders(context.Background(), cc); res.HasError() {
 		t.Fatalf("the third call should be answered from memory: %s", res.Error())
 	}
 	if got := hits.Load(); got != 2 {
@@ -81,7 +81,7 @@ func TestGetAddonsProvidersDoesNotKeepAFailure(t *testing.T) {
 
 // The runtimes offered depend on the owner asking, and each client has its
 // own credentials: neither shares its catalogue with another.
-func TestGetProductInstancesKeepsOneCatalogueByOwnerAndClient(t *testing.T) {
+func TestProductInstancesKeepsOneCatalogueByOwnerAndClient(t *testing.T) {
 	var hits atomic.Int32
 	var queries sync.Map
 	handler := func(w http.ResponseWriter, r *http.Request) {
@@ -95,9 +95,9 @@ func TestGetProductInstancesKeepsOneCatalogueByOwnerAndClient(t *testing.T) {
 	owner := "orga_1"
 
 	for range 3 {
-		GetProductInstances(ctx, cc, nil)
-		GetProductInstances(ctx, cc, &owner)
-		GetProductInstances(ctx, other, &owner)
+		ProductInstances(ctx, cc, nil)
+		ProductInstances(ctx, cc, &owner)
+		ProductInstances(ctx, other, &owner)
 	}
 
 	if got := hits.Load(); got != 3 {
