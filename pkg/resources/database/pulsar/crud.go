@@ -11,7 +11,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/models"
 	"go.clever-cloud.dev/sdk/services/addons"
 )
@@ -57,7 +56,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
-	pulsarRes := tmp.GetPulsar(ctx, r.Client(), pkg.Deref(addon.RealID))
+	pulsarRes := r.SDK.V4().AddonProviders().AddonPulsar().Addons().Pulsarid(pkg.Deref(addon.RealID)).Getpulsar(ctx)
 	if pulsarRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())
 		return
@@ -99,7 +98,7 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	pulsarRes := tmp.GetPulsar(ctx, r.Client(), state.ID.ValueString())
+	pulsarRes := r.SDK.V4().AddonProviders().AddonPulsar().Addons().Pulsarid(state.ID.ValueString()).Getpulsar(ctx)
 	if pulsarRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())
 		return
@@ -130,7 +129,7 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 }
 
-func readAddon(state *Pulsar, addon *tmp.Pulsar, diags *diag.Diagnostics) {
+func readAddon(state *Pulsar, addon *models.Pulsar, diags *diag.Diagnostics) {
 	if addon == nil {
 		return
 	}

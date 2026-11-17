@@ -12,7 +12,6 @@ import (
 	"github.com/miton18/helper/set"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/models"
 )
@@ -217,7 +216,7 @@ func SyncPlans(
 		currentPlan := currentPlanMap[planSlug]
 		tflog.Info(ctx, "deleting plan", map[string]any{"slug": planSlug, "id": currentPlan.ID})
 
-		delRes := tmp.DeleteAddonProviderPlan(ctx, cc, organization, providerID, currentPlan.ID)
+		delRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Plans().Planid(currentPlan.ID).Deleteproviderplan(ctx)
 		if delRes.HasError() && !delRes.IsNotFoundError() {
 			diags.AddError(
 				fmt.Sprintf("failed to delete plan %s", planSlug),
@@ -479,7 +478,7 @@ func (r *ResourceAddonProvider) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	res := tmp.DeleteAddonProvider(ctx, r.Client(), r.Organization(), ap.ProviderID.ValueString())
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(ap.ProviderID.ValueString()).Deleteprovider(ctx)
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete addon provider", res.Error().Error())
 		return

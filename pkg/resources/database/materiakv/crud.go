@@ -11,7 +11,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/models"
 	"go.clever-cloud.dev/sdk/services/addons"
 )
@@ -56,7 +55,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
 
-	kvInfoRes := tmp.GetMateriaKV(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
+	kvInfoRes := r.SDK.V4().Materia().Organisations().Ownerid(r.Organization()).Materia().Databases().Kvid(kv.ID.ValueString()).Getmateriakv(ctx)
 	if kvInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get materia kv connection infos", kvInfoRes.Error().Error())
 		return
@@ -91,7 +90,7 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	addonKVRes := tmp.GetMateriaKV(ctx, r.Client(), r.Organization(), kv.ID.ValueString())
+	addonKVRes := r.SDK.V4().Materia().Organisations().Ownerid(r.Organization()).Materia().Databases().Kvid(kv.ID.ValueString()).Getmateriakv(ctx)
 	if addonKVRes.IsNotFoundError() {
 		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
 		resp.Diagnostics.Append(diags...)

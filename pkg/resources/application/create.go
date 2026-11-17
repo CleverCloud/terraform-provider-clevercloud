@@ -13,7 +13,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/attributes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/retry"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/models"
 	"go.clever-cloud.dev/sdk/services/applications"
@@ -75,15 +74,15 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 		strings.HasPrefix(*req.Deployment.Commit, attributes.GITHUB_COMMIT_PREFIX) {
 
 		//grab some informations on the repo
-		appsRes := tmp.ListGithubApplications(ctx, req.Client)
+		appsRes := pkg.SDK(req.Client).V2().Github().Applications().Getgithubapplications(ctx)
 		if appsRes.HasError() {
 			diags.AddError("failed to list Github application", appsRes.Error().Error())
 			return res, diags
 		}
 		apps := *appsRes.Payload()
 
-		app := pkg.First(apps, func(app tmp.OAuthApplicationView) bool {
-			return pkg.Deref(app.GitURL) == req.Deployment.Repository
+		app := pkg.First(apps, func(app models.OAuthApplicationView) bool {
+			return app.GitURL == req.Deployment.Repository
 		})
 		if app == nil {
 			diags.AddError("failed to get repository information", "requested repository does not exists or is not visible")
