@@ -3,8 +3,6 @@
 package tmp
 
 import (
-	"time"
-
 	"go.clever-cloud.dev/sdk/models"
 )
 
@@ -40,17 +38,6 @@ type ProvidersConsoleView struct {
 	ProviderID              string                          `json:"providerId"`
 }
 
-// OAuthApplicationView A third-party repository an application can be created from — one entry of `GET /v2/github/applic...
-type OAuthApplicationView struct {
-	DefaultBranch *string `json:"defaultBranch,omitempty"`
-	Description   *string `json:"description,omitempty"`
-	GitURL        *string `json:"gitUrl,omitempty"`
-	ID            string  `json:"id"` // GitHub's numeric repository id, as a string.
-	Name          string  `json:"name"`
-	Owner         string  `json:"owner"`
-	Priv          bool    `json:"priv"`
-}
-
 // PostgresqlAddonView The addon as `GET .../addons/{appId}` (internal AND `/v4`) render it — reference `postgresql_addo...
 type PostgresqlAddonView struct {
 	AppID         string                       `json:"app_id"`
@@ -70,38 +57,6 @@ type PostgresqlAddonView struct {
 	User          string                       `json:"user"`
 	Version       string                       `json:"version"`
 	Zone          string                       `json:"zone"`
-}
-
-// Pulsar A Pulsar add-on: its tenant and namespace, cluster, access token, lifecycle dates and cold-storag...
-type Pulsar struct {
-	AskForDeletionDate        *time.Time   `json:"ask_for_deletion_date,omitempty"` // When deletion was requested
-	ClusterID                 string       `json:"cluster_id"`                      // Cluster ID the addon is deployed on
-	ColdStorageID             *string      `json:"cold_storage_id,omitempty"`       // Cellar cold storage addon ID (if configured)
-	ColdStorageLinked         bool         `json:"cold_storage_linked"`             // Whether cold storage offload is linked
-	ColdStorageMustBeProvided bool         `json:"cold_storage_must_be_provided"`   // Whether cold storage must be provisioned for this plan
-	CreationDate              time.Time    `json:"creation_date"`                   // Creation timestamp
-	DeletionDate              *time.Time   `json:"deletion_date,omitempty"`         // When deletion was completed
-	ID                        string       `json:"id"`                              // Provider-internal resource ID (pulsar_*)
-	Namespace                 string       `json:"namespace"`                       // Pulsar namespace name
-	OwnerID                   string       `json:"owner_id"`                        // Owner (user or org) ID
-	Plan                      string       `json:"plan"`                            // Plan identifier
-	Status                    PulsarStatus `json:"status"`                          // Addon lifecycle status
-	Tenant                    string       `json:"tenant"`                          // Pulsar tenant name
-	Token                     string       `json:"token"`                           // Biscuit authentication token (base64url)
-}
-
-// MateriaDB A Materia KV database: its cluster, owner, plan, connection host and port, access token and status.
-type MateriaDB struct {
-	ClusterID string `json:"clusterId"`
-	Host      string `json:"host"`
-	ID        string `json:"id"`
-	Kind      string `json:"kind"`
-	OwnerID   string `json:"ownerId"`
-	Plan      string `json:"plan"`
-	Port      int    `json:"port"`
-	Status    string `json:"status"`
-	Token     string `json:"token"` // Access token of the database; it is also the password of its Redis-compatible endpoint.
-	TokenID   string `json:"tokenId"`
 }
 
 // MysqlPlanType represents The `plan_type` DB enum — 34 values, exactly the production enum (which has NO `free` value even ...
@@ -189,20 +144,4 @@ type MysqlClusterConsole struct {
 type PostgresqlReadOnlyUserView struct {
 	Password string `json:"password"`
 	User     string `json:"user"`
-}
-
-// PulsarStatus represents Lifecycle status of a Pulsar add-on: `ACTIVE`, `TO_DELETE` (deletion requested), `DELETED`, `NAME...
-type PulsarStatus string
-
-const (
-	PulsarStatusACTIVE             PulsarStatus = "ACTIVE"
-	PulsarStatusToDelete           PulsarStatus = "TO_DELETE"
-	PulsarStatusDELETED            PulsarStatus = "DELETED"
-	PulsarStatusNamespaceDeleted   PulsarStatus = "NAMESPACE_DELETED"
-	PulsarStatusColdStorageDeleted PulsarStatus = "COLD_STORAGE_DELETED"
-)
-
-// String returns the underlying string value
-func (e PulsarStatus) String() string {
-	return string(e)
 }
