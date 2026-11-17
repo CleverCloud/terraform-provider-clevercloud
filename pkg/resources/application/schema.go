@@ -76,6 +76,12 @@ var runtimeCommon = map[string]schema.Attribute{
 		Default:             booldefault.StaticBool(false),
 		Computed:            true,
 	},
+	"cancel_on_push": schema.BoolAttribute{
+		Optional:            true,
+		MarkdownDescription: "Cancel the ongoing deployment when a new commit is pushed, and deploy that commit instead",
+		Default:             booldefault.StaticBool(false),
+		Computed:            true,
+	},
 	"vhosts": schema.SetNestedAttribute{
 		MarkdownDescription: "List of virtual hosts",
 		Optional:            true,

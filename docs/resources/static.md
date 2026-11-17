@@ -101,6 +101,7 @@ resource "clevercloud_static" "myapp" {
 - `build_command` (String) Command building the site during the deployment, instead of the platform's autobuild (`CC_BUILD_COMMAND`)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `caddyfile` (String) Path of the Caddyfile used by the `caddy` server, `./Caddyfile` by default (`CC_STATIC_CADDYFILE`)
+- `cancel_on_push` (Boolean) Cancel the ongoing deployment when a new commit is pushed, and deploy that commit instead
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))

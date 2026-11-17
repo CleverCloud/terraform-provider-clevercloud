@@ -53,6 +53,7 @@ func TestAccNodejs_basic(t *testing.T) {
 			"build_flavor":       "XL",
 			"redirect_https":     true,
 			"sticky_sessions":    true,
+			"cancel_on_push":     true,
 			"app_folder":         "./app",
 			"environment":        map[string]any{"MY_KEY": "myval"},
 			"dependencies":       []string{},
@@ -124,6 +125,9 @@ func TestAccNodejs_basic(t *testing.T) {
 
 					if !appRes.StickySessions {
 						return tests.AssertError("expect option to be set", "sticky_sessions", appRes.StickySessions)
+					}
+					if !appRes.CancelOnPush {
+						return tests.AssertError("expect option to be set", "cancel_on_push", appRes.CancelOnPush)
 					}
 					if appRes.Zone != "par" {
 						return tests.AssertError("expect region to be 'par'", "region", appRes.Zone)

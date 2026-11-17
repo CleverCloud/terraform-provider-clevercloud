@@ -53,6 +53,7 @@ type Runtime struct {
 	Region           types.String             `tfsdk:"region"`
 	StickySessions   types.Bool               `tfsdk:"sticky_sessions"`
 	RedirectHTTPS    types.Bool               `tfsdk:"redirect_https"`
+	CancelOnPush     types.Bool               `tfsdk:"cancel_on_push"`
 	VHosts           types.Set                `tfsdk:"vhosts"`
 	DeployURL        types.String             `tfsdk:"deploy_url"`
 	Dependencies     types.Set                `tfsdk:"dependencies"`
