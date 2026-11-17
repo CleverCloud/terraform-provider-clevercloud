@@ -165,7 +165,7 @@ func TestAccKeycloak_invalidVersionOnUpdate(t *testing.T) {
 	// Deliberately not parallel: the package already provisions two Keycloak
 	// add-ons concurrently, and a third one makes creation flake on the API.
 	ctx := t.Context()
-	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryPolicy))
 	rName := acctest.RandomWithPrefix("tf-test-kc")
 
 	keycloakSDK := sdk.NewSDK(sdk.WithClient(cc))

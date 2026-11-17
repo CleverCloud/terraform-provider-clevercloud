@@ -48,7 +48,7 @@ func (w waitForAppInstanceUp) CheckState(ctx context.Context, req statecheck.Che
 		return
 	}
 
-	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryPolicy))
 	deadline, cancel := context.WithTimeout(ctx, w.timeout)
 	defer cancel()
 

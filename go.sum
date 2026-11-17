@@ -1196,6 +1196,8 @@ go.abhg.dev/goldmark/frontmatter v0.2.0 h1:P8kPG0YkL12+aYk2yU3xHv4tcXzeVnN+gU0tJ
 go.abhg.dev/goldmark/frontmatter v0.2.0/go.mod h1:XqrEkZuM57djk7zrlRUB02x8I5J0px76YjkOzhB4YlU=
 go.clever-cloud.dev/client v0.1.9 h1:6a0ZSAimJNOA4ZhB+v3x6Z4oMkXgCtbke/tffLCjRkA=
 go.clever-cloud.dev/client v0.1.9/go.mod h1:FbR9HINkEq3ilZoKOTWOLgtv5JdNZEggW8cGuRjtODc=
+go.clever-cloud.dev/client v0.1.10-0.20261117093916-005847e366fc h1:zt7o+pHus8DJ95zbanZCNY0FHorxn0wuFzMLb1nKOmg=
+go.clever-cloud.dev/client v0.1.10-0.20261117093916-005847e366fc/go.mod h1:FbR9HINkEq3ilZoKOTWOLgtv5JdNZEggW8cGuRjtODc=
 go.clever-cloud.dev/sdk v0.5.0 h1:9N21Zfauv7G3WirvSkHeRzxs9+Zu8GqDpgTJ5yMiTW8=
 go.clever-cloud.dev/sdk v0.5.0/go.mod h1:unLv4AasnZODo3gMuU/JNP7AIjg9RUbiczNTNBTamyk=
 go.einride.tech/aip v0.67.1/go.mod h1:ZGX4/zKw8dcgzdLsrvpOOGxfxI2QSk12SlP7d6c0/XI=

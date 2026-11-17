@@ -173,7 +173,7 @@ func TestAccConfigProvider_basic(t *testing.T) {
 
 func TestAccConfigProvider_Import(t *testing.T) {
 	t.Parallel()
-	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryPolicy))
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-cp-import")
 	fullName := fmt.Sprintf("clevercloud_configprovider.%s", rName)

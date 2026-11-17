@@ -164,7 +164,7 @@ func TestAccKubernetes_options(t *testing.T) {
 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
 	// the platform decides which versions exist, the test must outlive them
-	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryPolicy))
 	product := sdk.NewSDK(sdk.WithClient(cc)).V4().KubernetesProduct().Getkubernetesserviceconfig(ctx)
 	if product.HasError() {
 		t.Fatalf("failed to get the kubernetes service configuration: %s", product.Error())

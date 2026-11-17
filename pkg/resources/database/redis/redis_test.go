@@ -86,7 +86,7 @@ func TestAccRedis_importAddonID(t *testing.T) {
 			ResourceName: fullName,
 			ImportState:  true,
 			ImportStateIdFunc: func(state *terraform.State) (string, error) {
-				cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+				cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryPolicy))
 				return addonid.FromRealID(ctx, cc, tests.ORGANISATION, stateID(state))
 			},
 			ExpectError: regexp.MustCompile(`(?s)cannot\s+import.*redis_`),

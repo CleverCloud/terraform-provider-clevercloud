@@ -64,7 +64,7 @@ func TestAccAddon_basic(t *testing.T) {
 // and the plan then failed validation on the provider's own value.
 func TestAccAddon_UppercasePlan(t *testing.T) {
 	t.Parallel()
-	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryPolicy))
 	ctx := t.Context()
 	rName := acctest.RandomWithPrefix("tf-test-addon-upper")
 	fullName := fmt.Sprintf("clevercloud_addon.%s", rName)

@@ -15,7 +15,7 @@ import (
 // sweepNetworkgroups removes all test networkgroups
 func SweepNetworkgroups(region string) error {
 	ctx := context.Background()
-	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryPolicy))
 
 	if tests.ORGANISATION == "" {
 		return fmt.Errorf("ORGANISATION environment variable not set")
@@ -59,7 +59,7 @@ func SweepNetworkgroups(region string) error {
 // sweepApplications removes all test applications
 func SweepApplications(region string) error {
 	ctx := context.Background()
-	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryPolicy))
 
 	if tests.ORGANISATION == "" {
 		return fmt.Errorf("ORGANISATION environment variable not set")
@@ -109,7 +109,7 @@ func SweepApplications(region string) error {
 // sweepAddons removes all test addons
 func SweepAddons(region string) error {
 	ctx := context.Background()
-	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryPolicy))
 
 	if tests.ORGANISATION == "" {
 		return fmt.Errorf("ORGANISATION environment variable not set")
@@ -162,7 +162,7 @@ func SweepAddons(region string) error {
 // sweepKubernetes removes all test Kubernetes clusters
 func SweepKubernetes(region string) error {
 	ctx := context.Background()
-	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryPolicy))
 
 	if tests.ORGANISATION == "" {
 		return fmt.Errorf("ORGANISATION environment variable not set")
@@ -216,7 +216,7 @@ func SweepKubernetes(region string) error {
 // sweepAddonProviders removes all test addon providers
 func SweepAddonProviders(region string) error {
 	ctx := context.Background()
-	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryPolicy))
 
 	if tests.ORGANISATION == "" {
 		return fmt.Errorf("ORGANISATION environment variable not set")
@@ -269,7 +269,7 @@ type esClusterSummary struct {
 // SweepElasticsearchClusters removes all test Elasticsearch clusters
 func SweepElasticsearchClusters(region string) error {
 	ctx := context.Background()
-	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryPolicy))
 
 	if tests.ORGANISATION == "" {
 		return fmt.Errorf("ORGANISATION environment variable not set")
@@ -316,7 +316,7 @@ func SweepElasticsearchClusters(region string) error {
 // sweepOAuthConsumers removes all test OAuth consumers
 func SweepOAuthConsumers(region string) error {
 	ctx := context.Background()
-	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryServerErrors))
+	cc := client.New(client.WithAutoOauthConfig(), client.WithRetryPolicy(pkg.RetryPolicy))
 
 	if tests.ORGANISATION == "" {
 		return fmt.Errorf("ORGANISATION environment variable not set")
