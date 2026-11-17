@@ -241,7 +241,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 		p.gitAuth = &http.BasicAuth{Username: config.Token.ValueString(), Password: config.Secret.ValueString()}
 	}
 
-	clientOptions = append(clientOptions, client.WithRetryPolicy(pkg.RetryServerErrors))
+	clientOptions = append(clientOptions, client.WithRetryPolicy(pkg.RetryPolicy))
 
 	p.cc = client.New(clientOptions...)
 
