@@ -97,6 +97,7 @@ resource "clevercloud_go" "myapp" {
 - `binary` (String) Path of the binary to run after a `makefile` build (`CC_GO_BINARY`)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `build_tool` (String) How to build the application: `gomod`, `gobuild`, `goget` or `makefile` (`CC_GO_BUILD_TOOL`)
+- `cancel_on_push` (Boolean) Cancel the ongoing deployment when a new commit is pushed, and deploy that commit instead
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))

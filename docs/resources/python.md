@@ -96,6 +96,7 @@ resource "clevercloud_python" "myapp" {
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `backend` (String) WSGI/ASGI server running the application behind Nginx: `uwsgi` (default), `gunicorn`, `daphne` or `uvicorn` (`CC_PYTHON_BACKEND`)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `cancel_on_push` (Boolean) Cancel the ongoing deployment when a new commit is pushed, and deploy that commit instead
 - `celery_logfile` (String) Log file path for Celery (`CC_PYTHON_CELERY_LOGFILE`)
 - `celery_module` (String) Celery module to run alongside the application (`CC_PYTHON_CELERY_MODULE`)
 - `celery_use_beat` (Boolean) Run Celery Beat with the Celery workers (`CC_PYTHON_CELERY_USE_BEAT`)

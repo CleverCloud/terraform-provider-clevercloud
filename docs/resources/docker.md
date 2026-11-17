@@ -48,6 +48,7 @@ resource "clevercloud_docker" "docker_instance" {
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
 - `buildx` (Boolean) Build the image with Docker Buildx, which the platform does by default; set to false to use the classic builder (`CC_DOCKER_BUILDX`)
+- `cancel_on_push` (Boolean) Cancel the ongoing deployment when a new commit is pushed, and deploy that commit instead
 - `container_port` (Number) Set to custom HTTP port if your Docker container runs on custom port (`CC_DOCKER_EXPOSED_HTTP_PORT`)
 - `container_port_tcp` (Number) Set to custom TCP port if your Docker container runs on custom port (`CC_DOCKER_EXPOSED_TCP_PORT`).
 - `daemon_socket_mount` (Boolean) Set to true to access the host Docker socket from inside your container (`CC_MOUNT_DOCKER_SOCKET`)

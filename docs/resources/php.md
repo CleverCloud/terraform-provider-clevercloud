@@ -35,6 +35,7 @@ See [PHP with Apache product specification](https://www.clever.cloud/developers/
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `async_app_bucket` (Boolean) Mount the default application FS bucket asynchronously (`CC_PHP_ASYNC_APP_BUCKET`)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `cancel_on_push` (Boolean) Cancel the ongoing deployment when a new commit is pushed, and deploy that commit instead
 - `cgi_implementation` (String) Apache FastCGI module running PHP, `proxy_fcgi` (default) or `fastcgi` (`CC_CGI_IMPLEMENTATION`)
 - `composer_version` (String) Composer version installing the dependencies, `2` or `lts` (`CC_COMPOSER_VERSION`)
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.

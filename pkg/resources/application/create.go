@@ -216,7 +216,7 @@ func wannabeApplication(runtime *Runtime, instance *models.AvailableInstanceView
 		StickySessions: pkg.Ptr(runtime.StickySessions.ValueBool()),
 		ForceHTTPS:     pkg.Ptr(FromForceHTTPS(runtime.RedirectHTTPS.ValueBool())),
 		Zone:           pkg.Ptr(runtime.Region.ValueString()),
-		CancelOnPush:   pkg.Ptr(false),
+		CancelOnPush:   pkg.Ptr(runtime.CancelOnPush.ValueBool()),
 		SeparateBuild:  pkg.Ptr(false),
 		// Create and Update stop on the diagnostics of the lookup, so instance is set here.
 		InstanceType:    pkg.Ptr(instance.Type),

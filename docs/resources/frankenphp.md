@@ -39,6 +39,7 @@ FrankenPHP is a modern PHP application server, written in Go. It gives superpowe
 
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `cancel_on_push` (Boolean) Cancel the ongoing deployment when a new commit is pushed, and deploy that commit instead
 - `composer_flags` (String) Flags passed to `composer install`, replacing `-n --no-dev --no-progress --no-scripts` (`CC_PHP_COMPOSER_FLAGS`)
 - `composer_version` (String) Composer version installing the dependencies, `2` or `lts` (`CC_COMPOSER_VERSION`)
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.

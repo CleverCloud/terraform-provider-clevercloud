@@ -104,6 +104,7 @@ resource "clevercloud_linux" "myapp" {
 - `app_folder` (String) Folder in which the application is located (inside the git repository)
 - `build_command` (String) The command to run during the build phase (`CC_BUILD_COMMAND`).
 - `build_flavor` (String) Use dedicated instance with given flavor for build phase
+- `cancel_on_push` (Boolean) Cancel the ongoing deployment when a new commit is pushed, and deploy that commit instead
 - `dependencies` (Set of String) A list of application or add-ons required to run this application.
 Can be either app_xxx or postgres_yyy ID format
 - `deployment` (Block, Optional) Git deployment configuration, see the [deployment guide](https://registry.terraform.io/providers/CleverCloud/clevercloud/latest/docs#applications-deployment-and-the-commit-attribute) for the full behaviour (see [below for nested schema](#nestedblock--deployment))

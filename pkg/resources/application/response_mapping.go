@@ -32,6 +32,7 @@ func (r *Runtime) FromApp(ctx context.Context, res AppResponseProvider, diags *d
 	r.Region = pkg.FromStr(app.Zone)
 	r.StickySessions = pkg.FromBool(app.StickySessions)
 	r.RedirectHTTPS = pkg.FromBool(ToForceHTTPS(app.ForceHTTPS))
+	r.CancelOnPush = pkg.FromBool(app.CancelOnPush)
 	r.DeployURL = pkg.FromStr(pkg.Deref(app.DeployURL))
 
 	// The prior value goes in so the mapper can tell a null set from an empty one.

@@ -27,6 +27,7 @@ func apiApp() *models.ApplicationView {
 		DeployURL:      pkg.Ptr("https://push.clever-cloud.com/app_1.git"),
 		StickySessions: true,
 		ForceHTTPS:     "ENABLED",
+		CancelOnPush:   true,
 	}
 	app.Instance.MinInstances = 1
 	app.Instance.MaxInstances = 3
@@ -60,9 +61,10 @@ func TestRuntimeFromAPI_PopulatesEveryAttribute(t *testing.T) {
 	if runtime.MinInstanceCount.ValueInt64() != 1 || runtime.MaxInstanceCount.ValueInt64() != 3 {
 		t.Error("the instance counts must be mapped")
 	}
-	// Both are Computed with a false default: a null here is a diff on the next plan.
+	// All are Computed with a false default: a null here is a diff on the next plan.
 	for name, value := range map[string]types.Bool{
 		"sticky_sessions": runtime.StickySessions, "redirect_https": runtime.RedirectHTTPS,
+		"cancel_on_push": runtime.CancelOnPush,
 	} {
 		if value.IsNull() || value.IsUnknown() {
 			t.Errorf("%s is %v: a Computed attribute must never be null after a read", name, value)
