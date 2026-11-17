@@ -147,7 +147,10 @@ func (r *ResourceCellarBucket) Delete(ctx context.Context, req resource.DeleteRe
 	toRemove := make(chan minio.ObjectInfo, 500)
 	listDone := make(chan struct{})
 	var listErrs []error
-	objects := minioClient.ListObjectsIter(ctx, bucket.Name.ValueString(), minio.ListObjectsOptions{})
+	// Recursive: without it the listing stops at the first "/" of a key and only
+	// reports the prefix, so the objects stored under one are never removed and
+	// the bucket cannot be deleted.
+	objects := minioClient.ListObjectsIter(ctx, bucket.Name.ValueString(), minio.ListObjectsOptions{Recursive: true})
 	go func() {
 		defer close(listDone)
 		defer close(toRemove)
