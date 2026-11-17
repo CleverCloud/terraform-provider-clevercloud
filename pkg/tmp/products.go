@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/url"
+	"sync"
 
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/models"
@@ -13,18 +14,67 @@ import (
 // the SDK cannot generate them.
 
 // GetAddonsProviders lists the add-on providers of the catalogue and their plans.
+// The catalogue is downloaded once per client, see getCatalogue.
 func GetAddonsProviders(ctx context.Context, cc *client.Client) client.Response[[]models.AddonProviderInfoFullView] {
-	return client.Get[[]models.AddonProviderInfoFullView](ctx, cc, "/v2/products/addonproviders")
+	return getCatalogue[[]models.AddonProviderInfoFullView](ctx, cc, "/v2/products/addonproviders")
 }
 
 // GetProductInstances lists the application runtimes, those available to ownerID
-// when it is set.
+// when it is set. The catalogue is downloaded once per client and owner, see
+// getCatalogue.
 func GetProductInstances(ctx context.Context, cc *client.Client, ownerID *string) client.Response[[]AvailableInstanceView] {
 	path := "/v2/products/instances"
 	if ownerID != nil {
 		path += "?for=" + url.QueryEscape(*ownerID)
 	}
-	return client.Get[[]AvailableInstanceView](ctx, cc, path)
+	return getCatalogue[[]AvailableInstanceView](ctx, cc, path)
+}
+
+type catalogueKey struct {
+	cc   *client.Client
+	path string
+}
+
+// catalogueEntry holds the answer of one catalogue route. Its mutex is held
+// for the whole download: the callers arriving meanwhile wait for it, then
+// read the answer instead of downloading it again.
+type catalogueEntry struct {
+	mu       sync.Mutex
+	response any
+}
+
+var catalogues sync.Map // catalogueKey -> *catalogueEntry
+
+// getCatalogue downloads a product catalogue once per client and path, and
+// answers from memory afterwards.
+//
+// Every resource reads a catalogue before it creates anything, so an apply
+// creating twenty add-ons downloaded the same 200 KB document twenty times, ten
+// at once with the default parallelism. Besides the wasted time, the proxy in
+// front of the API ends an HTTP/2 connection carrying several such downloads at
+// once (GOAWAY, ENHANCE_YOUR_CALM), which fails every request in flight on it.
+//
+// A catalogue does not change during a plan or an apply, which is how long a
+// provider process lives, so the answer is never refreshed. A failed download
+// is not kept: the next caller tries again.
+//
+// The answer is shared between the callers, they must not modify it.
+func getCatalogue[T any](ctx context.Context, cc *client.Client, path string) client.Response[T] {
+	value, _ := catalogues.LoadOrStore(catalogueKey{cc: cc, path: path}, &catalogueEntry{})
+	entry := value.(*catalogueEntry)
+
+	entry.mu.Lock()
+	defer entry.mu.Unlock()
+
+	if cached, ok := entry.response.(client.Response[T]); ok {
+		return cached
+	}
+
+	res := client.Get[T](ctx, cc, path)
+	if !res.HasError() {
+		entry.response = res
+	}
+	return res
 }
 
 // ListGithubApplications lists the GitHub repositories the user's linked account can deploy.
