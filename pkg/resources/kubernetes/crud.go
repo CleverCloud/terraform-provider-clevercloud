@@ -16,7 +16,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk"
 	"go.clever-cloud.dev/sdk/models"
@@ -86,7 +85,7 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	createRes := tmp.CreateKubernetes(ctx, r.Client(), r.Organization(), createReq)
+	createRes := clusters(r.Client(), r.Organization()).Createkubernetescluster(ctx, &createReq)
 	if createRes.HasError() {
 		resp.Diagnostics.AddError("failed to create kubernetes cluster", createRes.Error().Error())
 		return
@@ -107,14 +106,14 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		PersistentStorage:    persistentStorage,
 		Region:               region,
 		Tags:                 tags,
-		Topology:             topologyFromAPI(ctx, k8sCluster.Topology, &resp.Diagnostics),
+		Topology:             topologyFromAPI(ctx, apiTopologyFrom(k8sCluster.TopologyConfig, &resp.Diagnostics), &resp.Diagnostics),
 		Version:              pkg.FromStr(k8sCluster.Version),
 	}
 	if !isSet(state.PersistentStorage) {
 		state.PersistentStorage = pkg.FromBool(persistentStorageFeatureEnabled(k8sCluster.Features))
 	}
 	// the cluster exists, a failed lookup only leaves the region to the next refresh
-	if named, err := regionFromAPI(ctx, r.Client(), r.Organization(), k8sCluster.ZoneID, region); err != nil {
+	if named, err := regionFromAPI(ctx, r.Client(), r.Organization(), pkg.Deref(k8sCluster.ZoneID), region); err != nil {
 		resp.Diagnostics.AddWarning("failed to name the zone of the kubernetes cluster", err.Error())
 	} else {
 		state.Region = named
@@ -157,7 +156,7 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		)
 	}
 
-	kubeConfigRes := tmp.GetKubeconfig(ctx, r.Client(), r.Organization(), k8sCluster.ID)
+	kubeConfigRes := clusters(r.Client(), r.Organization()).Kubernetesid(k8sCluster.ID).KubeconfigYAML().Getkubeconfig(ctx)
 	if kubeConfigRes.HasError() {
 		resp.Diagnostics.AddWarning("failed to get kubeconfig", kubeConfigRes.Error().Error())
 	} else {
@@ -187,7 +186,7 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	kubernetesRes := tmp.GetKubernetes(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	kubernetesRes := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).Getkubernetescluster(ctx)
 	if kubernetesRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -216,7 +215,7 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 	state.PersistentStorage = pkg.FromBool(persistentStorageFeatureEnabled(k8sInfo.Features))
 	// a failed lookup keeps a known region, but must not leave an import without
 	// one: the next plan would replace the cluster
-	region, err := regionFromAPI(ctx, r.Client(), r.Organization(), k8sInfo.ZoneID, previousRegion)
+	region, err := regionFromAPI(ctx, r.Client(), r.Organization(), pkg.Deref(k8sInfo.ZoneID), previousRegion)
 	if err != nil && !isSet(previousRegion) {
 		resp.Diagnostics.AddError("failed to name the zone of the kubernetes cluster", err.Error())
 		return
@@ -226,11 +225,11 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 	}
 	state.Region = region
 	state.Tags = resources.TagsFromAPI(ctx, k8sInfo.Tags, previousTags, &resp.Diagnostics)
-	state.Topology = topologyFromAPI(ctx, k8sInfo.Topology, &resp.Diagnostics)
-	state.Version = versionFromAPI(k8sInfo.Status, k8sInfo.Version, previousVersion, &resp.Diagnostics)
+	state.Topology = topologyFromAPI(ctx, apiTopologyFrom(k8sInfo.TopologyConfig, &resp.Diagnostics), &resp.Diagnostics)
+	state.Version = versionFromAPI(string(k8sInfo.Status), k8sInfo.Version, previousVersion, &resp.Diagnostics)
 
 	// Get kubeconfig
-	kubeConfigRes := tmp.GetKubeconfig(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	kubeConfigRes := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).KubeconfigYAML().Getkubeconfig(ctx)
 	if !kubeConfigRes.HasError() {
 		kubeconfig := kubeConfigRes.Payload()
 		state.KubeConfig = pkg.FromStr(string(*kubeconfig))
@@ -342,7 +341,7 @@ func (r *ResourceKubernetes) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	res := tmp.DeleteKubernetes(ctx, r.Client(), r.Organization(), identity.ID.ValueString())
+	res := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).Deletekubernetescluster(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -355,10 +354,15 @@ func (r *ResourceKubernetes) Delete(ctx context.Context, req resource.DeleteRequ
 	resp.State.RemoveResource(ctx)
 }
 
+// clusters is where the SDK reaches the clusters of an organisation
+func clusters(cc *client.Client, organisationID string) sdk.V4KubernetesOrganisationsOwneridClustersBuilder {
+	return pkg.SDK(cc).V4().Kubernetes().Organisations().Ownerid(organisationID).Clusters()
+}
+
 // autoprovisioningFeatureEnabled reports whether the API says node autoprovisioning is installed.
 // The API omits the features object on clusters that never used it, which means
 // the same thing as disabled
-func autoprovisioningFeatureEnabled(features *tmp.KubernetesFeatures) bool {
+func autoprovisioningFeatureEnabled(features *models.ClusterFeatures) bool {
 	return features != nil && features.NodeAutoprovisioning != nil && *features.NodeAutoprovisioning
 }
 
@@ -387,7 +391,7 @@ func versionFromAPI(status, version string, previous types.String, diags *diag.D
 
 // persistentStorageFeatureEnabled reports whether the API says the CSI driver is
 // installed, an absent flag means disabled
-func persistentStorageFeatureEnabled(features *tmp.KubernetesFeatures) bool {
+func persistentStorageFeatureEnabled(features *models.ClusterFeatures) bool {
 	return features != nil && features.Csi != nil && *features.Csi
 }
 
@@ -400,7 +404,7 @@ func regionFromAPI(ctx context.Context, cc *client.Client, organisationID, zoneI
 	}
 	ctx, cancel := context.WithTimeout(ctx, zoneLookupTimeout)
 	defer cancel()
-	res := tmp.ListKubernetesZones(ctx, cc, organisationID)
+	res := pkg.SDK(cc).V4().Kubernetes().Organisations().Ownerid(organisationID).Zones().Listkubernetesownerzones(ctx)
 	if res.HasError() {
 		return previous, res.Error()
 	}
@@ -440,20 +444,27 @@ func createPayload(
 	topology types.Object,
 	version types.String,
 	diags *diag.Diagnostics,
-) tmp.KubernetesCreateRequest {
-	payload := tmp.KubernetesCreateRequest{
-		Name:     name,
-		Topology: topologyToAPI(ctx, topology, diags),
-		Version:  version.ValueString(),
-		Zone:     region.ValueString(),
+) models.ClusterCreationPayload {
+	payload := models.ClusterCreationPayload{
+		Name:           name,
+		TopologyConfig: topologyToAPI(ctx, topology, diags).toSDK(diags),
+	}
+	if v := version.ValueString(); v != "" {
+		payload.Version = &v
+	}
+	if zone := region.ValueString(); zone != "" {
+		payload.Zone = &zone
 	}
 
+	// an empty slice would be sent as [], leave it out as it always was
 	if isSet(tags) {
-		payload.Tags = pkg.SetToStringSlice(ctx, tags, diags)
+		if list := pkg.SetToStringSlice(ctx, tags, diags); len(list) > 0 {
+			payload.Tags = list
+		}
 	}
 
 	if nodeAutoprovisioning || persistentStorage.ValueBool() {
-		payload.Features = &tmp.KubernetesFeatures{}
+		payload.Features = &models.ClusterFeatures{}
 		if nodeAutoprovisioning {
 			payload.Features.NodeAutoprovisioning = &nodeAutoprovisioning
 		}
@@ -469,8 +480,8 @@ func createPayload(
 // metadataPatch builds the request applying a new name and new tags, nil when
 // neither changed. Tags without a planned value are not managed by Terraform and
 // are left alone
-func metadataPatch(ctx context.Context, name, stateName types.String, tags, stateTags types.Set, diags *diag.Diagnostics) *tmp.KubernetesPatchRequest {
-	payload := tmp.KubernetesPatchRequest{}
+func metadataPatch(ctx context.Context, name, stateName types.String, tags, stateTags types.Set, diags *diag.Diagnostics) *models.ClusterPatchPayload {
+	payload := models.ClusterPatchPayload{}
 	changed := false
 
 	if !name.Equal(stateName) {
@@ -482,9 +493,9 @@ func metadataPatch(ctx context.Context, name, stateName types.String, tags, stat
 	if isSet(tags) && !tags.Equal(stateTags) {
 		newTags := pkg.SetToStringSlice(ctx, tags, diags)
 		if newTags == nil {
-			newTags = []string{} // null would not remove them
+			newTags = []string{} // an empty list removes them, a nil one is left out
 		}
-		payload.Tags = &newTags
+		payload.Tags = newTags
 		changed = true
 	}
 
@@ -693,8 +704,8 @@ func patchNodeAutoprovisioning(
 		summary = "failed to enable node autoprovisioning"
 	}
 
-	return patchCluster(ctx, cc, organisationID, clusterID, tmp.KubernetesPatchRequest{
-		Features: &tmp.KubernetesFeatures{NodeAutoprovisioning: &enabled},
+	return patchCluster(ctx, cc, organisationID, clusterID, models.ClusterPatchPayload{
+		Features: &models.ClusterFeaturesPatch{NodeAutoprovisioning: &enabled},
 	}, summary, func(statusCode int) (bool, string) {
 		return classifyPatchError(statusCode, enabled)
 	}, pollInterval, timeout, diags)
@@ -715,8 +726,8 @@ func patchPersistentStorage(
 		summary = "failed to enable persistent storage"
 	}
 
-	return patchCluster(ctx, cc, organisationID, clusterID, tmp.KubernetesPatchRequest{
-		Features: &tmp.KubernetesFeatures{Csi: &enabled},
+	return patchCluster(ctx, cc, organisationID, clusterID, models.ClusterPatchPayload{
+		Features: &models.ClusterFeaturesPatch{Csi: &enabled},
 	}, summary, classifyClusterPatchError, pollInterval, timeout, diags)
 }
 
@@ -726,7 +737,7 @@ func patchCluster(
 	ctx context.Context,
 	cc *client.Client,
 	organisationID, clusterID string,
-	payload tmp.KubernetesPatchRequest,
+	payload models.ClusterPatchPayload,
 	summary string,
 	classify func(statusCode int) (retryable bool, detail string),
 	pollInterval, timeout time.Duration,
@@ -745,7 +756,7 @@ func patchCluster(
 
 	for {
 		reqCtx, cancelRequest := context.WithTimeout(loopCtx, nodeAutoprovisioningRequestTimeout)
-		res := tmp.UpdateKubernetes(reqCtx, cc, organisationID, clusterID, payload)
+		res := clusters(cc, organisationID).Kubernetesid(clusterID).Updatekubernetescluster(reqCtx, &payload)
 		cancelRequest()
 
 		if !res.HasError() {
@@ -821,7 +832,7 @@ func waitForNodeAutoprovisioning(
 		summary:   summary,
 		operation: "node autoprovisioning was being installed or removed",
 		expired:   fmt.Sprintf("the API never reported the requested value in %s, Karpenter may still be installing or being removed, run terraform plan once the cluster is ACTIVE to reconcile it", timeout),
-		reached: func(cluster *tmp.ClusterView) bool {
+		reached: func(cluster *models.KubernetesCluster) bool {
 			return autoprovisioningFeatureEnabled(cluster.Features) == expected
 		},
 	}, pollInterval, timeout, diags)
@@ -840,7 +851,7 @@ func waitForClusterCreation(
 		summary:   "failed to provision kubernetes cluster",
 		operation: "it was being created",
 		expired:   fmt.Sprintf("the cluster did not become ACTIVE in %s, it may still be deploying", timeout),
-		reached:   func(cluster *tmp.ClusterView) bool { return cluster.Status == "ACTIVE" },
+		reached:   func(cluster *models.KubernetesCluster) bool { return cluster.Status == "ACTIVE" },
 	}, pollInterval, timeout, diags)
 }
 
@@ -864,7 +875,7 @@ func waitForPersistentStorage(
 		summary:   summary,
 		operation: "persistent storage was being installed or removed",
 		expired:   fmt.Sprintf("the API never reported the requested value in %s, run terraform plan once the cluster is ACTIVE to reconcile it", timeout),
-		reached: func(cluster *tmp.ClusterView) bool {
+		reached: func(cluster *models.KubernetesCluster) bool {
 			return cluster.Status == "ACTIVE" && persistentStorageFeatureEnabled(cluster.Features) == expected
 		},
 	}, pollInterval, timeout, diags)
@@ -888,7 +899,7 @@ func changeClusterVersion(
 		summary:   summary,
 		operation: "waiting to change its version",
 		expired:   fmt.Sprintf("the cluster did not become ACTIVE in %s, the version change was not started", readyTimeout),
-		reached: func(cluster *tmp.ClusterView) bool {
+		reached: func(cluster *models.KubernetesCluster) bool {
 			current = cluster.Version
 			return cluster.Status == "ACTIVE"
 		},
@@ -913,11 +924,11 @@ func changeClusterVersion(
 		summary:   summary,
 		operation: "its version was being changed",
 		expired:   fmt.Sprintf("the version change did not finish in %s, it may still be running, run terraform plan once the cluster is ACTIVE to reconcile it", upgradeTimeout),
-		reached:   func(cluster *tmp.ClusterView) bool { return cluster.Status == "ACTIVE" },
+		reached:   func(cluster *models.KubernetesCluster) bool { return cluster.Status == "ACTIVE" },
 		// the API shows UPDATING while the change runs. When its first checks
 		// refuse the change the cluster does not fail, it goes back to ACTIVE on the
 		// previous version, which no amount of waiting would ever change
-		rejected: func(cluster *tmp.ClusterView) string {
+		rejected: func(cluster *models.KubernetesCluster) string {
 			if cluster.Status == "ACTIVE" && cluster.Version != version {
 				return fmt.Sprintf("the API rejected the version change, the cluster stays on %s", cluster.Version)
 			}
@@ -928,13 +939,13 @@ func changeClusterVersion(
 
 // lastSeenDetail tells what a cluster was doing when a wait gave up on it, which
 // is the only clue left once the wait is over
-func lastSeenDetail(cluster *tmp.ClusterView) string {
+func lastSeenDetail(cluster *models.KubernetesCluster) string {
 	detail := fmt.Sprintf("the cluster was last seen %s", cluster.Status)
 
 	if waiting := cluster.Waiting; waiting != nil {
-		detail += fmt.Sprintf(", waiting for %s since %s after %d attempts", waiting.Dependency, waiting.Since, waiting.Attempts)
-		if waiting.Step != "" {
-			detail += fmt.Sprintf(" on step %s", waiting.Step)
+		detail += fmt.Sprintf(", waiting for %s since %s after %d attempts", waiting.Dependency, waiting.Since.Format(time.RFC3339), waiting.Attempts)
+		if step := pkg.Deref(waiting.Step); step != "" {
+			detail += fmt.Sprintf(" on step %s", step)
 		}
 	}
 
@@ -943,11 +954,11 @@ func lastSeenDetail(cluster *tmp.ClusterView) string {
 
 // clusterWait describes what waitForCluster is waiting for
 type clusterWait struct {
-	summary   string                                // summary of the diagnostics
-	operation string                                // what was going on, should the cluster fail
-	expired   string                                // explanation of an expired timeout
-	reached   func(cluster *tmp.ClusterView) bool   // whether the wait is over
-	rejected  func(cluster *tmp.ClusterView) string // why it can never be, optional
+	summary   string                                         // summary of the diagnostics
+	operation string                                         // what was going on, should the cluster fail
+	expired   string                                         // explanation of an expired timeout
+	reached   func(cluster *models.KubernetesCluster) bool   // whether the wait is over
+	rejected  func(cluster *models.KubernetesCluster) string // why it can never be, optional
 }
 
 // waitForCluster polls the cluster until wait.reached accepts it, and reports
@@ -973,7 +984,7 @@ func waitForCluster(
 	for {
 		// probe before waiting, a ticker never fires at t=0
 		reqCtx, cancelRequest := context.WithTimeout(loopCtx, nodeAutoprovisioningRequestTimeout)
-		res := tmp.GetKubernetesCluster(reqCtx, cc, organisationID, clusterID)
+		res := clusters(cc, organisationID).Kubernetesid(clusterID).Getkubernetescluster(reqCtx)
 		cancelRequest()
 
 		switch {
@@ -990,11 +1001,11 @@ func waitForCluster(
 				return false
 			}
 			tflog.Warn(ctx, "failed to poll the cluster", map[string]any{"error": lastErr})
-		case clusterTerminalStatus(res.Payload().Status):
+		case clusterTerminalStatus(string(res.Payload().Status)):
 			// the operation can fail the whole cluster, and the cluster can also
 			// be deleted from under us: neither ever converges, and the two need
 			// different advice
-			diags.AddError(summary, terminalStatusDetail(res.Payload().Status, wait.operation))
+			diags.AddError(summary, terminalStatusDetail(string(res.Payload().Status), wait.operation))
 			return false
 		case wait.rejected != nil && wait.rejected(res.Payload()) != "":
 			diags.AddError(summary, wait.rejected(res.Payload()))

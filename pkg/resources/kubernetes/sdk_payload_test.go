@@ -1,55 +1,60 @@
-package tmp
+package kubernetes
 
 import (
 	"encoding/json"
 	"testing"
+
+	"go.clever-cloud.dev/sdk/models"
 )
 
-func TestKubernetesPatchRequest_Marshal(t *testing.T) {
+// The wire format of these payloads is what the API reads: they come from the
+// SDK, so an SDK upgrade that changes a tag fails here rather than on a cluster.
+
+func TestClusterPatchPayload_Marshal(t *testing.T) {
 	enabled, disabled := true, false
 	name, noTags := "new", []string{}
 
 	tests := []struct {
 		name     string
-		req      KubernetesPatchRequest
+		req      models.ClusterPatchPayload
 		expected string
 	}{
 		{
 			name:     "no feature set",
-			req:      KubernetesPatchRequest{},
+			req:      models.ClusterPatchPayload{},
 			expected: `{}`,
 		},
 		{
 			name:     "empty features object",
-			req:      KubernetesPatchRequest{Features: &KubernetesFeatures{}},
+			req:      models.ClusterPatchPayload{Features: &models.ClusterFeaturesPatch{}},
 			expected: `{"features":{}}`,
 		},
 		{
 			name:     "enable node autoprovisioning",
-			req:      KubernetesPatchRequest{Features: &KubernetesFeatures{NodeAutoprovisioning: &enabled}},
+			req:      models.ClusterPatchPayload{Features: &models.ClusterFeaturesPatch{NodeAutoprovisioning: &enabled}},
 			expected: `{"features":{"nodeAutoprovisioning":true}}`,
 		},
 		{
 			// a non pointer bool would be dropped by omitempty here and would
 			// silently turn every disable request into a no-op
 			name:     "disable node autoprovisioning",
-			req:      KubernetesPatchRequest{Features: &KubernetesFeatures{NodeAutoprovisioning: &disabled}},
+			req:      models.ClusterPatchPayload{Features: &models.ClusterFeaturesPatch{NodeAutoprovisioning: &disabled}},
 			expected: `{"features":{"nodeAutoprovisioning":false}}`,
 		},
 		{
 			name:     "disable persistent storage",
-			req:      KubernetesPatchRequest{Features: &KubernetesFeatures{Csi: &disabled}},
+			req:      models.ClusterPatchPayload{Features: &models.ClusterFeaturesPatch{Csi: &disabled}},
 			expected: `{"features":{"csi":false}}`,
 		},
 		{
 			name:     "rename",
-			req:      KubernetesPatchRequest{Name: &name},
+			req:      models.ClusterPatchPayload{Name: &name},
 			expected: `{"name":"new"}`,
 		},
 		{
-			// without the pointer omitempty drops it, and the tags stay
+			// omitempty would drop it, and the tags would stay
 			name:     "remove every tag",
-			req:      KubernetesPatchRequest{Tags: &noTags},
+			req:      models.ClusterPatchPayload{Tags: noTags},
 			expected: `{"tags":[]}`,
 		},
 	}
@@ -67,45 +72,7 @@ func TestKubernetesPatchRequest_Marshal(t *testing.T) {
 	}
 }
 
-func TestKubernetesCreateRequest_Marshal(t *testing.T) {
-	enabled := true
-
-	tests := []struct {
-		name     string
-		req      KubernetesCreateRequest
-		expected string
-	}{
-		{
-			// the payload production receives today, adding the features field
-			// must not change it
-			name:     "without features",
-			req:      KubernetesCreateRequest{Name: "tf-test-kubernetes"},
-			expected: `{"name":"tf-test-kubernetes"}`,
-		},
-		{
-			name: "with node autoprovisioning",
-			req: KubernetesCreateRequest{
-				Name:     "tf-test-kubernetes",
-				Features: &KubernetesFeatures{NodeAutoprovisioning: &enabled},
-			},
-			expected: `{"features":{"nodeAutoprovisioning":true},"name":"tf-test-kubernetes"}`,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			payload, err := json.Marshal(tt.req)
-			if err != nil {
-				t.Fatalf("Marshal() error = %v", err)
-			}
-			if string(payload) != tt.expected {
-				t.Errorf("Marshal() = %s, want %s", payload, tt.expected)
-			}
-		})
-	}
-}
-
-func TestClusterView_UnmarshalFeatures(t *testing.T) {
+func TestKubernetesCluster_UnmarshalFeatures(t *testing.T) {
 	tests := []struct {
 		name        string
 		payload     string
@@ -140,7 +107,7 @@ func TestClusterView_UnmarshalFeatures(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cluster := ClusterView{}
+			cluster := models.KubernetesCluster{}
 			if err := json.Unmarshal([]byte(tt.payload), &cluster); err != nil {
 				t.Fatalf("Unmarshal() error = %v", err)
 			}
