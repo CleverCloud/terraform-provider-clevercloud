@@ -13,8 +13,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 type clusterReadTestProvider struct {
@@ -94,7 +94,7 @@ func zonesHandler(w http.ResponseWriter, fail bool) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode([]tmp.KubernetesZone{{ID: "zone-par", Name: "par"}})
+	_ = json.NewEncoder(w).Encode([]models.KubernetesOwnerZone{{ID: "zone-par", Name: "par"}})
 }
 
 // TestReadNamesTheRegion pins that Read names the zone the API reports, an import
@@ -177,7 +177,7 @@ func TestAutoprovisioningFeatureEnabled(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		features *tmp.KubernetesFeatures
+		features *models.ClusterFeatures
 		expected bool
 	}{
 		{
@@ -187,17 +187,17 @@ func TestAutoprovisioningFeatureEnabled(t *testing.T) {
 		},
 		{
 			name:     "features object without the field",
-			features: &tmp.KubernetesFeatures{},
+			features: &models.ClusterFeatures{},
 			expected: false,
 		},
 		{
 			name:     "node autoprovisioning disabled",
-			features: &tmp.KubernetesFeatures{NodeAutoprovisioning: &disabled},
+			features: &models.ClusterFeatures{NodeAutoprovisioning: &disabled},
 			expected: false,
 		},
 		{
 			name:     "node autoprovisioning enabled",
-			features: &tmp.KubernetesFeatures{NodeAutoprovisioning: &enabled},
+			features: &models.ClusterFeatures{NodeAutoprovisioning: &enabled},
 			expected: true,
 		},
 	}
@@ -218,13 +218,13 @@ func TestReadNodeAutoprovisioning(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		features *tmp.KubernetesFeatures
+		features *models.ClusterFeatures
 		expected bool
 	}{
 		{name: "no features object", features: nil, expected: false},
-		{name: "features object without the field", features: &tmp.KubernetesFeatures{}, expected: false},
-		{name: "node autoprovisioning disabled", features: &tmp.KubernetesFeatures{NodeAutoprovisioning: &disabled}, expected: false},
-		{name: "node autoprovisioning enabled", features: &tmp.KubernetesFeatures{NodeAutoprovisioning: &enabled}, expected: true},
+		{name: "features object without the field", features: &models.ClusterFeatures{}, expected: false},
+		{name: "node autoprovisioning disabled", features: &models.ClusterFeatures{NodeAutoprovisioning: &disabled}, expected: false},
+		{name: "node autoprovisioning enabled", features: &models.ClusterFeatures{NodeAutoprovisioning: &enabled}, expected: true},
 	}
 
 	for _, tt := range tests {

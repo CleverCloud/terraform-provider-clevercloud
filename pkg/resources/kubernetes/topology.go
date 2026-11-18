@@ -11,7 +11,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 const (
@@ -98,7 +97,7 @@ func isSet(v attr.Value) bool {
 
 // topologyToAPI maps the topology attribute to the API payload, nil when the
 // attribute has no value and the API picks the topology
-func topologyToAPI(ctx context.Context, value types.Object, diags *diag.Diagnostics) *tmp.KubernetesTopology {
+func topologyToAPI(ctx context.Context, value types.Object, diags *diag.Diagnostics) *apiTopology {
 	if !isSet(value) {
 		return nil
 	}
@@ -109,7 +108,7 @@ func topologyToAPI(ctx context.Context, value types.Object, diags *diag.Diagnost
 		return nil
 	}
 
-	payload := &tmp.KubernetesTopology{
+	payload := &apiTopology{
 		Topology:          topology.Type.ValueString(),
 		Flavor:            topology.Flavor.ValueString(),
 		ReplicationFactor: topology.ReplicationFactor.ValueInt64(),
@@ -124,15 +123,15 @@ func topologyToAPI(ctx context.Context, value types.Object, diags *diag.Diagnost
 		return nil
 	}
 
-	toAPI := func(value types.Object) tmp.KubernetesTopologyComponent {
+	toAPI := func(value types.Object) apiTopologyComponent {
 		component := namedComponent{value: value}.decode(ctx, diags)
 
-		return tmp.KubernetesTopologyComponent{
+		return apiTopologyComponent{
 			Flavor:            component.Flavor.ValueString(),
 			ReplicationFactor: component.ReplicationFactor.ValueInt64(),
 		}
 	}
-	payload.Components = &tmp.KubernetesTopologyComponents{
+	payload.Components = &apiTopologyComponents{
 		Apiserver:              toAPI(components.Apiserver),
 		CloudControllerManager: toAPI(components.CloudControllerManager),
 		ControllerManager:      toAPI(components.ControllerManager),
@@ -146,7 +145,7 @@ func topologyToAPI(ctx context.Context, value types.Object, diags *diag.Diagnost
 // topologyFromAPI maps the topology returned by the API to the state value. The
 // fields of a topology are exclusive: a value for the ones its type does not
 // take would differ from the configuration and replace the cluster
-func topologyFromAPI(ctx context.Context, payload *tmp.KubernetesTopology, diags *diag.Diagnostics) types.Object {
+func topologyFromAPI(ctx context.Context, payload *apiTopology, diags *diag.Diagnostics) types.Object {
 	if payload == nil {
 		return types.ObjectNull(topologyAttrTypes)
 	}
@@ -162,7 +161,7 @@ func topologyFromAPI(ctx context.Context, payload *tmp.KubernetesTopology, diags
 		topology.Flavor = pkg.FromStr(payload.Flavor)
 		topology.ReplicationFactor = pkg.FromI(payload.ReplicationFactor)
 	} else {
-		fromAPI := func(c tmp.KubernetesTopologyComponent) types.Object {
+		fromAPI := func(c apiTopologyComponent) types.Object {
 			component, d := types.ObjectValueFrom(ctx, topologyComponentAttrTypes, TopologyComponent{
 				Flavor:            pkg.FromStr(c.Flavor),
 				ReplicationFactor: pkg.FromI(c.ReplicationFactor),

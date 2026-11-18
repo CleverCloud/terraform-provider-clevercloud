@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // runCreate runs Create against a fake API whose cluster answers with get once
@@ -153,7 +153,7 @@ func TestCreateWaitsForAnActiveCluster(t *testing.T) {
 func TestWaitForClusterCreationIsBounded(t *testing.T) {
 	cc := testClient(t, func(w http.ResponseWriter, _ *http.Request) {
 		view := clusterPayload("DEPLOYING", "1.36")
-		view.Waiting = &tmp.KubernetesWaiting{Attempts: 3, Dependency: "OTEL_API", Since: "2026-01-01T00:00:00Z", Step: "OTEL_CONFIG"}
+		view.Waiting = &clusterWaiting{Attempts: 3, Dependency: "OTEL_API", Since: "2026-01-01T00:00:00Z", Step: "OTEL_CONFIG"}
 		w.Header().Set("Content-Type", "application/json")
 		_ = json.NewEncoder(w).Encode(view)
 	})
@@ -173,7 +173,7 @@ func TestWaitForClusterCreationIsBounded(t *testing.T) {
 }
 
 func TestLastSeenDetail(t *testing.T) {
-	got := lastSeenDetail(&tmp.ClusterView{Status: "RECONCILING"})
+	got := lastSeenDetail(&models.KubernetesCluster{Status: "RECONCILING"})
 	if got != "the cluster was last seen RECONCILING" {
 		t.Errorf("lastSeenDetail() = %q", got)
 	}

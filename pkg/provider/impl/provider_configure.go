@@ -245,7 +245,7 @@ func (p *Provider) Configure(ctx context.Context, req provider.ConfigureRequest,
 
 	p.cc = client.New(clientOptions...)
 
-	selfRes := client.Get[map[string]any](ctx, p.cc, "/v2/self")
+	selfRes := pkg.SDK(p.cc).V2().Self().Getuser1(ctx)
 	if selfRes.HasError() {
 		endpoint := config.Endpoint.ValueString()
 		tflog.Debug(ctx, fmt.Sprintf("CleverCloud client endpoint=%q", endpoint))

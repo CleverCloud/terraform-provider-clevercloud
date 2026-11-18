@@ -14,7 +14,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/models"
 )
 
@@ -125,7 +124,7 @@ func (r *ResourceKubernetes) checkRegion(ctx context.Context, region string, dia
 	ctx, cancel := context.WithTimeout(ctx, zoneLookupTimeout)
 	defer cancel()
 
-	zones := tmp.ListKubernetesZones(ctx, r.Client(), r.Organization())
+	zones := pkg.SDK(r.Client()).V4().Kubernetes().Organisations().Ownerid(r.Organization()).Zones().Listkubernetesownerzones(ctx)
 	if zones.HasError() || zones.Payload() == nil {
 		// not a reason to block the plan, the API still validates on apply
 		tflog.Warn(ctx, "failed to list the kubernetes zones, skipping the validation of the region", map[string]any{"error": fmt.Sprint(zones.Error())})
@@ -138,7 +137,7 @@ func (r *ResourceKubernetes) checkRegion(ctx context.Context, region string, dia
 // validateRegion refuses a region that names none of the zones, or several of
 // them: zone names are not unique, and the API refuses a name it cannot resolve
 // to a single zone
-func validateRegion(region string, zones []tmp.KubernetesZone, diags *diag.Diagnostics) {
+func validateRegion(region string, zones []models.KubernetesOwnerZone, diags *diag.Diagnostics) {
 	matches := 0
 	names := make([]string, 0, len(zones))
 	for _, zone := range zones {

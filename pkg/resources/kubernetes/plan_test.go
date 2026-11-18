@@ -18,7 +18,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/models"
 )
 
@@ -26,7 +25,7 @@ func simpleTopology(t *testing.T, kind, flavor string, factor int64) types.Objec
 	t.Helper()
 
 	var diags diag.Diagnostics
-	value := topologyFromAPI(context.Background(), &tmp.KubernetesTopology{Topology: kind, Flavor: flavor, ReplicationFactor: factor}, &diags)
+	value := topologyFromAPI(context.Background(), &apiTopology{Topology: kind, Flavor: flavor, ReplicationFactor: factor}, &diags)
 	if diags.HasError() {
 		t.Fatalf("failed to build the topology: %v", diags)
 	}
@@ -34,12 +33,12 @@ func simpleTopology(t *testing.T, kind, flavor string, factor int64) types.Objec
 	return value
 }
 
-func distributedPayload(flavor string, factor int64) *tmp.KubernetesTopology {
-	component := tmp.KubernetesTopologyComponent{Flavor: flavor, ReplicationFactor: factor}
+func distributedPayload(flavor string, factor int64) *apiTopology {
+	component := apiTopologyComponent{Flavor: flavor, ReplicationFactor: factor}
 
-	return &tmp.KubernetesTopology{
+	return &apiTopology{
 		Topology: topologyDistributed,
-		Components: &tmp.KubernetesTopologyComponents{
+		Components: &apiTopologyComponents{
 			Apiserver:              component,
 			CloudControllerManager: component,
 			ControllerManager:      component,
@@ -52,7 +51,7 @@ func distributedPayload(flavor string, factor int64) *tmp.KubernetesTopology {
 func TestTopologyRoundTrip(t *testing.T) {
 	ctx := context.Background()
 
-	for name, payload := range map[string]*tmp.KubernetesTopology{
+	for name, payload := range map[string]*apiTopology{
 		"simple":      {Topology: topologyAllInOne, Flavor: "S", ReplicationFactor: 3},
 		"distributed": distributedPayload("XS", 2),
 	} {
@@ -88,7 +87,7 @@ func TestTopologyFromAPIKeepsExclusiveFieldsNull(t *testing.T) {
 	var diags diag.Diagnostics
 	var simple, distributed Topology
 
-	diags.Append(topologyFromAPI(ctx, &tmp.KubernetesTopology{Topology: topologyDedicatedCompute, Flavor: "XS", ReplicationFactor: 1}, &diags).As(ctx, &simple, asOptions)...)
+	diags.Append(topologyFromAPI(ctx, &apiTopology{Topology: topologyDedicatedCompute, Flavor: "XS", ReplicationFactor: 1}, &diags).As(ctx, &simple, asOptions)...)
 	diags.Append(topologyFromAPI(ctx, distributedPayload("XS", 1), &diags).As(ctx, &distributed, asOptions)...)
 	if diags.HasError() {
 		t.Fatalf("unexpected diagnostics: %v", diags)
@@ -154,7 +153,7 @@ func withoutScheduler(t *testing.T, components types.Object) types.Object {
 	return value
 }
 
-func topologyAttr(t *testing.T, payload *tmp.KubernetesTopology, diags *diag.Diagnostics) types.Object {
+func topologyAttr(t *testing.T, payload *apiTopology, diags *diag.Diagnostics) types.Object {
 	t.Helper()
 
 	var topology Topology
@@ -267,7 +266,7 @@ func TestRegionCheck(t *testing.T) {
 }
 
 func TestValidateRegion(t *testing.T) {
-	zones := []tmp.KubernetesZone{
+	zones := []models.KubernetesOwnerZone{
 		{ID: "zone-par", Name: "par"},
 		{ID: "zone-twin-1", Name: "twin"},
 		{ID: "zone-deep", Name: "deep"},
@@ -277,7 +276,7 @@ func TestValidateRegion(t *testing.T) {
 	tests := []struct {
 		name       string
 		region     string
-		zones      []tmp.KubernetesZone
+		zones      []models.KubernetesOwnerZone
 		wantError  string
 		wantDetail string
 	}{
@@ -339,13 +338,13 @@ func TestValidateTopology(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		payload *tmp.KubernetesTopology
+		payload *apiTopology
 		errors  int
 	}{
-		{name: "valid", payload: &tmp.KubernetesTopology{Topology: topologyAllInOne, Flavor: "S", ReplicationFactor: 1}},
-		{name: "flavor of another topology", payload: &tmp.KubernetesTopology{Topology: topologyAllInOne, Flavor: "2XS", ReplicationFactor: 1}, errors: 1},
-		{name: "factor out of bounds", payload: &tmp.KubernetesTopology{Topology: topologyAllInOne, Flavor: "S", ReplicationFactor: 6}, errors: 1},
-		{name: "topology the API does not describe", payload: &tmp.KubernetesTopology{Topology: topologyDedicatedCompute, Flavor: "XS", ReplicationFactor: 1}},
+		{name: "valid", payload: &apiTopology{Topology: topologyAllInOne, Flavor: "S", ReplicationFactor: 1}},
+		{name: "flavor of another topology", payload: &apiTopology{Topology: topologyAllInOne, Flavor: "2XS", ReplicationFactor: 1}, errors: 1},
+		{name: "factor out of bounds", payload: &apiTopology{Topology: topologyAllInOne, Flavor: "S", ReplicationFactor: 6}, errors: 1},
+		{name: "topology the API does not describe", payload: &apiTopology{Topology: topologyDedicatedCompute, Flavor: "XS", ReplicationFactor: 1}},
 		{name: "valid components", payload: distributedPayload("2XS", 1)},
 		{name: "every component is checked", payload: distributedPayload("S", 9), errors: 10},
 	}
@@ -608,7 +607,7 @@ func TestChangeClusterVersionWaitsForAStableCluster(t *testing.T) {
 
 			upgrades++
 			status, version = "UPDATING", "1.36"
-			_ = json.NewEncoder(w).Encode(tmp.ClusterView{ID: "cluster", Status: status, Version: version, CreationDate: "2026-01-01T00:00:00Z"})
+			_ = json.NewEncoder(w).Encode(clusterView{ID: "cluster", Status: status, Version: version, CreationDate: "2026-01-01T00:00:00Z"})
 			return
 		}
 
@@ -619,7 +618,7 @@ func TestChangeClusterVersionWaitsForAStableCluster(t *testing.T) {
 		if polls > 5 {
 			status = "ACTIVE"
 		}
-		_ = json.NewEncoder(w).Encode(tmp.ClusterView{ID: "cluster", Status: status, Version: version})
+		_ = json.NewEncoder(w).Encode(clusterView{ID: "cluster", Status: status, Version: version})
 	})
 
 	var diags diag.Diagnostics
@@ -642,7 +641,7 @@ func TestChangeClusterVersionReportsARejection(t *testing.T) {
 			_, _ = w.Write([]byte(`{"code":"clever.kubernetes.invalid-version","message":"Version '1.99' is not available"}`))
 			return
 		}
-		_ = json.NewEncoder(w).Encode(tmp.ClusterView{ID: "cluster", Status: "ACTIVE"})
+		_ = json.NewEncoder(w).Encode(clusterView{ID: "cluster", Status: "ACTIVE"})
 	})
 
 	var diags diag.Diagnostics
@@ -661,7 +660,7 @@ func TestChangeClusterVersionStopsOnAFailedCluster(t *testing.T) {
 		if r.Method == http.MethodPost {
 			status, version = "FAILED", "1.36"
 		}
-		_ = json.NewEncoder(w).Encode(tmp.ClusterView{ID: "cluster", Status: status, Version: version, CreationDate: "2026-01-01T00:00:00Z"})
+		_ = json.NewEncoder(w).Encode(clusterView{ID: "cluster", Status: status, Version: version, CreationDate: "2026-01-01T00:00:00Z"})
 	})
 
 	var diags diag.Diagnostics
@@ -686,7 +685,7 @@ func TestWaitForPersistentStorageWaitsForActive(t *testing.T) {
 			status = "ACTIVE"
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(tmp.ClusterView{ID: "cluster", Status: status, Features: &tmp.KubernetesFeatures{Csi: &disabled}})
+		_ = json.NewEncoder(w).Encode(clusterView{ID: "cluster", Status: status, Features: &models.ClusterFeatures{Csi: &disabled}})
 	})
 
 	var diags diag.Diagnostics
@@ -707,7 +706,7 @@ func TestPatchPersistentStorageSendsOnlyItsFlag(t *testing.T) {
 		}
 		body = string(payload)
 		w.Header().Set("Content-Type", "application/json")
-		_ = json.NewEncoder(w).Encode(tmp.ClusterView{ID: "cluster", Status: "ACTIVE"})
+		_ = json.NewEncoder(w).Encode(clusterView{ID: "cluster", Status: "ACTIVE"})
 	})
 
 	var diags diag.Diagnostics
@@ -898,8 +897,8 @@ func TestVersionFromAPI(t *testing.T) {
 	}
 }
 
-func clusterPayload(status, version string) tmp.ClusterView {
-	return tmp.ClusterView{ID: "cluster", Status: status, Version: version, CreationDate: "2026-01-01T00:00:00Z"}
+func clusterPayload(status, version string) clusterView {
+	return clusterView{ID: "cluster", Status: status, Version: version, CreationDate: "2026-01-01T00:00:00Z"}
 }
 
 // TestChangeClusterVersionReportsAnAsynchronousRejection pins that a change the
@@ -993,8 +992,8 @@ func TestUpgradeStateFromV0(t *testing.T) {
 		cc := testClient(t, func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			view := clusterPayload("ACTIVE", "1.36")
-			view.Features = &tmp.KubernetesFeatures{Csi: &enabled}
-			view.Topology = &tmp.KubernetesTopology{Topology: topologyAllInOne, Flavor: "S", ReplicationFactor: 1}
+			view.Features = &models.ClusterFeatures{Csi: &enabled}
+			view.Topology = &apiTopology{Topology: topologyAllInOne, Flavor: "S", ReplicationFactor: 1}
 			_ = json.NewEncoder(w).Encode(view)
 		})
 		r := &ResourceKubernetes{}

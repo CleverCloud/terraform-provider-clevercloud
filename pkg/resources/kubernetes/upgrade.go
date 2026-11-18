@@ -10,7 +10,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 // KubernetesV0 is the state before version, topology, tags and persistent
@@ -68,7 +67,7 @@ func (r *ResourceKubernetes) UpgradeState(ctx context.Context) map[int64]resourc
 				reqCtx, cancel := context.WithTimeout(ctx, nodeAutoprovisioningRequestTimeout)
 				defer cancel()
 
-				cluster := tmp.GetKubernetes(reqCtx, r.Client(), r.Organization(), old.ID.ValueString())
+				cluster := clusters(r.Client(), r.Organization()).Kubernetesid(old.ID.ValueString()).Getkubernetescluster(reqCtx)
 				if cluster.HasError() {
 					tflog.Warn(ctx, "failed to get the cluster, the next refresh will fill the new kubernetes attributes", map[string]any{"error": cluster.Error().Error()})
 					res.Diagnostics.Append(res.State.Set(ctx, newState)...)
@@ -76,7 +75,7 @@ func (r *ResourceKubernetes) UpgradeState(ctx context.Context) map[int64]resourc
 				}
 
 				newState.PersistentStorage = pkg.FromBool(persistentStorageFeatureEnabled(cluster.Payload().Features))
-				newState.Topology = topologyFromAPI(ctx, cluster.Payload().Topology, &res.Diagnostics)
+				newState.Topology = topologyFromAPI(ctx, apiTopologyFrom(cluster.Payload().TopologyConfig, &res.Diagnostics), &res.Diagnostics)
 				newState.Version = pkg.FromStr(cluster.Payload().Version)
 
 				res.Diagnostics.Append(res.State.Set(ctx, newState)...)
