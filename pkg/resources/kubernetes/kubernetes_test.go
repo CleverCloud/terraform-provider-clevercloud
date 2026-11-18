@@ -1,7 +1,9 @@
 package kubernetes_test
 
 import (
+	"context"
 	_ "embed"
+	"encoding/json"
 	"fmt"
 	"os"
 	"regexp"
@@ -298,7 +300,11 @@ func TestAccKubernetes_options(t *testing.T) {
 // TestAccKubernetes_upgradeState creates a cluster with a release whose state
 // predates version and topology, then plans its real topology with the current
 // code, without any refresh. Only UpgradeState can fill the state at that point,
-// and planning nothing proves the cluster is not replaced
+// and a plan changing no value proves the cluster is not replaced.
+//
+// The plan is not empty though: kubeconfig became sensitive after that release,
+// and without a refresh to mark it in the state, Terraform plans an in-place
+// update that only records the mark
 func TestAccKubernetes_upgradeState(t *testing.T) {
 	// the state records the provider address, it has to be the released one
 	t.Setenv("TF_ACC_PROVIDER_NAMESPACE", "CleverCloud")
@@ -329,7 +335,7 @@ func TestAccKubernetes_upgradeState(t *testing.T) {
 				"topology": map[string]any{"type": "DEDICATED_COMPUTE", "flavor": "XS", "replication_factor": 1},
 			}),
 			ConfigPlanChecks: resource.ConfigPlanChecks{
-				PreApply: []plancheck.PlanCheck{plancheck.ExpectResourceAction(fullName, plancheck.ResourceActionNoop)},
+				PreApply: []plancheck.PlanCheck{changesNoValue{address: fullName}},
 			},
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("version"), knownvalue.NotNull()),
@@ -339,4 +345,41 @@ func TestAccKubernetes_upgradeState(t *testing.T) {
 			},
 		}},
 	})
+}
+
+// changesNoValue checks that the plan of a resource neither replaces it nor
+// changes any of its values: it is empty, or an update of the sensitivity marks
+type changesNoValue struct {
+	address string
+}
+
+func (c changesNoValue) CheckPlan(_ context.Context, req plancheck.CheckPlanRequest, resp *plancheck.CheckPlanResponse) {
+	for _, rc := range req.Plan.ResourceChanges {
+		if rc.Address != c.address {
+			continue
+		}
+
+		if !rc.Change.Actions.NoOp() && !rc.Change.Actions.Update() {
+			resp.Error = fmt.Errorf("%s: expected no change or an in-place update, got %v", c.address, rc.Change.Actions)
+			return
+		}
+
+		before, errBefore := json.Marshal(rc.Change.Before)
+		after, errAfter := json.Marshal(rc.Change.After)
+		unknown, errUnknown := json.Marshal(rc.Change.AfterUnknown)
+		if errBefore != nil || errAfter != nil || errUnknown != nil {
+			resp.Error = fmt.Errorf("%s: cannot read the plan: %v %v %v", c.address, errBefore, errAfter, errUnknown)
+			return
+		}
+		if string(before) != string(after) {
+			resp.Error = fmt.Errorf("%s: the plan changes a value", c.address)
+			return
+		}
+		if string(unknown) != "{}" {
+			resp.Error = fmt.Errorf("%s: the plan leaves values unknown: %s", c.address, unknown)
+		}
+		return
+	}
+
+	resp.Error = fmt.Errorf("%s is not in the plan", c.address)
 }
