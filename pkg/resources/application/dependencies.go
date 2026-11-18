@@ -11,7 +11,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/addonid"
 	"go.clever-cloud.com/terraform-provider/pkg/provider"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 	"go.clever-cloud.dev/sdk/models"
 )
@@ -215,7 +214,7 @@ func syncAddonDependencies(
 	for addonID := range expectedSet.Difference(currentSet).Iter() {
 		tflog.Info(ctx, "linking addon", map[string]any{"addonID": addonID})
 
-		addRes := tmp.AddAppLinkedAddons(ctx, cc, organization, applicationID, addonID)
+		addRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Addons().Linkorganisationapplicationaddon(ctx, addonID)
 		if addRes.HasError() {
 			diags.AddError("failed to link addon "+addonID, addRes.Error().Error())
 		}
