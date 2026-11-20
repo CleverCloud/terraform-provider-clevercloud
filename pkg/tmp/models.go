@@ -30,14 +30,6 @@ type MysqlAddonView struct {
 	Zone          string             `json:"zone"`
 }
 
-// ProvidersConsoleView `GET /v4/addon-providers/mysql-addon` body.  Source: AddonProvider.scala — ProvidersConsoleView
-type ProvidersConsoleView struct {
-	Clusters                []MysqlClusterConsole           `json:"clusters"`
-	Dedicated               map[string]models.DedicatedView `json:"dedicated"`
-	DefaultDedicatedVersion string                          `json:"defaultDedicatedVersion"`
-	ProviderID              string                          `json:"providerId"`
-}
-
 // PostgresqlAddonView The addon as `GET .../addons/{appId}` (internal AND `/v4`) render it — reference `postgresql_addo...
 type PostgresqlAddonView struct {
 	AppID         string                       `json:"app_id"`
@@ -129,15 +121,6 @@ type ReadOnlyUserView struct {
 type PostgresqlFeatureFlag struct {
 	Enabled bool   `json:"enabled"`
 	Name    string `json:"name"`
-}
-
-// MysqlClusterConsole `ClusterConsoleView { id, label, zone, version, features: [Feature] }` (v4 provider view; `featur...
-type MysqlClusterConsole struct {
-	Features []models.Feature `json:"features"`
-	ID       string           `json:"id"`
-	Label    string           `json:"label"`
-	Version  string           `json:"version"`
-	Zone     string           `json:"zone"`
 }
 
 // PostgresqlReadOnlyUserView One read-only user, console-facing spelling (`{user, password}`) — the shape [`PostgresqlAddonVie...

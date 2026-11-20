@@ -28,55 +28,6 @@ func GetPostgreSQLBackups(ctx context.Context, cc *client.Client, organisationID
 	return client.Get[[]PostgreSQLBackup](ctx, cc, path)
 }
 
-type Elasticsearch struct {
-	ID             string                 `json:"id"`
-	AppID          string                 `json:"app_id"`
-	Plan           string                 `json:"plan"`
-	Zone           string                 `json:"zone"`
-	OwnerID        string                 `json:"owner_id"`
-	CreationDate   string                 `json:"creation_date"`
-	Status         string                 `json:"status"`
-	Host           string                 `json:"host"`
-	User           string                 `json:"user"`
-	Password       string                 `json:"password"`
-	ApmHost        *string                `json:"apm_host"`
-	ApmUser        string                 `json:"apm_user"`
-	ApmPassword    string                 `json:"apm_password"`
-	ApmAuthToken   string                 `json:"apm_auth_token"`
-	KibanaHost     *string                `json:"kibana_host"`
-	KibanaUser     string                 `json:"kibana_user"`
-	KibanaPassword string                 `json:"kibana_password"`
-	Version        string                 `json:"version"`
-	Plugins        []string               `json:"plugins"`
-	Backups        ElasticsearchBackups   `json:"backups"`
-	Services       []ElasticsearchService `json:"services"`
-	Features       []ElasticsearchFeature `json:"features"`
-}
-
-type ElasticsearchBackups struct {
-	KibanaSnapshotsURL string `json:"kibana_snapshots_url"`
-}
-
-type ElasticsearchService struct {
-	Name    string `json:"name"`
-	Enabled bool   `json:"enabled"`
-}
-
-func (e Elasticsearch) Uri() string {
-	return fmt.Sprintf("https://%s:%s@%s:9243", e.User, e.Password, e.Host)
-}
-
-type ElasticsearchFeature struct {
-	Name    string `json:"name"`
-	Enabled bool   `json:"enabled"`
-}
-
-// Use Addon ID
-func GetElasticsearch(ctx context.Context, cc *client.Client, elasticsearchID string) client.Response[Elasticsearch] {
-	path := fmt.Sprintf("/v4/addon-providers/es-addon/addons/%s", elasticsearchID)
-	return client.Get[Elasticsearch](ctx, cc, path)
-}
-
 type MongoDB struct {
 	Host     string           `json:"host"`
 	Port     int64            `json:"port"`
@@ -157,26 +108,4 @@ func ListAddonMigrations(ctx context.Context, cc *client.Client, organisationID 
 func GetAddonMigrations(ctx context.Context, cc *client.Client, organisationID, addonID, migrationID string) client.Response[AddonMigrationResponse] {
 	path := fmt.Sprintf("/v2/organisations/%s/addons/%s/migrations/%s", organisationID, addonID, migrationID)
 	return client.Get[AddonMigrationResponse](ctx, cc, path)
-}
-
-type ElasticsearchInfos struct {
-	DefaultDedicatedVersion string                         `json:"defaultDedicatedVersion"`
-	ProviderID              string                         `json:"providerId"`
-	Clusters                []ElasticsearchProviderCluster `json:"clusters"`
-	Dedicated               map[string]any                 `json:"dedicated"`
-}
-
-// ElasticsearchProviderCluster is a shared cluster of the es-addon provider,
-// unrelated to the dedicated ElasticsearchCluster product.
-type ElasticsearchProviderCluster struct {
-	ID       string `json:"id"`
-	Label    string `json:"label"`
-	Region   string `json:"zone"`
-	Version  string `json:"version"`
-	Features []any  `json:"features"`
-}
-
-func GetElasticsearchInfos(ctx context.Context, cc *client.Client) client.Response[ElasticsearchInfos] {
-	path := "/v4/addon-providers/es-addon"
-	return client.Get[ElasticsearchInfos](ctx, cc, path)
 }

@@ -15,7 +15,6 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/models"
 	"go.clever-cloud.dev/sdk/services/addons"
 )
@@ -81,7 +80,7 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 
 	r.readFromAddon(&plan, *createdAddon)
 
-	esRes := tmp.GetElasticsearch(ctx, r.Client(), createdAddon.ID)
+	esRes := pkg.SDK(r.Client()).V4().AddonProviders().EsAddon().Addons().Appid(createdAddon.ID).Getelasticsearch(ctx)
 	if esRes.HasError() {
 		res.Diagnostics.AddError("failed to get Elasticsearch", esRes.Error().Error())
 	} else {
@@ -123,7 +122,7 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 	if err != nil {
 		res.Diagnostics.AddError("failed to get addon ID", err.Error())
 	} else {
-		elasticRes := tmp.GetElasticsearch(ctx, r.Client(), addonId)
+		elasticRes := pkg.SDK(r.Client()).V4().AddonProviders().EsAddon().Addons().Appid(addonId).Getelasticsearch(ctx)
 		if elasticRes.HasError() {
 			res.Diagnostics.AddError("failed to get Elasticsearch resource", elasticRes.Error().Error())
 		} else {
@@ -141,7 +140,7 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 	res.Diagnostics.Append(res.State.Set(ctx, state)...)
 }
 
-func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic tmp.Elasticsearch, diags *diag.Diagnostics) {
+func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic models.ElasticsearchAddonView, diags *diag.Diagnostics) {
 	state.Host = pkg.FromStr(elastic.Host)
 	state.User = pkg.FromStr(elastic.User)
 	state.Password = pkg.FromStr(elastic.Password)
@@ -163,7 +162,7 @@ func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic tmp.El
 	features := pkg.Reduce(
 		elastic.Features,
 		map[string]bool{},
-		func(acc map[string]bool, feature tmp.ElasticsearchFeature) map[string]bool {
+		func(acc map[string]bool, feature models.ElasticsearchFeature) map[string]bool {
 			acc[feature.Name] = feature.Enabled
 			return acc
 		})
@@ -181,8 +180,8 @@ func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic tmp.El
 		state.KibanaUser = pkg.FromStr(elastic.KibanaUser)
 		state.KibanaPassword = pkg.FromStr(elastic.KibanaPassword)
 	}
-	if elastic.KibanaHost != nil {
-		state.KibanaHost = pkg.FromStr(*elastic.KibanaHost)
+	if elastic.KibanaHost != "" {
+		state.KibanaHost = pkg.FromStr(elastic.KibanaHost)
 	}
 
 	state.ApmUser = basetypes.NewStringNull()
@@ -193,7 +192,7 @@ func (r *ResourceElasticsearch) readFromAPI(state *Elasticsearch, elastic tmp.El
 		state.ApmUser = pkg.FromStr(elastic.ApmUser)
 		state.ApmPassword = pkg.FromStr(elastic.ApmPassword)
 		state.ApmToken = pkg.FromStr(elastic.ApmAuthToken)
-		state.ApmHost = pkg.FromStr(*elastic.ApmHost)
+		state.ApmHost = pkg.FromStr(elastic.ApmHost)
 	}
 
 	state.Encryption = pkg.FromBool(features["encryption"])
