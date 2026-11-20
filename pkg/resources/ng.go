@@ -209,7 +209,7 @@ func validateMemberFQDNs(
 		return
 	}
 
-	suffixes := confRes.Payload().DnsSuffixes
+	suffixes := confRes.Payload().DNSSuffixes
 	if len(suffixes) == 0 {
 		return
 	}

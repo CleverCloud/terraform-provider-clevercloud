@@ -38,11 +38,11 @@ func (d *DataSourceDefaultLoadBalancer) Read(ctx context.Context, req datasource
 
 	// Map the API response to the datasource state
 	config.Name = types.StringValue(loadbalancer.Name)
-	config.CNAME = types.StringValue(loadbalancer.Dns.Cname)
+	config.CNAME = types.StringValue(loadbalancer.DNS.Cname)
 
 	// Convert A records to types.List
-	aRecordValues := make([]types.String, len(loadbalancer.Dns.A))
-	for i, ip := range loadbalancer.Dns.A {
+	aRecordValues := make([]types.String, len(loadbalancer.DNS.A))
+	for i, ip := range loadbalancer.DNS.A {
 		aRecordValues[i] = types.StringValue(ip)
 	}
 	aRecordsList, diags := types.ListValueFrom(ctx, types.StringType, aRecordValues)
