@@ -1,5 +1,31 @@
 # Changelog
 
+## [3.2.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v3.1.0...v3.2.0) (2026-11-20)
+
+
+### Features
+
+* **application:** add cancel_on_push attribute ([173b34f](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/173b34f130160b1c89f1cdce5e763f65a5228e34)), closes [#536](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/536)
+* **kubernetes:** add a region attribute to clevercloud_kubernetes ([b1bf9d7](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/b1bf9d744dbe05820ebdd1c1c40897726fe4d205))
+* **kubernetes:** check the region against the zones of the organisation ([28eab9a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/28eab9aa57a08bbaea5a29d7dd84b237bac69e35))
+
+
+### Bug Fixes
+
+* **application:** accept every real ID an add-on can have in dependencies ([072ff1c](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/072ff1c43fb1d90b075edf20fa9a42a64b183867)), closes [#518](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/518)
+* **apps:** drop attributes backed by variables the platform ignores ([be17c36](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/be17c3630ff89bc4b2a689e86fec308f7703b588)), closes [#478](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/478)
+* **cellar:** empty the prefixes of a bucket before deleting it ([62d4631](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/62d463111ab896ca8b1f44065e8b8a851265c1c8)), closes [#514](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/514)
+* delete addon providers, plans and TCP redirections through pkg/tmp ([afdbf07](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/afdbf07838267a535e25612182ea60022bb944a8))
+* **kubernetes:** mark the kubeconfig as sensitive ([f030e3a](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/f030e3a1d8f6026d3ff22c9d9701b877c6193769)), closes [#522](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/522)
+* **kubernetes:** replace a node group whose flavor or cluster changes ([79e81cd](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/79e81cdfce0da9da19a51da646bce5da6fd61966)), closes [#509](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/509)
+* **mysql:** read both encodings of the dedicated plan feature ([65844eb](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/65844ebbbf3e91189dcba3daccf407b94fb093a5)), closes [#519](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/519)
+* save the state as soon as Create made the object exist ([a3aebdc](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/a3aebdcbd65e9e8139080dae43440a49d003b275)), closes [#523](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/523)
+
+
+### Performance Improvements
+
+* download the product catalogues once per provider process ([1021074](https://github.com/CleverCloud/terraform-provider-clevercloud/commit/1021074debd48e7f9e1576a3d8e2bc2bb0bfe1db)), closes [#524](https://github.com/CleverCloud/terraform-provider-clevercloud/issues/524)
+
 ## [3.1.0](https://github.com/CleverCloud/terraform-provider-clevercloud/compare/v3.0.0...v3.1.0) (2026-11-06)
 
 
