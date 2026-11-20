@@ -20,9 +20,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/miton18/helper/set"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type Elasticsearch struct {
@@ -166,7 +166,7 @@ func (r *ResourceElasticsearch) ModifyPlan(ctx context.Context, req resource.Mod
 	}
 
 	if !plan.Version.IsNull() && !plan.Version.IsUnknown() {
-		infosRes := tmp.GetElasticsearchInfos(ctx, r.Client())
+		infosRes := pkg.SDK(r.Client()).V4().AddonProviders().EsAddon().Getelasticsearchproviderinformation(ctx)
 		if infosRes.HasError() {
 			res.Diagnostics.AddError("failed to get Elasticsearch provider info", infosRes.Error().Error())
 			return

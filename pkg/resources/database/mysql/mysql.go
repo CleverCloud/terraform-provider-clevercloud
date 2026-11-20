@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // Ensure ResourceMySQL implements required interfaces
@@ -18,7 +18,7 @@ var (
 
 type ResourceMySQL struct {
 	helper.AddonConfigurer
-	infos             *tmp.ProvidersConsoleView
+	infos             *models.MysqlProvidersConsole
 	dedicatedVersions []string
 }
 

@@ -8,7 +8,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/addonid"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
@@ -170,7 +169,7 @@ func checkElasticsearchDestroyed(ctx context.Context, cc *client.Client, realID,
 		return fmt.Errorf("failed to get addon ID for Elasticsearch %s: %s", resourceName, err.Error())
 	}
 
-	res := tmp.GetElasticsearch(ctx, cc, addonID)
+	res := pkg.SDK(cc).V4().AddonProviders().EsAddon().Addons().Appid(addonID).Getelasticsearch(ctx)
 
 	if res.IsNotFoundError() {
 		return nil // Successfully destroyed

@@ -21,8 +21,3 @@ func GetPostgreSQL(ctx context.Context, cc *client.Client, addonID string) clien
 func GetMySQL(ctx context.Context, cc *client.Client, addonID string) client.Response[MysqlAddonView] {
 	return client.Get[MysqlAddonView](ctx, cc, fmt.Sprintf("/v4/addon-providers/mysql-addon/addons/%s", url.PathEscape(addonID)))
 }
-
-// GetMysqlInfos reads the MySQL provider: its versions and shared clusters.
-func GetMysqlInfos(ctx context.Context, cc *client.Client) client.Response[ProvidersConsoleView] {
-	return client.Get[ProvidersConsoleView](ctx, cc, "/v4/addon-providers/mysql-addon")
-}
