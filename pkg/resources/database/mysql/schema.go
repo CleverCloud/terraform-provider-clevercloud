@@ -4,6 +4,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"go.clever-cloud.dev/sdk/models"
 	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -16,7 +17,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type MySQL struct {
@@ -131,7 +131,7 @@ func (r ResourceMySQL) validateMyVersion(ctx context.Context, req validator.Stri
 
 	switch plan {
 	case "dev":
-		cluster := pkg.First(infos.Clusters, func(cluster tmp.MysqlClusterConsole) bool {
+		cluster := pkg.First(infos.Clusters, func(cluster models.MysqlClusterConsole) bool {
 			return cluster.Zone == region
 		})
 		if cluster == nil {

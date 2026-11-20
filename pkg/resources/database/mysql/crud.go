@@ -32,7 +32,7 @@ func (r *ResourceMySQL) FetchMysqlInfos(ctx context.Context, diags *diag.Diagnos
 		return
 	}
 
-	res := tmp.GetMysqlInfos(ctx, r.Client())
+	res := pkg.SDK(r.Client()).V4().AddonProviders().MysqlAddon().Getmysqlproviderinformation(ctx)
 	if res.HasError() {
 		tflog.Error(ctx, "failed to get mysql infos", map[string]any{"error": res.Error().Error()})
 		return
@@ -43,7 +43,7 @@ func (r *ResourceMySQL) FetchMysqlInfos(ctx context.Context, diags *diag.Diagnos
 	}
 }
 
-func (r *ResourceMySQL) Infos(ctx context.Context, diags *diag.Diagnostics) *tmp.ProvidersConsoleView {
+func (r *ResourceMySQL) Infos(ctx context.Context, diags *diag.Diagnostics) *models.MysqlProvidersConsole {
 	if r.infos == nil {
 		r.FetchMysqlInfos(ctx, diags)
 	}
