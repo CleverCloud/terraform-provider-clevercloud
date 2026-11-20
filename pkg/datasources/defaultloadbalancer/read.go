@@ -7,8 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 func (d *DataSourceDefaultLoadBalancer) Read(ctx context.Context, req datasource.ReadRequest, res *datasource.ReadResponse) {
@@ -23,7 +23,7 @@ func (d *DataSourceDefaultLoadBalancer) Read(ctx context.Context, req datasource
 	tflog.Debug(ctx, "Reading default load balancer", map[string]any{"application_id": appId})
 
 	// Get load balancer information from API
-	loadbalancerRes := tmp.GetLoadBalancer(ctx, d.Client(), d.Organization(), appId)
+	loadbalancerRes := pkg.SDK(d.Client()).V4().LoadBalancers().Organisations().Ownerid(d.Organization()).Applications().Applicationid(appId).LoadBalancers().Kind("default").Listapplicationloadbalancers(ctx)
 	if loadbalancerRes.HasError() {
 		res.Diagnostics.AddError("Failed to get load balancer", loadbalancerRes.Error().Error())
 		return
@@ -32,16 +32,17 @@ func (d *DataSourceDefaultLoadBalancer) Read(ctx context.Context, req datasource
 
 	if len(loadbalancers) == 0 {
 		res.Diagnostics.AddError("No loadbalancer for this app", "no default loadbalancers")
+		return
 	}
 	loadbalancer := loadbalancers[0]
 
 	// Map the API response to the datasource state
 	config.Name = types.StringValue(loadbalancer.Name)
-	config.CNAME = types.StringValue(loadbalancer.DNS.CNAME)
+	config.CNAME = types.StringValue(loadbalancer.Dns.Cname)
 
 	// Convert A records to types.List
-	aRecordValues := make([]types.String, len(loadbalancer.DNS.A))
-	for i, ip := range loadbalancer.DNS.A {
+	aRecordValues := make([]types.String, len(loadbalancer.Dns.A))
+	for i, ip := range loadbalancer.Dns.A {
 		aRecordValues[i] = types.StringValue(ip)
 	}
 	aRecordsList, diags := types.ListValueFrom(ctx, types.StringType, aRecordValues)
