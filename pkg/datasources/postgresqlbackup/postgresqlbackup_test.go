@@ -11,9 +11,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 	"go.clever-cloud.com/terraform-provider/pkg"
+	"go.clever-cloud.com/terraform-provider/pkg/datasources/postgresqlbackup"
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/client"
 )
 
@@ -114,11 +114,10 @@ func TestAccDataSourcePostgreSQLBackup_byUUID(t *testing.T) {
 
 	cc := client.New(client.WithAutoOauthConfig())
 
-	backupsRes := tmp.GetPostgreSQLBackups(t.Context(), cc, tests.ORGANISATION, testPostgreSQLID)
-	if backupsRes.HasError() {
-		t.Fatalf("failed to get backups: %s", backupsRes.Error().Error())
+	backups, err := postgresqlbackup.ListBackups(t.Context(), cc, tests.ORGANISATION, testPostgreSQLID)
+	if err != nil {
+		t.Fatalf("failed to get backups: %s", err.Error())
 	}
-	backups := *backupsRes.Payload()
 	if len(backups) == 0 {
 		t.Skip("no backups available for testing")
 	}
