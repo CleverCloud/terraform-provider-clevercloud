@@ -8,25 +8,9 @@ package tmp
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"go.clever-cloud.dev/client"
 )
-
-type PostgreSQLBackup struct {
-	BackupID     string    `json:"backup_id"`
-	EntityID     string    `json:"entity_id"`
-	Status       string    `json:"status"`
-	CreationDate time.Time `json:"creation_date"`
-	DeleteDate   time.Time `json:"delete_at"`
-	Filename     string    `json:"filename"`
-	DownloadURL  string    `json:"download_url"`
-}
-
-func GetPostgreSQLBackups(ctx context.Context, cc *client.Client, organisationID, postgresqlID string) client.Response[[]PostgreSQLBackup] {
-	path := fmt.Sprintf("/v2/backups/%s/%s", organisationID, postgresqlID)
-	return client.Get[[]PostgreSQLBackup](ctx, cc, path)
-}
 
 type MongoDB struct {
 	Host     string           `json:"host"`
