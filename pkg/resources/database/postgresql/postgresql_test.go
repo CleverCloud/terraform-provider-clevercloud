@@ -203,6 +203,52 @@ func TestAccPostgreSQL_migration(t *testing.T) {
 	})
 }
 
+// TestAccPostgreSQL_VersionNotOffered checks the version against what the
+// platform offers: the versions open to new add-ons on creation, the ones an
+// add-on can be migrated to on a version change.
+func TestAccPostgreSQL_VersionNotOffered(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	rName := acctest.RandomWithPrefix("tf-test-pg-ver")
+	fullName := fmt.Sprintf("clevercloud_postgresql.%s", rName)
+	config := func(version string) string {
+		return helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION).Append(helper.NewRessource(
+			"clevercloud_postgresql",
+			rName,
+			helper.SetKeyValues(map[string]any{
+				"name":    rName,
+				"region":  "par",
+				"plan":    "xxs_sml",
+				"version": version,
+			}))).String()
+	}
+
+	resource.Test(t, resource.TestCase{
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		PreCheck:                 tests.ExpectOrganisation(t),
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			ResourceName: rName,
+			Config:       config("10"),
+			ExpectError:  regexp.MustCompile(`PostgreSQL version not available\n`),
+		}, {
+			ResourceName: rName,
+			Config:       config("17"),
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("version"), knownvalue.StringExact("17")),
+			},
+		}, {
+			ResourceName: rName,
+			Config:       config("10"),
+			ExpectError:  regexp.MustCompile(`PostgreSQL version not available for a migration`),
+		}, {
+			// the destroy runs with the last configuration: end on a valid one
+			ResourceName: rName,
+			Config:       config("17"),
+		}},
+	})
+}
+
 // TestAccPostgreSQL_EncryptionOnDevPlan reproduces issue #367
 // When encryption=true is set on a 'dev' plan PostgreSQL, the provider should validate this
 // and provide a clear error message since dev plans don't support encryption.

@@ -2,6 +2,10 @@ package postgresql
 
 import (
 	"context"
+	"fmt"
+	"maps"
+	"slices"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -12,6 +16,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/helper"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // Ensure ResourcePostgreSQL implements required interfaces
@@ -24,14 +29,14 @@ var (
 
 type ResourcePostgreSQL struct {
 	helper.AddonConfigurer
-	infos             *tmp.PostgresInfos
-	dedicatedVersions []string
+	// What a new add-on can be created on, and what an existing one can be
+	// moved to: the second offers versions that are closed to new add-ons.
+	creationInfos  *models.PostgresqlProvidersConsole
+	migrationInfos *models.PostgresqlProvidersConsole
 }
 
 func NewResourcePostgreSQL() resource.Resource {
-	return &ResourcePostgreSQL{
-		dedicatedVersions: []string{},
-	}
+	return &ResourcePostgreSQL{}
 }
 
 func (r *ResourcePostgreSQL) Metadata(ctx context.Context, req resource.MetadataRequest, res *resource.MetadataResponse) {
@@ -122,6 +127,8 @@ func (r *ResourcePostgreSQL) ModifyPlan(ctx context.Context, req resource.Modify
 		return
 	}
 
+	r.validateVersion(ctx, req, *plan, res)
+
 	// Get addon providers to check plan features
 	addonsProvidersRes := pkg.AddonProviders(ctx, r.Client())
 	if addonsProvidersRes.HasError() {
@@ -199,6 +206,75 @@ func (r *ResourcePostgreSQL) ModifyPlan(ctx context.Context, req resource.Modify
 			path.Root("locale"),
 			"Locale not supported on shared plans",
 			"Locale support is only available on dedicated PostgreSQL plans (not 'dev'). Please either remove the locale option or upgrade to a dedicated plan (e.g., 'xs_sml', 'xxs_sml').",
+		)
+	}
+}
+
+// validateVersion refuses a version the platform does not offer. A new add-on
+// is checked against the versions open to creation, a version change against
+// the ones an existing add-on can be migrated to. The version an add-on already
+// runs is never refused: the platform keeps running versions it no longer offers.
+func (r *ResourcePostgreSQL) validateVersion(ctx context.Context, req resource.ModifyPlanRequest, plan PostgreSQL, res *resource.ModifyPlanResponse) {
+	var version types.String
+	res.Diagnostics.Append(req.Config.GetAttribute(ctx, path.Root("version"), &version)...)
+	if res.Diagnostics.HasError() || version.IsNull() || version.IsUnknown() {
+		return
+	}
+
+	migrating := !req.State.Raw.IsNull()
+	if migrating {
+		var current types.String
+		res.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("version"), &current)...)
+		if res.Diagnostics.HasError() || current.Equal(version) {
+			return
+		}
+	}
+
+	infos := r.providerInfos(ctx, migrating)
+	if infos == nil { // not reachable: the API refuses a wrong version at apply
+		return
+	}
+
+	requestVersion := version.ValueString()
+	region := plan.Region.ValueString()
+
+	if plan.Plan.ValueString() == "dev" {
+		cluster := pkg.First(infos.Clusters, func(cluster models.PostgresqlClusterConsole) bool {
+			return cluster.Zone == region
+		})
+		if cluster == nil {
+			res.Diagnostics.AddAttributeError(
+				path.Root("version"),
+				"No PostgreSQL dev cluster found for this region",
+				fmt.Sprintf("could not determine dev cluster on region %s", region),
+			)
+			return
+		}
+
+		if cluster.Version != requestVersion {
+			res.Diagnostics.AddAttributeError(
+				path.Root("version"),
+				"PostgreSQL version not available on this cluster",
+				fmt.Sprintf("Cluster %s is running version %s, not version %s", cluster.Label, cluster.Version, requestVersion),
+			)
+		}
+		return
+	}
+
+	// on dedicated plan, any available version is OK
+	if _, exists := infos.Dedicated[requestVersion]; !exists {
+		summary := "PostgreSQL version not available"
+		if migrating {
+			summary = "PostgreSQL version not available for a migration"
+		}
+		res.Diagnostics.AddAttributeError(
+			path.Root("version"),
+			summary,
+			fmt.Sprintf(
+				"version %s not available, available versions: %s",
+				requestVersion,
+				strings.Join(slices.Sorted(maps.Keys(infos.Dedicated)), ", "),
+			),
 		)
 	}
 }
