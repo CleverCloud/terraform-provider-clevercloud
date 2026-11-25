@@ -40,7 +40,12 @@ func (r ResourceMatomo) Schema(_ context.Context, req resource.SchemaRequest, re
 				Default:             stringdefault.StaticString("par"),
 				MarkdownDescription: "Geographical region where the data will be stored",
 			},
-			"version": schema.StringAttribute{Computed: true, MarkdownDescription: "Current version of Matomo"},
+			"version": schema.StringAttribute{
+				Optional:            true,
+				Computed:            true,
+				MarkdownDescription: "Version of Matomo the add-on is pinned to, one of the versions the platform offers, such as `6.0.0` or `latest`. Changing it redeploys Matomo on that version. When not set, the platform picks the version.",
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
+			},
 		},
 	}
 }

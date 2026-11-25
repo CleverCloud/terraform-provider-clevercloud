@@ -31,9 +31,9 @@ Import this resource with its real ID, the value of its `id` attribute. The add-
 
 - `region` (String) Geographical region where the data will be stored
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
+- `version` (String) Version of Matomo the add-on is pinned to, one of the versions the platform offers, such as `6.0.0` or `latest`. Changing it redeploys Matomo on that version. When not set, the platform picks the version.
 
 ### Read-Only
 
 - `host` (String) URL to access Matomo
 - `id` (String) Generated unique identifier
-- `version` (String) Current version of Matomo
