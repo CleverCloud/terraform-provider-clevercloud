@@ -45,7 +45,7 @@ resource "clevercloud_postgresql" "postgresql_database" {
 - `networkgroups` (Attributes Set) List of networkgroups the addon must be part of (see [below for nested schema](#nestedatt--networkgroups))
 - `region` (String) Geographical region where the data will be stored
 - `tags` (Set of String) Tags of the resource, either plain (`prod`) or key/value (`env:prod`). When unset, tags are not managed by Terraform: the ones set outside of it are left untouched and never show up in the state, imports included. Removing the attribute therefore keeps the current tags, set `tags = []` to remove them all
-- `version` (String) PostgreSQL version
+- `version` (String) PostgreSQL version. Changing it migrates the add-on; the version an existing add-on already runs stays accepted once the platform stops offering it to new add-ons.
 
 ### Read-Only
 

@@ -37,26 +37,6 @@ func GetMongoDB(ctx context.Context, cc *client.Client, mongodbID string) client
 	return client.Get[MongoDB](ctx, cc, path)
 }
 
-type PostgresInfos struct {
-	DefaultDedicatedVersion string            `json:"defaultDedicatedVersion"`
-	ProviderID              string            `json:"providerId"`
-	Clusters                []PostgresCluster `json:"clusters"`
-	Dedicated               map[string]any    `json:"dedicated"`
-}
-
-type PostgresCluster struct {
-	ID       string `json:"id"`
-	Label    string `json:"label"`
-	Region   string `json:"zone"`
-	Version  string `json:"version"`
-	Features []any  `json:"features"`
-}
-
-func GetPostgresInfos(ctx context.Context, cc *client.Client) client.Response[PostgresInfos] {
-	path := "/v4/addon-providers/postgresql-addon"
-	return client.Get[PostgresInfos](ctx, cc, path)
-}
-
 type AddonMigrationRequest struct {
 	PlanID  string  `json:"planId"`
 	Region  string  `json:"region"`

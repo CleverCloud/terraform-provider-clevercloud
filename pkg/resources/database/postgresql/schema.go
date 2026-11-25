@@ -3,12 +3,9 @@ package postgresql
 import (
 	"context"
 	_ "embed"
-	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
-	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -19,9 +16,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/resources/addon"
-	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 )
 
 type PostgreSQL struct {
@@ -57,11 +52,8 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 			"version": schema.StringAttribute{
 				Computed:            true,
 				Optional:            true,
-				MarkdownDescription: "PostgreSQL version",
+				MarkdownDescription: "PostgreSQL version. Changing it migrates the add-on; the version an existing add-on already runs stays accepted once the platform stops offering it to new add-ons.",
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
-				Validators: []validator.String{
-					pkg.NewStringValidator("Match existing PostgresQL version", r.validatePGVersion),
-				},
 			},
 			"backup": schema.BoolAttribute{
 				Optional:            true,
@@ -96,68 +88,5 @@ func (r ResourcePostgreSQL) Schema(_ context.Context, req resource.SchemaRequest
 				},
 			},
 		}),
-	}
-}
-
-func (r ResourcePostgreSQL) validatePGVersion(ctx context.Context, req validator.StringRequest, res *validator.StringResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	var pg PostgreSQL
-	res.Diagnostics.Append(req.Config.Get(ctx, &pg)...)
-	if res.Diagnostics.HasError() {
-		return
-	}
-
-	requestVersion := pg.Version.ValueString()
-	region := pg.Region.ValueString()
-	plan := pg.Plan.ValueString()
-	infos := r.Infos(ctx, &res.Diagnostics)
-	if res.Diagnostics.HasError() {
-		return
-	}
-
-	// Skip validation if infos not available (provider not configured yet)
-	if infos == nil {
-		return
-	}
-
-	switch plan {
-	case "dev":
-		cluster := pkg.First(infos.Clusters, func(cluster tmp.PostgresCluster) bool {
-			return cluster.Region == region
-		})
-		if cluster == nil {
-			res.Diagnostics.Append(diag.NewAttributeErrorDiagnostic(
-				req.Path,
-				"No PostgreSQL dev cluster found for this region",
-				fmt.Sprintf("could not determine dev cluster on region %s", region),
-			))
-			return
-		}
-
-		if cluster.Version != requestVersion {
-			res.Diagnostics.Append(diag.NewAttributeErrorDiagnostic(
-				req.Path,
-				"PostgreSQL version not available on this cluster",
-				fmt.Sprintf("Cluster %s is running version %s, not version %s", cluster.Label, cluster.Version, requestVersion),
-			))
-		}
-
-	default: // on dedicated plan, any available version is OK
-		exists := pkg.HasSome(r.dedicatedVersions, func(v string) bool { return v == requestVersion })
-		if !exists {
-			res.Diagnostics.Append(diag.NewAttributeErrorDiagnostic(
-				req.Path,
-				"PostgreSQL version not available",
-				fmt.Sprintf(
-					"version %s not available, available versions: %s",
-					requestVersion,
-					strings.Join(r.dedicatedVersions, ", "),
-				),
-			))
-		}
-
 	}
 }

@@ -17,32 +17,36 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg/tmp"
 	"go.clever-cloud.dev/sdk/models"
 	"go.clever-cloud.dev/sdk/services/addons"
+	"go.clever-cloud.dev/sdk/services/postgresql_addon"
 )
 
-func (r *ResourcePostgreSQL) FetchPostgresInfos(ctx context.Context, diags *diag.Diagnostics) {
+// providerInfos reads what a PostgreSQL add-on can be created on or, with
+// forMigration, what an existing one can be moved to. It answers nil when the
+// provider is not configured yet or the API cannot be reached.
+func (r *ResourcePostgreSQL) providerInfos(ctx context.Context, forMigration bool) *models.PostgresqlProvidersConsole {
 	// Skip fetching during schema validation (before provider is configured)
 	if r.Provider == nil || r.Client() == nil {
 		tflog.Debug(ctx, "Skipping postgres infos fetch - provider not configured yet")
-		return
+		return nil
 	}
 
-	res := tmp.GetPostgresInfos(ctx, r.Client())
-	if res.HasError() {
-		tflog.Error(ctx, "failed to get postgres infos", map[string]any{"error": res.Error().Error()})
-		return
-	}
-	r.infos = res.Payload()
-	for k := range r.infos.Dedicated {
-		r.dedicatedVersions = append(r.dedicatedVersions, k)
-	}
-}
-
-func (r *ResourcePostgreSQL) Infos(ctx context.Context, diags *diag.Diagnostics) *tmp.PostgresInfos {
-	if r.infos == nil {
-		r.FetchPostgresInfos(ctx, diags)
+	cached := &r.creationInfos
+	opts := []postgresql_addon.Option{}
+	if forMigration {
+		cached = &r.migrationInfos
+		opts = append(opts, postgresql_addon.WithTarget("migration"))
 	}
 
-	return r.infos
+	if *cached == nil {
+		res := pkg.SDK(r.Client()).V4().AddonProviders().PostgresqlAddon().Getpostgresqlproviderinformation(ctx, opts...)
+		if res.HasError() {
+			tflog.Error(ctx, "failed to get postgres infos", map[string]any{"error": res.Error().Error()})
+			return nil
+		}
+		*cached = res.Payload()
+	}
+
+	return *cached
 }
 
 func (r *ResourcePostgreSQL) Create(ctx context.Context, req resource.CreateRequest, resp *resource.CreateResponse) {
