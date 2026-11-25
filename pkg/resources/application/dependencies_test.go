@@ -114,335 +114,330 @@ func TestAccDependencies_app_only(t *testing.T) {
 	})
 }
 
-// TestAccDependencies_addon_only, TestAccDependencies_mixed and
-// TestAccDependencies_sync create a PostgreSQL add-on. They are paused until
-// January 2027, with the managed database acceptance tests, because of an
-// infrastructure issue on the database side. Uncomment them once it is fixed.
+// TestAccDependencies_addon_only tests addon dependencies
+func TestAccDependencies_addon_only(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
+	rName := acctest.RandomWithPrefix("tf-test-deps")
+	mainAppName := rName + "-main"
+	pgName := rName + "-pg"
+	fullMainName := fmt.Sprintf("clevercloud_java_war.%s", mainAppName)
+	fullPgName := fmt.Sprintf("clevercloud_postgresql.%s", pgName)
 
-// // TestAccDependencies_addon_only tests addon dependencies
-// func TestAccDependencies_addon_only(t *testing.T) {
-// 	t.Parallel()
-// 	ctx := t.Context()
-// 	cc := client.New(client.WithAutoOauthConfig())
-// 	rName := acctest.RandomWithPrefix("tf-test-deps")
-// 	mainAppName := rName + "-main"
-// 	pgName := rName + "-pg"
-// 	fullMainName := fmt.Sprintf("clevercloud_java_war.%s", mainAppName)
-// 	fullPgName := fmt.Sprintf("clevercloud_postgresql.%s", pgName)
-//
-// 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
-//
-// 	// PostgreSQL addon
-// 	pgBlock := helper.NewRessource(
-// 		"clevercloud_postgresql",
-// 		pgName,
-// 		helper.SetKeyValues(map[string]any{
-// 			"name":   pgName,
-// 			"region": "par",
-// 			"plan":   "dev",
-// 		}))
-//
-// 	// Main app depends on PostgreSQL
-// 	mainAppBlock := helper.NewRessource(
-// 		"clevercloud_java_war",
-// 		mainAppName,
-// 		helper.SetKeyValues(map[string]any{
-// 			"name":               mainAppName,
-// 			"region":             "par",
-// 			"min_instance_count": 1,
-// 			"max_instance_count": 1,
-// 			"smallest_flavor":    "XS",
-// 			"biggest_flavor":     "XS",
-// 			"dependencies":       []string{fmt.Sprintf("${%s.id}", fullPgName)},
-// 		}))
-//
-// 	config := providerBlock.Append(pgBlock, mainAppBlock).String()
-//
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:                 tests.ExpectOrganisation(t),
-// 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
-// 		CheckDestroy:             tests.CheckDestroy(ctx),
-// 		Steps: []resource.TestStep{{
-// 			ResourceName: mainAppName,
-// 			Config:       config,
-// 			ConfigStateChecks: []statecheck.StateCheck{
-// 				statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
-// 				statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("dependencies"), knownvalue.SetSizeExact(1)),
-// 				tests.NewCheckRemoteResource(fullMainName,
-// 					func(ctx context.Context, id string) (*DepsResult, error) {
-// 						return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
-// 					},
-// 					func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
-// 						if len(deps.Apps) != 0 {
-// 							return fmt.Errorf("expected 0 app dependencies, got %d", len(deps.Apps))
-// 						}
-// 						if len(deps.Addons) != 1 {
-// 							return fmt.Errorf("expected 1 addon dependency, got %d", len(deps.Addons))
-// 						}
-// 						return nil
-// 					}),
-// 			},
-// 		}},
-// 	})
-// }
-//
-// // TestAccDependencies_mixed tests both app and addon dependencies together
-// func TestAccDependencies_mixed(t *testing.T) {
-// 	t.Parallel()
-// 	ctx := t.Context()
-// 	cc := client.New(client.WithAutoOauthConfig())
-// 	rName := acctest.RandomWithPrefix("tf-test-deps")
-// 	mainAppName := rName + "-main"
-// 	depAppName := rName + "-dep"
-// 	pgName := rName + "-pg"
-// 	fullMainName := fmt.Sprintf("clevercloud_java_war.%s", mainAppName)
-// 	fullDepName := fmt.Sprintf("clevercloud_java_war.%s", depAppName)
-// 	fullPgName := fmt.Sprintf("clevercloud_postgresql.%s", pgName)
-//
-// 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
-//
-// 	// Dependency app
-// 	depAppBlock := helper.NewRessource(
-// 		"clevercloud_java_war",
-// 		depAppName,
-// 		helper.SetKeyValues(map[string]any{
-// 			"name":               depAppName,
-// 			"region":             "par",
-// 			"min_instance_count": 1,
-// 			"max_instance_count": 1,
-// 			"smallest_flavor":    "XS",
-// 			"biggest_flavor":     "XS",
-// 		}))
-//
-// 	// PostgreSQL addon
-// 	pgBlock := helper.NewRessource(
-// 		"clevercloud_postgresql",
-// 		pgName,
-// 		helper.SetKeyValues(map[string]any{
-// 			"name":   pgName,
-// 			"region": "par",
-// 			"plan":   "dev",
-// 		}))
-//
-// 	// Main app depends on both app and addon
-// 	mainAppBlock := helper.NewRessource(
-// 		"clevercloud_java_war",
-// 		mainAppName,
-// 		helper.SetKeyValues(map[string]any{
-// 			"name":               mainAppName,
-// 			"region":             "par",
-// 			"min_instance_count": 1,
-// 			"max_instance_count": 1,
-// 			"smallest_flavor":    "XS",
-// 			"biggest_flavor":     "XS",
-// 			"dependencies": []string{
-// 				fmt.Sprintf("${%s.id}", fullDepName),
-// 				fmt.Sprintf("${%s.id}", fullPgName),
-// 			},
-// 		}))
-//
-// 	config := providerBlock.Append(depAppBlock, pgBlock, mainAppBlock).String()
-//
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:                 tests.ExpectOrganisation(t),
-// 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
-// 		CheckDestroy:             tests.CheckDestroy(ctx),
-// 		Steps: []resource.TestStep{{
-// 			ResourceName: mainAppName,
-// 			Config:       config,
-// 			ConfigStateChecks: []statecheck.StateCheck{
-// 				statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
-// 				statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("dependencies"), knownvalue.SetSizeExact(2)),
-// 				tests.NewCheckRemoteResource(fullMainName,
-// 					func(ctx context.Context, id string) (*DepsResult, error) {
-// 						return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
-// 					},
-// 					func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
-// 						if len(deps.Apps) != 1 {
-// 							return fmt.Errorf("expected 1 app dependency, got %d", len(deps.Apps))
-// 						}
-// 						if len(deps.Addons) != 1 {
-// 							return fmt.Errorf("expected 1 addon dependency, got %d", len(deps.Addons))
-// 						}
-// 						return nil
-// 					}),
-// 			},
-// 		}},
-// 	})
-// }
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
 
-// // TestAccDependencies_sync tests adding and removing dependencies across multiple steps
-// func TestAccDependencies_sync(t *testing.T) {
-// 	t.Parallel()
-// 	ctx := t.Context()
-// 	cc := client.New(client.WithAutoOauthConfig())
-// 	rName := acctest.RandomWithPrefix("tf-test-deps")
-// 	mainAppName := rName + "-main"
-// 	depAppName := rName + "-dep"
-// 	pgName := rName + "-pg"
-// 	fullMainName := fmt.Sprintf("clevercloud_java_war.%s", mainAppName)
-// 	fullDepName := fmt.Sprintf("clevercloud_java_war.%s", depAppName)
-// 	fullPgName := fmt.Sprintf("clevercloud_postgresql.%s", pgName)
-//
-// 	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
-//
-// 	// Dependency app (always present)
-// 	depAppBlock := helper.NewRessource(
-// 		"clevercloud_java_war",
-// 		depAppName,
-// 		helper.SetKeyValues(map[string]any{
-// 			"name":               depAppName,
-// 			"region":             "par",
-// 			"min_instance_count": 1,
-// 			"max_instance_count": 1,
-// 			"smallest_flavor":    "XS",
-// 			"biggest_flavor":     "XS",
-// 		}))
-//
-// 	// PostgreSQL addon (always present)
-// 	pgBlock := helper.NewRessource(
-// 		"clevercloud_postgresql",
-// 		pgName,
-// 		helper.SetKeyValues(map[string]any{
-// 			"name":   pgName,
-// 			"region": "par",
-// 			"plan":   "dev",
-// 		}))
-//
-// 	// Main app block - will be mutated between steps
-// 	mainAppBlock := helper.NewRessource(
-// 		"clevercloud_java_war",
-// 		mainAppName,
-// 		helper.SetKeyValues(map[string]any{
-// 			"name":               mainAppName,
-// 			"region":             "par",
-// 			"min_instance_count": 1,
-// 			"max_instance_count": 1,
-// 			"smallest_flavor":    "XS",
-// 			"biggest_flavor":     "XS",
-// 		}))
-//
-// 	resource.Test(t, resource.TestCase{
-// 		PreCheck:                 tests.ExpectOrganisation(t),
-// 		ProtoV6ProviderFactories: tests.ProtoV6Provider,
-// 		CheckDestroy:             tests.CheckDestroy(ctx),
-// 		Steps: []resource.TestStep{
-// 			// Step 1: No dependencies
-// 			{
-// 				ResourceName: mainAppName,
-// 				Config:       providerBlock.Append(depAppBlock, pgBlock, mainAppBlock).String(),
-// 				ConfigStateChecks: []statecheck.StateCheck{
-// 					statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
-// 					tests.NewCheckRemoteResource(fullMainName,
-// 						func(ctx context.Context, id string) (*DepsResult, error) {
-// 							return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
-// 						},
-// 						func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
-// 							if len(deps.Apps) != 0 {
-// 								return fmt.Errorf("step1: expected 0 app dependencies, got %d", len(deps.Apps))
-// 							}
-// 							if len(deps.Addons) != 0 {
-// 								return fmt.Errorf("step1: expected 0 addon dependencies, got %d", len(deps.Addons))
-// 							}
-// 							return nil
-// 						}),
-// 				},
-// 			},
-// 			// Step 2: Add app dependency
-// 			{
-// 				ResourceName: mainAppName,
-// 				Config: providerBlock.Append(depAppBlock, pgBlock,
-// 					mainAppBlock.SetOneValue("dependencies", []string{fmt.Sprintf("${%s.id}", fullDepName)}),
-// 				).String(),
-// 				ConfigStateChecks: []statecheck.StateCheck{
-// 					statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("dependencies"), knownvalue.SetSizeExact(1)),
-// 					tests.NewCheckRemoteResource(fullMainName,
-// 						func(ctx context.Context, id string) (*DepsResult, error) {
-// 							return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
-// 						},
-// 						func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
-// 							if len(deps.Apps) != 1 {
-// 								return fmt.Errorf("step2: expected 1 app dependency, got %d", len(deps.Apps))
-// 							}
-// 							if len(deps.Addons) != 0 {
-// 								return fmt.Errorf("step2: expected 0 addon dependencies, got %d", len(deps.Addons))
-// 							}
-// 							return nil
-// 						}),
-// 				},
-// 			},
-// 			// Step 3: Add addon dependency (now have both)
-// 			{
-// 				ResourceName: mainAppName,
-// 				Config: providerBlock.Append(depAppBlock, pgBlock,
-// 					mainAppBlock.SetOneValue("dependencies", []string{
-// 						fmt.Sprintf("${%s.id}", fullDepName),
-// 						fmt.Sprintf("${%s.id}", fullPgName),
-// 					}),
-// 				).String(),
-// 				ConfigStateChecks: []statecheck.StateCheck{
-// 					statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("dependencies"), knownvalue.SetSizeExact(2)),
-// 					tests.NewCheckRemoteResource(fullMainName,
-// 						func(ctx context.Context, id string) (*DepsResult, error) {
-// 							return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
-// 						},
-// 						func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
-// 							if len(deps.Apps) != 1 {
-// 								return fmt.Errorf("step3: expected 1 app dependency, got %d", len(deps.Apps))
-// 							}
-// 							if len(deps.Addons) != 1 {
-// 								return fmt.Errorf("step3: expected 1 addon dependency, got %d", len(deps.Addons))
-// 							}
-// 							return nil
-// 						}),
-// 				},
-// 			},
-// 			// Step 4: Remove app dependency (keep only addon)
-// 			{
-// 				ResourceName: mainAppName,
-// 				Config: providerBlock.Append(depAppBlock, pgBlock,
-// 					mainAppBlock.SetOneValue("dependencies", []string{fmt.Sprintf("${%s.id}", fullPgName)}),
-// 				).String(),
-// 				ConfigStateChecks: []statecheck.StateCheck{
-// 					statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("dependencies"), knownvalue.SetSizeExact(1)),
-// 					tests.NewCheckRemoteResource(fullMainName,
-// 						func(ctx context.Context, id string) (*DepsResult, error) {
-// 							return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
-// 						},
-// 						func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
-// 							if len(deps.Apps) != 0 {
-// 								return fmt.Errorf("step4: expected 0 app dependencies, got %d", len(deps.Apps))
-// 							}
-// 							if len(deps.Addons) != 1 {
-// 								return fmt.Errorf("step4: expected 1 addon dependency, got %d", len(deps.Addons))
-// 							}
-// 							return nil
-// 						}),
-// 				},
-// 			},
-// 			// Step 5: Remove all dependencies
-// 			{
-// 				ResourceName: mainAppName,
-// 				Config: providerBlock.Append(depAppBlock, pgBlock,
-// 					mainAppBlock.SetOneValue("dependencies", []string{}),
-// 				).String(),
-// 				ConfigStateChecks: []statecheck.StateCheck{
-// 					statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("dependencies"), knownvalue.SetSizeExact(0)),
-// 					tests.NewCheckRemoteResource(fullMainName,
-// 						func(ctx context.Context, id string) (*DepsResult, error) {
-// 							return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
-// 						},
-// 						func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
-// 							if len(deps.Apps) != 0 {
-// 								return fmt.Errorf("step5: expected 0 app dependencies, got %d", len(deps.Apps))
-// 							}
-// 							if len(deps.Addons) != 0 {
-// 								return fmt.Errorf("step5: expected 0 addon dependencies, got %d", len(deps.Addons))
-// 							}
-// 							return nil
-// 						}),
-// 				},
-// 			},
-// 		},
-// 	})
-// }
+	// PostgreSQL addon
+	pgBlock := helper.NewRessource(
+		"clevercloud_postgresql",
+		pgName,
+		helper.SetKeyValues(map[string]any{
+			"name":   pgName,
+			"region": "par",
+			"plan":   "dev",
+		}))
+
+	// Main app depends on PostgreSQL
+	mainAppBlock := helper.NewRessource(
+		"clevercloud_java_war",
+		mainAppName,
+		helper.SetKeyValues(map[string]any{
+			"name":               mainAppName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 1,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "XS",
+			"dependencies":       []string{fmt.Sprintf("${%s.id}", fullPgName)},
+		}))
+
+	config := providerBlock.Append(pgBlock, mainAppBlock).String()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 tests.ExpectOrganisation(t),
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			ResourceName: mainAppName,
+			Config:       config,
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+				statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("dependencies"), knownvalue.SetSizeExact(1)),
+				tests.NewCheckRemoteResource(fullMainName,
+					func(ctx context.Context, id string) (*DepsResult, error) {
+						return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
+					},
+					func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
+						if len(deps.Apps) != 0 {
+							return fmt.Errorf("expected 0 app dependencies, got %d", len(deps.Apps))
+						}
+						if len(deps.Addons) != 1 {
+							return fmt.Errorf("expected 1 addon dependency, got %d", len(deps.Addons))
+						}
+						return nil
+					}),
+			},
+		}},
+	})
+}
+
+// TestAccDependencies_mixed tests both app and addon dependencies together
+func TestAccDependencies_mixed(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
+	rName := acctest.RandomWithPrefix("tf-test-deps")
+	mainAppName := rName + "-main"
+	depAppName := rName + "-dep"
+	pgName := rName + "-pg"
+	fullMainName := fmt.Sprintf("clevercloud_java_war.%s", mainAppName)
+	fullDepName := fmt.Sprintf("clevercloud_java_war.%s", depAppName)
+	fullPgName := fmt.Sprintf("clevercloud_postgresql.%s", pgName)
+
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+
+	// Dependency app
+	depAppBlock := helper.NewRessource(
+		"clevercloud_java_war",
+		depAppName,
+		helper.SetKeyValues(map[string]any{
+			"name":               depAppName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 1,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "XS",
+		}))
+
+	// PostgreSQL addon
+	pgBlock := helper.NewRessource(
+		"clevercloud_postgresql",
+		pgName,
+		helper.SetKeyValues(map[string]any{
+			"name":   pgName,
+			"region": "par",
+			"plan":   "dev",
+		}))
+
+	// Main app depends on both app and addon
+	mainAppBlock := helper.NewRessource(
+		"clevercloud_java_war",
+		mainAppName,
+		helper.SetKeyValues(map[string]any{
+			"name":               mainAppName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 1,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "XS",
+			"dependencies": []string{
+				fmt.Sprintf("${%s.id}", fullDepName),
+				fmt.Sprintf("${%s.id}", fullPgName),
+			},
+		}))
+
+	config := providerBlock.Append(depAppBlock, pgBlock, mainAppBlock).String()
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 tests.ExpectOrganisation(t),
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{{
+			ResourceName: mainAppName,
+			Config:       config,
+			ConfigStateChecks: []statecheck.StateCheck{
+				statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+				statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("dependencies"), knownvalue.SetSizeExact(2)),
+				tests.NewCheckRemoteResource(fullMainName,
+					func(ctx context.Context, id string) (*DepsResult, error) {
+						return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
+					},
+					func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
+						if len(deps.Apps) != 1 {
+							return fmt.Errorf("expected 1 app dependency, got %d", len(deps.Apps))
+						}
+						if len(deps.Addons) != 1 {
+							return fmt.Errorf("expected 1 addon dependency, got %d", len(deps.Addons))
+						}
+						return nil
+					}),
+			},
+		}},
+	})
+}
+
+// TestAccDependencies_sync tests adding and removing dependencies across multiple steps
+func TestAccDependencies_sync(t *testing.T) {
+	t.Parallel()
+	ctx := t.Context()
+	cc := client.New(client.WithAutoOauthConfig())
+	rName := acctest.RandomWithPrefix("tf-test-deps")
+	mainAppName := rName + "-main"
+	depAppName := rName + "-dep"
+	pgName := rName + "-pg"
+	fullMainName := fmt.Sprintf("clevercloud_java_war.%s", mainAppName)
+	fullDepName := fmt.Sprintf("clevercloud_java_war.%s", depAppName)
+	fullPgName := fmt.Sprintf("clevercloud_postgresql.%s", pgName)
+
+	providerBlock := helper.NewProvider("clevercloud").SetOrganisation(tests.ORGANISATION)
+
+	// Dependency app (always present)
+	depAppBlock := helper.NewRessource(
+		"clevercloud_java_war",
+		depAppName,
+		helper.SetKeyValues(map[string]any{
+			"name":               depAppName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 1,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "XS",
+		}))
+
+	// PostgreSQL addon (always present)
+	pgBlock := helper.NewRessource(
+		"clevercloud_postgresql",
+		pgName,
+		helper.SetKeyValues(map[string]any{
+			"name":   pgName,
+			"region": "par",
+			"plan":   "dev",
+		}))
+
+	// Main app block - will be mutated between steps
+	mainAppBlock := helper.NewRessource(
+		"clevercloud_java_war",
+		mainAppName,
+		helper.SetKeyValues(map[string]any{
+			"name":               mainAppName,
+			"region":             "par",
+			"min_instance_count": 1,
+			"max_instance_count": 1,
+			"smallest_flavor":    "XS",
+			"biggest_flavor":     "XS",
+		}))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:                 tests.ExpectOrganisation(t),
+		ProtoV6ProviderFactories: tests.ProtoV6Provider,
+		CheckDestroy:             tests.CheckDestroy(ctx),
+		Steps: []resource.TestStep{
+			// Step 1: No dependencies
+			{
+				ResourceName: mainAppName,
+				Config:       providerBlock.Append(depAppBlock, pgBlock, mainAppBlock).String(),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^app_.*$`))),
+					tests.NewCheckRemoteResource(fullMainName,
+						func(ctx context.Context, id string) (*DepsResult, error) {
+							return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
+						},
+						func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
+							if len(deps.Apps) != 0 {
+								return fmt.Errorf("step1: expected 0 app dependencies, got %d", len(deps.Apps))
+							}
+							if len(deps.Addons) != 0 {
+								return fmt.Errorf("step1: expected 0 addon dependencies, got %d", len(deps.Addons))
+							}
+							return nil
+						}),
+				},
+			},
+			// Step 2: Add app dependency
+			{
+				ResourceName: mainAppName,
+				Config: providerBlock.Append(depAppBlock, pgBlock,
+					mainAppBlock.SetOneValue("dependencies", []string{fmt.Sprintf("${%s.id}", fullDepName)}),
+				).String(),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("dependencies"), knownvalue.SetSizeExact(1)),
+					tests.NewCheckRemoteResource(fullMainName,
+						func(ctx context.Context, id string) (*DepsResult, error) {
+							return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
+						},
+						func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
+							if len(deps.Apps) != 1 {
+								return fmt.Errorf("step2: expected 1 app dependency, got %d", len(deps.Apps))
+							}
+							if len(deps.Addons) != 0 {
+								return fmt.Errorf("step2: expected 0 addon dependencies, got %d", len(deps.Addons))
+							}
+							return nil
+						}),
+				},
+			},
+			// Step 3: Add addon dependency (now have both)
+			{
+				ResourceName: mainAppName,
+				Config: providerBlock.Append(depAppBlock, pgBlock,
+					mainAppBlock.SetOneValue("dependencies", []string{
+						fmt.Sprintf("${%s.id}", fullDepName),
+						fmt.Sprintf("${%s.id}", fullPgName),
+					}),
+				).String(),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("dependencies"), knownvalue.SetSizeExact(2)),
+					tests.NewCheckRemoteResource(fullMainName,
+						func(ctx context.Context, id string) (*DepsResult, error) {
+							return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
+						},
+						func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
+							if len(deps.Apps) != 1 {
+								return fmt.Errorf("step3: expected 1 app dependency, got %d", len(deps.Apps))
+							}
+							if len(deps.Addons) != 1 {
+								return fmt.Errorf("step3: expected 1 addon dependency, got %d", len(deps.Addons))
+							}
+							return nil
+						}),
+				},
+			},
+			// Step 4: Remove app dependency (keep only addon)
+			{
+				ResourceName: mainAppName,
+				Config: providerBlock.Append(depAppBlock, pgBlock,
+					mainAppBlock.SetOneValue("dependencies", []string{fmt.Sprintf("${%s.id}", fullPgName)}),
+				).String(),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("dependencies"), knownvalue.SetSizeExact(1)),
+					tests.NewCheckRemoteResource(fullMainName,
+						func(ctx context.Context, id string) (*DepsResult, error) {
+							return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
+						},
+						func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
+							if len(deps.Apps) != 0 {
+								return fmt.Errorf("step4: expected 0 app dependencies, got %d", len(deps.Apps))
+							}
+							if len(deps.Addons) != 1 {
+								return fmt.Errorf("step4: expected 1 addon dependency, got %d", len(deps.Addons))
+							}
+							return nil
+						}),
+				},
+			},
+			// Step 5: Remove all dependencies
+			{
+				ResourceName: mainAppName,
+				Config: providerBlock.Append(depAppBlock, pgBlock,
+					mainAppBlock.SetOneValue("dependencies", []string{}),
+				).String(),
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectKnownValue(fullMainName, tfjsonpath.New("dependencies"), knownvalue.SetSizeExact(0)),
+					tests.NewCheckRemoteResource(fullMainName,
+						func(ctx context.Context, id string) (*DepsResult, error) {
+							return fetchDependencies(ctx, cc, tests.ORGANISATION, id)
+						},
+						func(ctx context.Context, id string, state *tfjson.State, deps *DepsResult) error {
+							if len(deps.Apps) != 0 {
+								return fmt.Errorf("step5: expected 0 app dependencies, got %d", len(deps.Apps))
+							}
+							if len(deps.Addons) != 0 {
+								return fmt.Errorf("step5: expected 0 addon dependencies, got %d", len(deps.Addons))
+							}
+							return nil
+						}),
+				},
+			},
+		},
+	})
+}
