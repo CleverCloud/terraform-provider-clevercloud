@@ -12,6 +12,10 @@ jobs:
       fail-fast: false
       matrix:
         resource:
+          # The managed database tests (mongodb, mysql, postgresql, redis,
+          # elasticsearch, elasticsearch_cluster) are paused until January 2027
+          # because of an infrastructure issue on the database side. Uncomment
+          # them once it is fixed.
           - addon
           - addonprovider
           - configprovider
@@ -19,14 +23,14 @@ jobs:
           - database/cellar
           - database/fsbucket
           - database/materiakv
-          - database/mongodb
-          - database/mysql
-          - database/postgresql
+          # - database/mongodb
+          # - database/mysql
+          # - database/postgresql
           - database/pulsar
-          - database/redis
+          # - database/redis
           - drain
-          - database/elasticsearch
-          - elasticsearch_cluster
+          # - database/elasticsearch
+          # - elasticsearch_cluster
           - networkgroup
           - oauth_consumer
           - software
