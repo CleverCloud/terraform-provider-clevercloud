@@ -3,6 +3,9 @@ package matomo
 import (
 	"context"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.clever-cloud.com/terraform-provider/pkg"
@@ -49,6 +52,8 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 	}
 	addon := createAddonRes.Payload()
 
+	wantedVersion := appMatomo.Version // unknown unless the practitioner pinned one
+
 	appMatomo.ID = pkg.FromStr(pkg.Deref(addon.RealID))
 	appMatomo.Region = pkg.FromStr(addon.Region)
 	res.Diagnostics.Append(res.State.Set(ctx, appMatomo)...)
@@ -60,6 +65,11 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 		matomo := matomoRes.Payload()
 		appMatomo.Host = pkg.FromStr(matomo.AccessURL)
 		appMatomo.Version = pkg.FromStr(matomo.Version)
+	}
+
+	// An add-on is always provisioned on the platform's default version
+	if !wantedVersion.IsUnknown() && !wantedVersion.IsNull() && !wantedVersion.Equal(appMatomo.Version) {
+		r.setVersion(ctx, wantedVersion.ValueString(), &appMatomo, &res.Diagnostics)
 	}
 
 	appMatomo.Tags = resources.SyncAddonTags(ctx, r, addon.ID, appMatomo.Tags, resources.NullTags, &res.Diagnostics)
@@ -125,7 +135,6 @@ func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	// Only name can be edited
 	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
 		Name: plan.Name.ValueString(),
 	})
@@ -135,11 +144,28 @@ func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest,
 		state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 	}
 
+	if !plan.Version.IsUnknown() && !plan.Version.IsNull() && !plan.Version.Equal(state.Version) {
+		r.setVersion(ctx, plan.Version.ValueString(), &state, &resp.Diagnostics)
+	}
+
 	if !plan.Tags.Equal(state.Tags) {
 		state.Tags = resources.SyncAddonTags(ctx, r, state.ID.ValueString(), plan.Tags, state.Tags, &resp.Diagnostics)
 	}
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
+}
+
+// setVersion switches the add-on to another Matomo version, which redeploys it,
+// and records in state the version the platform reports afterwards.
+func (r *ResourceMatomo) setVersion(ctx context.Context, version string, state *Matomo, diags *diag.Diagnostics) {
+	res := r.SDK.V4().AddonProviders().AddonMatomo().Addons().Addonmatomoid(state.ID.ValueString()).Version().Update().
+		Createversionupdatematomo(ctx, &models.MatomoPatchRequest{TargetVersion: version})
+	if res.HasError() {
+		diags.AddAttributeError(path.Root("version"), "failed to change the Matomo version", res.Error().Error())
+		return
+	}
+
+	state.Version = pkg.FromStr(res.Payload().Version)
 }
 
 // Delete resource
