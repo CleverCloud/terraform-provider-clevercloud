@@ -89,7 +89,7 @@ func TestAccNodejs_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("build_flavor"), knownvalue.StringExact("XL")),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
-					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).GetApplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
@@ -132,7 +132,7 @@ func TestAccNodejs_basic(t *testing.T) {
 					if appRes.Zone != "par" {
 						return tests.AssertError("expect region to be 'par'", "region", appRes.Zone)
 					}
-					appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
+					appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().GetApplicationEnvironment(ctx)
 					if appEnvRes.HasError() {
 						return fmt.Errorf("failed to get application: %w", appEnvRes.Error())
 					}
@@ -173,13 +173,13 @@ func TestAccNodejs_basic(t *testing.T) {
 			Config:       providerBlock.Append(nodejsBlock2).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				tests.NewCheckRemoteResource(fullName2, func(ctx context.Context, id string) (*models.ApplicationView, error) {
-					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).GetApplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
 					return appRes.Payload(), nil
 				}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
-					vhostsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Vhosts().Listorganisationapplicationvirtualhosts(ctx)
+					vhostsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Vhosts().ListApplicationDomains(ctx)
 					if vhostsRes.HasError() {
 						return fmt.Errorf("failed to get application vhosts: %w", vhostsRes.Error())
 					}
@@ -232,13 +232,13 @@ func TestAccNodejs_envAttributes(t *testing.T) {
 
 	remoteEnv := func(want map[string]string) statecheck.StateCheck {
 		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
-			appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
+			appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).GetApplication(ctx)
 			if appRes.HasError() {
 				return nil, appRes.Error()
 			}
 			return appRes.Payload(), nil
 		}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
-			appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
+			appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().GetApplicationEnvironment(ctx)
 			if appEnvRes.HasError() {
 				return fmt.Errorf("failed to get application env: %w", appEnvRes.Error())
 			}
@@ -495,7 +495,7 @@ func TestAccNodejs_localRepoRecreated(t *testing.T) {
 				tests.NewCheckRemoteResource(
 					fullName,
 					func(ctx context.Context, id string) (*models.ApplicationView, error) {
-						appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
+						appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).GetApplication(ctx)
 						if appRes.HasError() {
 							return nil, appRes.Error()
 						}

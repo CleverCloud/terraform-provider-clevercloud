@@ -42,7 +42,7 @@ func TestAccOAuthConsumer_basic(t *testing.T) {
 		}))
 
 	retrieveOAuthConsumer := func(ctx context.Context, consumerKey string) (*models.OAuth1ConsumerView, error) {
-		res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Consumers().Key(consumerKey).Getorganisationconsumer(ctx)
+		res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Consumers().Key(consumerKey).GetOauthConsumer(ctx)
 		if res.IsNotFoundError() {
 			return nil, fmt.Errorf("Unable to find OAuth consumer by key: %s", consumerKey)
 		}
@@ -134,7 +134,7 @@ func TestAccOAuthConsumer_withAllRights(t *testing.T) {
 		}))
 
 	retrieveOAuthConsumer := func(ctx context.Context, consumerKey string) (*models.OAuth1ConsumerView, error) {
-		res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Consumers().Key(consumerKey).Getorganisationconsumer(ctx)
+		res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Consumers().Key(consumerKey).GetOauthConsumer(ctx)
 		if res.IsNotFoundError() {
 			return nil, fmt.Errorf("Unable to find OAuth consumer by key: %s", consumerKey)
 		}

@@ -61,7 +61,7 @@ func (r *ResourceAddon) Create(ctx context.Context, req resource.CreateRequest, 
 	// the add-on exists from here on: save it before anything else can fail
 	resp.Diagnostics.Append(resp.State.Set(ctx, ad)...)
 
-	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(res.Payload().ID).Env().Getaddonenvbyorgaandaddonid(ctx)
+	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(res.Payload().ID).Env().GetAddonEnvironment(ctx)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", envRes.Error().Error())
 		return
@@ -94,7 +94,7 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(ad.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(ad.ID.ValueString()).GetAddon(ctx)
 	if addonRes.IsNotFoundError() {
 		req.State.RemoveResource(ctx)
 		return
@@ -104,7 +104,7 @@ func (r *ResourceAddon) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	addonEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(ad.ID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
+	addonEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(ad.ID.ValueString()).Env().GetAddonEnvironment(ctx)
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
@@ -152,7 +152,7 @@ func (r *ResourceAddon) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Only name can be edited
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -179,7 +179,7 @@ func (r *ResourceAddon) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 	tflog.Debug(ctx, "Add-on DELETE", map[string]any{"addon": ad})
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(ad.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(ad.ID.ValueString()).DeleteAddon(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

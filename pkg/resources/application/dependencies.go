@@ -35,7 +35,7 @@ func ReadDependencies(ctx context.Context, cc *client.Client, organization, appl
 	var allDeps []string
 
 	// Read app dependencies
-	appsRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Dependencies().Getapplicationdependenciesbyorgaandappid(ctx)
+	appsRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Dependencies().ListApplicationDependencies(ctx)
 	if appsRes.HasError() {
 		diags.AddError("failed to get linked apps", appsRes.Error().Error())
 		return types.SetNull(types.StringType)
@@ -45,7 +45,7 @@ func ReadDependencies(ctx context.Context, cc *client.Client, organization, appl
 	}
 
 	// Read addon dependencies
-	addonsRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Addons().Listorganisationapplicationaddons(ctx)
+	addonsRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Addons().ListApplicationAddons(ctx)
 	if addonsRes.HasError() {
 		diags.AddError("failed to get linked addons", addonsRes.Error().Error())
 		return types.SetNull(types.StringType)
@@ -118,7 +118,7 @@ func syncAppDependencies(
 	diags *diag.Diagnostics,
 ) {
 	// Get current linked apps from API
-	currentAppsRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Dependencies().Getapplicationdependenciesbyorgaandappid(ctx)
+	currentAppsRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Dependencies().ListApplicationDependencies(ctx)
 	if currentAppsRes.HasError() {
 		diags.AddError("failed to get linked apps", currentAppsRes.Error().Error())
 		return
@@ -142,7 +142,7 @@ func syncAppDependencies(
 	for appID := range currentSet.Difference(expectedSet).Iter() {
 		tflog.Info(ctx, "unlinking app dependency", map[string]any{"appID": appID})
 
-		deleteRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Dependencies().Dependencyid(appID).Deleteapplicationdependencybyorgaandappid(ctx)
+		deleteRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Dependencies().Dependencyid(appID).RemoveApplicationDependency(ctx)
 		if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
 			diags.AddError("failed to unlink app "+appID, deleteRes.Error().Error())
 		}
@@ -152,7 +152,7 @@ func syncAppDependencies(
 	for appID := range expectedSet.Difference(currentSet).Iter() {
 		tflog.Info(ctx, "linking app dependency", map[string]any{"appID": appID})
 
-		addRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Dependencies().Dependencyid(appID).Addapplicationdependencybyorgaandappid(ctx)
+		addRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Dependencies().Dependencyid(appID).AddApplicationDependency(ctx)
 		if addRes.HasError() {
 			diags.AddError("failed to link app "+appID, addRes.Error().Error())
 		}
@@ -180,7 +180,7 @@ func syncAddonDependencies(
 	}
 
 	// Get current linked addons from API
-	currentAddonsRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Addons().Listorganisationapplicationaddons(ctx)
+	currentAddonsRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Addons().ListApplicationAddons(ctx)
 	if currentAddonsRes.HasError() {
 		diags.AddError("failed to get linked addons", currentAddonsRes.Error().Error())
 		return
@@ -204,7 +204,7 @@ func syncAddonDependencies(
 	for addonID := range currentSet.Difference(expectedSet).Iter() {
 		tflog.Info(ctx, "unlinking addon", map[string]any{"addonID": addonID})
 
-		deleteRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Addons().Addonid(addonID).Unlinkorganisationapplicationaddon(ctx)
+		deleteRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Addons().Addonid(addonID).UnlinkApplicationAddon(ctx)
 		if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
 			diags.AddError("failed to unlink addon "+addonID, deleteRes.Error().Error())
 		}
@@ -214,7 +214,7 @@ func syncAddonDependencies(
 	for addonID := range expectedSet.Difference(currentSet).Iter() {
 		tflog.Info(ctx, "linking addon", map[string]any{"addonID": addonID})
 
-		addRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Addons().Linkorganisationapplicationaddon(ctx, addonID)
+		addRes := pkg.SDK(cc).V2().Organisations().ID(organization).Applications().Appid(applicationID).Addons().LinkApplicationAddon(ctx, addonID)
 		if addRes.HasError() {
 			diags.AddError("failed to link addon "+addonID, addRes.Error().Error())
 		}

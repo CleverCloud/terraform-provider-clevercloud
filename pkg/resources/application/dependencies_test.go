@@ -29,13 +29,13 @@ type DepsResult struct {
 func fetchDependencies(ctx context.Context, cc *client.Client, org, appID string) (*DepsResult, error) {
 	result := &DepsResult{}
 
-	appsRes := pkg.SDK(cc).V2().Organisations().ID(org).Applications().Appid(appID).Dependencies().Getapplicationdependenciesbyorgaandappid(ctx)
+	appsRes := pkg.SDK(cc).V2().Organisations().ID(org).Applications().Appid(appID).Dependencies().ListApplicationDependencies(ctx)
 	if appsRes.HasError() {
 		return nil, appsRes.Error()
 	}
 	result.Apps = *appsRes.Payload()
 
-	addonsRes := pkg.SDK(cc).V2().Organisations().ID(org).Applications().Appid(appID).Addons().Listorganisationapplicationaddons(ctx)
+	addonsRes := pkg.SDK(cc).V2().Organisations().ID(org).Applications().Appid(appID).Addons().ListApplicationAddons(ctx)
 	if addonsRes.HasError() {
 		return nil, addonsRes.Error()
 	}

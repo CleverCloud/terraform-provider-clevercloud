@@ -23,7 +23,7 @@ func SweepNetworkgroups(region string) error {
 	log.Printf("[INFO] Sweeping networkgroups in organization: %s", tests.ORGANISATION)
 
 	// List all networkgroups
-	ngsRes := pkg.SDK(cc).V4().Networkgroups().Organisations().Ownerid(tests.ORGANISATION).Networkgroups().Listnetworkgroups(ctx)
+	ngsRes := pkg.SDK(cc).V4().Networkgroups().Organisations().Ownerid(tests.ORGANISATION).Networkgroups().ListNetworkGroups(ctx)
 	if ngsRes.HasError() {
 		return fmt.Errorf("failed to list networkgroups: %w", ngsRes.Error())
 	}
@@ -39,7 +39,7 @@ func SweepNetworkgroups(region string) error {
 		}
 
 		log.Printf("[INFO] Deleting networkgroup: %s (%s)", ng.Label, ng.ID)
-		delRes := pkg.SDK(cc).V4().Networkgroups().Organisations().Ownerid(tests.ORGANISATION).Networkgroups().Networkgroupid(ng.ID).Deletenetworkgroup(ctx)
+		delRes := pkg.SDK(cc).V4().Networkgroups().Organisations().Ownerid(tests.ORGANISATION).Networkgroups().Networkgroupid(ng.ID).DeleteNetworkGroup(ctx)
 		if delRes.HasError() {
 			log.Printf("[ERROR] Failed to delete networkgroup %s: %v", ng.ID, delRes.Error())
 			errors++
@@ -67,7 +67,7 @@ func SweepApplications(region string) error {
 	log.Printf("[INFO] Sweeping applications in organization: %s", tests.ORGANISATION)
 
 	// List all applications
-	appsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Listorganisationapplications(ctx)
+	appsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().ListApplications(ctx)
 	if appsRes.HasError() {
 		return fmt.Errorf("failed to list applications: %w", appsRes.Error())
 	}
@@ -89,7 +89,7 @@ func SweepApplications(region string) error {
 		}
 
 		log.Printf("[INFO] Deleting application: %s (%s)", app.Name, app.ID)
-		delRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(app.ID).Deleteorganisationapplication(ctx)
+		delRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(app.ID).DeleteApplication(ctx)
 		if delRes.HasError() {
 			log.Printf("[ERROR] Failed to delete application %s: %v", app.ID, delRes.Error())
 			errors++
@@ -117,7 +117,7 @@ func SweepAddons(region string) error {
 	log.Printf("[INFO] Sweeping addons in organization: %s", tests.ORGANISATION)
 
 	// List all addons
-	addonsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Getaddonsbyorgaid(ctx)
+	addonsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().ListAddons(ctx)
 	if addonsRes.HasError() {
 		return fmt.Errorf("failed to list addons: %w", addonsRes.Error())
 	}
@@ -133,7 +133,7 @@ func SweepAddons(region string) error {
 		}
 
 		log.Printf("[INFO] Deleting addon: %s (%s) - provider: %s", pkg.Deref(addon.Name), pkg.Deref(addon.RealID), addon.Provider.ID)
-		delRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(pkg.Deref(addon.RealID)).Deprovisionaddonbyorgaandaddonid(ctx)
+		delRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(pkg.Deref(addon.RealID)).DeleteAddon(ctx)
 		if delRes.IsNotFoundError() {
 			log.Printf("[INFO] Addon %s already deleted", pkg.Deref(addon.RealID))
 			continue
@@ -170,7 +170,7 @@ func SweepKubernetes(region string) error {
 	log.Printf("[INFO] Sweeping Kubernetes clusters in organization: %s", tests.ORGANISATION)
 
 	// List all Kubernetes clusters
-	clustersRes := pkg.SDK(cc).V4().Kubernetes().Organisations().Ownerid(tests.ORGANISATION).Clusters().Listkubernetesclusters(ctx)
+	clustersRes := pkg.SDK(cc).V4().Kubernetes().Organisations().Ownerid(tests.ORGANISATION).Clusters().ListKubernetesClusters(ctx)
 	if clustersRes.HasError() {
 		return fmt.Errorf("failed to list Kubernetes clusters: %w", clustersRes.Error())
 	}
@@ -192,7 +192,7 @@ func SweepKubernetes(region string) error {
 		}
 
 		log.Printf("[INFO] Deleting Kubernetes cluster: %s (%s) - Status: %s", cluster.Name, cluster.ID, cluster.Status)
-		delRes := pkg.SDK(cc).V4().Kubernetes().Organisations().Ownerid(tests.ORGANISATION).Clusters().Kubernetesid(cluster.ID).Deletekubernetescluster(ctx)
+		delRes := pkg.SDK(cc).V4().Kubernetes().Organisations().Ownerid(tests.ORGANISATION).Clusters().Kubernetesid(cluster.ID).DeleteKubernetesCluster(ctx)
 		if delRes.IsNotFoundError() {
 			log.Printf("[INFO] Kubernetes cluster %s already deleted", cluster.ID)
 			continue
@@ -224,7 +224,7 @@ func SweepAddonProviders(region string) error {
 	log.Printf("[INFO] Sweeping addon providers in organization: %s", tests.ORGANISATION)
 
 	// List all addon providers
-	providersRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Getprovidersinfo(ctx)
+	providersRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().ListAddonProviders(ctx)
 	if providersRes.HasError() {
 		return fmt.Errorf("failed to list addon providers: %w", providersRes.Error())
 	}
@@ -240,7 +240,7 @@ func SweepAddonProviders(region string) error {
 		}
 
 		log.Printf("[INFO] Deleting addon provider: %s (%s)", pkg.Deref(provider.Name), provider.ID)
-		delRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(provider.ID).Deleteprovider(ctx)
+		delRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(provider.ID).DeleteAddonProvider(ctx)
 		if delRes.IsNotFoundError() {
 			log.Printf("[INFO] Addon provider %s already deleted", provider.ID)
 			continue
@@ -324,7 +324,7 @@ func SweepOAuthConsumers(region string) error {
 	log.Printf("[INFO] Sweeping OAuth consumers in organization: %s", tests.ORGANISATION)
 
 	// List all OAuth consumers
-	consumersRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Consumers().Listorganisationconsumers(ctx)
+	consumersRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Consumers().ListOauthConsumers(ctx)
 	if consumersRes.HasError() {
 		return fmt.Errorf("failed to list OAuth consumers: %w", consumersRes.Error())
 	}
@@ -340,7 +340,7 @@ func SweepOAuthConsumers(region string) error {
 		}
 
 		log.Printf("[INFO] Deleting OAuth consumer: %s (key: %s)", pkg.Deref(consumer.Name), consumer.Key)
-		delRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Consumers().Key(consumer.Key).Deleteorganisationconsumer(ctx)
+		delRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Consumers().Key(consumer.Key).DeleteOauthConsumer(ctx)
 		if delRes.IsNotFoundError() {
 			log.Printf("[INFO] OAuth consumer %s already deleted", consumer.Key)
 			continue

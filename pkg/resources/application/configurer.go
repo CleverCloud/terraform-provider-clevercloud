@@ -19,7 +19,7 @@ func (c Configurer[T]) Delete(ctx context.Context, req resource.DeleteRequest, r
 
 	runtime := (*state).GetRuntimePtr()
 
-	deleteRes := c.SDK.V2().Organisations().ID(c.Organization()).Applications().Appid(runtime.ID.ValueString()).Deleteorganisationapplication(ctx)
+	deleteRes := c.SDK.V2().Organisations().ID(c.Organization()).Applications().Appid(runtime.ID.ValueString()).DeleteApplication(ctx)
 	if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
 		res.Diagnostics.AddError("failed to delete app", deleteRes.Error().Error())
 	} else {

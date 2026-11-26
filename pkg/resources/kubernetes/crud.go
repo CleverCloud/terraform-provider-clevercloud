@@ -85,7 +85,7 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	createRes := clusters(r.Client(), r.Organization()).Createkubernetescluster(ctx, &createReq)
+	createRes := clusters(r.Client(), r.Organization()).CreateKubernetesCluster(ctx, &createReq)
 	if createRes.HasError() {
 		resp.Diagnostics.AddError("failed to create kubernetes cluster", createRes.Error().Error())
 		return
@@ -156,7 +156,7 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		)
 	}
 
-	kubeConfigRes := clusters(r.Client(), r.Organization()).Kubernetesid(k8sCluster.ID).KubeconfigYAML().Getkubeconfig(ctx)
+	kubeConfigRes := clusters(r.Client(), r.Organization()).Kubernetesid(k8sCluster.ID).KubeconfigYAML().GetKubernetesKubeconfig(ctx)
 	if kubeConfigRes.HasError() {
 		resp.Diagnostics.AddWarning("failed to get kubeconfig", kubeConfigRes.Error().Error())
 	} else {
@@ -186,7 +186,7 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	kubernetesRes := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).Getkubernetescluster(ctx)
+	kubernetesRes := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).GetKubernetesCluster(ctx)
 	if kubernetesRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -229,7 +229,7 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 	state.Version = versionFromAPI(string(k8sInfo.Status), k8sInfo.Version, previousVersion, &resp.Diagnostics)
 
 	// Get kubeconfig
-	kubeConfigRes := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).KubeconfigYAML().Getkubeconfig(ctx)
+	kubeConfigRes := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).KubeconfigYAML().GetKubernetesKubeconfig(ctx)
 	if !kubeConfigRes.HasError() {
 		kubeconfig := kubeConfigRes.Payload()
 		state.KubeConfig = pkg.FromStr(string(*kubeconfig))
@@ -341,7 +341,7 @@ func (r *ResourceKubernetes) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	res := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).Deletekubernetescluster(ctx)
+	res := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).DeleteKubernetesCluster(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -404,7 +404,7 @@ func regionFromAPI(ctx context.Context, cc *client.Client, organisationID, zoneI
 	}
 	ctx, cancel := context.WithTimeout(ctx, zoneLookupTimeout)
 	defer cancel()
-	res := pkg.SDK(cc).V4().Kubernetes().Organisations().Ownerid(organisationID).Zones().Listkubernetesownerzones(ctx)
+	res := pkg.SDK(cc).V4().Kubernetes().Organisations().Ownerid(organisationID).Zones().ListKubernetesOwnerZones(ctx)
 	if res.HasError() {
 		return previous, res.Error()
 	}
@@ -756,7 +756,7 @@ func patchCluster(
 
 	for {
 		reqCtx, cancelRequest := context.WithTimeout(loopCtx, nodeAutoprovisioningRequestTimeout)
-		res := clusters(cc, organisationID).Kubernetesid(clusterID).Updatekubernetescluster(reqCtx, &payload)
+		res := clusters(cc, organisationID).Kubernetesid(clusterID).UpdateKubernetesCluster(reqCtx, &payload)
 		cancelRequest()
 
 		if !res.HasError() {
@@ -914,7 +914,7 @@ func changeClusterVersion(
 	}
 
 	res := sdk.NewSDK(sdk.WithClient(cc)).V4().Kubernetes().Organisations().Ownerid(organisationID).Clusters().Kubernetesid(clusterID).
-		Version().Update().Updatekubernetesclusterversion(ctx, &models.PatchClusterVersion{TargetVersion: version})
+		Version().Update().UpdateKubernetesClusterVersion(ctx, &models.PatchClusterVersion{TargetVersion: version})
 	if res.HasError() {
 		diags.AddError(summary, patchErrorDetail("", res.Error().Error(), res.SozuID()))
 		return false
@@ -984,7 +984,7 @@ func waitForCluster(
 	for {
 		// probe before waiting, a ticker never fires at t=0
 		reqCtx, cancelRequest := context.WithTimeout(loopCtx, nodeAutoprovisioningRequestTimeout)
-		res := clusters(cc, organisationID).Kubernetesid(clusterID).Getkubernetescluster(reqCtx)
+		res := clusters(cc, organisationID).Kubernetesid(clusterID).GetKubernetesCluster(reqCtx)
 		cancelRequest()
 
 		switch {

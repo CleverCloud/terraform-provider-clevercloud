@@ -72,7 +72,7 @@ func TestAccMateriaKV_Import(t *testing.T) {
 	// before Terraform takes ownership of the resource.
 	t.Cleanup(func() {
 		if addonID != "" {
-			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(context.Background())
+			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).DeleteAddon(context.Background())
 		}
 	})
 

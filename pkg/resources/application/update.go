@@ -35,7 +35,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 
 	req.Application.SeparateBuild = pkg.Ptr(pkg.Deref(req.Application.BuildFlavor) != "")
 
-	appRes := pkg.SDK(req.Client).V2().Organisations().ID(req.Organization).Applications().Appid(req.ID).Updateorganisationapplication(ctx, &req.Application)
+	appRes := pkg.SDK(req.Client).V2().Organisations().ID(req.Organization).Applications().Appid(req.ID).UpdateApplication(ctx, &req.Application)
 	if appRes.HasError() {
 		diags.AddError("failed to update application", appRes.Error().Error())
 		tflog.Error(ctx, "failed to update app", map[string]any{"error": appRes.Error().Error(), "payload": fmt.Sprintf("%+v", req.Application)})
@@ -55,7 +55,7 @@ func UpdateApp(ctx context.Context, req UpdateReq) (*CreateRes, diag.Diagnostics
 	SyncVHostsOnUpdate(ctx, req.Client, req.Organization, req.VHosts, &diags, res.Application.ID)
 
 	// This is dirty, but we need a refresh
-	vhostsRes := pkg.SDK(req.Client).V2().Organisations().ID(req.Organization).Applications().Appid(res.Application.ID).Vhosts().Listorganisationapplicationvirtualhosts(ctx)
+	vhostsRes := pkg.SDK(req.Client).V2().Organisations().ID(req.Organization).Applications().Appid(res.Application.ID).Vhosts().ListApplicationDomains(ctx)
 	if vhostsRes.HasError() {
 		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
 		return res, diags
@@ -195,5 +195,5 @@ func restartApp(ctx context.Context, cc *client.Client, organisationID, applicat
 	if withoutCache {
 		opts = append(opts, applications.WithUsecache("no"))
 	}
-	return pkg.SDK(cc).V2().Organisations().ID(organisationID).Applications().Appid(applicationID).Instances().Redeployorganisationapplication(ctx, opts...)
+	return pkg.SDK(cc).V2().Organisations().ID(organisationID).Applications().Appid(applicationID).Instances().DeployApplication(ctx, opts...)
 }

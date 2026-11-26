@@ -30,7 +30,7 @@ func (r *ResourceOAuthConsumer) Create(ctx context.Context, req resource.CreateR
 		Rights:      rightsReq,
 	}
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Createorganisationconsumer(ctx, &createReq)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().CreateOauthConsumer(ctx, &createReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create OAuth consumer", res.Error().Error())
 		return
@@ -43,7 +43,7 @@ func (r *ResourceOAuthConsumer) Create(ctx context.Context, req resource.CreateR
 	resp.Diagnostics.Append(resp.State.Set(ctx, consumer)...)
 
 	// Get the secret (requires separate API call)
-	secretRes := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(created.Key).Secret().Getorganisationconsumersecret(ctx)
+	secretRes := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(created.Key).Secret().GetOauthConsumerSecret(ctx)
 	if secretRes.HasError() {
 		resp.Diagnostics.AddError("failed to get OAuth consumer secret", secretRes.Error().Error())
 		return
@@ -65,7 +65,7 @@ func (r *ResourceOAuthConsumer) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	consumerRes := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(consumer.ID.ValueString()).Getorganisationconsumer(ctx)
+	consumerRes := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(consumer.ID.ValueString()).GetOauthConsumer(ctx)
 	if consumerRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -81,7 +81,7 @@ func (r *ResourceOAuthConsumer) Read(ctx context.Context, req resource.ReadReque
 		consumer.Rights = r.rightsResponseToSet(ctx, consumerData.Rights, &resp.Diagnostics)
 	}
 
-	secretRes := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(consumer.ID.ValueString()).Secret().Getorganisationconsumersecret(ctx)
+	secretRes := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(consumer.ID.ValueString()).Secret().GetOauthConsumerSecret(ctx)
 	if secretRes.HasError() {
 		resp.Diagnostics.AddError("failed to get OAuth consumer secret", secretRes.Error().Error())
 	} else {
@@ -119,7 +119,7 @@ func (r *ResourceOAuthConsumer) Update(ctx context.Context, req resource.UpdateR
 		Rights:      rightsReq,
 	}
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(plan.ID.ValueString()).Updateorganisationconsumer(ctx, &updateReq)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(plan.ID.ValueString()).UpdateOauthConsumer(ctx, &updateReq)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to update OAuth consumer", res.Error().Error())
 		return
@@ -142,7 +142,7 @@ func (r *ResourceOAuthConsumer) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(consumer.ID.ValueString()).Deleteorganisationconsumer(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Consumers().Key(consumer.ID.ValueString()).DeleteOauthConsumer(ctx)
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete OAuth consumer", res.Error().Error())
 	} else {

@@ -58,7 +58,7 @@ func (r *ResourceMatomo) Create(ctx context.Context, req resource.CreateRequest,
 	appMatomo.Region = pkg.FromStr(addon.Region)
 	res.Diagnostics.Append(res.State.Set(ctx, appMatomo)...)
 
-	matomoRes := r.SDK.V4().AddonProviders().AddonMatomo().Addons().Addonmatomoid(pkg.Deref(addon.RealID)).Getmatomo(ctx)
+	matomoRes := r.SDK.V4().AddonProviders().AddonMatomo().Addons().Addonmatomoid(pkg.Deref(addon.RealID)).GetMatomo(ctx)
 	if matomoRes.HasError() {
 		res.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
 	} else {
@@ -89,7 +89,7 @@ func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	matomoRes := r.SDK.V4().AddonProviders().AddonMatomo().Addons().Addonmatomoid(state.ID.ValueString()).Getmatomo(ctx)
+	matomoRes := r.SDK.V4().AddonProviders().AddonMatomo().Addons().Addonmatomoid(state.ID.ValueString()).GetMatomo(ctx)
 	if matomoRes.HasError() {
 		resp.Diagnostics.AddError("cannot get matomo", matomoRes.Error().Error())
 	} else {
@@ -105,7 +105,7 @@ func (r *ResourceMatomo) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).GetAddon(ctx)
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Matomo addon", addonRes.Error().Error())
 	} else {
@@ -135,7 +135,7 @@ func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest,
 		return
 	}
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -159,7 +159,7 @@ func (r *ResourceMatomo) Update(ctx context.Context, req resource.UpdateRequest,
 // and records in state the version the platform reports afterwards.
 func (r *ResourceMatomo) setVersion(ctx context.Context, version string, state *Matomo, diags *diag.Diagnostics) {
 	res := r.SDK.V4().AddonProviders().AddonMatomo().Addons().Addonmatomoid(state.ID.ValueString()).Version().Update().
-		Createversionupdatematomo(ctx, &models.MatomoPatchRequest{TargetVersion: version})
+		UpdateMatomoVersion(ctx, &models.MatomoPatchRequest{TargetVersion: version})
 	if res.HasError() {
 		diags.AddAttributeError(path.Root("version"), "failed to change the Matomo version", res.Error().Error())
 		return
@@ -181,7 +181,7 @@ func (r *ResourceMatomo) Delete(ctx context.Context, req resource.DeleteRequest,
 		resp.Diagnostics.AddError("cannot get ID of matomo", err.Error())
 	}
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonID).DeleteAddon(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

@@ -55,7 +55,7 @@ func (r *ResourceFSBucket) Create(ctx context.Context, req resource.CreateReques
 	resp.Diagnostics.Append(resp.State.Set(ctx, fsbucket)...)
 
 	tflog.Debug(ctx, "get addon env vars", map[string]any{"fsbucket": addonRes.RealID})
-	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(pkg.Deref(addonRes.RealID)).Env().Getaddonenvbyorgaandaddonid(ctx)
+	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(pkg.Deref(addonRes.RealID)).Env().GetAddonEnvironment(ctx)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon env vars", envRes.Error().Error())
 		return
@@ -90,7 +90,7 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(fsbucket.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(fsbucket.ID.ValueString()).GetAddon(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -101,7 +101,7 @@ func (r *ResourceFSBucket) Read(ctx context.Context, req resource.ReadRequest, r
 	}
 	addon := addonRes.Payload()
 
-	addonEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(fsbucket.ID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
+	addonEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(fsbucket.ID.ValueString()).Env().GetAddonEnvironment(ctx)
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get addon env", addonEnvRes.Error().Error())
 		return
@@ -141,7 +141,7 @@ func (r *ResourceFSBucket) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	// Only name can be edited
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -165,7 +165,7 @@ func (r *ResourceFSBucket) Delete(ctx context.Context, req resource.DeleteReques
 	}
 	tflog.Debug(ctx, "FSBUCKET DELETE", map[string]any{"fsbucket": fsbucket})
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(fsbucket.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(fsbucket.ID.ValueString()).GetAddon(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 	}
@@ -174,7 +174,7 @@ func (r *ResourceFSBucket) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(fsbucket.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(fsbucket.ID.ValueString()).DeleteAddon(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

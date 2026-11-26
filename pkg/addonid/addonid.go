@@ -20,7 +20,7 @@ import (
 // FromRealIDs resolves real IDs (`postgresql_xxx`) to add-on IDs (`addon_xxx`); an
 // add-on ID is returned as is.
 func FromRealIDs(ctx context.Context, cc *client.Client, organisation string, realID ...string) ([]string, error) {
-	addonsRes := pkg.SDK(cc).V2().Organisations().ID(organisation).Addons().Getaddonsbyorgaid(ctx)
+	addonsRes := pkg.SDK(cc).V2().Organisations().ID(organisation).Addons().ListAddons(ctx)
 	if addonsRes.HasError() {
 		return nil, addonsRes.Error()
 	}
@@ -63,7 +63,7 @@ func FromRealID(ctx context.Context, cc *client.Client, organisation string, rea
 
 	// Wrap the operation in a retry mechanism
 	for attempt := range config.MaxAttempts {
-		addonsRes := pkg.SDK(cc).V2().Organisations().ID(organisation).Addons().Getaddonsbyorgaid(ctx)
+		addonsRes := pkg.SDK(cc).V2().Organisations().ID(organisation).Addons().ListAddons(ctx)
 		if addonsRes.HasError() {
 			lastError = addonsRes.Error()
 			tflog.Warn(ctx, fmt.Sprintf(
@@ -119,7 +119,7 @@ func ToRealID(ctx context.Context, cc *client.Client, organisation string, addon
 		return addonID, nil
 	}
 
-	addonsRes := pkg.SDK(cc).V2().Organisations().ID(organisation).Addons().Getaddonsbyorgaid(ctx)
+	addonsRes := pkg.SDK(cc).V2().Organisations().ID(organisation).Addons().ListAddons(ctx)
 	if addonsRes.HasError() {
 		return "", addonsRes.Error()
 	}

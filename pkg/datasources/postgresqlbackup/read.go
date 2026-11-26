@@ -21,7 +21,7 @@ import (
 // list whose entries are either database archives or Elasticsearch snapshots; a PostgreSQL
 // add-on only has archives.
 func ListBackups(ctx context.Context, cc *client.Client, organisationID, realID string) ([]models.AddonBackup, error) {
-	res := pkg.SDK(cc).V2().Backups().Ownerid(organisationID).Ref(realID).Getbackups(ctx)
+	res := pkg.SDK(cc).V2().Backups().Ownerid(organisationID).Ref(realID).ListBackups(ctx)
 	if res.HasError() {
 		return nil, res.Error()
 	}

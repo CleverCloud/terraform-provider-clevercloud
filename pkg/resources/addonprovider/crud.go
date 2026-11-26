@@ -62,7 +62,7 @@ func SyncFeatures(
 	diags *diag.Diagnostics,
 ) []Feature {
 	// Step 1: Get current features from API
-	currentFeaturesRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Features().Getproviderfeatures(ctx)
+	currentFeaturesRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Features().ListAddonProviderFeatures(ctx)
 	var currentFeatureNames []string
 	if currentFeaturesRes.HasError() && !currentFeaturesRes.IsNotFoundError() {
 		diags.AddError("failed to list addon provider features", currentFeaturesRes.Error().Error())
@@ -96,7 +96,7 @@ func SyncFeatures(
 	for featureName := range currentSet.Difference(expectedSet).Iter() {
 		tflog.Debug(ctx, "deleting feature", map[string]any{"name": featureName})
 
-		delRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Features().Featureid(featureName).Deleteproviderfeature(ctx)
+		delRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Features().Featureid(featureName).DeleteAddonProviderFeature(ctx)
 		if delRes.HasError() && !delRes.IsNotFoundError() {
 			diags.AddError(
 				fmt.Sprintf("failed to delete feature %s", featureName),
@@ -113,7 +113,7 @@ func SyncFeatures(
 	// features back to make sure they are really gone instead of reporting a
 	// success that leaves the provider out of sync with the state.
 	if deletedFeatures.Size() > 0 {
-		remainingRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Features().Getproviderfeatures(ctx)
+		remainingRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Features().ListAddonProviderFeatures(ctx)
 		if remainingRes.HasError() && !remainingRes.IsNotFoundError() {
 			diags.AddError("failed to list addon provider features", remainingRes.Error().Error())
 			return nil
@@ -143,7 +143,7 @@ func SyncFeatures(
 			Type: feature.Type.ValueString(),
 		}
 
-		featureRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Features().Addproviderfeature(ctx, &featureReq)
+		featureRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Features().CreateAddonProviderFeature(ctx, &featureReq)
 		if featureRes.HasError() {
 			diags.AddError(
 				fmt.Sprintf("failed to create feature %s", featureName),
@@ -180,7 +180,7 @@ func SyncPlans(
 	diags *diag.Diagnostics,
 ) []Plan {
 	// Step 1: Get current plans from API
-	currentPlansRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Plans().Getproviderplans(ctx)
+	currentPlansRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Plans().ListAddonProviderPlans(ctx)
 	var currentPlanSlugs []string
 	currentPlanMap := make(map[string]models.AddonPlanView)
 	if currentPlansRes.HasError() && !currentPlansRes.IsNotFoundError() {
@@ -216,7 +216,7 @@ func SyncPlans(
 		currentPlan := currentPlanMap[planSlug]
 		tflog.Info(ctx, "deleting plan", map[string]any{"slug": planSlug, "id": currentPlan.ID})
 
-		delRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Plans().Planid(currentPlan.ID).Deleteproviderplan(ctx)
+		delRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Plans().Planid(currentPlan.ID).DeleteAddonProviderPlan(ctx)
 		if delRes.HasError() && !delRes.IsNotFoundError() {
 			diags.AddError(
 				fmt.Sprintf("failed to delete plan %s", planSlug),
@@ -251,7 +251,7 @@ func SyncPlans(
 		tflog.Info(ctx, "creating plan", map[string]any{"slug": planSlug})
 
 		planReq := buildPlanRequest(plan)
-		planRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Plans().Addproviderplan(ctx, &planReq)
+		planRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Plans().CreateAddonProviderPlan(ctx, &planReq)
 		if planRes.HasError() {
 			diags.AddError(
 				fmt.Sprintf("failed to create plan %s", planSlug),
@@ -278,7 +278,7 @@ func SyncPlans(
 		tflog.Info(ctx, "updating plan", map[string]any{"slug": planSlug, "id": currentPlan.ID})
 
 		planReq := buildPlanRequest(expectedPlan)
-		planRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Plans().Planid(currentPlan.ID).Editproviderplan(ctx, &planReq)
+		planRes := pkg.SDK(cc).V2().Organisations().ID(organization).Addonproviders().Providerid(providerID).Plans().Planid(currentPlan.ID).UpdateAddonProviderPlan(ctx, &planReq)
 		if planRes.HasError() {
 			diags.AddError(
 				fmt.Sprintf("failed to update plan %s", planSlug),
@@ -319,7 +319,7 @@ func (r *ResourceAddonProvider) Create(ctx context.Context, req resource.CreateR
 		},
 	}
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Createprovider(ctx, &manifest)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().CreateAddonProvider(ctx, &manifest)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to create addon provider", res.Error().Error())
 		return
@@ -374,7 +374,7 @@ func (r *ResourceAddonProvider) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Call API to get current state
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(ap.ProviderID.ValueString()).Getproviderinfo(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(ap.ProviderID.ValueString()).GetAddonProvider(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -385,7 +385,7 @@ func (r *ResourceAddonProvider) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Read features from API
-	featuresRes := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(ap.ProviderID.ValueString()).Features().Getproviderfeatures(ctx)
+	featuresRes := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(ap.ProviderID.ValueString()).Features().ListAddonProviderFeatures(ctx)
 	if featuresRes.HasError() && !featuresRes.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to read addon provider features", featuresRes.Error().Error())
 		return
@@ -400,7 +400,7 @@ func (r *ResourceAddonProvider) Read(ctx context.Context, req resource.ReadReque
 	}
 
 	// Read plans from API
-	plansRes := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(ap.ProviderID.ValueString()).Plans().Getproviderplans(ctx)
+	plansRes := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(ap.ProviderID.ValueString()).Plans().ListAddonProviderPlans(ctx)
 	if plansRes.HasError() && !plansRes.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to read addon provider plans", plansRes.Error().Error())
 		return
@@ -437,7 +437,7 @@ func (r *ResourceAddonProvider) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Update the addon provider via API
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(plan.ProviderID.ValueString()).Updateproviderinfos(ctx, &infos)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(plan.ProviderID.ValueString()).UpdateAddonProvider(ctx, &infos)
 	if res.HasError() {
 		resp.Diagnostics.AddError("failed to update addon provider", res.Error().Error())
 		return
@@ -478,7 +478,7 @@ func (r *ResourceAddonProvider) Delete(ctx context.Context, req resource.DeleteR
 		return
 	}
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(ap.ProviderID.ValueString()).Deleteprovider(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addonproviders().Providerid(ap.ProviderID.ValueString()).DeleteAddonProvider(ctx)
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete addon provider", res.Error().Error())
 		return

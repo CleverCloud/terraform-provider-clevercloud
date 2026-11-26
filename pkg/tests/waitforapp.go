@@ -58,7 +58,7 @@ func (w waitForAppInstanceUp) CheckState(ctx context.Context, req statecheck.Che
 			resp.Error = fmt.Errorf("timeout waiting for app %s instance UP: %w", appID, deadline.Err())
 			return
 		default:
-			res := pkg.SDK(cc).V2().Organisations().ID(ORGANISATION).Applications().Appid(appID).Instances().Listorganisationapplicationinstances(deadline)
+			res := pkg.SDK(cc).V2().Organisations().ID(ORGANISATION).Applications().Appid(appID).Instances().ListApplicationInstances(deadline)
 			if res.HasError() {
 				tflog.Warn(deadline, "ListInstances error", map[string]any{"err": res.Error().Error()})
 				time.Sleep(2 * time.Second)

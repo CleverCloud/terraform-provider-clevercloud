@@ -13,7 +13,7 @@ import (
 // The catalogue is downloaded once per client, see cachedCatalogue.
 func AddonProviders(ctx context.Context, cc *client.Client) client.Response[[]models.AddonProviderInfoFullView] {
 	return cachedCatalogue(cc, "addonproviders", func() client.Response[[]models.AddonProviderInfoFullView] {
-		return SDK(cc).V2().Products().Addonproviders().Getaddonproviders(ctx)
+		return SDK(cc).V2().Products().Addonproviders().ListProductAddons(ctx)
 	})
 }
 
@@ -29,7 +29,7 @@ func ProductInstances(ctx context.Context, cc *client.Client, ownerID *string) c
 	}
 
 	return cachedCatalogue(cc, name, func() client.Response[[]models.AvailableInstanceView] {
-		return SDK(cc).V2().Products().Instances().Getavailableinstances(ctx, opts...)
+		return SDK(cc).V2().Products().Instances().ListProductRuntimes(ctx, opts...)
 	})
 }
 

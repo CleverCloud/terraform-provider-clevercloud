@@ -96,7 +96,7 @@ func cellarIDFrom(state *terraform.State) string {
 }
 
 func s3ClientFor(ctx context.Context, cc *client.Client, cellarID string) (*minio.Client, error) {
-	res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(cellarID).Env().Getaddonenvbyorgaandaddonid(ctx)
+	res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(cellarID).Env().GetAddonEnvironment(ctx)
 	if res.HasError() {
 		return nil, res.Error()
 	}
@@ -240,7 +240,7 @@ func TestAccCellarBucket_cellarDeletedOutOfBand(t *testing.T) {
 				if err != nil {
 					return err
 				}
-				if res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(ctx); res.HasError() {
+				if res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).DeleteAddon(ctx); res.HasError() {
 					return res.Error()
 				}
 				return nil

@@ -55,7 +55,7 @@ func (r *ResourceMateriaKV) Create(ctx context.Context, req resource.CreateReque
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, kv)...)
 
-	kvInfoRes := r.SDK.V4().Materia().Organisations().Ownerid(r.Organization()).Materia().Databases().Kvid(kv.ID.ValueString()).Getmateriakv(ctx)
+	kvInfoRes := r.SDK.V4().Materia().Organisations().Ownerid(r.Organization()).Materia().Databases().Kvid(kv.ID.ValueString()).GetMateriaKv(ctx)
 	if kvInfoRes.HasError() {
 		resp.Diagnostics.AddError("failed to get materia kv connection infos", kvInfoRes.Error().Error())
 		return
@@ -90,7 +90,7 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 		return
 	}
 
-	addonKVRes := r.SDK.V4().Materia().Organisations().Ownerid(r.Organization()).Materia().Databases().Kvid(kv.ID.ValueString()).Getmateriakv(ctx)
+	addonKVRes := r.SDK.V4().Materia().Organisations().Ownerid(r.Organization()).Materia().Databases().Kvid(kv.ID.ValueString()).GetMateriaKv(ctx)
 	if addonKVRes.IsNotFoundError() {
 		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
 		resp.Diagnostics.Append(diags...)
@@ -118,7 +118,7 @@ func (r *ResourceMateriaKV) Read(ctx context.Context, req resource.ReadRequest, 
 	// attribute makes the plan fail.
 	// The v2 add-on endpoint takes a real ID as readily as an add-on ID, so no
 	// lookup is needed here.
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(kv.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(kv.ID.ValueString()).GetAddon(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -156,7 +156,7 @@ func (r *ResourceMateriaKV) Update(ctx context.Context, req resource.UpdateReque
 		return
 	}
 	// Only name can be edited
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -179,7 +179,7 @@ func (r *ResourceMateriaKV) Delete(ctx context.Context, req resource.DeleteReque
 	}
 	tflog.Debug(ctx, "MateriaKV DELETE", map[string]any{"kv": kv})
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(kv.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(kv.ID.ValueString()).DeleteAddon(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

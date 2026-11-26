@@ -18,7 +18,7 @@ func (r *ResourceCellarBucket) Create(ctx context.Context, req resource.CreateRe
 		return
 	}
 
-	cellarEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(bucket.CellarID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
+	cellarEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(bucket.CellarID.ValueString()).Env().GetAddonEnvironment(ctx)
 	if cellarEnvRes.HasError() {
 		resp.Diagnostics.AddError(fmt.Sprintf("create: failed to get cellar env %s", bucket.CellarID.String()), cellarEnvRes.Error().Error())
 		return
@@ -51,7 +51,7 @@ func (r *ResourceCellarBucket) Read(ctx context.Context, req resource.ReadReques
 		return
 	}
 
-	cellarEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(cellar.CellarID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
+	cellarEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(cellar.CellarID.ValueString()).Env().GetAddonEnvironment(ctx)
 	if cellarEnvRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -120,7 +120,7 @@ func (r *ResourceCellarBucket) Delete(ctx context.Context, req resource.DeleteRe
 		return
 	}
 
-	cellarEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(bucket.CellarID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
+	cellarEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(bucket.CellarID.ValueString()).Env().GetAddonEnvironment(ctx)
 	if cellarEnvRes.HasError() {
 		resp.Diagnostics.AddError("delete: failed to get cellar env", cellarEnvRes.Error().Error())
 		return

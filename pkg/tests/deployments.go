@@ -26,7 +26,7 @@ func WaitForDeploymentsSettled(ctx context.Context, cc *client.Client, appID str
 		case <-deadline.Done():
 			return nil, fmt.Errorf("timeout waiting for deployments of %s to settle: %w", appID, deadline.Err())
 		case <-ticker.C:
-			res := pkg.SDK(cc).V2().Organisations().ID(ORGANISATION).Applications().Appid(appID).Deployments().Getapplicationdeploymentsfororga(deadline)
+			res := pkg.SDK(cc).V2().Organisations().ID(ORGANISATION).Applications().Appid(appID).Deployments().ListApplicationDeployments(deadline)
 			if res.IsNotFoundError() {
 				continue
 			}

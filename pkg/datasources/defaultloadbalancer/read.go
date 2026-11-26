@@ -23,7 +23,7 @@ func (d *DataSourceDefaultLoadBalancer) Read(ctx context.Context, req datasource
 	tflog.Debug(ctx, "Reading default load balancer", map[string]any{"application_id": appId})
 
 	// Get load balancer information from API
-	loadbalancerRes := pkg.SDK(d.Client()).V4().LoadBalancers().Organisations().Ownerid(d.Organization()).Applications().Applicationid(appId).LoadBalancers().Kind("default").Listapplicationloadbalancers(ctx)
+	loadbalancerRes := pkg.SDK(d.Client()).V4().LoadBalancers().Organisations().Ownerid(d.Organization()).Applications().Applicationid(appId).LoadBalancers().Kind("default").ListApplicationLoadBalancers(ctx)
 	if loadbalancerRes.HasError() {
 		res.Diagnostics.AddError("Failed to get load balancer", loadbalancerRes.Error().Error())
 		return

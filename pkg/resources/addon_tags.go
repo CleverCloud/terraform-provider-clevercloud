@@ -29,7 +29,7 @@ func ReadAddonTags(ctx context.Context, p provider.Provider, id string, stateVal
 	}
 
 	return ReadTags(ctx, stateValue, func() client.Response[[]string] {
-		return pkg.SDK(p.Client()).V2().Organisations().ID(p.Organization()).Addons().Addonid(addonID).Tags().Getaddontagsbyorgaidandaddonid(ctx)
+		return pkg.SDK(p.Client()).V2().Organisations().ID(p.Organization()).Addons().Addonid(addonID).Tags().ListAddonTags(ctx)
 	}, diags)
 }
 
@@ -47,6 +47,6 @@ func SyncAddonTags(ctx context.Context, p provider.Provider, id string, planned,
 	}
 
 	return SyncTags(ctx, planned, current, func(tags []string) client.Response[[]string] {
-		return pkg.SDK(p.Client()).V2().Organisations().ID(p.Organization()).Addons().Addonid(addonID).Tags().Replaceaddontags(ctx, TagRefs(tags))
+		return pkg.SDK(p.Client()).V2().Organisations().ID(p.Organization()).Addons().Addonid(addonID).Tags().UpdateAddonTags(ctx, TagRefs(tags))
 	}, diags)
 }

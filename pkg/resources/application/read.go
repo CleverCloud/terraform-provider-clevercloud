@@ -51,7 +51,7 @@ func ReadApp(ctx context.Context, cc *client.Client, orgId, appId string) (*Read
 		return r, diags
 	}
 
-	appRes := pkg.SDK(cc).V2().Organisations().ID(orgId).Applications().Appid(appId).Getorganisationapplication(ctx)
+	appRes := pkg.SDK(cc).V2().Organisations().ID(orgId).Applications().Appid(appId).GetApplication(ctx)
 	if appRes.IsNotFoundError() {
 		r.AppIsDeleted = true
 		return r, diags
@@ -63,7 +63,7 @@ func ReadApp(ctx context.Context, cc *client.Client, orgId, appId string) (*Read
 
 	r.App = *appRes.Payload()
 
-	envRes := pkg.SDK(cc).V2().Organisations().ID(orgId).Applications().Appid(appId).Env().Listorganisationapplicationenvironmentvariables(ctx)
+	envRes := pkg.SDK(cc).V2().Organisations().ID(orgId).Applications().Appid(appId).Env().GetApplicationEnvironment(ctx)
 	if envRes.IsNotFoundError() {
 		r.AppIsDeleted = true
 		return r, diags

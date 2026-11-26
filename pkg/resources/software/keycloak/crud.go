@@ -64,7 +64,7 @@ func (r *ResourceKeycloak) Create(ctx context.Context, req resource.CreateReques
 		AddonKeycloak().
 		Addons().
 		Addonkeycloakid(pkg.Deref(addon.RealID)).
-		Getkeycloakwithoutownerid(ctx)
+		GetKeycloakInfo(ctx)
 	if keycloakRes.HasError() {
 		res.Diagnostics.AddError("failed to get Keycloak", keycloakRes.Error().Error())
 	} else {
@@ -95,7 +95,7 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).GetAddon(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -113,7 +113,7 @@ func (r *ResourceKeycloak) Read(ctx context.Context, req resource.ReadRequest, r
 		AddonKeycloak().
 		Addons().
 		Addonkeycloakid(state.ID.ValueString()).
-		Getkeycloakwithoutownerid(ctx)
+		GetKeycloakInfo(ctx)
 	if keycloakRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -143,7 +143,7 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	// Only name can be edited
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -168,7 +168,7 @@ func (r *ResourceKeycloak) Update(ctx context.Context, req resource.UpdateReques
 			Addonkeycloakid(state.ID.ValueString()).
 			Version().
 			Update().
-			Createversionupdatekeycloak(ctx, &models.KeycloakPatchRequest{
+			UpdateKeycloakVersion(ctx, &models.KeycloakPatchRequest{
 				TargetVersion: plan.Version.ValueString(),
 			})
 		if versionRes.HasError() {
@@ -199,7 +199,7 @@ func (r *ResourceKeycloak) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).DeleteAddon(ctx)
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete addon", res.Error().Error())
 	} else {

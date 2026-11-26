@@ -67,7 +67,7 @@ func (r *ResourceKubernetes) UpgradeState(ctx context.Context) map[int64]resourc
 				reqCtx, cancel := context.WithTimeout(ctx, nodeAutoprovisioningRequestTimeout)
 				defer cancel()
 
-				cluster := clusters(r.Client(), r.Organization()).Kubernetesid(old.ID.ValueString()).Getkubernetescluster(reqCtx)
+				cluster := clusters(r.Client(), r.Organization()).Kubernetesid(old.ID.ValueString()).GetKubernetesCluster(reqCtx)
 				if cluster.HasError() {
 					tflog.Warn(ctx, "failed to get the cluster, the next refresh will fill the new kubernetes attributes", map[string]any{"error": cluster.Error().Error()})
 					res.Diagnostics.Append(res.State.Set(ctx, newState)...)

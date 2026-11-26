@@ -71,7 +71,7 @@ func SyncNetworkGroups(
 	// Create SDK instance from provider client
 	sdkClient := sdk.NewSDK(sdk.WithClient(prov.Client()))
 
-	allngRes := pkg.SDK(prov.Client()).V4().Networkgroups().Organisations().Ownerid(prov.Organization()).Networkgroups().Listnetworkgroups(ctx)
+	allngRes := pkg.SDK(prov.Client()).V4().Networkgroups().Organisations().Ownerid(prov.Organization()).Networkgroups().ListNetworkGroups(ctx)
 	if allngRes.HasError() {
 		diags.AddError("failed to list Networkgroups", allngRes.Error().Error())
 		return
@@ -104,7 +104,7 @@ func SyncNetworkGroups(
 			Networkgroupid(inPlaceNG).
 			Members().
 			Memberid(applicationID).
-			Getnetworkgroupmember(ctx)
+			GetNetworkGroupMember(ctx)
 		if memberRes.HasError() {
 			diags.AddError("failed to get member", memberRes.Error().Error())
 			continue
@@ -124,7 +124,7 @@ func SyncNetworkGroups(
 			Networkgroupid(inPlaceNG).
 			Members().
 			Memberid(applicationID).
-			Deletenetworkgroupmember(ctx)
+			DeleteNetworkGroupMember(ctx)
 		if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
 			diags.AddError("failed to remove member from NG", deleteRes.Error().Error())
 			continue
@@ -145,7 +145,7 @@ func SyncNetworkGroups(
 			Networkgroupid(ng).
 			Members().
 			Memberid(applicationID).
-			Deletenetworkgroupmember(ctx)
+			DeleteNetworkGroupMember(ctx)
 		if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
 			diags.AddError("failed to remove member from ng", deleteRes.Error().Error())
 		}
@@ -175,7 +175,7 @@ func SyncNetworkGroups(
 			Networkgroups().
 			Networkgroupid(ng).
 			Members().
-			Createnetworkgroupmember(ctx, &models.WannabeNetworkgroupMember{
+			CreateNetworkGroupMember(ctx, &models.WannabeNetworkgroupMember{
 				ID:         applicationID,
 				Kind:       kind,
 				DomainName: &domainName,
@@ -203,7 +203,7 @@ func validateMemberFQDNs(
 	ngIDToFQDN map[string]string,
 	diags *diag.Diagnostics,
 ) {
-	confRes := network_group.GetNetworkgroupsConfiguration(ctx, prov.Client(), pkg.Tracer)
+	confRes := network_group.GetNetworkGroupConfiguration(ctx, prov.Client(), pkg.Tracer)
 	if confRes.HasError() {
 		tflog.Warn(ctx, "cannot fetch the networkgroup configuration, skipping FQDN validation", map[string]any{"error": confRes.Error().Error()})
 		return
@@ -243,7 +243,7 @@ func ReadNetworkGroups(
 		return NullNetworkgroupConfig
 	}
 
-	allngRes := pkg.SDK(prov.Client()).V4().Networkgroups().Organisations().Ownerid(prov.Organization()).Networkgroups().Listnetworkgroups(ctx)
+	allngRes := pkg.SDK(prov.Client()).V4().Networkgroups().Organisations().Ownerid(prov.Organization()).Networkgroups().ListNetworkGroups(ctx)
 	if allngRes.HasError() {
 		diags.AddError("failed to list Networkgroups", allngRes.Error().Error())
 		return NullNetworkgroupConfig

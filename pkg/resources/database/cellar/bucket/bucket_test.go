@@ -97,7 +97,7 @@ func TestAccCellarBucket_deleteNonEmpty(t *testing.T) {
 				cellarID := resourceState.Primary.Attributes["cellar_id"]
 				bucketName := resourceState.Primary.Attributes["id"]
 
-				res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(cellarID).Env().Getaddonenvbyorgaandaddonid(ctx)
+				res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(cellarID).Env().GetAddonEnvironment(ctx)
 				if res.HasError() {
 					return fmt.Errorf("failed to get cellar env: %s", res.Error().Error())
 				}

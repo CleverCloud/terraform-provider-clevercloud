@@ -82,7 +82,7 @@ func (r ResourceKeycloak) ModifyPlan(ctx context.Context, req resource.ModifyPla
 
 	// Skip validation if version is not specified
 	if !plan.Version.IsNull() && !plan.Version.IsUnknown() {
-		infosRes := r.SDK.V4().AddonProviders().Keycloak().Getkeycloakproviderinformation(ctx)
+		infosRes := r.SDK.V4().AddonProviders().Keycloak().GetKeycloakProviderInformation(ctx)
 		if infosRes.HasError() {
 			res.Diagnostics.AddError("failed to get provider infos", infosRes.Error().Error())
 		} else {

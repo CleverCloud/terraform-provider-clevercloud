@@ -81,7 +81,7 @@ func (r *ResourceKubernetes) ModifyPlan(ctx context.Context, req resource.Modify
 		return
 	}
 
-	product := r.SDK.V4().KubernetesProduct().Getkubernetesserviceconfig(ctx)
+	product := r.SDK.V4().KubernetesProduct().GetKubernetesProduct(ctx)
 	if product.HasError() {
 		// not a reason to block the plan, the API still validates on apply
 		tflog.Warn(ctx, "failed to get the kubernetes service configuration, skipping validation", map[string]any{"error": product.Error().Error()})
@@ -124,7 +124,7 @@ func (r *ResourceKubernetes) checkRegion(ctx context.Context, region string, dia
 	ctx, cancel := context.WithTimeout(ctx, zoneLookupTimeout)
 	defer cancel()
 
-	zones := pkg.SDK(r.Client()).V4().Kubernetes().Organisations().Ownerid(r.Organization()).Zones().Listkubernetesownerzones(ctx)
+	zones := pkg.SDK(r.Client()).V4().Kubernetes().Organisations().Ownerid(r.Organization()).Zones().ListKubernetesOwnerZones(ctx)
 	if zones.HasError() || zones.Payload() == nil {
 		// not a reason to block the plan, the API still validates on apply
 		tflog.Warn(ctx, "failed to list the kubernetes zones, skipping the validation of the region", map[string]any{"error": fmt.Sprint(zones.Error())})

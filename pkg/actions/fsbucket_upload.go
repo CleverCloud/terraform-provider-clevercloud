@@ -180,7 +180,7 @@ func (a *ActionFSBucketUpload) Invoke(ctx context.Context, req action.InvokeRequ
 	}
 
 	Progress(res, "Retrieving fsbucket credentials...")
-	fsbucketEnvRes := pkg.SDK(a.Client()).V2().Organisations().ID(a.Organization()).Addons().Addonid(cfg.FSBucketID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
+	fsbucketEnvRes := pkg.SDK(a.Client()).V2().Organisations().ID(a.Organization()).Addons().Addonid(cfg.FSBucketID.ValueString()).Env().GetAddonEnvironment(ctx)
 	if fsbucketEnvRes.HasError() {
 		res.Diagnostics.AddError("failed to get FSBucket credentials", fsbucketEnvRes.Error().Error())
 		return

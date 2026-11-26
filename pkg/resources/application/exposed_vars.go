@@ -20,7 +20,7 @@ func SyncExposedVariables(ctx context.Context, p provider.Provider, applicationI
 		diags.Append(env.ElementsAs(ctx, &m, false)...)
 	}
 
-	envRes := pkg.SDK(p.Client()).V2().Organisations().ID(p.Organization()).Applications().Appid(applicationID).ExposedEnv().Updateorganisationapplicationexposedenvironmentvariables(ctx, &m)
+	envRes := pkg.SDK(p.Client()).V2().Organisations().ID(p.Organization()).Applications().Appid(applicationID).ExposedEnv().UpdateApplicationExposedEnvironment(ctx, &m)
 	if envRes.HasError() {
 		diags.AddError("failed to update exposed configuration", envRes.Error().Error())
 		return
@@ -30,7 +30,7 @@ func SyncExposedVariables(ctx context.Context, p provider.Provider, applicationI
 // ReadExposedVariables reads exposed environment variables from API.
 // stateValue is used to preserve null vs empty semantics.
 func ReadExposedVariables(ctx context.Context, p provider.Provider, applicationID string, stateValue types.Map, diags *diag.Diagnostics) types.Map {
-	envRes := pkg.SDK(p.Client()).V2().Organisations().ID(p.Organization()).Applications().Appid(applicationID).ExposedEnv().Listorganisationappplicationexposedenvironmentvariables(ctx)
+	envRes := pkg.SDK(p.Client()).V2().Organisations().ID(p.Organization()).Applications().Appid(applicationID).ExposedEnv().GetApplicationExposedEnvironment(ctx)
 	if envRes.HasError() {
 		diags.AddError("failed to list exposed configuration", envRes.Error().Error())
 		return NullExposedEnv

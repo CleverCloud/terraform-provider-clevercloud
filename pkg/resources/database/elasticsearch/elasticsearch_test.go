@@ -323,7 +323,7 @@ func TestAccElasticsearch_RefreshDeleted(t *testing.T) {
 			ResourceName: rName,
 			PreConfig: func() {
 				// delete the elasticsearch using an api call
-				pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(rName).Deprovisionaddonbyorgaandaddonid(ctx)
+				pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(rName).DeleteAddon(ctx)
 			},
 			// refreshing state
 			RefreshState: true,
@@ -347,7 +347,7 @@ func TestAccElasticsearch_Import(t *testing.T) {
 	// before Terraform takes ownership of the resource.
 	t.Cleanup(func() {
 		if addonID != "" {
-			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(context.Background())
+			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).DeleteAddon(context.Background())
 		}
 	})
 

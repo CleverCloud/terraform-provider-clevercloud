@@ -80,7 +80,7 @@ func (r *ResourceElasticsearch) Create(ctx context.Context, req resource.CreateR
 
 	r.readFromAddon(&plan, *createdAddon)
 
-	esRes := pkg.SDK(r.Client()).V4().AddonProviders().EsAddon().Addons().Appid(createdAddon.ID).Getelasticsearch(ctx)
+	esRes := pkg.SDK(r.Client()).V4().AddonProviders().EsAddon().Addons().Appid(createdAddon.ID).GetElasticsearch(ctx)
 	if esRes.HasError() {
 		res.Diagnostics.AddError("failed to get Elasticsearch", esRes.Error().Error())
 	} else {
@@ -107,7 +107,7 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 		return
 	}
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).GetAddon(ctx)
 	if addonRes.IsNotFoundError() {
 		res.State.RemoveResource(ctx)
 		return
@@ -122,7 +122,7 @@ func (r *ResourceElasticsearch) Read(ctx context.Context, req resource.ReadReque
 	if err != nil {
 		res.Diagnostics.AddError("failed to get addon ID", err.Error())
 	} else {
-		elasticRes := pkg.SDK(r.Client()).V4().AddonProviders().EsAddon().Addons().Appid(addonId).Getelasticsearch(ctx)
+		elasticRes := pkg.SDK(r.Client()).V4().AddonProviders().EsAddon().Addons().Appid(addonId).GetElasticsearch(ctx)
 		if elasticRes.HasError() {
 			res.Diagnostics.AddError("failed to get Elasticsearch resource", elasticRes.Error().Error())
 		} else {
@@ -237,7 +237,7 @@ func (r *ResourceElasticsearch) Update(ctx context.Context, req resource.UpdateR
 	}
 
 	// Only name can be edited
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -273,7 +273,7 @@ func (r *ResourceElasticsearch) Delete(ctx context.Context, req resource.DeleteR
 		res.Diagnostics.AddError("failed to convert real ID to addon ID", err.Error())
 	}
 
-	deleteRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(ctx)
+	deleteRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonID).DeleteAddon(ctx)
 	if deleteRes.HasError() && !deleteRes.IsNotFoundError() {
 		res.Diagnostics.AddError("failed to delete addon", deleteRes.Error().Error())
 		return

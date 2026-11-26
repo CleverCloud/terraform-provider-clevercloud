@@ -26,7 +26,7 @@ func SyncVHostsOnCreate(ctx context.Context, client *client.Client, organization
 	}
 
 	// Get current vhosts from remote
-	vhostsRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Listorganisationapplicationvirtualhosts(ctx)
+	vhostsRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().ListApplicationDomains(ctx)
 	if vhostsRes.HasError() {
 		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
 		return
@@ -44,7 +44,7 @@ func SyncVHostsOnCreate(ctx context.Context, client *client.Client, organization
 
 	// Delete vhosts that need to be removed
 	for _, vhost := range vhostsToRemove {
-		deleteVhostRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Domain(vhost).Removeorganisationapplicationvirtualhost(ctx)
+		deleteVhostRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Domain(vhost).DeleteApplicationDomain(ctx)
 		if deleteVhostRes.HasError() {
 			diags.AddError(fmt.Sprintf("failed to remove vhost \"%s\"", vhost), deleteVhostRes.Error().Error())
 		}
@@ -52,7 +52,7 @@ func SyncVHostsOnCreate(ctx context.Context, client *client.Client, organization
 
 	// Add new vhosts
 	for _, vhost := range vhostsToAdd {
-		addVhostRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Domain(vhost).Addorganisationapplicationvirtualhost(ctx)
+		addVhostRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Domain(vhost).CreateApplicationDomain(ctx)
 		if addVhostRes.HasError() {
 			diags.AddError(fmt.Sprintf("failed to add vhost \"%s\"", vhost), addVhostRes.Error().Error())
 		}
@@ -61,7 +61,7 @@ func SyncVHostsOnCreate(ctx context.Context, client *client.Client, organization
 
 // SyncVHostsOnUpdate synchronizes VHosts during resource update
 func SyncVHostsOnUpdate(ctx context.Context, client *client.Client, organization string, reqVhosts []string, diags *diag.Diagnostics, applicationID string) {
-	vhostsRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Listorganisationapplicationvirtualhosts(ctx)
+	vhostsRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().ListApplicationDomains(ctx)
 	if vhostsRes.HasError() {
 		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
 		return
@@ -84,7 +84,7 @@ func SyncVHostsOnUpdate(ctx context.Context, client *client.Client, organization
 
 	// Delete vhosts that need to be removed
 	for _, vhost := range vhostsToRemove {
-		deleteVhostRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Domain(vhost).Removeorganisationapplicationvirtualhost(ctx)
+		deleteVhostRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Domain(vhost).DeleteApplicationDomain(ctx)
 		if deleteVhostRes.HasError() {
 			diags.AddError(fmt.Sprintf("failed to remove vhost \"%s\"", vhost), deleteVhostRes.Error().Error())
 		}
@@ -92,7 +92,7 @@ func SyncVHostsOnUpdate(ctx context.Context, client *client.Client, organization
 
 	// Add new vhosts
 	for _, vhost := range vhostsToAdd {
-		addVhostRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Domain(vhost).Addorganisationapplicationvirtualhost(ctx)
+		addVhostRes := pkg.SDK(client).V2().Organisations().ID(organization).Applications().Appid(applicationID).Vhosts().Domain(vhost).CreateApplicationDomain(ctx)
 		if addVhostRes.HasError() {
 			diags.AddError(fmt.Sprintf("failed to add vhost \"%s\"", vhost), addVhostRes.Error().Error())
 		}
