@@ -59,7 +59,7 @@ func (r *ResourceCellar) Create(ctx context.Context, req resource.CreateRequest,
 	// the add-on exists from here on: save it before anything else can fail
 	resp.Diagnostics.Append(resp.State.Set(ctx, cellar)...)
 
-	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(pkg.Deref(addonRes.RealID)).Env().Getaddonenvbyorgaandaddonid(ctx)
+	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(pkg.Deref(addonRes.RealID)).Env().GetAddonEnvironment(ctx)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env vars", envRes.Error().Error())
 		return
@@ -90,7 +90,7 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(cellar.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(cellar.ID.ValueString()).GetAddon(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -101,7 +101,7 @@ func (r *ResourceCellar) Read(ctx context.Context, req resource.ReadRequest, res
 	}
 	addon := addonRes.Payload()
 
-	addonEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(cellar.ID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
+	addonEnvRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(cellar.ID.ValueString()).Env().GetAddonEnvironment(ctx)
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
@@ -138,7 +138,7 @@ func (r *ResourceCellar) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Only name can be edited
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -162,7 +162,7 @@ func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 	tflog.Debug(ctx, "CELLAR DELETE", map[string]any{"cellar": state})
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).GetAddon(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 	}
@@ -173,7 +173,7 @@ func (r *ResourceCellar) Delete(ctx context.Context, req resource.DeleteRequest,
 
 	// TODO: Use real ID when API supports it
 	// res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(cellar.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonRes.Payload().ID).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonRes.Payload().ID).DeleteAddon(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

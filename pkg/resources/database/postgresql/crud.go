@@ -38,7 +38,7 @@ func (r *ResourcePostgreSQL) providerInfos(ctx context.Context, forMigration boo
 	}
 
 	if *cached == nil {
-		res := pkg.SDK(r.Client()).V4().AddonProviders().PostgresqlAddon().Getpostgresqlproviderinformation(ctx, opts...)
+		res := pkg.SDK(r.Client()).V4().AddonProviders().PostgresqlAddon().GetPostgresqlProviderInformation(ctx, opts...)
 		if res.HasError() {
 			tflog.Error(ctx, "failed to get postgres infos", map[string]any{"error": res.Error().Error()})
 			return nil
@@ -159,7 +159,7 @@ func (r *ResourcePostgreSQL) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonID).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonID).GetAddon(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -252,7 +252,7 @@ func (r *ResourcePostgreSQL) Update(ctx context.Context, req resource.UpdateRequ
 
 	// Only name can be edited
 	if !plan.Name.Equal(state.Name) {
-		addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+		addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 			Name: plan.Name.ValueString(),
 		})
 		if addonRes.HasError() {
@@ -344,7 +344,7 @@ func (r *ResourcePostgreSQL) migrate(ctx context.Context, plan PostgreSQL, state
 
 		firstInstance := pkg.First(instances, func(instance models.SuperNovaInstanceView) bool { return true })
 		state := firstInstance.State
-		if state != "UP" { // BOOTING
+		if state != models.InstanceStateUP { // BOOTING
 			tflog.Info(ctx, "pg status not OK", map[string]any{"state": state})
 			continue
 		}
@@ -452,7 +452,7 @@ func (r *ResourcePostgreSQL) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonID).DeleteAddon(ctx)
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete addon", res.Error().Error())
 	} else {

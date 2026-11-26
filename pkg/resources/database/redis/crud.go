@@ -58,7 +58,7 @@ func (r *ResourceRedis) Create(ctx context.Context, req resource.CreateRequest, 
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, rd)...)
 
-	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(rd.ID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
+	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(rd.ID.ValueString()).Env().GetAddonEnvironment(ctx)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Redis connection infos", envRes.Error().Error())
 		return
@@ -109,7 +109,7 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 		return
 	}
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(rd.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(rd.ID.ValueString()).GetAddon(ctx)
 	if addonRes.IsNotFoundError() {
 		diags = resp.State.SetAttribute(ctx, path.Root("id"), types.StringUnknown())
 		resp.Diagnostics.Append(diags...)
@@ -128,7 +128,7 @@ func (r *ResourceRedis) Read(ctx context.Context, req resource.ReadRequest, resp
 	addonRD := addonRes.Payload()
 	tflog.Debug(ctx, "redis", map[string]any{"payload": fmt.Sprintf("%+v", addonRD)})
 
-	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(rd.ID.ValueString()).Env().Getaddonenvbyorgaandaddonid(ctx)
+	envRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(rd.ID.ValueString()).Env().GetAddonEnvironment(ctx)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Redis connection infos", envRes.Error().Error())
 		return
@@ -179,7 +179,7 @@ func (r *ResourceRedis) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Only name can be edited
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -214,7 +214,7 @@ func (r *ResourceRedis) Delete(ctx context.Context, req resource.DeleteRequest, 
 	}
 	tflog.Debug(ctx, "Redis DELETE", map[string]any{"rd": rd})
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(rd.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(rd.ID.ValueString()).DeleteAddon(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

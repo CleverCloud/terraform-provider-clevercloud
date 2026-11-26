@@ -120,7 +120,7 @@ func (r *ResourceMongoDB) Read(ctx context.Context, req resource.ReadRequest, re
 		return
 	}
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).GetAddon(ctx)
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get MongoDB addon", addonRes.Error().Error())
 		return
@@ -183,7 +183,7 @@ func (r *ResourceMongoDB) Update(ctx context.Context, req resource.UpdateRequest
 	}
 
 	// Only name can be edited
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -222,7 +222,7 @@ func (r *ResourceMongoDB) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).DeleteAddon(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

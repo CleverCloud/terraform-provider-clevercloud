@@ -80,7 +80,7 @@ func TestAccGo_basic(t *testing.T) {
 				tests.NewCheckRemoteResource(
 					fullName,
 					func(ctx context.Context, id string) (*models.ApplicationView, error) {
-						appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
+						appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).GetApplication(ctx)
 						if appRes.HasError() {
 							return nil, appRes.Error()
 						}
@@ -134,7 +134,7 @@ func TestAccGo_basic(t *testing.T) {
 							return tests.AssertError("expect a cleverapps fqdn", appRes.Vhosts[0].Fqdn, "<cleverapps>")
 						}
 
-						appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
+						appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().GetApplicationEnvironment(ctx)
 						if appEnvRes.HasError() {
 							return fmt.Errorf("failed to get application: %w", appEnvRes.Error())
 						}
@@ -185,7 +185,7 @@ func waitForDeploymentComplete(t *testing.T, cc *client.Client, orgID, appID str
 		case <-ctx.Done():
 			return fmt.Errorf("timeout waiting for deployment to complete")
 		case <-ticker.C:
-			deploymentsRes := pkg.SDK(cc).V2().Organisations().ID(orgID).Applications().Appid(appID).Deployments().Getapplicationdeploymentsfororga(ctx)
+			deploymentsRes := pkg.SDK(cc).V2().Organisations().ID(orgID).Applications().Appid(appID).Deployments().ListApplicationDeployments(ctx)
 			if deploymentsRes.IsNotFoundError() {
 				continue
 			}
@@ -358,7 +358,7 @@ func TestAccGo_singleDeploymentOnEnvAndGitChange(t *testing.T) {
 					}
 
 					// Get initial deployment count
-					deploymentsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(appID).Deployments().Getapplicationdeploymentsfororga(ctx)
+					deploymentsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(appID).Deployments().ListApplicationDeployments(ctx)
 					if deploymentsRes.HasError() {
 						return fmt.Errorf("failed to list deployments: %w", deploymentsRes.Error())
 					}
@@ -410,7 +410,7 @@ func TestAccGo_singleDeploymentOnEnvAndGitChange(t *testing.T) {
 						return fmt.Errorf("failed to wait for deployments to end: %s", err.Error())
 					}
 					// Get new deployment count
-					deploymentsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(appID).Deployments().Getapplicationdeploymentsfororga(ctx)
+					deploymentsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(appID).Deployments().ListApplicationDeployments(ctx)
 					if deploymentsRes.HasError() {
 						return fmt.Errorf("failed to list deployments: %w", deploymentsRes.Error())
 					}
@@ -467,13 +467,13 @@ func TestAccGo_envAttributes(t *testing.T) {
 
 	remoteEnv := func(want map[string]string) statecheck.StateCheck {
 		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
-			appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
+			appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).GetApplication(ctx)
 			if appRes.HasError() {
 				return nil, appRes.Error()
 			}
 			return appRes.Payload(), nil
 		}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
-			appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
+			appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().GetApplicationEnvironment(ctx)
 			if appEnvRes.HasError() {
 				return fmt.Errorf("failed to get application env: %w", appEnvRes.Error())
 			}

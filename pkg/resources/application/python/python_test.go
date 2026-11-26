@@ -72,7 +72,7 @@ func TestAccPython_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("deploy_url"), knownvalue.StringRegexp(regexp.MustCompile(`^git\+ssh.*\.git$`))),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
-					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).GetApplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
@@ -110,7 +110,7 @@ func TestAccPython_basic(t *testing.T) {
 						return tests.AssertError("invalid vhost list", application.VHostNames(appRes.Vhosts), "1 cleverapps.io domain")
 					}
 
-					appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
+					appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().GetApplicationEnvironment(ctx)
 					if appEnvRes.HasError() {
 						return fmt.Errorf("failed to get application: %w", appEnvRes.Error())
 					}
@@ -158,7 +158,7 @@ func TestAccPython_basic(t *testing.T) {
 			ConfigStateChecks: []statecheck.StateCheck{
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("biggest_flavor"), knownvalue.StringExact("XS")),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
-					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).GetApplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
@@ -194,7 +194,7 @@ func TestAccPython_basic(t *testing.T) {
 			).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				tests.NewCheckRemoteResource(fullName2, func(ctx context.Context, id string) (*[]models.VhostView, error) {
-					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Vhosts().Listorganisationapplicationvirtualhosts(ctx)
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Vhosts().ListApplicationDomains(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
@@ -277,7 +277,7 @@ func TestAccPython_exposedEnv(t *testing.T) {
 					appResource := s.RootModule().Resources[fullName]
 					appID := appResource.Primary.ID
 
-					exposedEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(appID).ExposedEnv().Listorganisationappplicationexposedenvironmentvariables(ctx)
+					exposedEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(appID).ExposedEnv().GetApplicationExposedEnvironment(ctx)
 					if exposedEnvRes.HasError() {
 						return fmt.Errorf("failed to get exposed env: %w", exposedEnvRes.Error())
 					}
@@ -310,7 +310,7 @@ func TestAccPython_exposedEnv(t *testing.T) {
 					appResource := s.RootModule().Resources[fullName]
 					appID := appResource.Primary.ID
 
-					exposedEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(appID).ExposedEnv().Listorganisationappplicationexposedenvironmentvariables(ctx)
+					exposedEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(appID).ExposedEnv().GetApplicationExposedEnvironment(ctx)
 					if exposedEnvRes.HasError() {
 						return fmt.Errorf("failed to get exposed env: %w", exposedEnvRes.Error())
 					}
@@ -416,7 +416,7 @@ func TestAccPython_networkgroup(t *testing.T) {
 					appResource := s.RootModule().Resources[fullName]
 					ngID := ngResource.Primary.ID
 
-					membersRes := pkg.SDK(cc).V4().Networkgroups().Organisations().Ownerid(tests.ORGANISATION).Networkgroups().Networkgroupid(ngID).Members().Listnetworkgroupmembers(ctx)
+					membersRes := pkg.SDK(cc).V4().Networkgroups().Organisations().Ownerid(tests.ORGANISATION).Networkgroups().Networkgroupid(ngID).Members().ListNetworkGroupMembers(ctx)
 					if membersRes.HasError() {
 						return fmt.Errorf("failed to list members: %w", membersRes.Error())
 					}
@@ -449,7 +449,7 @@ func TestAccPython_networkgroup(t *testing.T) {
 					ngResource := s.RootModule().Resources["clevercloud_networkgroup."+ngName]
 					ngID := ngResource.Primary.ID
 
-					membersRes := pkg.SDK(cc).V4().Networkgroups().Organisations().Ownerid(tests.ORGANISATION).Networkgroups().Networkgroupid(ngID).Members().Listnetworkgroupmembers(ctx)
+					membersRes := pkg.SDK(cc).V4().Networkgroups().Organisations().Ownerid(tests.ORGANISATION).Networkgroups().Networkgroupid(ngID).Members().ListNetworkGroupMembers(ctx)
 					if membersRes.HasError() {
 						return fmt.Errorf("failed to list members: %w", membersRes.Error())
 					}
@@ -495,13 +495,13 @@ func TestAccPython_envAttributes(t *testing.T) {
 
 	remoteEnv := func(want map[string]string) statecheck.StateCheck {
 		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
-			appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
+			appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).GetApplication(ctx)
 			if appRes.HasError() {
 				return nil, appRes.Error()
 			}
 			return appRes.Payload(), nil
 		}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
-			appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
+			appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().GetApplicationEnvironment(ctx)
 			if appEnvRes.HasError() {
 				return fmt.Errorf("failed to get application env: %w", appEnvRes.Error())
 			}

@@ -58,7 +58,7 @@ func (r *ResourceNG) Create(ctx context.Context, req resource.CreateRequest, res
 		Organisations().
 		Ownerid(r.Organization()).
 		Networkgroups().
-		Createnetworkgroup(ctx, &models.WannabeNetworkGroup{
+		CreateNetworkGroup(ctx, &models.WannabeNetworkGroup{
 			ID:          &id,
 			Label:       &label,
 			Description: &description,
@@ -103,7 +103,7 @@ func (r *ResourceNG) Read(ctx context.Context, req resource.ReadRequest, resp *r
 		Ownerid(r.Organization()).
 		Networkgroups().
 		Networkgroupid(state.ID.ValueString()).
-		Getnetworkgroup(ctx)
+		GetNetworkGroup(ctx)
 	if ngRes.HasError() {
 		resp.Diagnostics.AddError("failed to get networkgroup", ngRes.Error().Error())
 		return
@@ -135,7 +135,7 @@ func (r *ResourceNG) Delete(ctx context.Context, req resource.DeleteRequest, res
 		Ownerid(r.Organization()).
 		Networkgroups().
 		Networkgroupid(state.ID.ValueString()).
-		Deletenetworkgroup(ctx)
+		DeleteNetworkGroup(ctx)
 	if res.HasError() && !res.IsNotFoundError() {
 		resp.Diagnostics.AddError("failed to delete networkgroup", res.Error().Error())
 		return
@@ -159,7 +159,7 @@ func (r *ResourceNG) WaitForNG(ctx context.Context, ngId string) (*models.Networ
 				Ownerid(r.Organization()).
 				Networkgroups().
 				Networkgroupid(ngId).
-				Getnetworkgroup(ctx)
+				GetNetworkGroup(ctx)
 			if res.HasError() {
 				lastErr = res.Error()
 				time.Sleep(1 * time.Second)

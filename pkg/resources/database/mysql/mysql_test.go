@@ -121,7 +121,7 @@ func TestAccMySQL_RefreshDeleted(t *testing.T) {
 				ResourceName: rName,
 				PreConfig: func() {
 					// delete the database using an api call
-					pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(rName).Deprovisionaddonbyorgaandaddonid(context.Background())
+					pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(rName).DeleteAddon(context.Background())
 				},
 				// refreshing state
 				RefreshState: true,
@@ -270,7 +270,7 @@ func TestAccMySQL_Import(t *testing.T) {
 	// before Terraform takes ownership of the resource.
 	t.Cleanup(func() {
 		if addonID != "" {
-			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(context.Background())
+			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).DeleteAddon(context.Background())
 		}
 	})
 

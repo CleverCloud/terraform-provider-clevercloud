@@ -92,7 +92,7 @@ func (ar *ActionRebootApplication) Invoke(ctx context.Context, req action.Invoke
 		return
 	}
 
-	rebootRes := pkg.SDK(ar.Client()).V2().Organisations().ID(ar.Organization()).Applications().Appid(cfg.ApplicationID.ValueString()).Instances().Redeployorganisationapplication(ctx)
+	rebootRes := pkg.SDK(ar.Client()).V2().Organisations().ID(ar.Organization()).Applications().Appid(cfg.ApplicationID.ValueString()).Instances().DeployApplication(ctx)
 	if rebootRes.HasError() {
 		res.Diagnostics.AddError("failed to reboot application", rebootRes.Error().Error())
 	}
@@ -144,7 +144,7 @@ func WatchDeployment(
 				return
 			}
 
-			deployRes := pkg.SDK(client).V2().Organisations().ID(organisation).Applications().Appid(application).Deployments().Deploymentid(deployment).Getapplicationdeploymentfororga(ctx)
+			deployRes := pkg.SDK(client).V2().Organisations().ID(organisation).Applications().Appid(application).Deployments().Deploymentid(deployment).GetApplicationDeployment(ctx)
 			if deployRes.HasError() {
 				tflog.Error(ctx, "failed to get deployment status", map[string]any{
 					"error": deployRes.Error().Error(),

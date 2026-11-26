@@ -44,7 +44,7 @@ func TestAccTags_application(t *testing.T) {
 	)
 
 	fetchTags := func(ctx context.Context, id string) (*[]string, error) {
-		res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Tags().Listorganisationapplicationtags(ctx)
+		res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Tags().ListApplicationTags(ctx)
 		if res.HasError() {
 			return nil, res.Error()
 		}

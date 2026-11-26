@@ -61,7 +61,7 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("region"), knownvalue.StringExact("par")),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(false)),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
-					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).GetApplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
@@ -87,7 +87,7 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("max_instance_count"), knownvalue.Int64Exact(6)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(true)),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
-					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).GetApplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
@@ -134,7 +134,7 @@ func TestAccFrankenPHP_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("max_instance_count"), knownvalue.Int64Exact(6)),
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("dev_dependencies"), knownvalue.Bool(true)),
 				tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
-					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
+					appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).GetApplication(ctx)
 					if appRes.HasError() {
 						return nil, appRes.Error()
 					}
@@ -180,13 +180,13 @@ func TestAccFrankenPHP_envAttributes(t *testing.T) {
 
 	remoteEnv := func(want map[string]string) statecheck.StateCheck {
 		return tests.NewCheckRemoteResource(fullName, func(ctx context.Context, id string) (*models.ApplicationView, error) {
-			appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Getorganisationapplication(ctx)
+			appRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).GetApplication(ctx)
 			if appRes.HasError() {
 				return nil, appRes.Error()
 			}
 			return appRes.Payload(), nil
 		}, func(ctx context.Context, id string, state *tfjson.State, appRes *models.ApplicationView) error {
-			appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
+			appEnvRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().GetApplicationEnvironment(ctx)
 			if appEnvRes.HasError() {
 				return fmt.Errorf("failed to get application env: %w", appEnvRes.Error())
 			}

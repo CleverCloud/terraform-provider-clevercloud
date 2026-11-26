@@ -73,7 +73,7 @@ func TestAccAddon_UppercasePlan(t *testing.T) {
 
 	t.Cleanup(func() {
 		if addonID != "" {
-			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(context.Background())
+			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).DeleteAddon(context.Background())
 		}
 	})
 

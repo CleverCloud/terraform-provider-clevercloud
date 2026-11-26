@@ -52,7 +52,7 @@ func (r *ResourceMetabase) Create(ctx context.Context, req resource.CreateReques
 	mb.Region = pkg.FromStr(addon.Region)
 	resp.Diagnostics.Append(resp.State.Set(ctx, mb)...)
 
-	metabaseRes := r.SDK.V4().AddonProviders().AddonMetabase().Addons().Addonmetabaseid(pkg.Deref(addon.RealID)).Getmetabase(ctx)
+	metabaseRes := r.SDK.V4().AddonProviders().AddonMetabase().Addons().Addonmetabaseid(pkg.Deref(addon.RealID)).GetMetabase(ctx)
 	if metabaseRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Metabase", metabaseRes.Error().Error())
 	} else {
@@ -77,7 +77,7 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonMBRes := r.SDK.V4().AddonProviders().AddonMetabase().Addons().Addonmetabaseid(state.ID.ValueString()).Getmetabase(ctx)
+	addonMBRes := r.SDK.V4().AddonProviders().AddonMetabase().Addons().Addonmetabaseid(state.ID.ValueString()).GetMetabase(ctx)
 	if addonMBRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -95,7 +95,7 @@ func (r *ResourceMetabase) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).GetAddon(ctx)
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Metabase addon", addonRes.Error().Error())
 	} else {
@@ -126,7 +126,7 @@ func (r *ResourceMetabase) Update(ctx context.Context, req resource.UpdateReques
 	}
 
 	// Only name can be edited
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -157,7 +157,7 @@ func (r *ResourceMetabase) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).DeleteAddon(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

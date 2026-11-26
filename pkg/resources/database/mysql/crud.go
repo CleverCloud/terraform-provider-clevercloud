@@ -32,7 +32,7 @@ func (r *ResourceMySQL) FetchMysqlInfos(ctx context.Context, diags *diag.Diagnos
 		return
 	}
 
-	res := pkg.SDK(r.Client()).V4().AddonProviders().MysqlAddon().Getmysqlproviderinformation(ctx)
+	res := pkg.SDK(r.Client()).V4().AddonProviders().MysqlAddon().GetMysqlProviderInformation(ctx)
 	if res.HasError() {
 		tflog.Error(ctx, "failed to get mysql infos", map[string]any{"error": res.Error().Error()})
 		return
@@ -157,7 +157,7 @@ func (r *ResourceMySQL) Read(ctx context.Context, req resource.ReadRequest, resp
 	}
 
 	// Objects
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).GetAddon(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -249,7 +249,7 @@ func (r *ResourceMySQL) Update(ctx context.Context, req resource.UpdateRequest, 
 	}
 
 	// Only name can be edited
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -287,7 +287,7 @@ func (r *ResourceMySQL) Delete(ctx context.Context, req resource.DeleteRequest, 
 		return
 	}
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonId).DeleteAddon(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

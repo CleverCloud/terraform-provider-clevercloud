@@ -77,7 +77,7 @@ func TestAccAddonProvider_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("test_sso_url"), knownvalue.StringExact("https://test.example.com/clevercloud/sso/login")),
 			},
 			Check: func(state *terraform.State) error {
-				providerRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Getproviderinfo(ctx)
+				providerRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).GetAddonProvider(ctx)
 				if providerRes.HasError() {
 					return fmt.Errorf("failed to get addon provider from API: %w", providerRes.Error())
 				}
@@ -385,7 +385,7 @@ func TestAccAddonProvider_withFeatures(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("feature"), knownvalue.SetSizeExact(3)),
 			},
 			Check: func(state *terraform.State) error {
-				featuresRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Features().Getproviderfeatures(ctx)
+				featuresRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Features().ListAddonProviderFeatures(ctx)
 				if featuresRes.HasError() {
 					return fmt.Errorf("failed to get providerfeatures : %w", featuresRes.Error())
 				}
@@ -454,7 +454,7 @@ func TestAccAddonProvider_withPlans(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.SetSizeExact(3)),
 			},
 			Check: func(state *terraform.State) error {
-				plansRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Plans().Getproviderplans(ctx)
+				plansRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Plans().ListAddonProviderPlans(ctx)
 				if plansRes.HasError() {
 					return fmt.Errorf("failed to get provider plans: %w", plansRes.Error())
 				}
@@ -579,7 +579,7 @@ func TestAccAddonProvider_plansWithFeatures(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.SetSizeExact(2)),
 			},
 			Check: func(state *terraform.State) error {
-				plansRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Plans().Getproviderplans(ctx)
+				plansRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Plans().ListAddonProviderPlans(ctx)
 				if plansRes.HasError() {
 					return fmt.Errorf("failed to get provider plans: %w", plansRes.Error())
 				}
@@ -711,7 +711,7 @@ func TestAccAddonProvider_updateFeatures(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("feature"), knownvalue.SetSizeExact(2)),
 			},
 			Check: func(state *terraform.State) error {
-				featuresRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Features().Getproviderfeatures(ctx)
+				featuresRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Features().ListAddonProviderFeatures(ctx)
 				if featuresRes.HasError() {
 					return fmt.Errorf("failed to get features: %w", featuresRes.Error())
 				}
@@ -737,7 +737,7 @@ func TestAccAddonProvider_updateFeatures(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("feature"), knownvalue.SetSizeExact(2)),
 			},
 			Check: func(state *terraform.State) error {
-				featuresRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Features().Getproviderfeatures(ctx)
+				featuresRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Features().ListAddonProviderFeatures(ctx)
 				if featuresRes.HasError() {
 					return fmt.Errorf("failed to get features: %w", featuresRes.Error())
 				}
@@ -899,7 +899,7 @@ func TestAccAddonProvider_updatePlans(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.SetSizeExact(2)),
 			},
 			Check: func(state *terraform.State) error {
-				plansRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Plans().Getproviderplans(ctx)
+				plansRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Plans().ListAddonProviderPlans(ctx)
 				if plansRes.HasError() {
 					return fmt.Errorf("failed to get plans: %w", plansRes.Error())
 				}
@@ -935,7 +935,7 @@ func TestAccAddonProvider_updatePlans(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("plan"), knownvalue.SetSizeExact(2)),
 			},
 			Check: func(state *terraform.State) error {
-				plansRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Plans().Getproviderplans(ctx)
+				plansRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addonproviders().Providerid(rName).Plans().ListAddonProviderPlans(ctx)
 				if plansRes.HasError() {
 					return fmt.Errorf("failed to get plans: %w", plansRes.Error())
 				}

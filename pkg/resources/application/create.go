@@ -74,7 +74,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 		strings.HasPrefix(*req.Deployment.Commit, attributes.GITHUB_COMMIT_PREFIX) {
 
 		//grab some informations on the repo
-		appsRes := pkg.SDK(req.Client).V2().Github().Applications().Getgithubapplications(ctx)
+		appsRes := pkg.SDK(req.Client).V2().Github().Applications().ListGithubApplications(ctx)
 		if appsRes.HasError() {
 			diags.AddError("failed to list Github application", appsRes.Error().Error())
 			return res, diags
@@ -95,7 +95,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	}
 
 	appRes := retry.WithRetry(ctx, func() client.Response[models.ApplicationView] {
-		return pkg.SDK(req.Client).V2().Organisations().ID(req.Organization).Applications().Createorganisationapplication(ctx, &req.Application)
+		return pkg.SDK(req.Client).V2().Organisations().ID(req.Organization).Applications().CreateApplication(ctx, &req.Application)
 	}, fmt.Sprintf("CreateApp(%s)", pkg.Deref(req.Application.Name)))
 	if appRes.HasError() {
 		diags.AddError("failed to create application", appRes.Error().Error())
@@ -114,7 +114,7 @@ func CreateApp(ctx context.Context, req CreateReq) (*CreateRes, diag.Diagnostics
 	SyncVHostsOnCreate(ctx, req.Client, req.Organization, req.VHosts, &diags, res.Application.ID)
 
 	// This is dirty, but we need a refresh
-	vhostsRes := pkg.SDK(req.Client).V2().Organisations().ID(req.Organization).Applications().Appid(res.Application.ID).Vhosts().Listorganisationapplicationvirtualhosts(ctx)
+	vhostsRes := pkg.SDK(req.Client).V2().Organisations().ID(req.Organization).Applications().Appid(res.Application.ID).Vhosts().ListApplicationDomains(ctx)
 	if vhostsRes.HasError() {
 		diags.AddError("failed to get application vhosts", vhostsRes.Error().Error())
 		return res, diags
@@ -182,7 +182,7 @@ func Create[T RuntimePlan](ctx context.Context, resource RuntimeResource, plan T
 //	   }
 //		}
 func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID, applicationID string, envs map[string]string, diags *diag.Diagnostics) client.Response[models.ApplicationView] {
-	res := pkg.SDK(cc).V2().Organisations().ID(organisationID).Applications().Appid(applicationID).Env().Updateorganisationapplicationenvironmentvariables(ctx, envs, applications.WithCheck(true))
+	res := pkg.SDK(cc).V2().Organisations().ID(organisationID).Applications().Appid(applicationID).Env().UpdateApplicationEnvironment(ctx, envs, applications.WithCheck(true))
 	if !res.HasError() {
 		return res
 	}
@@ -198,7 +198,7 @@ func UpdateAppEnv(ctx context.Context, cc *client.Client, organisationID, applic
 		}
 	}
 
-	return pkg.SDK(cc).V2().Organisations().ID(organisationID).Applications().Appid(applicationID).Env().Updateorganisationapplicationenvironmentvariables(ctx, envs)
+	return pkg.SDK(cc).V2().Organisations().ID(organisationID).Applications().Appid(applicationID).Env().UpdateApplicationEnvironment(ctx, envs)
 }
 
 // wannabeApplication is the payload creating or updating an application. Every field

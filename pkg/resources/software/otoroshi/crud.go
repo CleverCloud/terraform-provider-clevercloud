@@ -63,7 +63,7 @@ func (r *ResourceOtoroshi) Create(ctx context.Context, req resource.CreateReques
 	state.CreationDate = pkg.FromI(pkg.Deref(addonRes.CreationDate))
 	resp.Diagnostics.Append(resp.State.Set(ctx, state)...)
 
-	otoroshiRes := r.SDK.V4().AddonProviders().AddonOtoroshi().Addons().Otoroshiid(pkg.Deref(addonRes.RealID)).Getotoroshi(ctx)
+	otoroshiRes := r.SDK.V4().AddonProviders().AddonOtoroshi().Addons().Otoroshiid(pkg.Deref(addonRes.RealID)).GetOtoroshi(ctx)
 	if otoroshiRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Otorshi", otoroshiRes.Error().Error())
 	} else {
@@ -97,7 +97,7 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 		return
 	}
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).GetAddon(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -110,7 +110,7 @@ func (r *ResourceOtoroshi) Read(ctx context.Context, req resource.ReadRequest, r
 		state.CreationDate = pkg.FromI(pkg.Deref(addon.CreationDate))
 	}
 
-	otoroshiRes := r.SDK.V4().AddonProviders().AddonOtoroshi().Addons().Otoroshiid(state.ID.ValueString()).Getotoroshi(ctx)
+	otoroshiRes := r.SDK.V4().AddonProviders().AddonOtoroshi().Addons().Otoroshiid(state.ID.ValueString()).GetOtoroshi(ctx)
 	if otoroshiRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Otorshi", otoroshiRes.Error().Error())
 	} else {
@@ -149,7 +149,7 @@ func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateReques
 		return
 	}
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -159,7 +159,7 @@ func (r *ResourceOtoroshi) Update(ctx context.Context, req resource.UpdateReques
 	state.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 
 	// Networkgroups are piloted on the Java application backing the add-on
-	otoroshiRes := r.SDK.V4().AddonProviders().AddonOtoroshi().Addons().Otoroshiid(plan.ID.ValueString()).Getotoroshi(ctx)
+	otoroshiRes := r.SDK.V4().AddonProviders().AddonOtoroshi().Addons().Otoroshiid(plan.ID.ValueString()).GetOtoroshi(ctx)
 	if otoroshiRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Otoroshi", otoroshiRes.Error().Error())
 	} else {
@@ -180,7 +180,7 @@ func (r *ResourceOtoroshi) Delete(ctx context.Context, req resource.DeleteReques
 		return
 	}
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(otoroshi.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(otoroshi.ID.ValueString()).DeleteAddon(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

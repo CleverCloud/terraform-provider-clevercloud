@@ -171,7 +171,7 @@ func TestAccApplication_envChangeTriggersNewDeployment(t *testing.T) {
 			func(ctx context.Context, id string) (*[]models.DeploymentView, error) {
 				deadline := time.Now().Add(5 * time.Minute)
 				for {
-					deploymentsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Deployments().Getapplicationdeploymentsfororga(ctx)
+					deploymentsRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Deployments().ListApplicationDeployments(ctx)
 					if deploymentsRes.HasError() {
 						return nil, deploymentsRes.Error()
 					}
@@ -220,7 +220,7 @@ func TestAccApplication_envChangeTriggersNewDeployment(t *testing.T) {
 				tests.NewCheckRemoteResource(
 					fullName,
 					func(ctx context.Context, id string) (*[]models.AddonEnvironmentView, error) {
-						envRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().Listorganisationapplicationenvironmentvariables(ctx)
+						envRes := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Applications().Appid(id).Env().GetApplicationEnvironment(ctx)
 						if envRes.HasError() {
 							return nil, envRes.Error()
 						}

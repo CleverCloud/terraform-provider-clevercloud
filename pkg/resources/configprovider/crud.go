@@ -75,7 +75,7 @@ func (r *ResourceConfigProvider) Create(ctx context.Context, req resource.Create
 	}
 
 	tflog.Debug(ctx, "Setting environment variables on create", map[string]interface{}{"count": len(envVarsArray)})
-	envRes := r.SDK.V4().AddonProviders().ConfigProvider().Addons().Addonid(addonConfigProvider.ID.ValueString()).Env().Replaceconfigurationproviderenv(ctx, envVarsArray)
+	envRes := r.SDK.V4().AddonProviders().ConfigProvider().Addons().Addonid(addonConfigProvider.ID.ValueString()).Env().UpdateConfigProviderEnvironment(ctx, envVarsArray)
 	if envRes.HasError() {
 		res.Diagnostics.AddError("failed to configure application environment", envRes.Error().Error())
 		return
@@ -104,7 +104,7 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 	// import leaves name null, and the required attribute makes the plan fail.
 	// The v2 add-on endpoint takes a real ID as readily as an add-on ID, so no
 	// lookup is needed here.
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonConfigProvider.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonConfigProvider.ID.ValueString()).GetAddon(ctx)
 	if addonRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -116,7 +116,7 @@ func (r *ResourceConfigProvider) Read(ctx context.Context, req resource.ReadRequ
 
 	addonConfigProvider.Name = pkg.FromStr(pkg.Deref(addonRes.Payload().Name))
 
-	addonEnvRes := r.SDK.V4().AddonProviders().ConfigProvider().Addons().Addonid(addonConfigProvider.ID.ValueString()).Env().Listconfigurationproviderenv(ctx)
+	addonEnvRes := r.SDK.V4().AddonProviders().ConfigProvider().Addons().Addonid(addonConfigProvider.ID.ValueString()).Env().GetConfigProviderEnvironment(ctx)
 	if addonEnvRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on env", addonEnvRes.Error().Error())
 		return
@@ -158,7 +158,7 @@ func (r *ResourceConfigProvider) Update(ctx context.Context, req resource.Update
 	}
 
 	// Only name can be edited
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -179,7 +179,7 @@ func (r *ResourceConfigProvider) Update(ctx context.Context, req resource.Update
 	}
 
 	tflog.Debug(ctx, "Environment variables to update", map[string]any{"count": len(envVarsArray)})
-	envRes := r.SDK.V4().AddonProviders().ConfigProvider().Addons().Addonid(plan.ID.ValueString()).Env().Replaceconfigurationproviderenv(ctx, envVarsArray)
+	envRes := r.SDK.V4().AddonProviders().ConfigProvider().Addons().Addonid(plan.ID.ValueString()).Env().UpdateConfigProviderEnvironment(ctx, envVarsArray)
 	if envRes.HasError() {
 		resp.Diagnostics.AddError("failed to configure application environment", envRes.Error().Error())
 		return
@@ -212,7 +212,7 @@ func (r *ResourceConfigProvider) Delete(ctx context.Context, req resource.Delete
 
 	tflog.Debug(ctx, "ConfigProvider DELETE", map[string]any{"configProvider": addonConfigProvider})
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonConfigProvider.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(addonConfigProvider.ID.ValueString()).DeleteAddon(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

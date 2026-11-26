@@ -96,7 +96,7 @@ func TestAccKeycloak_versionUpgrade(t *testing.T) {
 	fullName := fmt.Sprintf("clevercloud_keycloak.%s", rName)
 	// Fetch available versions from API
 	keycloakSDK := sdk.NewSDK(sdk.WithClient(cc))
-	infosRes := keycloakSDK.V4().AddonProviders().Keycloak().Getkeycloakproviderinformation(ctx)
+	infosRes := keycloakSDK.V4().AddonProviders().Keycloak().GetKeycloakProviderInformation(ctx)
 	if infosRes.HasError() {
 		t.Fatalf("failed to get Keycloak provider information: %s", infosRes.Error().Error())
 	}
@@ -169,7 +169,7 @@ func TestAccKeycloak_invalidVersionOnUpdate(t *testing.T) {
 	rName := acctest.RandomWithPrefix("tf-test-kc")
 
 	keycloakSDK := sdk.NewSDK(sdk.WithClient(cc))
-	infosRes := keycloakSDK.V4().AddonProviders().Keycloak().Getkeycloakproviderinformation(ctx)
+	infosRes := keycloakSDK.V4().AddonProviders().Keycloak().GetKeycloakProviderInformation(ctx)
 	if infosRes.HasError() {
 		t.Fatalf("failed to get Keycloak provider information: %s", infosRes.Error().Error())
 	}

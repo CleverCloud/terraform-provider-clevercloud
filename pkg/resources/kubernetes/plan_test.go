@@ -872,7 +872,7 @@ func TestVersionFromAPI(t *testing.T) {
 
 	tests := []struct {
 		name     string
-		status   string
+		status   models.ClusterStatusType
 		previous types.String
 		want     types.String
 		warnings int

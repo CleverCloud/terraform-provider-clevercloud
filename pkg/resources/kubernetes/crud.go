@@ -85,7 +85,7 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		return
 	}
 
-	createRes := clusters(r.Client(), r.Organization()).Createkubernetescluster(ctx, &createReq)
+	createRes := clusters(r.Client(), r.Organization()).CreateKubernetesCluster(ctx, &createReq)
 	if createRes.HasError() {
 		resp.Diagnostics.AddError("failed to create kubernetes cluster", createRes.Error().Error())
 		return
@@ -156,7 +156,7 @@ func (r *ResourceKubernetes) Create(ctx context.Context, req resource.CreateRequ
 		)
 	}
 
-	kubeConfigRes := clusters(r.Client(), r.Organization()).Kubernetesid(k8sCluster.ID).KubeconfigYAML().Getkubeconfig(ctx)
+	kubeConfigRes := clusters(r.Client(), r.Organization()).Kubernetesid(k8sCluster.ID).KubeconfigYAML().GetKubernetesKubeconfig(ctx)
 	if kubeConfigRes.HasError() {
 		resp.Diagnostics.AddWarning("failed to get kubeconfig", kubeConfigRes.Error().Error())
 	} else {
@@ -186,7 +186,7 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	kubernetesRes := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).Getkubernetescluster(ctx)
+	kubernetesRes := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).GetKubernetesCluster(ctx)
 	if kubernetesRes.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -226,10 +226,10 @@ func (r *ResourceKubernetes) Read(ctx context.Context, req resource.ReadRequest,
 	state.Region = region
 	state.Tags = resources.TagsFromAPI(ctx, k8sInfo.Tags, previousTags, &resp.Diagnostics)
 	state.Topology = topologyFromAPI(ctx, apiTopologyFrom(k8sInfo.TopologyConfig, &resp.Diagnostics), &resp.Diagnostics)
-	state.Version = versionFromAPI(string(k8sInfo.Status), k8sInfo.Version, previousVersion, &resp.Diagnostics)
+	state.Version = versionFromAPI(k8sInfo.Status, k8sInfo.Version, previousVersion, &resp.Diagnostics)
 
 	// Get kubeconfig
-	kubeConfigRes := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).KubeconfigYAML().Getkubeconfig(ctx)
+	kubeConfigRes := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).KubeconfigYAML().GetKubernetesKubeconfig(ctx)
 	if !kubeConfigRes.HasError() {
 		kubeconfig := kubeConfigRes.Payload()
 		state.KubeConfig = pkg.FromStr(string(*kubeconfig))
@@ -341,7 +341,7 @@ func (r *ResourceKubernetes) Delete(ctx context.Context, req resource.DeleteRequ
 		return
 	}
 
-	res := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).Deletekubernetescluster(ctx)
+	res := clusters(r.Client(), r.Organization()).Kubernetesid(identity.ID.ValueString()).DeleteKubernetesCluster(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return
@@ -370,17 +370,17 @@ func autoprovisioningFeatureEnabled(features *models.ClusterFeatures) bool {
 // records the target as soon as it accepts a version change, so it only tells what
 // runs once the rollout is over. Until then the previous version stays: reading
 // the target would empty the next plan and hide a rollout that failed
-func versionFromAPI(status, version string, previous types.String, diags *diag.Diagnostics) types.String {
+func versionFromAPI(status models.ClusterStatusType, version string, previous types.String, diags *diag.Diagnostics) types.String {
 	if !isSet(previous) || previous.ValueString() == version {
 		return pkg.FromStr(version)
 	}
 
 	switch status {
-	case "FAILED":
+	case models.ClusterStatusTypeFAILED:
 		diags.AddAttributeWarning(path.Root("version"), "the version change did not complete",
 			fmt.Sprintf("the cluster is FAILED and was moving from %s to %s, it has to be resumed before it accepts any other change", previous.ValueString(), version))
 		return previous
-	case "UPDATING":
+	case models.ClusterStatusTypeUPDATING:
 		diags.AddAttributeWarning(path.Root("version"), "a version change is still running",
 			fmt.Sprintf("the cluster is moving from %s to %s, run terraform plan again once it is ACTIVE", previous.ValueString(), version))
 		return previous
@@ -404,7 +404,7 @@ func regionFromAPI(ctx context.Context, cc *client.Client, organisationID, zoneI
 	}
 	ctx, cancel := context.WithTimeout(ctx, zoneLookupTimeout)
 	defer cancel()
-	res := pkg.SDK(cc).V4().Kubernetes().Organisations().Ownerid(organisationID).Zones().Listkubernetesownerzones(ctx)
+	res := pkg.SDK(cc).V4().Kubernetes().Organisations().Ownerid(organisationID).Zones().ListKubernetesOwnerZones(ctx)
 	if res.HasError() {
 		return previous, res.Error()
 	}
@@ -566,9 +566,9 @@ func pollErrorDetail(statusCode int) string {
 // can never converge from. It has to be checked before convergence itself: a
 // deleted cluster reports no features at all, which a disable request would
 // otherwise read as proof that Karpenter was successfully removed
-func clusterTerminalStatus(status string) bool {
+func clusterTerminalStatus(status models.ClusterStatusType) bool {
 	switch status {
-	case "FAILED", "DELETING", "DELETED":
+	case models.ClusterStatusTypeFAILED, models.ClusterStatusTypeDELETING, models.ClusterStatusTypeDELETED:
 		return true
 	default:
 		return false
@@ -645,8 +645,8 @@ func patchExpiryDetail(lastStatus int, timeout time.Duration) string {
 // terminalStatusDetail explains a status the cluster can never converge from,
 // operation being what was going on. A failed cluster is resumed on the Clever
 // Cloud side, a cluster on its way out cannot be resumed at all
-func terminalStatusDetail(status, operation string) string {
-	if status == "FAILED" {
+func terminalStatusDetail(status models.ClusterStatusType, operation string) string {
+	if status == models.ClusterStatusTypeFAILED {
 		return fmt.Sprintf("the cluster went FAILED while %s, it has to be resumed before it accepts any other change", operation)
 	}
 
@@ -756,7 +756,7 @@ func patchCluster(
 
 	for {
 		reqCtx, cancelRequest := context.WithTimeout(loopCtx, nodeAutoprovisioningRequestTimeout)
-		res := clusters(cc, organisationID).Kubernetesid(clusterID).Updatekubernetescluster(reqCtx, &payload)
+		res := clusters(cc, organisationID).Kubernetesid(clusterID).UpdateKubernetesCluster(reqCtx, &payload)
 		cancelRequest()
 
 		if !res.HasError() {
@@ -851,7 +851,7 @@ func waitForClusterCreation(
 		summary:   "failed to provision kubernetes cluster",
 		operation: "it was being created",
 		expired:   fmt.Sprintf("the cluster did not become ACTIVE in %s, it may still be deploying", timeout),
-		reached:   func(cluster *models.KubernetesCluster) bool { return cluster.Status == "ACTIVE" },
+		reached:   func(cluster *models.KubernetesCluster) bool { return cluster.Status == models.ClusterStatusTypeACTIVE },
 	}, pollInterval, timeout, diags)
 }
 
@@ -876,7 +876,7 @@ func waitForPersistentStorage(
 		operation: "persistent storage was being installed or removed",
 		expired:   fmt.Sprintf("the API never reported the requested value in %s, run terraform plan once the cluster is ACTIVE to reconcile it", timeout),
 		reached: func(cluster *models.KubernetesCluster) bool {
-			return cluster.Status == "ACTIVE" && persistentStorageFeatureEnabled(cluster.Features) == expected
+			return cluster.Status == models.ClusterStatusTypeACTIVE && persistentStorageFeatureEnabled(cluster.Features) == expected
 		},
 	}, pollInterval, timeout, diags)
 }
@@ -901,7 +901,7 @@ func changeClusterVersion(
 		expired:   fmt.Sprintf("the cluster did not become ACTIVE in %s, the version change was not started", readyTimeout),
 		reached: func(cluster *models.KubernetesCluster) bool {
 			current = cluster.Version
-			return cluster.Status == "ACTIVE"
+			return cluster.Status == models.ClusterStatusTypeACTIVE
 		},
 	}, pollInterval, readyTimeout, diags) {
 		return false
@@ -914,7 +914,7 @@ func changeClusterVersion(
 	}
 
 	res := sdk.NewSDK(sdk.WithClient(cc)).V4().Kubernetes().Organisations().Ownerid(organisationID).Clusters().Kubernetesid(clusterID).
-		Version().Update().Updatekubernetesclusterversion(ctx, &models.PatchClusterVersion{TargetVersion: version})
+		Version().Update().UpdateKubernetesClusterVersion(ctx, &models.PatchClusterVersion{TargetVersion: version})
 	if res.HasError() {
 		diags.AddError(summary, patchErrorDetail("", res.Error().Error(), res.SozuID()))
 		return false
@@ -924,12 +924,12 @@ func changeClusterVersion(
 		summary:   summary,
 		operation: "its version was being changed",
 		expired:   fmt.Sprintf("the version change did not finish in %s, it may still be running, run terraform plan once the cluster is ACTIVE to reconcile it", upgradeTimeout),
-		reached:   func(cluster *models.KubernetesCluster) bool { return cluster.Status == "ACTIVE" },
+		reached:   func(cluster *models.KubernetesCluster) bool { return cluster.Status == models.ClusterStatusTypeACTIVE },
 		// the API shows UPDATING while the change runs. When its first checks
 		// refuse the change the cluster does not fail, it goes back to ACTIVE on the
 		// previous version, which no amount of waiting would ever change
 		rejected: func(cluster *models.KubernetesCluster) string {
-			if cluster.Status == "ACTIVE" && cluster.Version != version {
+			if cluster.Status == models.ClusterStatusTypeACTIVE && cluster.Version != version {
 				return fmt.Sprintf("the API rejected the version change, the cluster stays on %s", cluster.Version)
 			}
 			return ""
@@ -984,7 +984,7 @@ func waitForCluster(
 	for {
 		// probe before waiting, a ticker never fires at t=0
 		reqCtx, cancelRequest := context.WithTimeout(loopCtx, nodeAutoprovisioningRequestTimeout)
-		res := clusters(cc, organisationID).Kubernetesid(clusterID).Getkubernetescluster(reqCtx)
+		res := clusters(cc, organisationID).Kubernetesid(clusterID).GetKubernetesCluster(reqCtx)
 		cancelRequest()
 
 		switch {
@@ -1001,11 +1001,11 @@ func waitForCluster(
 				return false
 			}
 			tflog.Warn(ctx, "failed to poll the cluster", map[string]any{"error": lastErr})
-		case clusterTerminalStatus(string(res.Payload().Status)):
+		case clusterTerminalStatus(res.Payload().Status):
 			// the operation can fail the whole cluster, and the cluster can also
 			// be deleted from under us: neither ever converges, and the two need
 			// different advice
-			diags.AddError(summary, terminalStatusDetail(string(res.Payload().Status), wait.operation))
+			diags.AddError(summary, terminalStatusDetail(res.Payload().Status, wait.operation))
 			return false
 		case wait.rejected != nil && wait.rejected(res.Payload()) != "":
 			diags.AddError(summary, wait.rejected(res.Payload()))

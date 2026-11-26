@@ -56,7 +56,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 
 	resp.Diagnostics.Append(resp.State.Set(ctx, plan)...)
 
-	pulsarRes := r.SDK.V4().AddonProviders().AddonPulsar().Addons().Pulsarid(pkg.Deref(addon.RealID)).Getpulsar(ctx)
+	pulsarRes := r.SDK.V4().AddonProviders().AddonPulsar().Addons().Pulsarid(pkg.Deref(addon.RealID)).GetPulsar(ctx)
 	if pulsarRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())
 		return
@@ -64,7 +64,7 @@ func (r *ResourcePulsar) Create(ctx context.Context, req resource.CreateRequest,
 	pulsar := pulsarRes.Payload()
 	readAddon(&plan, pulsar, &resp.Diagnostics)
 
-	pulsarClusterRes := r.SDK.V4().AddonProviders().AddonPulsar().Clusters().Clusterid(pulsar.ClusterID).Getpulsarcluster(ctx)
+	pulsarClusterRes := r.SDK.V4().AddonProviders().AddonPulsar().Clusters().Clusterid(pulsar.ClusterID).GetPulsarCluster(ctx)
 	if pulsarClusterRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar env", pulsarClusterRes.Error().Error())
 		return
@@ -98,7 +98,7 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	pulsarRes := r.SDK.V4().AddonProviders().AddonPulsar().Addons().Pulsarid(state.ID.ValueString()).Getpulsar(ctx)
+	pulsarRes := r.SDK.V4().AddonProviders().AddonPulsar().Addons().Pulsarid(state.ID.ValueString()).GetPulsar(ctx)
 	if pulsarRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar", pulsarRes.Error().Error())
 		return
@@ -106,7 +106,7 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 	pulsar := pulsarRes.Payload()
 	readAddon(&state, pulsar, &resp.Diagnostics)
 
-	pulsarClusterRes := r.SDK.V4().AddonProviders().AddonPulsar().Clusters().Clusterid(pulsar.ClusterID).Getpulsarcluster(ctx)
+	pulsarClusterRes := r.SDK.V4().AddonProviders().AddonPulsar().Clusters().Clusterid(pulsar.ClusterID).GetPulsarCluster(ctx)
 	if pulsarClusterRes.HasError() {
 		resp.Diagnostics.AddError("failed to get Pulsar env", pulsarClusterRes.Error().Error())
 		return
@@ -114,7 +114,7 @@ func (r *ResourcePulsar) Read(ctx context.Context, req resource.ReadRequest, res
 	pulsarCluster := pulsarClusterRes.Payload()
 	readCluster(&state, pulsarCluster, &resp.Diagnostics)
 
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Getaddonbyorgaandaddonid(ctx)
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).GetAddon(ctx)
 	if addonRes.HasError() {
 		resp.Diagnostics.AddError("failed to get add-on", addonRes.Error().Error())
 		return
@@ -242,7 +242,7 @@ func (r *ResourcePulsar) Update(ctx context.Context, req resource.UpdateRequest,
 	}
 
 	// Only name can be edited
-	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).Updateaddoninfo(ctx, addons.UpdateaddoninfoBody{
+	addonRes := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(plan.ID.ValueString()).UpdateAddon(ctx, addons.UpdateAddonBody{
 		Name: plan.Name.ValueString(),
 	})
 	if addonRes.HasError() {
@@ -274,7 +274,7 @@ func (r *ResourcePulsar) Delete(ctx context.Context, req resource.DeleteRequest,
 	}
 	tflog.Debug(ctx, "Pulsar DELETE", map[string]any{"pulsar": state})
 
-	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).Deprovisionaddonbyorgaandaddonid(ctx)
+	res := r.SDK.V2().Organisations().ID(r.Organization()).Addons().Addonid(state.ID.ValueString()).DeleteAddon(ctx)
 	if res.IsNotFoundError() {
 		resp.State.RemoveResource(ctx)
 		return

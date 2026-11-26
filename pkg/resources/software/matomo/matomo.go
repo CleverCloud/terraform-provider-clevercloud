@@ -47,7 +47,7 @@ func (r *ResourceMatomo) ModifyPlan(ctx context.Context, req resource.ModifyPlan
 	}
 
 	checkRes := r.SDK.V4().AddonProviders().AddonMatomo().Addons().Addonmatomoid(id.ValueString()).Version().Check().
-		Getcheckversionmatomoapplication(ctx)
+		CheckMatomoVersion(ctx)
 	if checkRes.HasError() { // the API refuses a wrong version at apply
 		tflog.Warn(ctx, "Skipping Matomo version validation", map[string]any{"error": checkRes.Error().Error()})
 		return

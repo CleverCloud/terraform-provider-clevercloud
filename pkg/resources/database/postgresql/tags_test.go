@@ -47,7 +47,7 @@ func TestAccTags_addon(t *testing.T) {
 		if err != nil {
 			return nil, err
 		}
-		res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Tags().Getaddontagsbyorgaidandaddonid(ctx)
+		res := pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Tags().ListAddonTags(ctx)
 		if res.HasError() {
 			return nil, res.Error()
 		}

@@ -133,7 +133,7 @@ func applyCredentials(c *tmp.ElasticsearchCredentials, state *ElasticsearchClust
 func (r *ResourceElasticsearchCluster) fetchEndpoint(ctx context.Context, networkGroupID, clusterID string) (string, error) {
 	res := r.SDK.V4().Networkgroups().Organisations().Ownerid(r.Organization()).
 		Networkgroups().Networkgroupid(networkGroupID).
-		Members().Listnetworkgroupmembers(ctx)
+		Members().ListNetworkGroupMembers(ctx)
 	if res.HasError() {
 		return "", res.Error()
 	}

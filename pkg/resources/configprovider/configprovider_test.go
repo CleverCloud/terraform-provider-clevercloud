@@ -36,7 +36,7 @@ func TestAccConfigProvider_basic(t *testing.T) {
 	)
 
 	retrieveConfigProvider := func(ctx context.Context, id string) (*models.ConfigProvider, error) {
-		res := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Getconfigurationprovider(ctx)
+		res := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).GetConfigProvider(ctx)
 		if res.IsNotFoundError() {
 			return nil, fmt.Errorf("Unable to find configProvider by real id: %s", id)
 		}
@@ -58,7 +58,7 @@ func TestAccConfigProvider_basic(t *testing.T) {
 				statecheck.ExpectKnownValue(fullName, tfjsonpath.New("id"), knownvalue.StringRegexp(regexp.MustCompile(`^config_.*`))),
 				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *models.ConfigProvider) error {
 					// Verify environment variables were updated
-					cpEnvRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Env().Listconfigurationproviderenv(ctx)
+					cpEnvRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Env().GetConfigProviderEnvironment(ctx)
 					if cpEnvRes.HasError() {
 						return fmt.Errorf("Failed to get application: %w", cpEnvRes.Error())
 					}
@@ -91,7 +91,7 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			Config:       providerBlock.Append(configProviderBlock.SetOneValue("environment", map[string]any{"foo": "this is foo", "bar": "this is bar"})).String(),
 			ConfigStateChecks: []statecheck.StateCheck{
 				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *models.ConfigProvider) error {
-					cpEnvRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Env().Listconfigurationproviderenv(ctx)
+					cpEnvRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Env().GetConfigProviderEnvironment(ctx)
 					if cpEnvRes.HasError() {
 						return fmt.Errorf("Failed to get application: %w", cpEnvRes.Error())
 					}
@@ -122,7 +122,7 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			ConfigStateChecks: []statecheck.StateCheck{
 				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *models.ConfigProvider) error {
 					// Verify environment variables were updated
-					cpEnvRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Env().Listconfigurationproviderenv(ctx)
+					cpEnvRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Env().GetConfigProviderEnvironment(ctx)
 					if cpEnvRes.HasError() {
 						return fmt.Errorf("Failed to get application: %w", cpEnvRes.Error())
 					}
@@ -149,7 +149,7 @@ func TestAccConfigProvider_basic(t *testing.T) {
 			ConfigStateChecks: []statecheck.StateCheck{
 				tests.NewCheckRemoteResource(fullName, retrieveConfigProvider, func(ctx context.Context, id string, state *tfjson.State, app *models.ConfigProvider) error {
 					// Verify environment variables were updated
-					cpEnvRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Env().Listconfigurationproviderenv(ctx)
+					cpEnvRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(id).Env().GetConfigProviderEnvironment(ctx)
 					if cpEnvRes.HasError() {
 						return fmt.Errorf("Failed to get application: %w", cpEnvRes.Error())
 					}
@@ -184,7 +184,7 @@ func TestAccConfigProvider_Import(t *testing.T) {
 	// before Terraform takes ownership of the resource.
 	t.Cleanup(func() {
 		if addonID != "" {
-			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).Deprovisionaddonbyorgaandaddonid(context.Background())
+			pkg.SDK(cc).V2().Organisations().ID(tests.ORGANISATION).Addons().Addonid(addonID).DeleteAddon(context.Background())
 		}
 	})
 
@@ -229,7 +229,7 @@ func TestAccConfigProvider_Import(t *testing.T) {
 					// The fixture has to carry the same environment as the
 					// config, otherwise the plan below legitimately wants to add
 					// it and the step fails for the wrong reason.
-					envRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(realID).Env().Replaceconfigurationproviderenv(ctx, []*models.WannabeEnvVar{
+					envRes := pkg.SDK(cc).V4().AddonProviders().ConfigProvider().Addons().Addonid(realID).Env().UpdateConfigProviderEnvironment(ctx, []*models.WannabeEnvVar{
 						{Name: "foo", Value: "this is foo"},
 					})
 					if envRes.HasError() {

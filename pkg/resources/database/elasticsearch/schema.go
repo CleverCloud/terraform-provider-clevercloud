@@ -166,7 +166,7 @@ func (r *ResourceElasticsearch) ModifyPlan(ctx context.Context, req resource.Mod
 	}
 
 	if !plan.Version.IsNull() && !plan.Version.IsUnknown() {
-		infosRes := pkg.SDK(r.Client()).V4().AddonProviders().EsAddon().Getelasticsearchproviderinformation(ctx)
+		infosRes := pkg.SDK(r.Client()).V4().AddonProviders().EsAddon().GetElasticsearchProviderInformation(ctx)
 		if infosRes.HasError() {
 			res.Diagnostics.AddError("failed to get Elasticsearch provider info", infosRes.Error().Error())
 			return
