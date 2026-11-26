@@ -540,7 +540,7 @@ func TestPollErrorFatal(t *testing.T) {
 
 func TestClusterTerminalStatus(t *testing.T) {
 	tests := []struct {
-		status string
+		status models.ClusterStatusType
 		want   bool
 	}{
 		{"FAILED", true},
@@ -553,7 +553,7 @@ func TestClusterTerminalStatus(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.status, func(t *testing.T) {
+		t.Run(string(tt.status), func(t *testing.T) {
 			if got := clusterTerminalStatus(tt.status); got != tt.want {
 				t.Errorf("clusterTerminalStatus(%q) = %v, want %v", tt.status, got, tt.want)
 			}
@@ -632,11 +632,11 @@ func TestPatchExpiryDetail(t *testing.T) {
 }
 
 func TestTerminalStatusDetail(t *testing.T) {
-	if got := terminalStatusDetail("FAILED", "node autoprovisioning was being installed or removed"); !strings.Contains(got, "has to be resumed") {
+	if got := terminalStatusDetail(models.ClusterStatusTypeFAILED, "node autoprovisioning was being installed or removed"); !strings.Contains(got, "has to be resumed") {
 		t.Errorf("terminalStatusDetail(FAILED) = %q, want the resume remedy", got)
 	}
 
-	for _, status := range []string{"DELETING", "DELETED"} {
+	for _, status := range []models.ClusterStatusType{models.ClusterStatusTypeDELETING, models.ClusterStatusTypeDELETED} {
 		got := terminalStatusDetail(status, "node autoprovisioning was being installed or removed")
 		if strings.Contains(got, "has to be resumed") {
 			t.Errorf("terminalStatusDetail(%s) = %q, a cluster on its way out cannot be resumed", status, got)

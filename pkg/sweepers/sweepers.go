@@ -9,6 +9,7 @@ import (
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.com/terraform-provider/pkg/tests"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // sweepNetworkgroups removes all test networkgroups
@@ -186,7 +187,7 @@ func SweepKubernetes(region string) error {
 		}
 
 		// Skip clusters already marked for deletion
-		if cluster.Status == "DELETED" || cluster.Status == "DELETING" {
+		if cluster.Status == models.ClusterStatusTypeDELETED || cluster.Status == models.ClusterStatusTypeDELETING {
 			log.Printf("[INFO] Skipping Kubernetes cluster already marked for deletion: %s (%s) - Status: %s", cluster.Name, cluster.ID, cluster.Status)
 			continue
 		}

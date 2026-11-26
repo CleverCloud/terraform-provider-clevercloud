@@ -344,7 +344,7 @@ func (r *ResourcePostgreSQL) migrate(ctx context.Context, plan PostgreSQL, state
 
 		firstInstance := pkg.First(instances, func(instance models.SuperNovaInstanceView) bool { return true })
 		state := firstInstance.State
-		if state != "UP" { // BOOTING
+		if state != models.InstanceStateUP { // BOOTING
 			tflog.Info(ctx, "pg status not OK", map[string]any{"state": state})
 			continue
 		}

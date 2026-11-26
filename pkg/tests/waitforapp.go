@@ -10,6 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"go.clever-cloud.com/terraform-provider/pkg"
 	"go.clever-cloud.dev/client"
+	"go.clever-cloud.dev/sdk/models"
 )
 
 // WaitForAppInstanceUp polls the application's instances until at least one
@@ -65,7 +66,7 @@ func (w waitForAppInstanceUp) CheckState(ctx context.Context, req statecheck.Che
 				continue
 			}
 			for _, inst := range *res.Payload() {
-				if inst.State == "UP" {
+				if inst.State == models.InstanceStateUP {
 					tflog.Info(deadline, "app instance is UP", map[string]any{"app": appID, "instance": inst.ID})
 					return
 				}
